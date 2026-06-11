@@ -3,6 +3,77 @@ import { Resend } from "resend";
 import { decrementStock } from "@/lib/inventory";
 
 // ─────────────────────────────────────────────────────────────
+// 0.  BigArena fulfillment integration
+// ─────────────────────────────────────────────────────────────
+
+type OrderPayload = Record<string, unknown>;
+type ItemPayload  = { sku?: string; qty?: number; quantity?: number };
+
+function buildBigArenaBody(order: OrderPayload): Record<string, unknown> {
+  const customer = (order.customer ?? {}) as Record<string, unknown>;
+  const items    = (order.items    ?? []) as ItemPayload[];
+  const shipping = (order.shipping ?? {}) as Record<string, unknown>;
+
+  // Map checkout couriers → BigArena courier codes
+  const raw       = String(shipping.courier ?? "econt");
+  const isHome    = raw === "home";
+  const courier   = isHome ? "econt" : raw;                         // default home → econt
+  const service   = isHome ? "econt_door" : `${courier}_office`;   // office vs door
+
+  return {
+    client_order_id:              `LR-${Date.now()}`,
+    customer_name:                String(customer.name     ?? ""),
+    customer_telephone:           String(customer.phone    ?? ""),
+    country_code:                 "BG",
+    shipping_address: {
+      address_text:               String(customer.officeAddress ?? ""),
+      city:                       String(customer.city          ?? ""),
+      post_code:                  String(customer.postCode      ?? ""),
+    },
+    products: items.map((i) => ({
+      sku:      String(i.sku      ?? ""),
+      quantity: Number(i.qty ?? i.quantity ?? 1),
+    })),
+    courier,
+    courier_service:              service,
+    payment_method:               "cod",
+    payment_amount:               String(Number(order.total ?? 0).toFixed(2)),
+    currency_code:                "EUR",
+    note_customer:                String(customer.notes    ?? ""),
+    original_order_payment_method: "cod",
+  };
+}
+
+async function sendToBigArena(order: OrderPayload): Promise<void> {
+  const apiKey = process.env.BIGARENA_API_KEY;
+  if (!apiKey) {
+    console.warn("[BigArena] BIGARENA_API_KEY not set — skipping fulfillment");
+    return;
+  }
+
+  const body = buildBigArenaBody(order);
+
+  const res = await fetch("https://my.bigarena.net/api/v1/orders", {
+    method:  "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type":  "application/json",
+      "Accept":        "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "(no body)");
+    console.error(`[BigArena] API error ${res.status}:`, text);
+    throw new Error(`BigArena ${res.status}: ${text.slice(0, 200)}`);
+  }
+
+  const result = await res.json();
+  console.log("[BigArena] Order created →", result);
+}
+
+// ─────────────────────────────────────────────────────────────
 // 1.  Blacklist check - nekorekten.com
 // ─────────────────────────────────────────────────────────────
 interface BlacklistResult {
@@ -299,6 +370,9 @@ export async function POST(req: NextRequest) {
     const customerAddress = String(order.email ?? "").trim();
 
     await Promise.allSettled([
+      // BigArena fulfillment — fire & forget, never blocks the customer
+      sendToBigArena(order),
+
       // Admin notification
       resend.emails.send({
         from: "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>",

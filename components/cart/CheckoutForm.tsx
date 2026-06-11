@@ -30,6 +30,7 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     name: "",
     phone: "",
     city: "",
+    postCode: "",
     officeAddress: "",
     notes: "",
   });
@@ -54,6 +55,7 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     if (!form.name.trim() || form.name.trim().length < 2) errs.name = "Въведете две имена";
     if (!form.phone.match(/^(\+359|0)\d{8,9}$/))         errs.phone = "Невалиден телефон";
     if (!form.city.trim())                                 errs.city = "Въведете град";
+    if (!form.postCode.match(/^\d{4}$/))                  errs.postCode = "4-цифрен пощенски код";
     if (!form.officeAddress.trim())                        errs.officeAddress = isHomeAddress ? "Въведете личен адрес" : "Въведете адрес на офис";
     return errs;
   };
@@ -169,11 +171,18 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
             className="input-luxury" autoComplete="tel" inputMode="tel" />
         </Field>
 
-        <Field label="Град *" error={errors.city}>
-          <input type="text" placeholder="София" value={form.city}
-            onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-            className="input-luxury" autoComplete="address-level2" />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Град *" error={errors.city}>
+            <input type="text" placeholder="София" value={form.city}
+              onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+              className="input-luxury" autoComplete="address-level2" />
+          </Field>
+          <Field label="Пощенски код *" error={errors.postCode}>
+            <input type="text" placeholder="1000" value={form.postCode}
+              onChange={(e) => setForm((f) => ({ ...f, postCode: e.target.value }))}
+              className="input-luxury" autoComplete="postal-code" inputMode="numeric" maxLength={4} />
+          </Field>
+        </div>
 
         {/* ── Shipping method radio cards ──────────────────────────────── */}
         <div className="flex flex-col gap-1.5">
