@@ -9,19 +9,42 @@ import { useReveal } from "@/lib/useReveal";
 export function FeaturedWatches() {
   const watches = getWatches();
   const gridRef = useReveal();
+  const n = watches.length;
   const [activeIndex, setActiveIndex] = useState(0);
+  // Index of the card that must jump across (no transition) during a wrap
+  const [teleporting, setTeleporting] = useState<number | null>(null);
   const touchStartX = useRef(0);
 
-  const prev = () => setActiveIndex((i) => Math.max(0, i - 1));
-  const next = () => setActiveIndex((i) => Math.min(watches.length - 1, i + 1));
+  const leftI  = (activeIndex - 1 + n) % n;
+  const rightI = (activeIndex + 1) % n;
+
+  const getPos = (i: number): -1 | 0 | 1 => {
+    if (i === activeIndex) return 0;
+    if (i === leftI) return -1;
+    return 1;
+  };
+
+  const goNext = () => {
+    // The current left card wraps to the right — teleport it invisibly
+    setTeleporting(leftI);
+    setActiveIndex((activeIndex + 1) % n);
+    setTimeout(() => setTeleporting(null), 50);
+  };
+
+  const goPrev = () => {
+    // The current right card wraps to the left — teleport it invisibly
+    setTeleporting(rightI);
+    setActiveIndex((activeIndex - 1 + n) % n);
+    setTimeout(() => setTeleporting(null), 50);
+  };
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
     const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (diff > 40) next();
-    else if (diff < -40) prev();
+    if (diff > 40) goNext();
+    else if (diff < -40) goPrev();
   };
 
   const active = watches[activeIndex];
@@ -47,14 +70,15 @@ export function FeaturedWatches() {
           ))}
         </div>
 
-        {/* ── Mobile Cover Flow ────────────────────────────────────────────── */}
+        {/* ── Mobile Cover Flow (infinite) ────────────────────────────────── */}
         {/*
-          Layout (375px screen example):
-          Left card  — center at 18vw, visual width 36vw → shows 0..36vw
-          Center card — center at 50vw, visual width 56vw → shows 22vw..78vw
-          Right card  — center at 82vw, visual width 36vw → shows 64vw..100vw
-          Side cards slide behind center (z-index 5 vs 10).
-          White BG + mix-blend-multiply makes product white-bg images appear transparent.
+          3 cards always visible: left(−32vw,scale.65), center(0,scale1), right(+32vw,scale.65).
+          Blur lives on the <Image> not the wrapper — prevents the white-halo artifact
+          caused by filter:blur bleeding outside a bg-white rectangle.
+          bg-white removed from side containers (section bg is white, so mix-blend-multiply
+          still blends correctly; no visible white box).
+          Teleport: the card that wraps to the opposite side gets opacity:0 + transition:none
+          for one tick so it jumps invisibly, then fades in at its new position.
         */}
         <div
           className="sm:hidden overflow-x-hidden"
@@ -64,18 +88,12 @@ export function FeaturedWatches() {
           {/* Image strip */}
           <div className="relative" style={{ height: "56vw" }}>
             {watches.map((watch, i) => {
-              const diff = i - activeIndex;
-              const isActive  = diff === 0;
-              const isVisible = Math.abs(diff) === 1;
+              const pos        = getPos(i);
+              const isActive   = pos === 0;
+              const isTeleport = teleporting === i;
 
-              const xShift =
-                diff === 0  ? "0vw"   :
-                diff === -1 ? "-32vw" :
-                diff ===  1 ? "32vw"  :
-                diff  <  -1 ? "-110vw": "110vw";
-
-              const scale   = isActive ? 1 : isVisible ? 0.65 : 0.4;
-              const opacity = isActive ? 1 : isVisible ? 0.82 : 0;
+              const xShift = pos === 0 ? "0vw" : pos === -1 ? "-32vw" : "32vw";
+              const scale  = isActive ? 1 : 0.65;
 
               return (
                 <div
@@ -86,32 +104,31 @@ export function FeaturedWatches() {
                     width: "56vw",
                     transform: `translateX(-50%) translateX(${xShift}) scale(${scale})`,
                     transformOrigin: "top center",
-                    transition:
-                      "transform 0.48s cubic-bezier(0.25, 0.46, 0.45, 0.94), " +
-                      "opacity 0.38s ease, filter 0.38s ease",
-                    opacity,
-                    filter: isVisible ? "blur(2px)" : "none",
-                    zIndex: isActive ? 10 : isVisible ? 5 : 0,
+                    transition: isTeleport
+                      ? "none"
+                      : "transform 0.48s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.38s ease",
+                    opacity: isTeleport ? 0 : isActive ? 1 : 0.82,
+                    zIndex: isActive ? 10 : 5,
                   }}
                 >
-                  {/* bg-white + mix-blend-multiply = white pixels become transparent */}
-                  <div className="relative aspect-square bg-white">
+                  {/* No bg-white on container — blur must not leak a white box */}
+                  <div className="relative aspect-square">
                     <Image
                       src={watch.coverImage.src}
                       alt={watch.coverImage.alt}
                       fill
                       quality={75}
                       sizes="56vw"
-                      className="object-contain mix-blend-multiply"
+                      className={`object-contain mix-blend-multiply transition-[filter] duration-[380ms]${!isActive ? " blur-[2px]" : ""}`}
                       priority={i === 0}
                     />
                   </div>
 
-                  {/* Tap overlay on side cards to jump to them */}
+                  {/* Tap side card to navigate toward it */}
                   {!isActive && (
                     <div
                       className="absolute inset-0 z-20 cursor-pointer"
-                      onClick={() => setActiveIndex(i)}
+                      onClick={() => pos === -1 ? goPrev() : goNext()}
                     />
                   )}
                 </div>
@@ -130,13 +147,12 @@ export function FeaturedWatches() {
             </Link>
           </div>
 
-          {/* Navigation — arrows + dots */}
+          {/* Navigation — arrows + dots (no disabled state — infinite loop) */}
           <div className="flex items-center justify-center gap-5 mt-6">
             <button
-              onClick={prev}
-              disabled={activeIndex === 0}
+              onClick={goPrev}
               aria-label="Предишен"
-              className="w-8 h-8 rounded-full border border-navy/40 flex items-center justify-center text-navy text-xl leading-none disabled:opacity-20 transition-all active:scale-90"
+              className="w-8 h-8 rounded-full border border-navy/40 flex items-center justify-center text-navy text-xl leading-none transition-all active:scale-90"
             >
               ‹
             </button>
@@ -144,7 +160,11 @@ export function FeaturedWatches() {
               {watches.map((_, i) => (
                 <button
                   key={i}
-                  onClick={() => setActiveIndex(i)}
+                  onClick={() => {
+                    if (i === activeIndex) return;
+                    if (i === rightI) goNext();
+                    else goPrev();
+                  }}
                   aria-label={`Часовник ${i + 1}`}
                   className={`h-1.5 rounded-full transition-all duration-300 ${
                     i === activeIndex ? "w-5 bg-navy" : "w-1.5 bg-navy/25"
@@ -153,10 +173,9 @@ export function FeaturedWatches() {
               ))}
             </div>
             <button
-              onClick={next}
-              disabled={activeIndex === watches.length - 1}
+              onClick={goNext}
               aria-label="Следващ"
-              className="w-8 h-8 rounded-full border border-navy/40 flex items-center justify-center text-navy text-xl leading-none disabled:opacity-20 transition-all active:scale-90"
+              className="w-8 h-8 rounded-full border border-navy/40 flex items-center justify-center text-navy text-xl leading-none transition-all active:scale-90"
             >
               ›
             </button>
