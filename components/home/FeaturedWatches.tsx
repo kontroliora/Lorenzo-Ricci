@@ -111,8 +111,9 @@ export function FeaturedWatches() {
                     zIndex: isActive ? 10 : 5,
                   }}
                 >
-                  {/* No bg-white on container — blur must not leak a white box */}
-                  <div className="relative aspect-square">
+                  {/* overflow-hidden required by Next.js fill; bg-white lets mix-blend-multiply work.
+                      Blur is on the <Image> not the wrapper, so overflow-hidden clips it cleanly — no white halo. */}
+                  <div className="relative aspect-square bg-white overflow-hidden">
                     <Image
                       src={watch.coverImage.src}
                       alt={watch.coverImage.alt}
