@@ -100,7 +100,7 @@ export function FeaturedWatches() {
                       src={watch.coverImage.src}
                       alt={watch.coverImage.alt}
                       fill
-                      quality={72}
+                      quality={75}
                       sizes="56vw"
                       className="object-contain mix-blend-multiply"
                       priority={i === 0}
