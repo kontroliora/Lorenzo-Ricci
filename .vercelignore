@@ -1,0 +1,21 @@
+# Root-level asset directories (not inside public/)
+Products
+cover photo
+cover photo mobile:desktop
+reviews
+scripts
+*.jsonl
+Logo-Lorenzo-Ricci-FINAL white png.png
+
+# Raw/unprocessed image subdirectories inside public/Products (not used by site)
+public/Products/jewellery/*/neobr
+public/Products/jewellery/*/neobrabotenu
+public/Products/jewellery/cover photos of bracelet:neckalce
+public/Products/jewellery/kutiq
+
+# Unused beautiful images
+public/beautiful/chrono-marble.png
+public/beautiful/chrono-glow.png
+
+# ZIP archives
+**/*.zip
