@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { decrementStock } from "@/lib/inventory";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 // ─────────────────────────────────────────────────────────────
 // 1.  Blacklist check - nekorekten.com
 // ─────────────────────────────────────────────────────────────
@@ -275,6 +273,7 @@ function buildCustomerEmail(order: Record<string, unknown>): string {
 // POST /api/order
 // ─────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   try {
     const order = await req.json() as Record<string, unknown>;
 
