@@ -1,5 +1,7 @@
 "use client";
 import { useState, useRef } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { getWatches } from "@/lib/products";
 import { ProductCard } from "@/components/product/ProductCard";
 import { useReveal } from "@/lib/useReveal";
@@ -21,6 +23,8 @@ export function FeaturedWatches() {
     if (diff > 40) next();
     else if (diff < -40) prev();
   };
+
+  const active = watches[activeIndex];
 
   return (
     <section className="py-20 sm:py-40 bg-white">
@@ -44,61 +48,90 @@ export function FeaturedWatches() {
         </div>
 
         {/* ── Mobile Cover Flow ────────────────────────────────────────────── */}
+        {/*
+          Layout (375px screen example):
+          Left card  — center at 18vw, visual width 36vw → shows 0..36vw
+          Center card — center at 50vw, visual width 56vw → shows 22vw..78vw
+          Right card  — center at 82vw, visual width 36vw → shows 64vw..100vw
+          Side cards slide behind center (z-index 5 vs 10).
+          White BG + mix-blend-multiply makes product white-bg images appear transparent.
+        */}
         <div
-          className="sm:hidden"
+          className="sm:hidden overflow-x-hidden"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          <div
-            className="relative h-[400px] overflow-hidden"
-            style={{ perspective: "1000px", perspectiveOrigin: "50% 25%" }}
-          >
+          {/* Image strip */}
+          <div className="relative" style={{ height: "56vw" }}>
             {watches.map((watch, i) => {
               const diff = i - activeIndex;
               const isActive  = diff === 0;
-              const isLeft    = diff === -1;
-              const isRight   = diff === 1;
-              const isVisible = Math.abs(diff) <= 1;
+              const isVisible = Math.abs(diff) === 1;
 
-              const transform = isActive
-                ? "translateX(0%) scale(1) rotateY(0deg)"
-                : isLeft
-                ? "translateX(-60%) scale(0.7) rotateY(40deg)"
-                : isRight
-                ? "translateX(60%) scale(0.7) rotateY(-40deg)"
-                : diff < -1
-                ? "translateX(-140%) scale(0.5) rotateY(50deg)"
-                : "translateX(140%) scale(0.5) rotateY(-50deg)";
+              const xShift =
+                diff === 0  ? "0vw"   :
+                diff === -1 ? "-32vw" :
+                diff ===  1 ? "32vw"  :
+                diff  <  -1 ? "-110vw": "110vw";
+
+              const scale   = isActive ? 1 : isVisible ? 0.65 : 0.4;
+              const opacity = isActive ? 1 : isVisible ? 0.82 : 0;
 
               return (
                 <div
                   key={watch.id}
-                  className="absolute inset-0 flex justify-center pt-1"
+                  className="absolute top-0"
                   style={{
-                    transform,
-                    transition: "all 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
-                    opacity:    isActive ? 1 : isVisible ? 0.42 : 0,
-                    filter:     isVisible && !isActive ? "blur(1.5px)" : "none",
-                    zIndex:     isActive ? 10 : isVisible ? 5 : 0,
-                    transformStyle: "preserve-3d",
+                    left: "50%",
+                    width: "56vw",
+                    transform: `translateX(-50%) translateX(${xShift}) scale(${scale})`,
+                    transformOrigin: "top center",
+                    transition:
+                      "transform 0.48s cubic-bezier(0.25, 0.46, 0.45, 0.94), " +
+                      "opacity 0.38s ease, filter 0.38s ease",
+                    opacity,
+                    filter: isVisible ? "blur(2px)" : "none",
+                    zIndex: isActive ? 10 : isVisible ? 5 : 0,
                   }}
                 >
-                  <div className="relative w-[72vw] max-w-[260px]">
-                    <ProductCard product={watch} priority={i === 0} />
-                    {!isActive && (
-                      <div
-                        className="absolute inset-0 z-20 cursor-pointer"
-                        onClick={() => setActiveIndex(i)}
-                      />
-                    )}
+                  {/* bg-white + mix-blend-multiply = white pixels become transparent */}
+                  <div className="relative aspect-square bg-white">
+                    <Image
+                      src={watch.coverImage.src}
+                      alt={watch.coverImage.alt}
+                      fill
+                      quality={72}
+                      sizes="56vw"
+                      className="object-contain mix-blend-multiply"
+                      priority={i === 0}
+                    />
                   </div>
+
+                  {/* Tap overlay on side cards to jump to them */}
+                  {!isActive && (
+                    <div
+                      className="absolute inset-0 z-20 cursor-pointer"
+                      onClick={() => setActiveIndex(i)}
+                    />
+                  )}
                 </div>
               );
             })}
           </div>
 
-          {/* Nav arrows + dots */}
-          <div className="flex items-center justify-center gap-5 mt-2">
+          {/* Active watch info */}
+          <div className="text-center px-6 mt-5">
+            <h3 className="font-serif text-xl text-charcoal mb-1">{active.name}</h3>
+            <p className="font-serif text-lg text-navy mb-5">
+              {active.currency}{active.price.toFixed(2)}
+            </p>
+            <Link href={`/products/${active.slug}`} className="btn-primary">
+              Виж Детайли
+            </Link>
+          </div>
+
+          {/* Navigation — arrows + dots */}
+          <div className="flex items-center justify-center gap-5 mt-6">
             <button
               onClick={prev}
               disabled={activeIndex === 0}
@@ -139,8 +172,12 @@ export function FeaturedWatches() {
               { label: "Преглед преди плащане", sub: "Наложен платеж" },
             ].map(({ label, sub }) => (
               <div key={label} className="px-2 sm:px-6 py-2">
-                <p className="font-sans text-[9px] sm:text-xs font-medium tracking-[0.1em] sm:tracking-[0.18em] uppercase text-charcoal mb-1">{label}</p>
-                <p className="font-sans text-[8px] sm:text-[10px] font-light text-ink-faint tracking-wide">{sub}</p>
+                <p className="font-sans text-[9px] sm:text-xs font-medium tracking-[0.1em] sm:tracking-[0.18em] uppercase text-charcoal mb-1">
+                  {label}
+                </p>
+                <p className="font-sans text-[8px] sm:text-[10px] font-light text-ink-faint tracking-wide">
+                  {sub}
+                </p>
               </div>
             ))}
           </div>
