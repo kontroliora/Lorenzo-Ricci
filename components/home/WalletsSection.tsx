@@ -3,8 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useReveal } from "@/lib/useReveal";
 
-const enc = encodeURIComponent;
-
 const WALLETS = [
   { id: "alabastro", slug: "wallet-alabastro",    name: 'Lorenzo Ricci "Alabastro"', sub: "Бял портфейл от крокодилска кожа",    src: `/Products/wallets/Alabastro/1.webp` },
   { id: "rubino",    slug: "wallet-rubino",       name: 'Lorenzo Ricci "Rubino"',    sub: "Червен портфейл от крокодилска кожа", src: `/Products/wallets/Rubino/1.webp` },
