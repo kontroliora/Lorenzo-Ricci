@@ -1,11 +1,11 @@
 # Root-level asset directories (not inside public/)
-Products
-cover photo
-cover photo mobile:desktop
-reviews
-scripts
+/Products
+/cover photo
+/cover photo mobile:desktop
+/reviews
+/scripts
 *.jsonl
-Logo-Lorenzo-Ricci-FINAL white png.png
+/Logo-Lorenzo-Ricci-FINAL white png.png
 
 # Raw/unprocessed image subdirectories inside public/Products (not used by site)
 public/Products/jewellery/*/neobr
