@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { kv } from "@vercel/kv";
 import { decrementStock } from "@/lib/inventory";
 
 // ─────────────────────────────────────────────────────────────
@@ -450,6 +451,16 @@ export async function POST(req: NextRequest) {
         ? [sendCustomerEmailViaZoho(customerAddress, customerEmail)]
         : []),
     ]);
+
+    // Save marketing lead to KV (fire-and-forget — never delays the order response)
+    if (customer.acceptsMarketing === true) {
+      kv.lpush("marketing_leads", {
+        name:  String(customer.name  ?? ""),
+        phone: String(customer.phone ?? ""),
+        email: String(customer.email ?? ""),
+        date:  new Date().toISOString(),
+      }).catch((err: unknown) => console.error("[KV] marketing lead save failed:", err));
+    }
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {

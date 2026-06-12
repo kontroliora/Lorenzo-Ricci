@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { products } from "@/lib/products";
 import { readInventory } from "@/lib/inventory";
 import { InventoryTable, type InventoryRow } from "./InventoryTable";
@@ -55,6 +56,21 @@ export default async function AdminInventoryPage() {
           </form>
         </div>
       </header>
+
+      {/* Nav tabs */}
+      <div className="border-b border-white/6">
+        <div className="max-w-5xl mx-auto px-6 flex gap-6">
+          <span className="font-sans text-[11px] tracking-widest uppercase py-3 text-white border-b-2 border-white -mb-px">
+            Инвентар
+          </span>
+          <Link
+            href="/admin/customers"
+            className="font-sans text-[11px] tracking-widest uppercase py-3 text-white/35 hover:text-white transition-colors"
+          >
+            Клиенти
+          </Link>
+        </div>
+      </div>
 
       {/* Stats strip */}
       <div className="border-b border-white/6 bg-white/2">
