@@ -103,7 +103,7 @@ export function ComparisonSlider() {
       <div className="absolute top-4 right-4 pointer-events-none"
         style={{ opacity: pos < 85 ? 1 : 0, transition: "opacity 0.2s" }}>
         <span className="font-sans text-[9px] font-medium tracking-[0.22em] uppercase text-white bg-black/40 px-2.5 py-1.5">
-          Стандартно
+          Други Марки
         </span>
       </div>
     </div>
