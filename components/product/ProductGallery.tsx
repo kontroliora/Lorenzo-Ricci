@@ -47,7 +47,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
       </div>
 
       {/* Main image - flex-1 takes remaining width; inner div enforces square */}
-      <div className="flex-1 min-w-0 self-start">
+      <div className="flex-1 min-w-0 w-full sm:w-auto sm:self-start">
       <div className="relative w-full aspect-square overflow-hidden bg-white border border-border">
         <Image
           src={imageError[activeIdx] ? "/covers/desktop cover.webp" : active.src}
