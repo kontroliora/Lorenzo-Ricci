@@ -47,11 +47,11 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
   const grandTotal       = total + shippingCost;
   const isHomeAddress    = shippingId === "home-address";
 
-  const addressLabel       = isHomeAddress ? "Личен адрес *" : "Адрес на офис / Автомат *";
+  const addressLabel       = isHomeAddress ? "Адрес за доставка *" : "Адрес на офис / Автомат *";
   const addressPlaceholder =
-    shippingId === "speedy-office" ? "Спиди офис кв. Лозенец, ул. ..." :
-    shippingId === "econt-office"  ? "Еконт офис кв. Лозенец, ул. ..." :
-    "гр. София, ж.к. Люлин, ул. ..., бл. ...";
+    shippingId === "speedy-office" ? "Спиди офис или автомат..." :
+    shippingId === "econt-office"  ? "Еконт офис или автомат..." :
+    "Вашият точен адрес...";
 
   // ── Validation ─────────────────────────────────────────────────────────────
   const validate = () => {
@@ -188,7 +188,7 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
             className="mt-0.5 flex-shrink-0 w-4 h-4 accent-white cursor-pointer"
           />
           <span className="font-sans text-[10px] text-white/50 leading-relaxed tracking-wide">
-            ВАЖНО: Искам да получа БЕЗПЛАТЕН СМС, когато пратката ми пристигне, както и да получавам съобщения с промоции от Lorenzo Ricci.
+            Искам да получавам ексклузивни оферти и статус на поръчката по SMS.
           </span>
         </label>
 
