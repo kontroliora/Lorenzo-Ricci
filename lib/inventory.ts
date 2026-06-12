@@ -19,10 +19,10 @@ const DEFAULTS: InventoryMap = {
   "wallet-alabastro": 10,
   "wallet-rubino": 10,
   "wallet-smeraldo": 0,
-  "cardholder-ambra": 10,
-  "cardholder-bianco": 10,
-  "cardholder-valentina": 10,
-  "cardholder-zaffiro": 10,
+  "cardholder-ambra": 15,
+  "cardholder-bianco": 15,
+  "cardholder-valentina": 15,
+  "cardholder-zaffiro": 15,
 };
 
 export async function getStock(slug: string): Promise<number> {
