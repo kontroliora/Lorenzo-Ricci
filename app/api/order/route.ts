@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import { decrementStock } from "@/lib/inventory";
 
@@ -130,39 +129,38 @@ async function checkBlacklist(phone: string): Promise<BlacklistResult> {
 // 2.  Admin notification email (HTML)
 // ─────────────────────────────────────────────────────────────
 function buildAdminEmail(order: Record<string, unknown>, bl: BlacklistResult): string {
+  const customer = (order.customer ?? {}) as Record<string, unknown>;
+  const shipping  = (order.shipping  ?? {}) as Record<string, unknown>;
+
   const safeBlock = bl.found
-    ? `
-      <div style="background:#ff1a1a;color:#fff;padding:18px 24px;border-radius:6px;margin-bottom:28px">
+    ? `<div style="background:#ff1a1a;color:#fff;padding:18px 24px;border-radius:6px;margin-bottom:28px">
         <p style="margin:0;font-size:20px;font-weight:700">🚨 DANGER - КЛИЕНТЪТ Е В БЛЕКЛИСТА!</p>
         <p style="margin:8px 0 0;font-size:14px">Намерен на nekorekten.com · Помисли два пъти преди изпращане.</p>
         ${bl.details ? `<p style="margin:8px 0 0;font-size:13px;opacity:.85">${bl.details}</p>` : ""}
       </div>`
-    : `
-      <div style="background:#16a34a;color:#fff;padding:18px 24px;border-radius:6px;margin-bottom:28px">
+    : `<div style="background:#16a34a;color:#fff;padding:18px 24px;border-radius:6px;margin-bottom:28px">
         <p style="margin:0;font-size:20px;font-weight:700">✅ SAFE - Не е намерен в блеклиста</p>
         <p style="margin:8px 0 0;font-size:14px">nekorekten.com: ${bl.label}</p>
       </div>`;
 
   const items = Array.isArray(order.items)
-    ? (order.items as Array<{ name?: string; quantity?: number; price?: number; currency?: string }>)
-        .map(
-          (i) =>
-            `<tr>
-              <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb">${i.name ?? "-"}</td>
-              <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:center">${i.quantity ?? 1}</td>
-              <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right">${i.currency ?? "€"}${Number(i.price ?? 0).toFixed(2)}</td>
-            </tr>`
-        )
+    ? (order.items as Array<{ name?: string; sku?: string; quantity?: number; qty?: number; price?: number; currency?: string }>)
+        .map((i) => `<tr>
+          <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb">${i.name ?? "-"}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;font-family:monospace;font-size:12px;color:#555">${i.sku ?? "-"}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:center">${i.quantity ?? i.qty ?? 1}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right">${i.currency ?? "€"}${Number(i.price ?? 0).toFixed(2)}</td>
+        </tr>`)
         .join("")
-    : `<tr><td colspan="3" style="padding:10px 12px">-</td></tr>`;
+    : `<tr><td colspan="4" style="padding:10px 12px">-</td></tr>`;
 
   return `<!DOCTYPE html>
 <html lang="bg">
 <head><meta charset="UTF-8"><title>Нова поръчка</title></head>
 <body style="margin:0;padding:24px;font-family:Arial,sans-serif;background:#f9fafb;color:#111">
-  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+  <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)">
     <div style="background:#0a0e1f;padding:24px 32px">
-      <p style="margin:0;color:#fff;font-size:22px;font-weight:700;letter-spacing:.04em">LORENZO RICCI - Нова поръчка</p>
+      <p style="margin:0;color:#fff;font-size:22px;font-weight:700;letter-spacing:.04em">LORENZO RICCI — Нова поръчка</p>
     </div>
     <div style="padding:32px">
       ${safeBlock}
@@ -170,24 +168,36 @@ function buildAdminEmail(order: Record<string, unknown>, bl: BlacklistResult): s
       <h3 style="margin:0 0 16px;font-size:16px;text-transform:uppercase;letter-spacing:.08em;color:#374151">Данни на клиента</h3>
       <table style="width:100%;border-collapse:collapse;margin-bottom:28px;font-size:14px">
         <tr style="background:#f3f4f6">
-          <td style="padding:10px 12px;font-weight:600;width:140px">Имена</td>
-          <td style="padding:10px 12px">${order.name ?? "-"}</td>
+          <td style="padding:10px 12px;font-weight:600;width:160px">Имена</td>
+          <td style="padding:10px 12px">${customer.name ?? "-"}</td>
         </tr>
         <tr>
           <td style="padding:10px 12px;font-weight:600">Телефон</td>
-          <td style="padding:10px 12px"><a href="tel:${order.phone}" style="color:#0a0e1f">${order.phone ?? "-"}</a></td>
+          <td style="padding:10px 12px"><a href="tel:${customer.phone}" style="color:#0a0e1f;font-weight:600">${customer.phone ?? "-"}</a></td>
         </tr>
         <tr style="background:#f3f4f6">
-          <td style="padding:10px 12px;font-weight:600">Куриер</td>
-          <td style="padding:10px 12px">${order.courier ?? "-"}</td>
+          <td style="padding:10px 12px;font-weight:600">Имейл</td>
+          <td style="padding:10px 12px">${customer.email ?? "-"}</td>
         </tr>
         <tr>
-          <td style="padding:10px 12px;font-weight:600">Офис / Адрес</td>
-          <td style="padding:10px 12px">${order.courierOffice ?? order.address ?? "-"}</td>
+          <td style="padding:10px 12px;font-weight:600">Град</td>
+          <td style="padding:10px 12px">${customer.city ?? "-"}</td>
         </tr>
         <tr style="background:#f3f4f6">
+          <td style="padding:10px 12px;font-weight:600">Пощенски код</td>
+          <td style="padding:10px 12px">${customer.postCode ?? "-"}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 12px;font-weight:600">Начин на доставка</td>
+          <td style="padding:10px 12px">${String(shipping.method ?? customer.shippingMethod ?? "-")}</td>
+        </tr>
+        <tr style="background:#f3f4f6">
+          <td style="padding:10px 12px;font-weight:600">Офис / Адрес</td>
+          <td style="padding:10px 12px">${customer.officeAddress ?? "-"}</td>
+        </tr>
+        <tr>
           <td style="padding:10px 12px;font-weight:600">Бележка</td>
-          <td style="padding:10px 12px">${order.note ?? "-"}</td>
+          <td style="padding:10px 12px">${String(customer.notes || "-")}</td>
         </tr>
       </table>
 
@@ -196,6 +206,7 @@ function buildAdminEmail(order: Record<string, unknown>, bl: BlacklistResult): s
         <thead>
           <tr style="background:#0a0e1f;color:#fff">
             <th style="padding:10px 12px;text-align:left">Продукт</th>
+            <th style="padding:10px 12px;text-align:left">SKU</th>
             <th style="padding:10px 12px;text-align:center">Бр.</th>
             <th style="padding:10px 12px;text-align:right">Цена</th>
           </tr>
@@ -203,7 +214,7 @@ function buildAdminEmail(order: Record<string, unknown>, bl: BlacklistResult): s
         <tbody>${items}</tbody>
         <tfoot>
           <tr style="background:#f3f4f6;font-weight:700">
-            <td colspan="2" style="padding:10px 12px">ОБЩО</td>
+            <td colspan="3" style="padding:10px 12px">ОБЩО</td>
             <td style="padding:10px 12px;text-align:right">€${Number(order.total ?? 0).toFixed(2)}</td>
           </tr>
         </tfoot>
@@ -342,8 +353,32 @@ function buildCustomerEmail(order: Record<string, unknown>): string {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 4.  Zoho SMTP — customer confirmation email
+// 4.  Zoho SMTP helpers
 // ─────────────────────────────────────────────────────────────
+async function sendAdminEmailViaZoho(subject: string, html: string): Promise<void> {
+  const user = process.env.ZOHO_EMAIL;
+  const pass = process.env.ZOHO_PASSWORD;
+
+  if (!user || !pass) {
+    console.warn("[Zoho] ZOHO_EMAIL or ZOHO_PASSWORD not set — skipping admin email");
+    return;
+  }
+
+  const transport = nodemailer.createTransport({
+    host:   "smtp.zoho.com",
+    port:   465,
+    secure: true,
+    auth:   { user, pass },
+  });
+
+  await transport.sendMail({
+    from:    `"Lorenzo Ricci Orders" <${user}>`,
+    to:      ["info@lorenzo-ricci.com", "sodolos3@gmail.com"],
+    subject,
+    html,
+  });
+}
+
 async function sendCustomerEmailViaZoho(to: string, html: string): Promise<void> {
   const user = process.env.ZOHO_EMAIL;
   const pass = process.env.ZOHO_PASSWORD;
@@ -372,9 +407,9 @@ async function sendCustomerEmailViaZoho(to: string, html: string): Promise<void>
 // POST /api/order
 // ─────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
   try {
     const order = await req.json() as Record<string, unknown>;
+    const customer = (order.customer ?? {}) as Record<string, unknown>;
 
     // 1. Decrement inventory (atomic KV operations, awaited)
     if (Array.isArray(order.items)) {
@@ -388,34 +423,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Blacklist check (run in parallel with email sends)
-    const blacklistPromise = checkBlacklist(String(order.phone ?? ""));
-
-    // Wait for blacklist before sending admin email (we need the result)
+    // 2. Blacklist check against customer phone
+    const blacklistPromise = checkBlacklist(String(customer.phone ?? ""));
     const bl = await blacklistPromise;
 
     // 3. Send admin + customer emails concurrently
-    const adminEmail = buildAdminEmail(order, bl);
+    const adminEmail   = buildAdminEmail(order, bl);
     const customerEmail = buildCustomerEmail(order);
-
-    const customer = (order.customer ?? {}) as Record<string, unknown>;
     const customerAddress = String(customer.email ?? "").trim();
+    const customerName    = String(customer.name  ?? "");
 
     await Promise.allSettled([
-      // BigArena fulfillment — fire & forget, never blocks the customer
+      // BigArena fulfillment
       sendToBigArena(order),
 
-      // Admin notification (Resend)
-      resend.emails.send({
-        from: "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>",
-        to: ["sodolos3@gmail.com"],
-        subject: bl.found
-          ? `🚨 [BLACKLIST] Нова поръчка - ${order.name}`
-          : `✅ Нова поръчка - ${order.name}`,
-        html: adminEmail,
-      }),
+      // Admin notification via Zoho → info@lorenzo-ricci.com + sodolos3@gmail.com
+      sendAdminEmailViaZoho(
+        bl.found
+          ? `🚨 [BLACKLIST] Нова поръчка - ${customerName}`
+          : `✅ Нова поръчка - ${customerName}`,
+        adminEmail,
+      ),
 
-      // Customer confirmation via Zoho SMTP (only if email provided)
+      // Customer confirmation (only if email provided)
       ...(customerAddress
         ? [sendCustomerEmailViaZoho(customerAddress, customerEmail)]
         : []),
