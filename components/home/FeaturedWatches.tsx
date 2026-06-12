@@ -25,16 +25,16 @@ export function FeaturedWatches() {
   };
 
   const goNext = () => {
-    // The current left card wraps to the right — teleport it invisibly
     setTeleporting(leftI);
     setActiveIndex((activeIndex + 1) % n);
+    setIsNight(false);
     setTimeout(() => setTeleporting(null), 50);
   };
 
   const goPrev = () => {
-    // The current right card wraps to the left — teleport it invisibly
     setTeleporting(rightI);
     setActiveIndex((activeIndex - 1 + n) % n);
+    setIsNight(false);
     setTimeout(() => setTeleporting(null), 50);
   };
 
@@ -113,7 +113,7 @@ export function FeaturedWatches() {
                     zIndex: isActive ? 10 : 5,
                   }}
                 >
-                  <div className="relative aspect-square bg-white overflow-hidden">
+                  <div className="relative aspect-square overflow-hidden">
                     {/* Day image */}
                     <Image
                       src={watch.coverImage.src}
@@ -121,7 +121,7 @@ export function FeaturedWatches() {
                       fill
                       quality={75}
                       sizes="56vw"
-                      className={`object-contain mix-blend-multiply transition-[opacity,filter] duration-500${!isActive ? " blur-[2px]" : ""}${isNight ? " opacity-0" : " opacity-100"}`}
+                      className={`object-contain transition-[opacity,filter] duration-500${!isActive ? " blur-[2px]" : ""}${isNight ? " opacity-0" : " opacity-100"}`}
                       priority={isActive}
                     />
                     {/* Night (lume) image */}
@@ -131,7 +131,7 @@ export function FeaturedWatches() {
                       fill
                       quality={75}
                       sizes="56vw"
-                      className={`object-contain mix-blend-multiply transition-[opacity,filter] duration-500${!isActive ? " blur-[2px]" : ""}${isNight ? " opacity-100" : " opacity-0"}`}
+                      className={`object-contain transition-[opacity,filter] duration-500${!isActive ? " blur-[2px]" : ""}${isNight ? " opacity-100" : " opacity-0"}`}
                     />
                     {/* Day / Night toggle — visible only on active card */}
                     {isActive && (
