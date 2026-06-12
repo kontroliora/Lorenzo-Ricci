@@ -49,16 +49,25 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
       {/* Main image - flex-1 takes remaining width; inner div enforces square */}
       <div className="flex-1 min-w-0 w-full sm:w-auto sm:self-start">
       <div className="relative w-full aspect-square overflow-hidden bg-white border border-border">
-        <Image
-          src={imageError[activeIdx] ? "/covers/desktop cover.webp" : active.src}
-          alt={active.alt}
-          fill
-          priority
-          quality={90}
-          sizes="(max-width: 640px) 100vw, 60vw"
-          className="object-contain object-center transition-opacity duration-300"
-          onError={() => handleError(activeIdx)}
-        />
+        {/* All gallery images pre-rendered and stacked.
+            The browser fetches every image on page load; switching is a CSS opacity
+            toggle with zero network latency. */}
+        {images.map((img, i) => (
+          <Image
+            key={i}
+            src={imageError[i] ? "/covers/desktop cover.webp" : img.src}
+            alt={img.alt}
+            fill
+            priority={i < 3}
+            quality={90}
+            sizes="(max-width: 640px) 100vw, 60vw"
+            className={`object-contain object-center transition-opacity duration-150 ${
+              i === activeIdx ? "opacity-100" : "opacity-0"
+            }`}
+            aria-hidden={i !== activeIdx}
+            onError={() => handleError(i)}
+          />
+        ))}
 
         {/* Nav arrows - mobile: dark, desktop: navy */}
         <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-3 pointer-events-none">
