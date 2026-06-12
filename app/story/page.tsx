@@ -52,7 +52,7 @@ export default function StoryPage() {
         <div className="relative w-full aspect-[16/7] overflow-hidden mb-24">
           <Image
             src="/story/watchmaker.webp"
-            alt="Часовникар Lorenzo Ricci"
+            alt="Часовникар Lorenzo Ricci - прецизна ръчна изработка на луксозен хронограф, италиански занаят"
             fill
             quality={85}
             sizes="100vw"
@@ -94,7 +94,7 @@ export default function StoryPage() {
         <div className="relative w-full aspect-[21/9] overflow-hidden mb-24">
           <Image
             src="/story/sea.webp"
-            alt="Lorenzo Ricci - италианска визия"
+            alt="Lorenzo Ricci - италианска визия и морска естетика, луксозни часовници с характер"
             fill
             quality={85}
             sizes="100vw"
@@ -118,7 +118,7 @@ export default function StoryPage() {
           <div className="relative aspect-[4/5] overflow-hidden">
             <Image
               src="/story/watches.webp"
-              alt="Lorenzo Ricci колекция"
+              alt="Колекция луксозни часовници Lorenzo Ricci - Chrono Black, Golden Eclipse, Polar Frost, сапфирен кристал"
               fill
               quality={85}
               sizes="(max-width: 1024px) 100vw, 50vw"

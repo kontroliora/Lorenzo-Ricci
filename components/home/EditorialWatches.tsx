@@ -6,6 +6,7 @@ const PANELS = [
   {
     src: "/beautiful/chrono-penthouse.webp",
     model: "Chrono Black",
+    alt: "Lorenzo Ricci Chrono Black луксозен хронограф - черен циферблат, 316L стомана, сапфирен кристал, editorial lifestyle",
     slug: "chrono-black",
     tag: "Noble Vanguard",
     position: "object-center",
@@ -13,6 +14,7 @@ const PANELS = [
   {
     src: "/beautiful/polar-tokyo.webp",
     model: "Polar Frost",
+    alt: "Lorenzo Ricci Polar Frost луксозен хронограф - арктическо синьо циферблат, 5 ATM водоустойчивост, editorial lifestyle",
     slug: "polar-frost",
     tag: "Noble Vanguard",
     position: "object-center",
@@ -20,6 +22,7 @@ const PANELS = [
   {
     src: "/beautiful/eclipse-lume.webp",
     model: "Golden Eclipse",
+    alt: "Lorenzo Ricci Golden Eclipse луксозен хронограф - позлатен 18K корпус, скелетизиран циферблат, editorial lifestyle",
     slug: "golden-eclipse",
     tag: "Noble Vanguard",
     position: "object-center",
@@ -55,7 +58,7 @@ export function EditorialWatches() {
           >
             <Image
               src={panel.src}
-              alt={panel.model}
+              alt={panel.alt}
               fill
               quality={90}
               sizes="(max-width: 768px) 100vw, 33vw"

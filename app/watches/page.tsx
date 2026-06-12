@@ -38,12 +38,12 @@ export default function WatchesPage() {
         {/* Editorial full-width image strip */}
         <div className="mt-20 grid grid-cols-3 gap-1 h-72 sm:h-96 overflow-hidden">
           {[
-            { src: "/beautiful/chrono-rain.webp", label: "Chrono Black" },
-            { src: "/beautiful/polar-snow.webp", label: "Polar Frost" },
-            { src: "/beautiful/eclipse-box.webp", label: "Golden Eclipse" },
-          ].map(({ src, label }) => (
+            { src: "/beautiful/chrono-rain.webp", label: "Chrono Black", alt: "Lorenzo Ricci Chrono Black хронограф в дъжд - водоустойчивост 5 ATM, черен циферблат 316L стомана" },
+            { src: "/beautiful/polar-snow.webp",  label: "Polar Frost",   alt: "Lorenzo Ricci Polar Frost хронограф в сняг - арктическо синьо, японски механизъм" },
+            { src: "/beautiful/eclipse-box.webp", label: "Golden Eclipse", alt: "Lorenzo Ricci Golden Eclipse позлатен хронограф с луксозна подаръчна кутия - 18K PVD" },
+          ].map(({ src, label, alt }) => (
             <div key={label} className="relative overflow-hidden group">
-              <Image src={src} alt={label} fill quality={85} sizes="33vw"
+              <Image src={src} alt={alt} fill quality={85} sizes="33vw"
                 className="object-cover object-center transition-transform duration-700 group-hover:scale-105" />
               <div className="absolute inset-0 bg-black/25 group-hover:bg-black/10 transition-colors duration-500" />
               <div className="absolute bottom-4 left-4">

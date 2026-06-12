@@ -3,17 +3,18 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 
 const FALLBACK_PHOTOS = [
-  "/beautiful/chrono-glow.webp",
-  "/beautiful/eclipse-box.webp",
-  "/instagram/ig-DWQ1ks8D-Fe.webp",
-  "/instagram/ig-DWVPBOKDcOH.webp",
-  "/instagram/ig-DWJAazqjcH3.webp",
-  "/instagram/ig-DWRYBTClHir.webp",
+  { url: "/beautiful/chrono-glow.webp",           alt: "Lorenzo Ricci Chrono Black луксозен хронограф - светещ циферблат нощен режим" },
+  { url: "/beautiful/eclipse-box.webp",            alt: "Lorenzo Ricci Golden Eclipse позлатен хронограф с луксозна подаръчна кутия" },
+  { url: "/instagram/ig-DWQ1ks8D-Fe.webp",         alt: "Lorenzo Ricci часовник на китката - @ricciwatches Instagram" },
+  { url: "/instagram/ig-DWVPBOKDcOH.webp",         alt: "Lorenzo Ricci луксозен хронограф lifestyle - @ricciwatches Instagram" },
+  { url: "/instagram/ig-DWJAazqjcH3.webp",         alt: "Lorenzo Ricci бижута и часовник - @ricciwatches Instagram" },
+  { url: "/instagram/ig-DWRYBTClHir.webp",         alt: "Lorenzo Ricci колекция часовници - @ricciwatches Instagram" },
 ];
 
 interface IgPost {
   id: string;
   url: string;
+  alt: string;
   permalink: string;
 }
 
@@ -34,10 +35,11 @@ export function InstagramSection() {
   }, []);
 
   const items = posts.length > 0
-    ? posts
-    : FALLBACK_PHOTOS.map((url, i) => ({
+    ? posts.map((p, i) => ({ ...p, alt: `Lorenzo Ricci луксозен часовник - @ricciwatches Instagram ${i + 1}` }))
+    : FALLBACK_PHOTOS.map((item, i) => ({
         id: String(i),
-        url,
+        url: item.url,
+        alt: item.alt,
         permalink: "https://www.instagram.com/ricciwatches/",
       }));
 
@@ -71,7 +73,7 @@ export function InstagramSection() {
             >
               <Image
                 src={post.url}
-                alt={`Ricci Watches Instagram ${i + 1}`}
+                alt={post.alt}
                 fill
                 quality={75}
                 sizes="(max-width: 640px) 33vw, 17vw"

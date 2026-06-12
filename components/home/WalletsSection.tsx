@@ -45,7 +45,7 @@ export function WalletsSection() {
                 <div className="relative aspect-square bg-ivory-warm border border-border overflow-hidden">
                   <Image
                     src={w.src}
-                    alt={w.name}
+                    alt={`${w.name} - ${w.sub}, Crocodylus Siamensis, CITES сертифициран, ръчна изработка`}
                     fill
                     quality={80}
                     sizes="(max-width: 640px) 50vw, 33vw"
@@ -84,7 +84,7 @@ export function WalletsSection() {
                 <div className="relative aspect-square bg-ivory-warm border border-border overflow-hidden">
                   <Image
                     src={c.src}
-                    alt={c.name}
+                    alt={`${c.name} - ${c.sub}, Crocodylus Siamensis, CITES сертифициран, ръчна изработка`}
                     fill
                     quality={80}
                     sizes="(max-width: 640px) 50vw, 25vw"
