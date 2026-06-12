@@ -14,6 +14,7 @@ export function FeaturedWatches() {
   const [teleporting, setTeleporting] = useState<number | null>(null);
   const [isNight, setIsNight] = useState(false);
   const touchStartX = useRef(0);
+  const swiped      = useRef(false);
 
   const leftI  = (activeIndex - 1 + n) % n;
   const rightI = (activeIndex + 1) % n;
@@ -40,11 +41,12 @@ export function FeaturedWatches() {
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
+    swiped.current = false;
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
     const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (diff > 40) goNext();
-    else if (diff < -40) goPrev();
+    if (diff > 40) { swiped.current = true; goNext(); }
+    else if (diff < -40) { swiped.current = true; goPrev(); }
   };
 
   const active = watches[activeIndex];
@@ -133,6 +135,15 @@ export function FeaturedWatches() {
                       sizes="56vw"
                       className={`object-contain transition-[opacity,filter] duration-500${!isActive ? " blur-[2px]" : ""}${isNight ? " opacity-100" : " opacity-0"}`}
                     />
+                    {/* Tap active card to navigate to product page (won't fire if user swiped) */}
+                    {isActive && (
+                      <Link
+                        href={`/products/${watch.slug}`}
+                        className="absolute inset-0 z-20"
+                        onClick={(e) => { if (swiped.current) e.preventDefault(); }}
+                        aria-label={`Виж ${watch.name}`}
+                      />
+                    )}
                     {/* Day / Night toggle — visible only on active card */}
                     {isActive && (
                       <button

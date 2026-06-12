@@ -4,16 +4,16 @@ import Link from "next/link";
 import { useReveal } from "@/lib/useReveal";
 
 const WALLETS = [
-  { id: "alabastro", slug: "wallet-alabastro",    name: 'Lorenzo Ricci "Alabastro"', sub: "Бял портфейл от крокодилска кожа",    src: `/Products/wallets/Alabastro/1.webp` },
-  { id: "rubino",    slug: "wallet-rubino",       name: 'Lorenzo Ricci "Rubino"',    sub: "Червен портфейл от крокодилска кожа", src: `/Products/wallets/Rubino/1.webp` },
-  { id: "smeraldo",  slug: "wallet-smeraldo",     name: 'Lorenzo Ricci "Smeraldo"',  sub: "Зелен портфейл от крокодилска кожа",  src: `/Products/wallets/Smeraldo/1.webp`, soldOut: true },
+  { id: "alabastro", slug: "wallet-alabastro",    name: 'Lorenzo Ricci "Alabastro"', sub: "Бял портфейл от крокодилска кожа",    src: `/Products/wallets/Alabastro/portfeil-alabastro-byal-krokodiilska-kozha.webp` },
+  { id: "rubino",    slug: "wallet-rubino",       name: 'Lorenzo Ricci "Rubino"',    sub: "Червен портфейл от крокодилска кожа", src: `/Products/wallets/Rubino/portfeil-rubino-cherven-krokodiilska-kozha.webp` },
+  { id: "smeraldo",  slug: "wallet-smeraldo",     name: 'Lorenzo Ricci "Smeraldo"',  sub: "Зелен портфейл от крокодилска кожа",  src: `/Products/wallets/Smeraldo/portfeil-smeraldo-zelen-krokodiilska-kozha.webp`, soldOut: true },
 ];
 
 const CARDHOLDERS = [
-  { id: "ambra",     slug: "cardholder-ambra",     name: 'Lorenzo Ricci "Ambra"',     sub: "Оранжев кардхолдър от крокодилска кожа", src: `/Products/wallets/Ambra/1.webp` },
-  { id: "bianco",    slug: "cardholder-bianco",    name: 'Lorenzo Ricci "Bianco"',    sub: "Бял кожен кардхолдър",                   src: `/Products/wallets/Bianco/1.webp` },
-  { id: "valentina", slug: "cardholder-valentina", name: 'Lorenzo Ricci "Valentina"', sub: "Розов кардхолдър от крокодилска кожа",   src: `/Products/wallets/Valentina/1.webp` },
-  { id: "zaffiro",   slug: "cardholder-zaffiro",   name: 'Lorenzo Ricci "Zaffiro"',   sub: "Тъмносин кардхолдър от крокодилска кожа",src: `/Products/wallets/Zaffiro/1.webp` },
+  { id: "ambra",     slug: "cardholder-ambra",     name: 'Lorenzo Ricci "Ambra"',     sub: "Оранжев кардхолдър от крокодилска кожа", src: `/Products/wallets/Ambra/kardholder-ambra-oranjev-krokodiilska-kozha.webp` },
+  { id: "bianco",    slug: "cardholder-bianco",    name: 'Lorenzo Ricci "Bianco"',    sub: "Бял кожен кардхолдър",                   src: `/Products/wallets/Bianco/kardholder-bianco-byal-krokodiilska-kozha.webp` },
+  { id: "valentina", slug: "cardholder-valentina", name: 'Lorenzo Ricci "Valentina"', sub: "Розов кардхолдър от крокодилска кожа",   src: `/Products/wallets/Valentina/kardholder-valentina-rozov-krokodiilska-kozha.webp` },
+  { id: "zaffiro",   slug: "cardholder-zaffiro",   name: 'Lorenzo Ricci "Zaffiro"',   sub: "Тъмносин кардхолдър от крокодилска кожа",src: `/Products/wallets/Zaffiro/kardholder-zaffiro-sinen-krokodiilska-kozha.webp` },
 ];
 
 export function WalletsSection() {

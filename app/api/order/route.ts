@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { decrementStock } from "@/lib/inventory";
 
 // ─────────────────────────────────────────────────────────────
@@ -341,6 +342,33 @@ function buildCustomerEmail(order: Record<string, unknown>): string {
 }
 
 // ─────────────────────────────────────────────────────────────
+// 4.  Zoho SMTP — customer confirmation email
+// ─────────────────────────────────────────────────────────────
+async function sendCustomerEmailViaZoho(to: string, html: string): Promise<void> {
+  const user = process.env.ZOHO_EMAIL;
+  const pass = process.env.ZOHO_PASSWORD;
+
+  if (!user || !pass) {
+    console.warn("[Zoho] ZOHO_EMAIL or ZOHO_PASSWORD not set — skipping customer email");
+    return;
+  }
+
+  const transport = nodemailer.createTransport({
+    host:   "smtp.zoho.com",
+    port:   465,
+    secure: true,
+    auth:   { user, pass },
+  });
+
+  await transport.sendMail({
+    from:    `"Lorenzo Ricci" <${user}>`,
+    to,
+    subject: "Вашата поръчка е получена - Lorenzo Ricci",
+    html,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
 // POST /api/order
 // ─────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
@@ -367,13 +395,14 @@ export async function POST(req: NextRequest) {
     const adminEmail = buildAdminEmail(order, bl);
     const customerEmail = buildCustomerEmail(order);
 
-    const customerAddress = String(order.email ?? "").trim();
+    const customer = (order.customer ?? {}) as Record<string, unknown>;
+    const customerAddress = String(customer.email ?? "").trim();
 
     await Promise.allSettled([
       // BigArena fulfillment — fire & forget, never blocks the customer
       sendToBigArena(order),
 
-      // Admin notification
+      // Admin notification (Resend)
       resend.emails.send({
         from: "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>",
         to: ["sodolos3@gmail.com"],
@@ -383,16 +412,9 @@ export async function POST(req: NextRequest) {
         html: adminEmail,
       }),
 
-      // Customer confirmation (only if they provided an email)
+      // Customer confirmation via Zoho SMTP (only if email provided)
       ...(customerAddress
-        ? [
-            resend.emails.send({
-              from: "Lorenzo Ricci <info@lorenzo-ricci.com>",
-              to: [customerAddress],
-              subject: "Вашата поръчка е получена - Lorenzo Ricci",
-              html: customerEmail,
-            }),
-          ]
+        ? [sendCustomerEmailViaZoho(customerAddress, customerEmail)]
         : []),
     ]);
 

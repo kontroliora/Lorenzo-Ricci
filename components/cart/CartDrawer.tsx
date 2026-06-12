@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useCartStore } from "@/lib/store";
 import { CheckoutForm } from "./CheckoutForm";
 
+const CART_TIMEOUT = 5 * 60; // 300 seconds
+
 export function CartDrawer() {
   const { isOpen, closeCart, items, removeItem, updateQuantity, totalPrice, totalItems, bundleDiscount } =
     useCartStore();
@@ -18,6 +20,30 @@ export function CartDrawer() {
   const progress = Math.min(1, total / freeShippingThreshold);
   const reached = remaining === 0 && items.length > 0;
 
+  // ── Cart countdown timer ────────────────────────────────────────────────────
+  const [timeLeft, setTimeLeft] = useState(CART_TIMEOUT);
+  const [timerStarted, setTimerStarted] = useState(false);
+
+  useEffect(() => {
+    if (items.length > 0 && !timerStarted) {
+      setTimeLeft(CART_TIMEOUT);
+      setTimerStarted(true);
+    }
+    if (items.length === 0) {
+      setTimerStarted(false);
+      setTimeLeft(CART_TIMEOUT);
+    }
+  }, [items.length, timerStarted]);
+
+  useEffect(() => {
+    if (!timerStarted) return;
+    const id = setInterval(() => setTimeLeft((t) => Math.max(0, t - 1)), 1000);
+    return () => clearInterval(id);
+  }, [timerStarted]);
+
+  const timerMM = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+  const timerSS = String(timeLeft % 60).padStart(2, "0");
+  // ───────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!isOpen) setShowCheckout(false);
@@ -77,6 +103,33 @@ export function CartDrawer() {
         {/* Free shipping progress */}
         {items.length > 0 && (
           <FreeShippingRing progress={progress} remaining={remaining} reached={reached} />
+        )}
+
+        {/* Countdown timer */}
+        {items.length > 0 && (
+          <div className={`px-6 py-2.5 flex items-center gap-3 border-b border-white/8 transition-colors duration-500 ${timeLeft === 0 ? "bg-red-950/30" : "bg-amber-950/20"}`}>
+            <svg
+              width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke={timeLeft === 0 ? "rgba(252,165,165,0.7)" : "rgba(251,191,36,0.65)"}
+              strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+              className="flex-shrink-0"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            {timeLeft > 0 ? (
+              <p className="font-sans text-[11px] text-white/55 tracking-wide leading-snug">
+                Вашата количка ще се пази още{" "}
+                <span className="font-bold text-amber-300">{timerMM}:{timerSS}</span>{" "}
+                минути.
+              </p>
+            ) : (
+              <p className="font-sans text-[11px] text-red-300/80 tracking-wide leading-snug">
+                Времето за резервация изтече.
+              </p>
+            )}
+          </div>
         )}
 
         {items.length === 0 ? (

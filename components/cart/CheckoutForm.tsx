@@ -29,6 +29,7 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
   const [form, setForm] = useState({
     name: "",
     phone: "",
+    email: "",
     city: "",
     postCode: "",
     officeAddress: "",
@@ -54,6 +55,7 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     const errs: Record<string, string> = {};
     if (!form.name.trim() || form.name.trim().length < 2) errs.name = "Въведете две имена";
     if (!form.phone.match(/^(\+359|0)\d{8,9}$/))         errs.phone = "Невалиден телефон";
+    if (form.email.trim() && !form.email.includes("@"))   errs.email = "Невалиден имейл";
     if (!form.city.trim())                                 errs.city = "Въведете град";
     if (!form.postCode.match(/^\d{4}$/))                  errs.postCode = "4-цифрен пощенски код";
     if (!form.officeAddress.trim())                        errs.officeAddress = isHomeAddress ? "Въведете личен адрес" : "Въведете адрес на офис";
@@ -69,7 +71,7 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     setSubmitting(true);
 
     const orderSummary = {
-      customer: { ...form, shippingMethod: selectedOption.label, courier: selectedOption.courier },
+      customer: { ...form, email: form.email.trim() || undefined, shippingMethod: selectedOption.label, courier: selectedOption.courier },
       items: items.map((i) => ({
         sku:   i.product.sku,
         name:  i.product.name,
@@ -169,6 +171,12 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
           <input type="tel" placeholder="0888 123 456" value={form.phone}
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
             className="input-luxury" autoComplete="tel" inputMode="tel" />
+        </Field>
+
+        <Field label="Имейл (незадължително — за потвърждение)" error={errors.email}>
+          <input type="email" placeholder="your@email.com" value={form.email}
+            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            className="input-luxury" autoComplete="email" inputMode="email" />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
