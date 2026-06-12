@@ -31,9 +31,9 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     phone: "",
     email: "",
     city: "",
-    postCode: "",
     officeAddress: "",
     notes: "",
+    acceptsMarketing: true,
   });
   const [shippingId, setShippingId] = useState<ShippingId>("speedy-office");
   const [submitting, setSubmitting]  = useState(false);
@@ -47,17 +47,20 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
   const grandTotal       = total + shippingCost;
   const isHomeAddress    = shippingId === "home-address";
 
-  const addressLabel       = isHomeAddress ? "Личен адрес *"              : "Адрес на офис / Автомат *";
-  const addressPlaceholder = isHomeAddress ? "ул. Витоша 12, ет. 3, ап. 15" : "Еконт офис кв. Лозенец, ул. ...";
+  const addressLabel       = isHomeAddress ? "Личен адрес *" : "Адрес на офис / Автомат *";
+  const addressPlaceholder =
+    shippingId === "speedy-office" ? "Спиди офис кв. Лозенец, ул. ..." :
+    shippingId === "econt-office"  ? "Еконт офис кв. Лозенец, ул. ..." :
+    "гр. София, ж.к. Люлин, ул. ..., бл. ...";
 
   // ── Validation ─────────────────────────────────────────────────────────────
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!form.name.trim() || form.name.trim().length < 2) errs.name = "Въведете две имена";
-    if (!form.phone.match(/^(\+359|0)\d{8,9}$/))         errs.phone = "Невалиден телефон";
-    if (form.email.trim() && !form.email.includes("@"))   errs.email = "Невалиден имейл";
+    if (form.phone.replace(/\D/g, "").length < 10)        errs.phone = "Моля, въведете валиден телефонен номер.";
+    if (!form.email.trim())                                errs.email = "Въведете имейл";
+    else if (!form.email.includes("@"))                    errs.email = "Невалиден имейл";
     if (!form.city.trim())                                 errs.city = "Въведете град";
-    if (!form.postCode.match(/^\d{4}$/))                  errs.postCode = "4-цифрен пощенски код";
     if (!form.officeAddress.trim())                        errs.officeAddress = isHomeAddress ? "Въведете личен адрес" : "Въведете адрес на офис";
     return errs;
   };
@@ -71,7 +74,7 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     setSubmitting(true);
 
     const orderSummary = {
-      customer: { ...form, email: form.email.trim() || undefined, shippingMethod: selectedOption.label, courier: selectedOption.courier },
+      customer: { ...form, shippingMethod: selectedOption.label, courier: selectedOption.courier },
       items: items.map((i) => ({
         sku:      i.product.sku,
         slug:     i.product.slug,
@@ -176,24 +179,30 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
             className="input-luxury" autoComplete="tel" inputMode="tel" />
         </Field>
 
-        <Field label="Имейл (незадължително — за потвърждение)" error={errors.email}>
+        {/* SMS marketing opt-in */}
+        <label className="flex items-start gap-3 cursor-pointer -mt-1">
+          <input
+            type="checkbox"
+            checked={form.acceptsMarketing}
+            onChange={(e) => setForm((f) => ({ ...f, acceptsMarketing: e.target.checked }))}
+            className="mt-0.5 flex-shrink-0 w-4 h-4 accent-white cursor-pointer"
+          />
+          <span className="font-sans text-[10px] text-white/50 leading-relaxed tracking-wide">
+            ВАЖНО: Искам да получа БЕЗПЛАТЕН СМС, когато пратката ми пристигне, както и да получавам съобщения с промоции от Lorenzo Ricci.
+          </span>
+        </label>
+
+        <Field label="Имейл *" error={errors.email}>
           <input type="email" placeholder="your@email.com" value={form.email}
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
             className="input-luxury" autoComplete="email" inputMode="email" />
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Град *" error={errors.city}>
-            <input type="text" placeholder="София" value={form.city}
-              onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-              className="input-luxury" autoComplete="address-level2" />
-          </Field>
-          <Field label="Пощенски код *" error={errors.postCode}>
-            <input type="text" placeholder="1000" value={form.postCode}
-              onChange={(e) => setForm((f) => ({ ...f, postCode: e.target.value }))}
-              className="input-luxury" autoComplete="postal-code" inputMode="numeric" maxLength={4} />
-          </Field>
-        </div>
+        <Field label="Град *" error={errors.city}>
+          <input type="text" placeholder="София" value={form.city}
+            onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+            className="input-luxury" autoComplete="address-level2" />
+        </Field>
 
         {/* ── Shipping method radio cards ──────────────────────────────── */}
         <div className="flex flex-col gap-1.5">
