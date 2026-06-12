@@ -73,10 +73,13 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     const orderSummary = {
       customer: { ...form, email: form.email.trim() || undefined, shippingMethod: selectedOption.label, courier: selectedOption.courier },
       items: items.map((i) => ({
-        sku:   i.product.sku,
-        name:  i.product.name,
-        qty:   i.quantity,
-        price: i.product.price,
+        sku:      i.product.sku,
+        slug:     i.product.slug,
+        name:     i.product.name,
+        quantity: i.quantity,
+        qty:      i.quantity,
+        price:    i.product.price,
+        currency: i.product.currency,
       })),
       bundles:      activeBundles.map(({ label, discount }) => ({ label, discount })),
       discount:     totalDiscount,

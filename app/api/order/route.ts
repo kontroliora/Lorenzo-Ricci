@@ -376,13 +376,16 @@ export async function POST(req: NextRequest) {
   try {
     const order = await req.json() as Record<string, unknown>;
 
-    // 1. Decrement inventory
+    // 1. Decrement inventory (atomic KV operations, awaited)
     if (Array.isArray(order.items)) {
-      for (const item of order.items as Array<{ slug?: string; quantity?: number }>) {
-        if (item.slug && item.quantity) {
-          decrementStock(item.slug, item.quantity);
-        }
-      }
+      await Promise.all(
+        (order.items as Array<{ slug?: string; quantity?: number; qty?: number }>)
+          .filter((item) => item.slug)
+          .map((item) => {
+            const qty = item.quantity ?? item.qty ?? 1;
+            return decrementStock(item.slug!, qty);
+          })
+      );
     }
 
     // 2. Blacklist check (run in parallel with email sends)
