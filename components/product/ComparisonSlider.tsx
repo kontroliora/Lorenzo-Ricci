@@ -57,7 +57,6 @@ export function ComparisonSlider() {
         quality={85}
         sizes="(min-width: 768px) 50vw, 100vw"
         className="w-full h-auto block pointer-events-none"
-        unoptimized
       />
 
       {/* Left image — clipped overlay */}
@@ -73,7 +72,6 @@ export function ComparisonSlider() {
           quality={85}
           sizes="(min-width: 768px) 50vw, 100vw"
           className="w-full h-auto block pointer-events-none"
-          unoptimized
         />
       </div>
 

@@ -122,13 +122,12 @@ function ReviewCard({ review }: { review: Review }) {
         <div className="relative w-full h-[280px] shrink-0 flex items-center justify-center border border-border bg-ivory-warm">
           {review.imageUrl ? (
             <Image
-              src={review.imageUrl.split("/").map((s) => encodeURIComponent(s)).join("/")}
+              src={review.imageUrl}
               alt={`Ревю от ${review.author}`}
               fill
               quality={80}
               sizes="(max-width: 640px) 85vw, 33vw"
               className="object-contain"
-              unoptimized
             />
           ) : (
             <div className="w-full h-full" />

@@ -198,13 +198,12 @@ export function ProductReviews({ reviews, productSlug }: ProductReviewsProps) {
               {review.imageUrl && (
                 <div className="relative w-full aspect-[4/3] overflow-hidden bg-ivory-warm">
                   <Image
-                    src={review.imageUrl.startsWith("http") ? review.imageUrl : review.imageUrl.split("/").map((s) => encodeURIComponent(s)).join("/")}
+                    src={review.imageUrl}
                     alt={`Снимка от ${review.author}`}
                     fill
                     quality={75}
                     sizes="(max-width: 640px) 100vw, 50vw"
                     className="object-contain object-center p-2"
-                    unoptimized
                   />
                 </div>
               )}
