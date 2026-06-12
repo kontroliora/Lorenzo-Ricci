@@ -123,7 +123,7 @@ export function Header() {
       {/* Mobile overlay */}
       {menuOpen && (
         <div
-          className="fixed inset-0 z-[60] bg-charcoal-deep/97 backdrop-blur-md flex flex-col"
+          className="fixed inset-0 z-[100] bg-[#0A0A0A] flex flex-col"
           onClick={closeMobile}
         >
           <div className="flex flex-col h-full px-8 py-10" onClick={(e) => e.stopPropagation()}>
