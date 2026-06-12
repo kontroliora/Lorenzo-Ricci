@@ -64,6 +64,9 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           </span>
         )}
         <h1 className="font-serif text-display-md text-charcoal leading-tight">{product.name}</h1>
+        <p className="font-sans text-[10px] text-ink-faint tracking-[0.2em] mt-1.5">
+          Арт. {product.sku}
+        </p>
       </div>
 
       {/* Color variant selector - watches, wallets, cardholders */}
