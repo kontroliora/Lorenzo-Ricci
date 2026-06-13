@@ -67,11 +67,22 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     return errs;
   };
 
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  const clearError = (key: string) =>
+    setErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
+
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      const firstKey = Object.keys(errs)[0];
+      setTimeout(() => {
+        document.getElementById(`field-${firstKey}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
+      return;
+    }
     setErrors({});
     setSubmitting(true);
 
@@ -206,16 +217,18 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
 
       {/* ── Form fields ───────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-5">
-        <Field label="Две имена *" error={errors.name}>
+        <Field id="field-name" label="Две имена *" error={errors.name}>
           <input type="text" placeholder="Иван Иванов" value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            className="input-luxury" autoComplete="name" />
+            onChange={(e) => { setForm((f) => ({ ...f, name: e.target.value })); clearError("name"); }}
+            className="input-luxury" autoComplete="name"
+            style={errors.name ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
         </Field>
 
-        <Field label="Телефон *" error={errors.phone}>
+        <Field id="field-phone" label="Телефон *" error={errors.phone}>
           <input type="tel" placeholder="0888 123 456" value={form.phone}
-            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-            className="input-luxury" autoComplete="tel" inputMode="tel" />
+            onChange={(e) => { setForm((f) => ({ ...f, phone: e.target.value })); clearError("phone"); }}
+            className="input-luxury" autoComplete="tel" inputMode="tel"
+            style={errors.phone ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
         </Field>
 
         {/* SMS marketing opt-in */}
@@ -231,16 +244,18 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
           </span>
         </label>
 
-        <Field label="Имейл *" error={errors.email}>
+        <Field id="field-email" label="Имейл *" error={errors.email}>
           <input type="email" placeholder="your@email.com" value={form.email}
-            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-            className="input-luxury" autoComplete="email" inputMode="email" />
+            onChange={(e) => { setForm((f) => ({ ...f, email: e.target.value })); clearError("email"); }}
+            className="input-luxury" autoComplete="email" inputMode="email"
+            style={errors.email ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
         </Field>
 
-        <Field label="Град *" error={errors.city}>
+        <Field id="field-city" label="Град *" error={errors.city}>
           <input type="text" placeholder="София" value={form.city}
-            onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-            className="input-luxury" autoComplete="address-level2" />
+            onChange={(e) => { setForm((f) => ({ ...f, city: e.target.value })); clearError("city"); }}
+            className="input-luxury" autoComplete="address-level2"
+            style={errors.city ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
         </Field>
 
         {/* ── Shipping method radio cards ──────────────────────────────── */}
@@ -302,13 +317,14 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
         </div>
 
         {/* ── Address field (dynamic label) ────────────────────────────── */}
-        <Field label={addressLabel} error={errors.officeAddress}>
+        <Field id="field-officeAddress" label={addressLabel} error={errors.officeAddress}>
           <input
             type="text"
             placeholder={addressPlaceholder}
             value={form.officeAddress}
-            onChange={(e) => setForm((f) => ({ ...f, officeAddress: e.target.value }))}
+            onChange={(e) => { setForm((f) => ({ ...f, officeAddress: e.target.value })); clearError("officeAddress"); }}
             className="input-luxury"
+            style={errors.officeAddress ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined}
             autoComplete={isHomeAddress ? "street-address" : "off"}
           />
         </Field>
@@ -343,9 +359,9 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
   );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({ label, error, id, children }: { label: string; error?: string; id?: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div id={id} className="flex flex-col gap-1.5">
       <label className="font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-white/40">
         {label}
       </label>

@@ -23,6 +23,8 @@ function buildBigArenaBody(order: OrderPayload): Record<string, unknown> {
 
   return {
     client_order_id:              `LR-${Date.now()}`,
+    api_order_id:                 String(order.orderRef ?? `LR-${Date.now()}`),
+    status:                       "new",
     customer_name:                String(customer.name     ?? ""),
     customer_telephone:           String(customer.phone    ?? ""),
     country_code:                 "BG",
@@ -39,6 +41,7 @@ function buildBigArenaBody(order: OrderPayload): Record<string, unknown> {
     courier_service:              service,
     payment_method:               "cod",
     payment_amount:               String(Number(order.total ?? 0).toFixed(2)),
+    order_payment_amount:         String(Number(order.total ?? 0).toFixed(2)),
     currency_code:                "EUR",
     note_customer:                String(customer.notes    ?? ""),
     original_order_payment_method: "cod",
