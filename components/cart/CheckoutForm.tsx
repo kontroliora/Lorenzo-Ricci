@@ -36,9 +36,11 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     acceptsMarketing: true,
   });
   const [shippingId, setShippingId] = useState<ShippingId>("speedy-office");
-  const [submitting, setSubmitting]  = useState(false);
-  const [submitted, setSubmitted]    = useState(false);
-  const [errors, setErrors]          = useState<Record<string, string>>({});
+  const [submitting, setSubmitting]       = useState(false);
+  const [submitted, setSubmitted]         = useState(false);
+  const [errors, setErrors]               = useState<Record<string, string>>({});
+  const [orderRef, setOrderRef]           = useState("");
+  const [submittedTotal, setSubmittedTotal] = useState(0);
 
   // ── Derived values ─────────────────────────────────────────────────────────
   const freeShipping     = total >= FREE_SHIPPING_THRESHOLD;
@@ -73,7 +75,11 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     setErrors({});
     setSubmitting(true);
 
+    const ref = `LR-${Date.now().toString(36).slice(-6).toUpperCase()}`;
+    const capturedTotal = grandTotal;
+
     const orderSummary = {
+      orderRef: ref,
       customer: { ...form, shippingMethod: selectedOption.label, courier: selectedOption.courier },
       items: items.map((i) => ({
         sku:      i.product.sku,
@@ -100,23 +106,56 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
       });
     } catch { /* silent - don't block UX */ }
 
+    setOrderRef(ref);
+    setSubmittedTotal(capturedTotal);
     setSubmitting(false);
     setSubmitted(true);
     clearCart();
-    setTimeout(onSuccess, 2500);
   };
 
   // ── Success screen ──────────────────────────────────────────────────────────
   if (submitted) {
     return (
-      <div className="flex flex-col items-center text-center gap-5 py-10">
-        <div className="text-white text-5xl">✓</div>
-        <h3 className="font-serif text-2xl text-white">Поръчката е приета!</h3>
-        <p className="font-sans text-sm text-white/60 leading-relaxed max-w-xs">
-          Ще се свържем с вас на{" "}
-          <strong className="text-white">{form.phone}</strong> в рамките на 24ч за потвърждение.
+      <div className="flex flex-col items-center text-center gap-6 py-8">
+        <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+
+        <div>
+          <h3 className="font-serif text-2xl text-white mb-1.5">Поръчката е получена!</h3>
+          <p className="font-sans text-[10px] text-white/35 tracking-[0.22em] uppercase">
+            Номер: {orderRef}
+          </p>
+        </div>
+
+        <div className="w-full bg-white/5 border border-white/8 p-4 flex flex-col gap-2.5">
+          <div className="flex justify-between text-sm">
+            <span className="font-sans text-white/50">Сума за плащане</span>
+            <span className="font-serif text-white">€{submittedTotal.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="font-sans text-white/40">Начин на плащане</span>
+            <span className="font-sans text-white/60">Наложен платеж</span>
+          </div>
+        </div>
+
+        {form.email ? (
+          <p className="font-sans text-xs text-white/45 leading-relaxed">
+            Изпратихме потвърждение на{" "}
+            <span className="text-white/70">{form.email}</span>
+          </p>
+        ) : (
+          <p className="font-sans text-xs text-white/45 leading-relaxed">
+            Ще се свържем с вас на{" "}
+            <span className="text-white/70">{form.phone}</span> в рамките на 24ч.
+          </p>
+        )}
+
+        <p className="font-sans text-[10px] text-white/25 tracking-wide">
+          Плащате при получаване · 30 дни лесна замяна
         </p>
-        <p className="font-sans text-xs text-white/30 tracking-wide">Плащате при получаване.</p>
       </div>
     );
   }

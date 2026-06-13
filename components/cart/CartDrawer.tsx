@@ -132,18 +132,7 @@ export function CartDrawer() {
           </div>
         )}
 
-        {items.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
-            <div className="text-5xl text-white/20">◻</div>
-            <p className="font-serif text-xl text-white/50">Количката е празна</p>
-            <p className="font-sans text-xs text-white/30 tracking-wide text-center">
-              Добавете продукти, за да продължите
-            </p>
-            <button onClick={closeCart} className="btn-outline mt-4">
-              Продължи пазаруването
-            </button>
-          </div>
-        ) : showCheckout ? (
+        {showCheckout ? (
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <button
               onClick={() => setShowCheckout(false)}
@@ -159,6 +148,17 @@ export function CartDrawer() {
                 setShowCheckout(false);
               }}
             />
+          </div>
+        ) : items.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
+            <div className="text-5xl text-white/20">◻</div>
+            <p className="font-serif text-xl text-white/50">Количката е празна</p>
+            <p className="font-sans text-xs text-white/30 tracking-wide text-center">
+              Добавете продукти, за да продължите
+            </p>
+            <button onClick={closeCart} className="btn-outline mt-4">
+              Продължи пазаруването
+            </button>
           </div>
         ) : (
           <>

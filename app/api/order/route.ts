@@ -366,18 +366,24 @@ async function sendAdminEmailViaZoho(subject: string, html: string): Promise<voi
   }
 
   const transport = nodemailer.createTransport({
-    host:   "smtp.zoho.com",
+    host:   "smtp.zoho.eu",
     port:   465,
     secure: true,
     auth:   { user, pass },
   });
 
-  await transport.sendMail({
-    from:    `"Lorenzo Ricci Orders" <${user}>`,
-    to:      ["info@lorenzo-ricci.com", "sodolos3@gmail.com"],
-    subject,
-    html,
-  });
+  try {
+    await transport.sendMail({
+      from:    `"Lorenzo Ricci Orders" <${user}>`,
+      to:      ["info@lorenzo-ricci.com", "sodolos3@gmail.com"],
+      subject,
+      html,
+    });
+    console.log("[Zoho] Admin email sent successfully");
+  } catch (err) {
+    console.error("[Zoho] Admin email failed:", err);
+    throw err;
+  }
 }
 
 async function sendCustomerEmailViaZoho(to: string, html: string): Promise<void> {
@@ -390,18 +396,24 @@ async function sendCustomerEmailViaZoho(to: string, html: string): Promise<void>
   }
 
   const transport = nodemailer.createTransport({
-    host:   "smtp.zoho.com",
+    host:   "smtp.zoho.eu",
     port:   465,
     secure: true,
     auth:   { user, pass },
   });
 
-  await transport.sendMail({
-    from:    `"Lorenzo Ricci" <${user}>`,
-    to,
-    subject: "Вашата поръчка е получена - Lorenzo Ricci",
-    html,
-  });
+  try {
+    await transport.sendMail({
+      from:    `"Lorenzo Ricci" <${user}>`,
+      to,
+      subject: "Вашата поръчка е получена - Lorenzo Ricci",
+      html,
+    });
+    console.log("[Zoho] Customer email sent to:", to);
+  } catch (err) {
+    console.error("[Zoho] Customer email failed:", err);
+    throw err;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
