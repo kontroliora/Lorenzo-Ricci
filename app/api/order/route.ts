@@ -232,6 +232,10 @@ function buildAdminEmail(order: Record<string, unknown>, bl: BlacklistResult): s
 // 3.  Customer confirmation email (luxury HTML)
 // ─────────────────────────────────────────────────────────────
 function buildCustomerEmail(order: Record<string, unknown>): string {
+  const customer  = (order.customer ?? {}) as Record<string, unknown>;
+  const shipping  = (order.shipping  ?? {}) as Record<string, unknown>;
+  const firstName = String(customer.name ?? "").split(" ")[0];
+
   const items = Array.isArray(order.items)
     ? (order.items as Array<{ name?: string; quantity?: number; price?: number; currency?: string }>)
         .map(
@@ -272,8 +276,8 @@ function buildCustomerEmail(order: Record<string, unknown>): string {
           <!-- Body -->
           <tr>
             <td style="padding:40px 40px 0">
-              <p style="margin:0 0 6px;font-family:'Georgia',serif;font-size:22px;color:#0a0e1f">Благодарим Ви, ${(order.name as string)?.split(" ")[0] ?? ""}!</p>
-              <p style="margin:0 0 28px;color:#666;font-size:14px;line-height:1.6">Получихме Вашата поръчка с наложен платеж. Ще се свържем с Вас за потвърждение в рамките на работния ден.</p>
+              <p style="margin:0 0 6px;font-family:'Georgia',serif;font-size:22px;color:#0a0e1f">Благодарим Ви, ${firstName}!</p>
+              <p style="margin:0 0 28px;color:#666;font-size:14px;line-height:1.6">Получихме Вашата поръчка. Ще се свържем с Вас по телефона за потвърждение.<br>Всички пратки се доставят чрез куриер в рамките на 1 до 2 работни дни. (Поръчки, направени след 14:00 ч., се обработват и изпращат на следващия работен ден).</p>
 
               <!-- Divider -->
               <div style="border-top:1px solid #e8dfc8;margin-bottom:28px"></div>
@@ -298,11 +302,11 @@ function buildCustomerEmail(order: Record<string, unknown>): string {
               <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#444">
                 <tr>
                   <td style="padding:4px 0;width:130px;color:#888">Куриер</td>
-                  <td style="padding:4px 0">${order.courier ?? "-"}</td>
+                  <td style="padding:4px 0">${String(shipping.method ?? customer.shippingMethod ?? "-")}</td>
                 </tr>
                 <tr>
                   <td style="padding:4px 0;color:#888">Офис / Адрес</td>
-                  <td style="padding:4px 0">${order.courierOffice ?? order.address ?? "-"}</td>
+                  <td style="padding:4px 0">${String(customer.officeAddress ?? "-")}</td>
                 </tr>
               </table>
 
