@@ -46,11 +46,17 @@ function buildBigArenaBody(order: OrderPayload): Record<string, unknown> {
 }
 
 async function sendToBigArena(order: OrderPayload): Promise<void> {
-  const apiKey = process.env.BIGARENA_API_KEY;
-  if (!apiKey) {
+  const rawKey = process.env.BIGARENA_API_KEY;
+  if (!rawKey) {
     console.warn("[BigArena] BIGARENA_API_KEY not set — skipping fulfillment");
     return;
   }
+
+  const apiKey = rawKey.trim();
+  console.log(
+    `[BigArena] API key length: ${apiKey.length}` +
+    (apiKey.length !== rawKey.length ? ` (trimmed ${rawKey.length - apiKey.length} whitespace chars)` : "")
+  );
 
   const body = buildBigArenaBody(order);
 
