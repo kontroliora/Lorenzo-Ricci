@@ -9,9 +9,10 @@ import { reviewSummary } from "@/lib/reviews";
 interface ProductCardProps {
   product: Product;
   priority?: boolean;
+  learnMore?: boolean;
 }
 
-export function ProductCard({ product, priority = false }: ProductCardProps) {
+export function ProductCard({ product, priority = false, learnMore = false }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const [added, setAdded] = useState(false);
   const [isNight, setIsNight] = useState(false);
@@ -137,21 +138,30 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
           )}
         </div>
 
-        {/* Quick-add overlay - hidden for out-of-stock products */}
+        {/* Quick-add / learn-more overlay */}
         {product.inStock && (
           <div
             className={`absolute inset-x-0 bottom-0 bg-navy/90 backdrop-blur-sm py-3.5 px-4 transition-all duration-400 ${
               hovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full"
             }`}
           >
-            <button
-              onClick={handleAdd}
-              className={`w-full font-sans text-xs font-medium tracking-[0.22em] uppercase transition-colors duration-200 ${
-                added ? "text-white" : "text-white/80 hover:text-white"
-              }`}
-            >
-              {added ? "✓ ДОБАВЕНО" : "ДОБАВИ В КОЛИЧКАТА"}
-            </button>
+            {learnMore ? (
+              <Link
+                href={`/products/${product.slug}`}
+                className="block w-full text-center font-sans text-xs font-medium tracking-[0.22em] uppercase text-white/80 hover:text-white transition-colors duration-200"
+              >
+                НАУЧИ ПОВЕЧЕ
+              </Link>
+            ) : (
+              <button
+                onClick={handleAdd}
+                className={`w-full font-sans text-xs font-medium tracking-[0.22em] uppercase transition-colors duration-200 ${
+                  added ? "text-white" : "text-white/80 hover:text-white"
+                }`}
+              >
+                {added ? "✓ ДОБАВЕНО" : "ДОБАВИ В КОЛИЧКАТА"}
+              </button>
+            )}
           </div>
         )}
       </Link>
