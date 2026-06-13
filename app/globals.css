@@ -87,7 +87,7 @@
 
   /* ─── Inputs ──────────────────────────────────────────── */
   .input-luxury {
-    @apply w-full bg-transparent border-b border-white/20 text-white font-sans font-light text-sm py-3 px-0 placeholder:text-gray-400 focus:outline-none focus:border-white transition-colors duration-300;
+    @apply w-full bg-transparent border-b border-white/20 text-white font-sans font-light text-sm py-3 px-0 placeholder:text-white/30 focus:outline-none focus:border-white transition-colors duration-300;
   }
 
   /* ─── Cards ───────────────────────────────────────────── */
