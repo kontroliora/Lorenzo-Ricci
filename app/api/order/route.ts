@@ -160,8 +160,9 @@ function buildAdminEmail(order: Record<string, unknown>, bl: BlacklistResult): s
 <head><meta charset="UTF-8"><title>Нова поръчка</title></head>
 <body style="margin:0;padding:24px;font-family:Arial,sans-serif;background:#f9fafb;color:#111">
   <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)">
-    <div style="background:#0a0e1f;padding:24px 32px">
-      <p style="margin:0;color:#fff;font-size:22px;font-weight:700;letter-spacing:.04em">LORENZO RICCI — Нова поръчка</p>
+    <div style="background:#0a0e1f;padding:24px 32px;text-align:center">
+      <img src="https://lorenzo-ricci.com/email-logo.png" alt="Lorenzo Ricci" width="160" style="max-width:160px;height:auto;display:block;margin:0 auto 10px">
+      <p style="margin:0;color:rgba(255,255,255,.5);font-size:11px;letter-spacing:.25em;text-transform:uppercase">Нова поръчка</p>
     </div>
     <div style="padding:32px">
       ${safeBlock}
@@ -267,9 +268,7 @@ function buildCustomerEmail(order: Record<string, unknown>): string {
           <!-- Header -->
           <tr>
             <td style="background:#0a0e1f;padding:36px 40px;text-align:center">
-              <p style="margin:0;color:#fff;font-family:'Georgia',Times,serif;font-size:26px;letter-spacing:.12em;text-transform:uppercase">Lorenzo Ricci</p>
-              <p style="margin:10px 0 0;color:rgba(255,255,255,.45);font-size:10px;letter-spacing:.35em;text-transform:uppercase">Milano Gold Collection</p>
-              <div style="width:40px;height:1px;background:rgba(255,255,255,.25);margin:16px auto 0"></div>
+              <img src="https://lorenzo-ricci.com/email-logo.png" alt="Lorenzo Ricci" width="200" style="max-width:200px;height:auto;display:block;margin:0 auto">
             </td>
           </tr>
 
