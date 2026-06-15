@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
-import { kv } from "@vercel/kv";
-import { decrementStock } from "@/lib/inventory";
 
 // ─────────────────────────────────────────────────────────────
 // 0.  BigArena fulfillment integration
@@ -437,55 +435,27 @@ export async function POST(req: NextRequest) {
     const order = await req.json() as Record<string, unknown>;
     const customer = (order.customer ?? {}) as Record<string, unknown>;
 
-    // 1. Decrement inventory (atomic KV operations, awaited)
-    if (Array.isArray(order.items)) {
-      await Promise.all(
-        (order.items as Array<{ slug?: string; quantity?: number; qty?: number }>)
-          .filter((item) => item.slug)
-          .map((item) => {
-            const qty = item.quantity ?? item.qty ?? 1;
-            return decrementStock(item.slug!, qty);
-          })
-      );
-    }
+    // 1. Submit to BigArena — awaited so a non-2xx response returns 500 to the frontend
+    await sendToBigArena(order);
 
-    // 2. Blacklist check against customer phone
-    const blacklistPromise = checkBlacklist(String(customer.phone ?? ""));
-    const bl = await blacklistPromise;
-
-    // 3. Send admin + customer emails concurrently
-    const adminEmail   = buildAdminEmail(order, bl);
-    const customerEmail = buildCustomerEmail(order);
+    // 2. Blacklist check + emails fire concurrently after BigArena succeeds (best-effort)
     const customerAddress = String(customer.email ?? "").trim();
     const customerName    = String(customer.name  ?? "");
 
-    await Promise.allSettled([
-      // BigArena fulfillment
-      sendToBigArena(order),
-
-      // Admin notification via Zoho → info@lorenzo-ricci.com + sodolos3@gmail.com
-      sendAdminEmailViaZoho(
-        bl.found
-          ? `🚨 [BLACKLIST] Нова поръчка - ${customerName}`
-          : `✅ Нова поръчка - ${customerName}`,
-        adminEmail,
-      ),
-
-      // Customer confirmation (only if email provided)
+    Promise.allSettled([
+      (async () => {
+        const bl = await checkBlacklist(String(customer.phone ?? ""));
+        await sendAdminEmailViaZoho(
+          bl.found
+            ? `🚨 [BLACKLIST] Нова поръчка - ${customerName}`
+            : `✅ Нова поръчка - ${customerName}`,
+          buildAdminEmail(order, bl),
+        );
+      })(),
       ...(customerAddress
-        ? [sendCustomerEmailViaZoho(customerAddress, customerEmail)]
+        ? [sendCustomerEmailViaZoho(customerAddress, buildCustomerEmail(order))]
         : []),
     ]);
-
-    // Save marketing lead to KV (fire-and-forget — never delays the order response)
-    if (customer.acceptsMarketing === true) {
-      kv.lpush("marketing_leads", {
-        name:  String(customer.name  ?? ""),
-        phone: String(customer.phone ?? ""),
-        email: String(customer.email ?? ""),
-        date:  new Date().toISOString(),
-      }).catch((err: unknown) => console.error("[KV] marketing lead save failed:", err));
-    }
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
