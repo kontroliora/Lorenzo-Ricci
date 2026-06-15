@@ -31,7 +31,6 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     phone: "",
     email: "",
     city: "",
-    postCode: "",
     officeAddress: "",
     notes: "",
     acceptsMarketing: true,
@@ -65,7 +64,6 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     if (!form.email.trim())                                errs.email = "Въведете имейл";
     else if (!form.email.includes("@"))                    errs.email = "Невалиден имейл";
     if (!form.city.trim())                                 errs.city = "Въведете град";
-    if (!form.postCode.trim() || form.postCode.trim().length < 4) errs.postCode = "Въведете пощенски код";
     if (!form.officeAddress.trim())                        errs.officeAddress = isHomeAddress ? "Въведете личен адрес" : "Въведете адрес на офис";
     return errs;
   };
@@ -272,13 +270,6 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
             onChange={(e) => { setForm((f) => ({ ...f, city: e.target.value })); clearError("city"); }}
             className="input-luxury" autoComplete="address-level2"
             style={errors.city ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
-        </Field>
-
-        <Field id="field-postCode" label="Пощенски код *" error={errors.postCode}>
-          <input type="text" placeholder="1000" value={form.postCode}
-            onChange={(e) => { setForm((f) => ({ ...f, postCode: e.target.value })); clearError("postCode"); }}
-            className="input-luxury" autoComplete="postal-code" inputMode="numeric"
-            style={errors.postCode ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
         </Field>
 
         {/* ── Shipping method radio cards ──────────────────────────────── */}
