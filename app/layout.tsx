@@ -7,6 +7,7 @@ import { SalesNotification } from "@/components/ui/SalesNotification";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://lorenzo-ricci.com"),
   title: {
     default: "Lorenzo Ricci - Луксозни Часовници и Бижута",
     template: "%s | Lorenzo Ricci",

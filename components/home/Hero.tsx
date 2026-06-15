@@ -21,7 +21,7 @@ export function Hero() {
         playsInline
         preload="metadata"
         className="absolute inset-0 w-full h-full object-cover object-center"
-        poster="/covers/desktop cover.webp"
+        poster="/covers/desktop%20cover.webp"
       >
         <source src="/hero-video.mp4" type="video/mp4" />
       </video>

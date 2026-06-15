@@ -34,7 +34,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
             aria-label={img.alt}
           >
             <Image
-              src={imageError[i] ? "/covers/desktop cover.webp" : img.src}
+              src={imageError[i] ? "/covers/desktop%20cover.webp" : img.src}
               alt={img.alt}
               fill
               quality={60}
@@ -55,7 +55,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
         {images.map((img, i) => (
           <Image
             key={i}
-            src={imageError[i] ? "/covers/desktop cover.webp" : img.src}
+            src={imageError[i] ? "/covers/desktop%20cover.webp" : img.src}
             alt={img.alt}
             fill
             priority={i < 3}

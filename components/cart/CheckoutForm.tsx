@@ -122,6 +122,8 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     setSubmitting(false);
     setSubmitted(true);
     clearCart();
+    // Close the drawer after a short delay so the customer sees the success screen
+    setTimeout(() => onSuccess(), 4000);
   };
 
   // ── Success screen ──────────────────────────────────────────────────────────

@@ -568,7 +568,7 @@ export const products: Product[] = [
     currency: "€",
     badge: "Изчерпан",
     inStock: false,
-    stock: 5,
+    stock: 0,
     warranty: "2 години гаранция",
     shortDescription: "Зелен портфейл от крокодилска кожа",
     description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',

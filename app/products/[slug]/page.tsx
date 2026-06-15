@@ -61,7 +61,7 @@ export default async function ProductPage({ params }: Props) {
           <Link
             href={
               product.category === "watches" ? "/watches" :
-              product.category === "wallets" || product.category === "cardholders" ? "/" :
+              product.category === "wallets" || product.category === "cardholders" ? "/leather-goods" :
               "/jewellery"
             }
             className="hover:text-navy transition-colors duration-200"

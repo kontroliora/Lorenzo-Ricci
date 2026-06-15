@@ -1,6 +1,6 @@
 "use client";
 import { create } from "zustand";
-import type { CartItem, Product, CheckoutData } from "./types";
+import type { CartItem, Product } from "./types";
 import { calcBundleDiscount, type BundleResult } from "./bundles";
 
 interface CartStore {
