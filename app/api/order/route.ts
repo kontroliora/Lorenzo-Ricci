@@ -29,7 +29,7 @@ function buildBigArenaBody(order: OrderPayload): Record<string, unknown> {
     shipping_address: {
       address_text:               String(customer.officeAddress ?? ""),
       city:                       String(customer.city          ?? ""),
-      post_code:                  String(customer.postCode      ?? ""),
+      post_code:                  "0000",
     },
     products: items.map((i) => ({
       sku:      String(i.sku      ?? ""),
