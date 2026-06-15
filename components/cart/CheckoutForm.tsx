@@ -36,10 +36,11 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     acceptsMarketing: true,
   });
   const [shippingId, setShippingId] = useState<ShippingId>("speedy-office");
-  const [submitting, setSubmitting]       = useState(false);
-  const [submitted, setSubmitted]         = useState(false);
-  const [errors, setErrors]               = useState<Record<string, string>>({});
-  const [orderRef, setOrderRef]           = useState("");
+  const [submitting, setSubmitting]         = useState(false);
+  const [submitted, setSubmitted]           = useState(false);
+  const [errors, setErrors]                 = useState<Record<string, string>>({});
+  const [submitError, setSubmitError]       = useState("");
+  const [orderRef, setOrderRef]             = useState("");
   const [submittedTotal, setSubmittedTotal] = useState(0);
 
   // ── Derived values ─────────────────────────────────────────────────────────
@@ -84,6 +85,7 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
       return;
     }
     setErrors({});
+    setSubmitError("");
     setSubmitting(true);
 
     const ref = `LR-${Date.now().toString(36).slice(-6).toUpperCase()}`;
@@ -110,19 +112,29 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     };
 
     try {
-      await fetch("/api/order", {
+      const res = await fetch("/api/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orderSummary),
       });
-    } catch { /* silent - don't block UX */ }
+      if (!res.ok) {
+        let msg = "Възникна грешка при изпращането на поръчката. Моля, опитайте отново.";
+        try { const body = await res.json(); if (body?.error) msg = body.error; } catch { /* ignore parse error */ }
+        setSubmitError(msg);
+        setSubmitting(false);
+        return;
+      }
+    } catch {
+      setSubmitError("Възникна грешка при свързването. Моля, опитайте отново.");
+      setSubmitting(false);
+      return;
+    }
 
     setOrderRef(ref);
     setSubmittedTotal(capturedTotal);
     setSubmitting(false);
     setSubmitted(true);
     clearCart();
-    // Close the drawer after a short delay so the customer sees the success screen
     setTimeout(() => onSuccess(), 4000);
   };
 
@@ -341,6 +353,12 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
           />
         </Field>
       </div>
+
+      {submitError && (
+        <p className="font-sans text-xs text-red-400 text-center leading-relaxed border border-red-400/20 bg-red-400/5 px-4 py-3">
+          {submitError}
+        </p>
+      )}
 
       <button type="submit" disabled={submitting} className="btn-primary w-full justify-center mt-2">
         {submitting ? (

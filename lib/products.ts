@@ -474,16 +474,16 @@ export const products: Product[] = [
       { label: "Печат", value: "750 IT" },
     ],
     coverImage: {
-      src: `/Products/jewellery/Necklace Milano Tiwst/kolie-milano-twist-18k-pvd-preden-izgled.webp`,
+      src: `/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-18k-pvd-preden-izgled.webp`,
       alt: "Колие Milano Twist Lorenzo Ricci - усукана верижка 6мм, 18K PVD позлата, 316L стомана",
     },
     images: [
-      { src: `/Products/jewellery/Necklace Milano Tiwst/kolie-milano-twist-18k-pvd-preden-izgled.webp`, alt: "Колие Milano Twist Lorenzo Ricci - продуктова снимка бял фон, 18K PVD злато" },
-      { src: `/Products/jewellery/Necklace Milano Tiwst/kolie-milano-twist-lifestyle.webp`,               alt: "Колие Milano Twist - лайфстайл снимка, носено на шия" },
-      { src: `/Products/jewellery/Necklace Milano Tiwst/kolie-milano-twist-detal-usukana-verizka.webp`,   alt: "Колие Milano Twist - детайл на усуканата верижка, ширина 6мм" },
-      { src: `/Products/jewellery/Necklace Milano Tiwst/kolie-milano-twist-karabiner-55cm.webp`,          alt: "Колие Milano Twist - детайл на карабинера, дължина 55см" },
-      { src: `/Products/jewellery/Necklace Milano Tiwst/kolie-milano-twist-blizak-plan.webp`,             alt: "Колие Milano Twist - близък план на плетката, 750 IT печат" },
-      { src: `/Products/jewellery/Necklace Milano Tiwst/kolie-milano-twist-kutiya.webp`,                  alt: "Колие Milano Twist в подаръчна кутия Lorenzo Ricci" },
+      { src: `/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-18k-pvd-preden-izgled.webp`, alt: "Колие Milano Twist Lorenzo Ricci - продуктова снимка бял фон, 18K PVD злато" },
+      { src: `/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-lifestyle.webp`,               alt: "Колие Milano Twist - лайфстайл снимка, носено на шия" },
+      { src: `/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-detal-usukana-verizka.webp`,   alt: "Колие Milano Twist - детайл на усуканата верижка, ширина 6мм" },
+      { src: `/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-karabiner-55cm.webp`,          alt: "Колие Milano Twist - детайл на карабинера, дължина 55см" },
+      { src: `/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-blizak-plan.webp`,             alt: "Колие Milano Twist - близък план на плетката, 750 IT печат" },
+      { src: `/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-kutiya.webp`,                  alt: "Колие Milano Twist в подаръчна кутия Lorenzo Ricci" },
     ],
   },
 

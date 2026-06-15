@@ -73,7 +73,7 @@ const NOTIFICATIONS = [
     city: "Монтана",
     product: "Колие Milano Twist",
     minutes: 12,
-    imageSrc: "/Products/jewellery/Necklace Milano Tiwst/kolie-milano-twist-18k-pvd-preden-izgled.webp",
+    imageSrc: "/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-18k-pvd-preden-izgled.webp",
   },
 ];
 
