@@ -22,7 +22,7 @@ function buildBigArenaBody(order: OrderPayload): Record<string, unknown> {
   return {
     client_order_id:              `LR-${Date.now()}`,
     api_order_id:                 String(order.orderRef ?? `LR-${Date.now()}`),
-    status:                       1,
+    status:                       "pending",
     customer_name:                String(customer.name     ?? ""),
     customer_telephone:           String(customer.phone    ?? ""),
     country_code:                 "BG",
