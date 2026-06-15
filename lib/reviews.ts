@@ -34,7 +34,7 @@ export const reviews: Review[] = [
     author: "Георги Б.",
     rating: 5,
     body: "Красив е. Наистина много добро изпълнение. От висококачествена неръждаема стомана е, тежи приятно на ръката и се усеща стабилен, не като кухите евтини модели. Механизмът върви плавно",
-    imageUrl: "https://cdn.shopify.com/s/files/1/0735/5462/4778/files/IMG_0573.jpg?v=1725813158",
+    imageUrl: "/reviews/chrono-black-Георги.webp",
     date: "2026-05-28",
   },
   {
@@ -51,7 +51,7 @@ export const reviews: Review[] = [
     author: "Еди М.",
     rating: 5,
     body: "Аз съм с малка китка 16 см и имах притеснения дали ще ми стане. Обаче ми заспа.",
-    imageUrl: "https://cdn.shopify.com/s/files/1/0735/5462/4778/files/viber_image_2025-11-08_18-51-43-637.jpg?v=1762603731",
+    imageUrl: "/reviews/chrono-black-Еди.webp",
     date: "2026-06-03",
   },
   {
@@ -1866,7 +1866,7 @@ export const reviews: Review[] = [
     author: "Иван Н.",
     rating: 5,
     body: "Поръчах го, защото отива на всякакви дрехи. По Еконт дойде с хубава кутия. Супер е",
-    imageUrl: "https://cdn.shopify.com/s/files/1/0735/5462/4778/files/IMG_0829.jpg?v=1725813161",
+    imageUrl: "/reviews/chrono-black-ИванНиколов.webp",
     date: "2024-09-08",
   },
   {
@@ -1875,7 +1875,7 @@ export const reviews: Review[] = [
     author: "Михаел В.",
     rating: 5,
     body: "Купих го като първи луксозен часовник. Стои много добре на китката и изглежда невероятно скъп за тази цена.",
-    imageUrl: "https://cdn.shopify.com/s/files/1/0735/5462/4778/files/IMG_0474.jpg?v=1725813158",
+    imageUrl: "/reviews/chrono-black-михаелв.webp",
     date: "2024-09-07",
   },
   {
@@ -1930,7 +1930,7 @@ export const reviews: Review[] = [
     author: "Станислав К.",
     rating: 5,
     body: "За парите си е топ! Доволен съм",
-    imageUrl: "https://cdn.shopify.com/s/files/1/0735/5462/4778/files/IMG_0461.jpg?v=1725813155",
+    imageUrl: "/reviews/polar-frost-СтаниславКовачев.webp",
     date: "2024-09-09",
   },
   {
