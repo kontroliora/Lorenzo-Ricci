@@ -30,7 +30,7 @@ export async function getStock(slug: string): Promise<number> {
     const val = await kv.get<number>(KEY(slug));
     if (val !== null) return val;
     const seed = DEFAULTS[slug] ?? 0;
-    await kv.set(KEY(slug), seed);
+    await kv.set(KEY(slug), seed, { nx: true });
     return seed;
   } catch {
     return DEFAULTS[slug] ?? 0;
@@ -51,15 +51,17 @@ export async function readInventory(): Promise<InventoryMap> {
 
 export async function decrementStock(slug: string, qty = 1): Promise<number> {
   try {
-    await getStock(slug); // ensure key is seeded before atomic decrement
+    const current = await getStock(slug);
+    if (current <= 0) return 0;
     const newVal = await kv.decrby(KEY(slug), qty);
     if (newVal < 0) {
-      await kv.incrby(KEY(slug), qty);
+      await kv.set(KEY(slug), 0);
       return 0;
     }
     return newVal;
-  } catch {
-    console.error(`[Inventory] KV error decrementing ${slug}`);
+  } catch (err) {
+    console.error(`[Inventory] KV error decrementing ${slug}:`, err);
+    try { await kv.set(KEY(slug), DEFAULTS[slug] ?? 0); } catch { /* best-effort */ }
     return 0;
   }
 }
