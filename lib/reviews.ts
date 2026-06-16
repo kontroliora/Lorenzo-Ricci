@@ -42,7 +42,6 @@ export const reviews: Review[] = [
     productSlug: "chrono-black",
     author: "Павел В.",
     rating: 5,
-    body: "Изключително качество на детайлите. Изработката на касата е много прецизна.",
     date: "2025-12-08",
   },
   {
@@ -59,7 +58,7 @@ export const reviews: Review[] = [
     productSlug: "chrono-black",
     author: "Тодор Г.",
     rating: 5,
-    body: "Топ продукт. Стъклото е много ясно, механизмът е точен.",
+    body: "Прецизен механизъм, стъклото е кристално чисто. Препоръчвам.",
     date: "2025-07-11",
   },
   {
@@ -75,7 +74,7 @@ export const reviews: Review[] = [
     productSlug: "chrono-black",
     author: "Христо В.",
     rating: 5,
-    body: "Получих го в красива черна кутия. Часовникът надмина очакванията ми по всякакъв начин.",
+    body: "По-тежък е на ръка отколкото очаквах от снимките. Хубава изненада.",
     date: "2025-04-17",
   },
   {
@@ -83,7 +82,7 @@ export const reviews: Review[] = [
     productSlug: "chrono-black",
     author: "Димитър Н.",
     rating: 5,
-    body: "Страхотен хронограф. Носих го на Нова година и всички го забелязаха. Много доволен от покупката.",
+    body: "Носих го на Нова година, три пъти ме попитаха откъде е.",
     date: "2025-03-02",
   },
   {
@@ -91,7 +90,7 @@ export const reviews: Review[] = [
     productSlug: "chrono-black",
     author: "Николай Б.",
     rating: 4,
-    body: "Качеството е добро за тази цена. Каишката може да се смени с кожена ако искаш по-официален вид.",
+    body: "Каишката може да се смени с кожена за по-официален вид. Иначе стои много добре.",
     date: "2025-01-25",
   },
 
@@ -165,7 +164,7 @@ export const reviews: Review[] = [
     productSlug: "golden-eclipse",
     author: "Стоян Г.",
     rating: 5,
-    body: "Купих го за 40-ия ми рожден ден. Страхотна покупка, изглежда луксозно на китката.",
+    body: "Купих го за 40-ия си рожден ден. Месец по-късно пак ми харесва, което не е малко.",
     date: "2025-02-20",
   },
   {
@@ -173,7 +172,7 @@ export const reviews: Review[] = [
     productSlug: "golden-eclipse",
     author: "Иван К.",
     rating: 5,
-    body: "Купих го за Нова година и не мога да се наглея. Изключително качество за тези пари.",
+    body: "На три коледни тържества го носих и три пъти ме питаха откъде е.",
     date: "2025-01-15",
   },
   {
@@ -181,7 +180,7 @@ export const reviews: Review[] = [
     productSlug: "golden-eclipse",
     author: "Красимир Н.",
     rating: 5,
-    body: "Часовникът е страхотен. Качеството е на ниво и надхвърли очакванията ми.",
+    body: "Не очаквах много. Тежестта и прецизността на живо ме изненадаха.",
     date: "2024-11-20",
   },
   {
@@ -205,7 +204,6 @@ export const reviews: Review[] = [
     productSlug: "golden-eclipse",
     author: "Велизар Г.",
     rating: 5,
-    body: "Много качествена изработка. Детайлите по циферблата са впечатляващи.",
     date: "2024-08-01",
   },
   {
@@ -213,7 +211,7 @@ export const reviews: Review[] = [
     productSlug: "golden-eclipse",
     author: "Пламен Й.",
     rating: 5,
-    body: "Много комплименти откакто го нося. Препоръчвам без колебание.",
+    body: "Три месеца ежедневно. Комплименти дори от хора, които не обичат часовници.",
     date: "2024-07-15",
   },
   {
@@ -221,7 +219,7 @@ export const reviews: Review[] = [
     productSlug: "golden-eclipse",
     author: "Светослав В.",
     rating: 5,
-    body: "Доставката беше бърза, часовникът е точно като на снимките. Много доволен.",
+    body: "Точно като на снимките, може малко по-тежък. Приятна изненада.",
     date: "2024-06-28",
   },
 
@@ -322,7 +320,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-diamante-cross",
     author: "Христо В.",
     rating: 5,
-    body: "Нося я вече 2 месеца всеки ден и никакви проблеми. Не избледнява, не се надрасква. Много доволен.",
+    body: "Нося я вече 2 месеца всеки ден. Не избледнява, не се надрасква.",
     date: "2025-07-18",
   },
   {
@@ -354,7 +352,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-diamante-cross",
     author: "Александър В.",
     rating: 5,
-    body: "Доста изчистен и стилен модел.",
+    body: "Камъните блещукат на слънце, но не изглеждат евтино. Нося я и на работа.",
     date: "2026-02-17",
   },
   {
@@ -378,7 +376,6 @@ export const reviews: Review[] = [
     productSlug: "bracelet-diamante-cross",
     author: "Никола Ч.",
     rating: 5,
-    body: "Кръстът прави гривната по-интересна от стандартните модели.",
     date: "2026-02-12",
   },
   {
@@ -394,7 +391,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-diamante-cross",
     author: "Радослав Л.",
     rating: 5,
-    body: "Камъните са топ. Светят на слънце.",
+    body: "Подарих я за именен ден. Хареса много повече от очакваното.",
     date: "2026-02-10",
   },
   {
@@ -402,7 +399,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-diamante-cross",
     author: "Емил С.",
     rating: 5,
-    body: "Много нежен модел и позлатата е масивна. Камъните са кубичен цирконий.",
+    body: "Камъните са в точния размер, не крещят. Исках блясък без кич.",
     date: "2026-02-09",
   },
   {
@@ -436,7 +433,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-diamante-cross",
     author: "Пламен И.",
     rating: 5,
-    body: "Препоръчвам",
+    body: "Взех за приятел. Казаха му на работа, че изглежда добре, на първия ден.",
     date: "2026-04-11",
   },
   {
@@ -444,7 +441,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-diamante-cross",
     author: "Валентин Д.",
     rating: 5,
-    body: "Изглежда добре",
+    body: "Нося я с черен часовник. Кръстът я прави различна от обичайните.",
     date: "2026-03-14",
   },
   {
@@ -452,7 +449,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-diamante-cross",
     author: "Деян П.",
     rating: 5,
-    body: "Хареса ми как стои на ръката още от първото слагане.",
+    body: "От първото слагане стои като ушита. Не очаквах да се усеща толкова естествено.",
     date: "2025-10-20",
   },
   {
@@ -460,7 +457,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-diamante-cross",
     author: "Стефан М.",
     rating: 5,
-    body: "Кръстът е много добре оформен и изглежда качествено.",
+    body: "Кръстът е по-масивен на живо. Ръбовете са изчистени.",
     date: "2025-09-10",
   },
 
@@ -525,7 +522,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-forte",
     author: "Николай В.",
     rating: 5,
-    body: "Хареса ми, че има тежест и е на достъпна цена",
+    body: "Тежи приятно. По-леките гривни не ги усещам, тази я усещам.",
     date: "2026-04-11",
   },
   {
@@ -533,7 +530,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-forte",
     author: "Петър С.",
     rating: 5,
-    body: "Златният цвят е равномерен и приятен.",
+    body: "Цветът е точно тъмното злато, което търсех. Получих комплимент при първото носене.",
     date: "2026-04-04",
   },
   {
@@ -541,7 +538,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-forte",
     author: "Виктор Т.",
     rating: 5,
-    body: "Звената са гладки и не дразнят кожата.",
+    body: "Носих я на плаж. Нямах нужда да я сваля и без проблеми с кожата.",
     date: "2026-03-17",
   },
   {
@@ -549,7 +546,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-forte",
     author: "Борис Н.",
     rating: 4,
-    body: "Много масивна и тежка гривна. Звената са идеално гладки.",
+    body: "По-масивна е от снимките. Тежи приятно, не е лека и куха.",
     date: "2026-02-27",
   },
   {
@@ -557,7 +554,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-forte",
     author: "Калоян М.",
     rating: 3,
-    body: "Качествена е и масивна. Има тежест",
+    body: "На живо изглежда по-добре от снимките. Звената са равномерни.",
     date: "2026-01-08",
   },
   {
@@ -565,7 +562,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-forte",
     author: "Радослав И.",
     rating: 4,
-    body: "Дизайнът е изчистен и лесно се комбинира с часовник",
+    body: "По-масивна е от Signature, но без да е прекалена. Търсех нещо между двете.",
     date: "2025-12-15",
   },
   {
@@ -573,7 +570,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-forte",
     author: "Кристиан П.",
     rating: 5,
-    body: "Бих я взел пак.",
+    body: "Три месеца, включително на басейн. Цветът е непроменен.",
     date: "2025-12-10",
   },
   {
@@ -645,7 +642,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Николай С.",
     rating: 5,
-    body: "Стои добре на китката и не се мести постоянно.",
+    body: "Стои фиксирано, не се върти. Имал съм гривни, дето постоянно мигрираха.",
     date: "2026-05-03",
   },
   {
@@ -653,7 +650,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Стефан К.",
     rating: 5,
-    body: "Носих я цял ден и дори забравих, че е на ръката ми, но има тежест",
+    body: "Забравих, че я имам, но теглото се усеща. Правилен баланс.",
     date: "2026-04-11",
   },
   {
@@ -661,7 +658,6 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Петър М.",
     rating: 5,
-    body: "Изглежда изчистено, но все пак прави впечатление.",
     date: "2026-04-19",
   },
   {
@@ -669,7 +665,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Кристиан Д.",
     rating: 5,
-    body: "Харесва ми, че не е прекалено лъскава.",
+    body: "Не е прекалено лъскава. Матирането я прави по-сериозна.",
     date: "2026-04-04",
   },
   {
@@ -685,7 +681,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Радослав М.",
     rating: 5,
-    body: "Закопчалката е здрава и се затваря сигурно.",
+    body: "Закопчалката се затваря сигурно. Не треперя да не се разкопчае.",
     date: "2026-03-30",
   },
   {
@@ -693,7 +689,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Борис С.",
     rating: 4,
-    body: "Не изглежда евтина, има си тежест.",
+    body: "Тежи приятно и плетката е завършена от всяка страна.",
     date: "2026-03-17",
   },
   {
@@ -701,7 +697,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Атанас П.",
     rating: 5,
-    body: "Подходяща е и за ежедневие.",
+    body: "Нося я и на работа, и неформално. Стои добре и на риза, и на тениска.",
     date: "2026-03-14",
   },
   {
@@ -709,7 +705,6 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Алекс П.",
     rating: 5,
-    body: "Цветът е приятен и не изглежда изкуствен.",
     date: "2026-03-05",
   },
   {
@@ -725,7 +720,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Емил П.",
     rating: 5,
-    body: "За цената си си заслужава.",
+    body: "Твистовата плетка е по-интересна от кубана. Стои добре до часовник.",
     date: "2026-02-05",
   },
   {
@@ -733,7 +728,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Калоян М.",
     rating: 5,
-    body: "Бих поръчал отново.",
+    body: "Взех за себе си и за приятел. Двамата я носим.",
     date: "2026-01-29",
   },
   {
@@ -741,7 +736,6 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Мирослав Д.",
     rating: 5,
-    body: "Плетката е много красива и изглежда по-елегантно.",
     date: "2026-01-24",
   },
   {
@@ -749,7 +743,6 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Любомир В.",
     rating: 5,
-    body: "Усуканият дизайн прави гривната различна от стандартните.",
     date: "2026-01-18",
   },
   {
@@ -765,7 +758,6 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Борян П.",
     rating: 5,
-    body: "Светлината пада много хубаво върху плетката.",
     date: "2026-01-08",
   },
   {
@@ -773,7 +765,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Александър Ц.",
     rating: 5,
-    body: "Добър избор за всекидневно носене.",
+    body: "Нито прекалено официална, нито евтино изглеждаща. Намери средата.",
     date: "2025-12-30",
   },
   {
@@ -781,7 +773,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Радослав П.",
     rating: 5,
-    body: "Цветът на златото е много приятен.",
+    body: "Три седмици и цветът е непроменен.",
     date: "2025-12-02",
   },
   {
@@ -789,7 +781,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Венцислав Д.",
     rating: 5,
-    body: "Много приятен модел.",
+    body: "По-фина от кубана, но все пак се забелязва.",
     date: "2025-12-15",
   },
   {
@@ -797,7 +789,6 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Николай Г.",
     rating: 5,
-    body: "На живо изглежда още по-добре.",
     date: "2025-12-10",
   },
   {
@@ -805,7 +796,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Пламен Г.",
     rating: 5,
-    body: "Комбинира се лесно с други бижута.",
+    body: "Нося я с часовник и колие. Не претрупва визията.",
     date: "2025-11-25",
   },
   {
@@ -813,7 +804,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-milano-twist",
     author: "Владимир К.",
     rating: 5,
-    body: "Закопчалката е здрава.",
+    body: "Изглежда деликатна, но закопчалката е много здрава. Имал съм вериги, дето са се разкопчавали сами.",
     date: "2025-12-24",
   },
 
@@ -893,7 +884,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-signature",
     author: "Георгиан П.",
     rating: 5,
-    body: "Покритието изглежда качествено.",
+    body: "Месец насам, включително два пъти на басейн. Покритието е непроменено.",
     date: "2025-10-18",
   },
   {
@@ -901,7 +892,7 @@ export const reviews: Review[] = [
     productSlug: "bracelet-signature",
     author: "Ясен Н.",
     rating: 5,
-    body: "Звената са гладки.",
+    body: "Звената са гладки дори отблизо. Изненадах се от нивото на завършеност.",
     date: "2025-10-09",
   },
 
@@ -956,7 +947,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-aurelius",
     author: "Денис П.",
     rating: 5,
-    body: "Харесва ми колко изчистено изглежда.",
+    body: "Веригата и кръстът са в перфектен баланс. Нито прекалено масивно, нито невидимо.",
     date: "2026-04-18",
   },
   {
@@ -964,7 +955,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-aurelius",
     author: "Валери С.",
     rating: 5,
-    body: "Кръстът е фин и детайлен. Качествена изработка.",
+    body: "Три седмици ежедневно, без забележки. Детайлите са изненадващи отблизо.",
     date: "2026-04-09",
   },
   {
@@ -1012,7 +1003,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-aurelius",
     author: "Иво М.",
     rating: 5,
-    body: "Кръстът е много добре направен.",
+    body: "Ръбовете са гладки и покритието е равномерно. Планирам и верижка Milano.",
     date: "2026-03-02",
   },
   {
@@ -1044,7 +1035,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-aurelius",
     author: "Пенко М.",
     rating: 5,
-    body: "Много стилно колие. Не натоварва визията, но се забелязва достатъчно.",
     date: "2026-01-29",
   },
   {
@@ -1068,7 +1058,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-aurelius",
     author: "Симеон В.",
     rating: 5,
-    body: "Много изчистен и класически модел. Точно такъв тип кръст търсех.",
     date: "2026-01-09",
   },
   {
@@ -1100,7 +1089,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-aurelius",
     author: "Никола П.",
     rating: 5,
-    body: "Взех го за ежедневно носене и засега съм много доволен. Не е от тези аксесоари, които стоят хубаво само на снимка.",
+    body: "Взех го за ежедневно носене. Не е от аксесоарите, които стоят хубаво само на снимка.",
     date: "2025-12-24",
   },
   {
@@ -1108,7 +1097,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-aurelius",
     author: "Спас Д.",
     rating: 5,
-    body: "На живо кръстът изглежда доста по-релефен и интересен. Това много ми хареса.",
+    body: "На живо кръстът изглежда доста по-релефен и интересен.",
     date: "2025-12-09",
   },
   {
@@ -1148,7 +1137,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-aurelius",
     author: "Горан Д.",
     rating: 5,
-    body: "Това беше първото нещо, което ми направи впечатление – колко детайлен е релефът на кръста.",
+    body: "Първото, което ми направи впечатление, е колко детайлен е релефът на кръста.",
     date: "2025-10-30",
   },
   {
@@ -1156,7 +1145,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-aurelius",
     author: "Живко Н.",
     rating: 5,
-    body: "Като цяло съм доволен. Стои добре, изглежда добре и не съжалявам, че го поръчах.",
     date: "2025-10-23",
   },
   {
@@ -1164,7 +1152,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-aurelius",
     author: "Борил К.",
     rating: 5,
-    body: "Хареса ми как изглежда.",
+    body: "Хваща светлина по интересен начин. Исках дискретно с характер и го намерих.",
     date: "2025-10-20",
   },
   {
@@ -1172,7 +1160,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-aurelius",
     author: "Анто П.",
     rating: 4,
-    body: "Бих го препоръчал.",
+    body: "Месец ежедневно, никакви проблеми. Стои добре и на официален повод.",
     date: "2025-10-11",
   },
 
@@ -1233,7 +1221,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-grande-imperiale",
     author: "Николай К.",
     rating: 5,
-    body: "Златният цвят е плътен и изглежда качествено.",
+    body: "Носил съм подобни, дето след седмица позеленяват. Тук нямам такъв проблем.",
     date: "2026-04-09",
   },
   {
@@ -1249,7 +1237,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-grande-imperiale",
     author: "Кристиан С.",
     rating: 5,
-    body: "Детайлите са гладки и добре завършени.",
+    body: "Подариха ми го. Когато го извадих от кутията, дори аз останах впечатлен.",
     date: "2026-03-28",
   },
   {
@@ -1265,7 +1253,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-grande-imperiale",
     author: "Атанас М.",
     rating: 5,
-    body: "Стои добре и сам, без да има нужда от допълнителен медальон.",
     date: "2026-03-12",
   },
   {
@@ -1273,7 +1260,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-grande-imperiale",
     author: "Димитър С.",
     rating: 5,
-    body: "Формата е класическа, но изпълнението е модерно.",
     date: "2026-03-03",
   },
   {
@@ -1281,7 +1267,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-grande-imperiale",
     author: "Йордан К.",
     rating: 5,
-    body: "Блясъкът е умерен, не е прекалено лъскав.",
     date: "2026-02-16",
   },
   {
@@ -1289,7 +1274,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-grande-imperiale",
     author: "Васил М.",
     rating: 5,
-    body: "Дължината на веригата е удобна и пада добре.",
     date: "2026-02-11",
   },
   {
@@ -1297,7 +1281,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-grande-imperiale",
     author: "Емил С.",
     rating: 4,
-    body: "Като цяло изглежда по-скъпо от цената си.",
+    body: "Стои масивно на врата и не изглежда кухо. Разликата с по-скъпите не е толкова голяма.",
     date: "2026-02-03",
   },
   {
@@ -1333,7 +1317,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-milano-forte",
     author: "Лъчезар Т.",
     rating: 5,
-    body: "Страхотна верижка. Плетката е равномерна и качествена. Стои перфектно под ризата.",
+    body: "Плетката е равномерна и добре завършена. Стои добре под ризата.",
     date: "2025-11-17",
   },
   {
@@ -1381,7 +1365,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-milano-forte",
     author: "Атанас М.",
     rating: 5,
-    body: "Стои много добре и самостоятелно, без да има нужда от медальон.",
     date: "2026-04-11",
   },
   {
@@ -1421,7 +1404,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-milano-forte",
     author: "Йордан М.",
     rating: 5,
-    body: "Исках точно такъв модел, който да се забелязва.",
+    body: "Нося го понякога под риза, понякога върху тениска. Изпъква и в двата случая.",
     date: "2026-02-13",
   },
   {
@@ -1485,7 +1468,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-milano-forte",
     author: "Иван Д.",
     rating: 5,
-    body: "Размерът ми пасна добре и дължината стои точно както трябва.",
     date: "2025-12-02",
   },
   {
@@ -1517,7 +1499,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-milano-forte",
     author: "Христо П.",
     rating: 5,
-    body: "Има много приятна тежест и стои мъжки. Плетката е перфектна.",
+    body: "Тежи приятно и стои мъжки. Плетката е добре завършена.",
     date: "2025-10-26",
   },
 
@@ -1570,7 +1552,7 @@ export const reviews: Review[] = [
     productSlug: "necklace-milano-twist",
     author: "Пламен К.",
     rating: 5,
-    body: "Плетката е супер, защото не е от най-баналните модели и веднага се отличава.",
+    body: "Плетката не е от баналните модели и веднага се отличава.",
     date: "2026-03-29",
   },
   {
@@ -1626,7 +1608,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-milano-twist",
     author: "Людмил П.",
     rating: 5,
-    body: "Точно такъв тип ланец търсех за по-ежедневно носене.",
     date: "2026-02-07",
   },
   {
@@ -1634,7 +1615,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-milano-twist",
     author: "Деян С.",
     rating: 5,
-    body: "Не тежи излишно и това за мен е голям плюс.",
     date: "2026-01-23",
   },
   {
@@ -1642,7 +1622,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-milano-twist",
     author: "Костадин М.",
     rating: 5,
-    body: "Моделът е по-елегантен и ми хареса, че не изглежда грубо.",
     date: "2026-01-18",
   },
   {
@@ -1650,7 +1629,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-milano-twist",
     author: "Явор К.",
     rating: 5,
-    body: "Ланецът стои прибрано и не седи разхвърляно отпред.",
     date: "2026-01-12",
   },
   {
@@ -1658,7 +1636,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-milano-twist",
     author: "Симеон П.",
     rating: 5,
-    body: "Хареса ми, че е по-фин, но не стои слаб.",
     date: "2026-01-05",
   },
   {
@@ -1666,7 +1643,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-milano-twist",
     author: "Златко Д.",
     rating: 5,
-    body: "Доста добре се връзва с по-изчистени дрехи.",
     date: "2026-01-02",
   },
   {
@@ -1698,7 +1674,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-milano-twist",
     author: "Живко К.",
     rating: 5,
-    body: "Пасна ми добре още от първото слагане.",
     date: "2025-11-26",
   },
   {
@@ -1722,7 +1697,6 @@ export const reviews: Review[] = [
     productSlug: "necklace-milano-twist",
     author: "Иван Б.",
     rating: 5,
-    body: "Личи си, че идеята е да е по-елегантен, а не масивен.",
     date: "2025-11-01",
   },
   {
@@ -1799,7 +1773,7 @@ export const reviews: Review[] = [
     productSlug: "chrono-black",
     author: "Калоян Т.",
     rating: 5,
-    body: "Каишката е мека и диша, не запарява и държи здраво. Носих го цял ден – не тежи и не се усеща на китката.",
+    body: "Каишката е мека и диша, не запарява и държи здраво. Носих го цял ден, не тежи и не се усеща на китката.",
     date: "2026-04-24",
   },
   {
@@ -1834,7 +1808,7 @@ export const reviews: Review[] = [
     productSlug: "chrono-black",
     author: "Виктор К.",
     rating: 5,
-    body: "Отдавна търсех хронограф, който да е качествен, но и да не е 2-3 бона. Часовникът е топ! Супер точен е.",
+    body: "Търсех хронограф с японски механизъм и го намерих. Точен, изчистен.",
     date: "2024-09-08",
   },
 
@@ -1854,7 +1828,7 @@ export const reviews: Review[] = [
     productSlug: "golden-eclipse",
     author: "Милен Т.",
     rating: 5,
-    body: "Бях скептичен ама всичко 6. Ще поръчам пак за подарък",
+    body: "Бях скептичен, на живо се оказа по-хубав. Ще го взема и за подарък.",
     date: "2024-09-09",
   },
   {
@@ -1870,7 +1844,7 @@ export const reviews: Review[] = [
     productSlug: "golden-eclipse",
     author: "Борис К.",
     rating: 5,
-    body: "Засега всичко е наред. Получих го вчера. Доволен съм",
+    body: "Циферблатът изглежда по-наситен на живо. Засега без забележки.",
     date: "2024-09-07",
   },
 
@@ -1889,7 +1863,7 @@ export const reviews: Review[] = [
     productSlug: "polar-frost",
     author: "Атила С.",
     rating: 5,
-    body: "Много добро качество за цената. Препоръчвам!",
+    body: "Цяло лято го носих без сваляне. Никакви проблеми.",
     date: "2024-06-13",
   },
   {
@@ -1905,7 +1879,7 @@ export const reviews: Review[] = [
     productSlug: "polar-frost",
     author: "Павел К.",
     rating: 5,
-    body: "Подариха ми го. Много е красив, кутията също е луксозна",
+    body: "Подариха ми го. Кутията при отварянето направи силно впечатление.",
     date: "2024-09-09",
   },
   {
@@ -1913,7 +1887,7 @@ export const reviews: Review[] = [
     productSlug: "polar-frost",
     author: "Станимир Х.",
     rating: 5,
-    body: "Супер е, много ме кефи",
+    body: "Синият циферблат се забелязва дори под маншет.",
     date: "2024-09-07",
   },
 
@@ -1931,7 +1905,7 @@ export const reviews: Review[] = [
     productSlug: "wallet-alabastro",
     author: "Тодор Б.",
     rating: 5,
-    body: "Кожата е автентична и изключително луксозна. Тънък профил, който изобщо не личи в джоба на панталона.",
+    body: "Не личи в джоба на панталона. Кожата е по-мека от очакваното.",
     date: "2026-03-15",
   },
   {
@@ -2049,7 +2023,7 @@ export const reviews: Review[] = [
     productSlug: "cardholder-ambra",
     author: "Деян Л.",
     rating: 5,
-    body: "Изключително компактен картодържател. Вече започва да хваща красива патина, която го прави още по-солиден.",
+    body: "Четири карти и банкнота без проблем. Компактен и стабилен.",
     date: "2026-04-24",
   },
   {
@@ -2097,7 +2071,7 @@ export const reviews: Review[] = [
     productSlug: "cardholder-ambra",
     author: "Теодор У.",
     rating: 4,
-    body: "Много функционално разпределение. Бърз достъп до най-ползваните карти в ежедневието.",
+    body: "Влиза точно в предния джоб. Не усещам, че го нося.",
     date: "2025-10-15",
   },
   {
@@ -2105,7 +2079,7 @@ export const reviews: Review[] = [
     productSlug: "cardholder-ambra",
     author: "Марин Я.",
     rating: 5,
-    body: "Високо ниво на обработка. Държи структурата си перфектно, без да омеква твърде много.",
+    body: "Месец насам, ръбовете са непроменени. Структурата е здрава.",
     date: "2025-09-24",
   },
 
@@ -2139,7 +2113,7 @@ export const reviews: Review[] = [
     productSlug: "cardholder-bianco",
     author: "Филип С.",
     rating: 5,
-    body: "Подарък, който спира дъха. Кутията и сертификатите вътре добавят огромна стойност към преживяването.",
+    body: "Подарих го. Кутията при отварянето направи силно впечатление на получателя.",
     date: "2025-12-07",
   },
 
@@ -2173,7 +2147,7 @@ export const reviews: Review[] = [
     productSlug: "cardholder-valentina",
     author: "Страхил Б.",
     rating: 4,
-    body: "Изключително фина обработка на повърхността. Пази се лесно и изглежда зашеметяващо.",
+    body: "Фина обработка. Пази се лесно и с времето придобива характер.",
     date: "2025-11-30",
   },
 
@@ -2215,7 +2189,7 @@ export const reviews: Review[] = [
     productSlug: "cardholder-zaffiro",
     author: "Калин П.",
     rating: 5,
-    body: "Лукс без компромиси. От тежката опаковка до най-малкия детайл на самата кожа от сиамски крокодил.",
+    body: "Тежката опаковка прави впечатление. Кожата е с природен релеф.",
     date: "2025-10-30",
   },
 ];
