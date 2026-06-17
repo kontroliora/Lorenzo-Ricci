@@ -193,7 +193,7 @@ export function ProductReviews({ reviews, productSlug }: ProductReviewsProps) {
                 <h4 className="font-serif text-lg text-charcoal">{review.title}</h4>
               )}
               <p className="font-sans text-sm font-light text-ink-soft leading-relaxed flex-1">
-                {review.body.replace(/-|-/g, "-")}
+                {review.body?.replace(/-|-/g, "-") ?? ""}
               </p>
               {review.imageUrl && (
                 <div className="relative w-full aspect-[4/3] overflow-hidden bg-ivory-warm">

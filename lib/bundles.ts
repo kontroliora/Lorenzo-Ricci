@@ -36,6 +36,30 @@ export const BUNDLES: Bundle[] = [
     ],
     discountPct: 10,
   },
+  {
+    id: "bianco-alabastro-pair",
+    label: "Bianco + Alabastro Комплект",
+    slots: [["cardholder-bianco"], ["wallet-alabastro"]],
+    discountPct: 10,
+  },
+  {
+    id: "valentina-rubino-pair",
+    label: "Valentina + Rubino Комплект",
+    slots: [["cardholder-valentina"], ["wallet-rubino"]],
+    discountPct: 10,
+  },
+  {
+    id: "ambra-rubino-pair",
+    label: "Ambra + Rubino Комплект",
+    slots: [["cardholder-ambra"], ["wallet-rubino"]],
+    discountPct: 10,
+  },
+  {
+    id: "zaffiro-alabastro-pair",
+    label: "Zaffiro + Alabastro Комплект",
+    slots: [["cardholder-zaffiro"], ["wallet-alabastro"]],
+    discountPct: 10,
+  },
 ];
 
 export interface BundleResult {

@@ -11,7 +11,7 @@ const SHIPPING_OPTIONS = [
   { id: "home-address",  label: "Доставка до адрес",            courier: "home",   price: 5.45 },
 ] as const;
 
-const FREE_SHIPPING_THRESHOLD = 80;
+const FREE_SHIPPING_THRESHOLD = 60;
 
 type ShippingId = (typeof SHIPPING_OPTIONS)[number]["id"];
 

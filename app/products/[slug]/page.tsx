@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!product) return {};
   return {
     title: product.name,
-    description: `${product.name} - ${product.shortDescription}. ${product.currency}${product.price}. ${product.warranty}. Безплатна доставка над €80. Наложен платеж.`,
+    description: `${product.name} - ${product.shortDescription}. ${product.currency}${product.price}. ${product.warranty}. Безплатна доставка над €60. Наложен платеж.`,
     openGraph: {
       title: `${product.name} | Lorenzo Ricci`,
       description: product.description.slice(0, 160),

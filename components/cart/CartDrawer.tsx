@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useCartStore } from "@/lib/store";
 import { CheckoutForm } from "./CheckoutForm";
+import { CartCrossSell } from "./CartCrossSell";
 
 const CART_TIMEOUT = 5 * 60; // 300 seconds
 
@@ -15,7 +16,7 @@ export function CartDrawer() {
   const { totalDiscount, active: activeBundles } = bundleDiscount();
   const total = subtotal - totalDiscount;
   const count = totalItems();
-  const freeShippingThreshold = 80;
+  const freeShippingThreshold = 60;
   const remaining = Math.max(0, freeShippingThreshold - total);
   const progress = Math.min(1, total / freeShippingThreshold);
   const reached = remaining === 0 && items.length > 0;
@@ -162,7 +163,7 @@ export function CartDrawer() {
           </div>
         ) : (
           <>
-            {/* Items */}
+            {/* Items + Cross-sell */}
             <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-4">
               {items.map(({ product, quantity }) => (
                 <div
@@ -224,6 +225,7 @@ export function CartDrawer() {
                   </div>
                 </div>
               ))}
+              <CartCrossSell />
             </div>
 
             {/* Footer */}
@@ -346,13 +348,13 @@ function FreeShippingRing({
       <div>
         {reached ? (
           <p className="font-sans text-[11px] text-green-400 font-medium tracking-wide leading-snug">
-            Достигнахте безплатна доставка!
+            Имаш безплатна доставка
           </p>
         ) : (
           <p className="font-sans text-[11px] text-white/60 tracking-wide leading-snug">
-            Остават{" "}
+            Добави още{" "}
             <span className="text-white font-medium">€{remaining.toFixed(2)}</span>{" "}
-            до безплатна доставка
+            за БЕЗПЛАТНА доставка
           </p>
         )}
       </div>
