@@ -54,7 +54,7 @@ export interface Review {
   author: string;
   rating: number;
   title?: string;
-  body: string;
+  body?: string;
   imageUrl?: string;
   date: string;
 }
