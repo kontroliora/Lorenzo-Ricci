@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { SalesNotification } from "@/components/ui/SalesNotification";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
+import { MetaPixel } from "@/components/analytics/MetaPixel";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://lorenzo-ricci.com"),
@@ -57,6 +58,7 @@ export default function RootLayout({
   return (
     <html lang="bg" className="scroll-smooth" suppressHydrationWarning>
       <body className="bg-ivory text-charcoal antialiased">
+        <MetaPixel />
         <ThemeProvider>
           <Header />
           <main>{children}</main>
