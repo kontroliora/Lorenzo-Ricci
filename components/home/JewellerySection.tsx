@@ -1,12 +1,9 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { getBracelets, getNecklaces } from "@/lib/products";
 import { useReveal } from "@/lib/useReveal";
 
 export function JewellerySection() {
-  const bracelets = getBracelets();
-  const necklaces = getNecklaces();
   const featuresRef = useReveal();
 
   return (
@@ -22,52 +19,22 @@ export function JewellerySection() {
           </p>
         </div>
 
-        {/* ── Category Banners — Desktop only ── */}
-        <div className="hidden lg:grid lg:grid-cols-2 gap-4 mb-16">
-          {/* Chains banner */}
-          <Link
-            href="/jewellery?category=necklaces"
-            className="group relative overflow-hidden h-[420px] block"
-          >
-            <Image
-              src="/beautiful/banner-chains.webp"
-              alt="Lorenzo Ricci Ланци — 18К позлата"
-              fill
-              quality={90}
-              sizes="50vw"
-              className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent transition-opacity duration-500 group-hover:opacity-80" />
-            <div className="absolute bottom-7 left-7 right-7">
-              <p className="font-sans text-[9px] tracking-[0.32em] uppercase text-white/55 mb-2">
-                Колекция
-              </p>
-              <h3 className="font-serif text-4xl text-white leading-tight mb-4">
-                Ланци
-              </h3>
-              <span className="inline-flex items-center gap-2 font-sans text-[10px] tracking-[0.22em] uppercase text-white/65 group-hover:text-white transition-colors duration-300">
-                Разгледай
-                <span className="translate-x-0 group-hover:translate-x-1 transition-transform duration-300 inline-block">
-                  →
-                </span>
-              </span>
-            </div>
-          </Link>
-
-          {/* Bracelets banner */}
+        {/* Category banners */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-16">
+          {/* Гривни */}
           <Link
             href="/jewellery?category=bracelets"
-            className="group relative overflow-hidden h-[420px] block"
+            className="group relative overflow-hidden h-[360px] sm:h-[420px] block"
           >
             <Image
-              src="/beautiful/banner-bracelets.webp"
+              src="/beautiful/banner-bracelets.jpg"
               alt="Lorenzo Ricci Гривни — 18К позлата"
               fill
               quality={90}
-              sizes="50vw"
+              sizes="(max-width: 640px) 100vw, 50vw"
               className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent transition-opacity duration-500 group-hover:opacity-80" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent group-hover:opacity-80 transition-opacity duration-500" />
             <div className="absolute bottom-7 left-7 right-7">
               <p className="font-sans text-[9px] tracking-[0.32em] uppercase text-white/55 mb-2">
                 Колекция
@@ -77,95 +44,42 @@ export function JewellerySection() {
               </h3>
               <span className="inline-flex items-center gap-2 font-sans text-[10px] tracking-[0.22em] uppercase text-white/65 group-hover:text-white transition-colors duration-300">
                 Разгледай
-                <span className="translate-x-0 group-hover:translate-x-1 transition-transform duration-300 inline-block">
-                  →
-                </span>
+                <span className="group-hover:translate-x-1 transition-transform duration-300 inline-block">→</span>
+              </span>
+            </div>
+          </Link>
+
+          {/* Колиета */}
+          <Link
+            href="/jewellery?category=necklaces"
+            className="group relative overflow-hidden h-[360px] sm:h-[420px] block"
+          >
+            <Image
+              src="/beautiful/banner-necklaces.jpg"
+              alt="Lorenzo Ricci Колиета — 18К позлата"
+              fill
+              quality={90}
+              sizes="(max-width: 640px) 100vw, 50vw"
+              className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent group-hover:opacity-80 transition-opacity duration-500" />
+            <div className="absolute bottom-7 left-7 right-7">
+              <p className="font-sans text-[9px] tracking-[0.32em] uppercase text-white/55 mb-2">
+                Колекция
+              </p>
+              <h3 className="font-serif text-4xl text-white leading-tight mb-4">
+                Колиета
+              </h3>
+              <span className="inline-flex items-center gap-2 font-sans text-[10px] tracking-[0.22em] uppercase text-white/65 group-hover:text-white transition-colors duration-300">
+                Разгледай
+                <span className="group-hover:translate-x-1 transition-transform duration-300 inline-block">→</span>
               </span>
             </div>
           </Link>
         </div>
 
-        {/* ── Product grid — Mobile only ── */}
-        <div className="lg:hidden">
-          {/* Bracelets row */}
-          <div className="mb-6">
-            <div className="flex items-center gap-4 mb-3">
-              <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Гривни</p>
-              <div className="flex-1 h-px bg-border" />
-              <Link
-                href="/jewellery?category=bracelets"
-                className="font-sans text-[10px] tracking-[0.2em] uppercase text-navy/60 hover:text-navy transition-colors duration-200 flex items-center gap-1"
-              >
-                Виж всички <span className="inline-block">→</span>
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {bracelets.map((b) => (
-                <Link key={b.id} href={`/products/${b.slug}`} className="group flex flex-col">
-                  <div className="relative aspect-square bg-white border border-border overflow-hidden">
-                    <Image
-                      src={b.coverImage.src}
-                      alt={b.coverImage.alt}
-                      fill
-                      quality={80}
-                      sizes="50vw"
-                      className="object-contain p-3 transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="pt-2">
-                    <h3 className="font-serif text-sm text-charcoal group-hover:text-navy transition-colors duration-200 leading-snug">
-                      {b.name}
-                    </h3>
-                    <p className="font-serif text-xs text-navy mt-0.5">
-                      {b.currency}{b.price.toFixed(2)}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Necklaces row */}
-          <div className="mb-8">
-            <div className="flex items-center gap-4 mb-3">
-              <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Ланци</p>
-              <div className="flex-1 h-px bg-border" />
-              <Link
-                href="/jewellery?category=necklaces"
-                className="font-sans text-[10px] tracking-[0.2em] uppercase text-navy/60 hover:text-navy transition-colors duration-200 flex items-center gap-1"
-              >
-                Виж всички <span className="inline-block">→</span>
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {necklaces.map((n) => (
-                <Link key={n.id} href={`/products/${n.slug}`} className="group flex flex-col">
-                  <div className="relative aspect-square bg-white border border-border overflow-hidden">
-                    <Image
-                      src={n.coverImage.src}
-                      alt={n.coverImage.alt}
-                      fill
-                      quality={80}
-                      sizes="50vw"
-                      className="object-contain p-3 transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="pt-2">
-                    <h3 className="font-serif text-sm text-charcoal group-hover:text-navy transition-colors duration-200 leading-snug">
-                      {n.name}
-                    </h3>
-                    <p className="font-serif text-xs text-navy mt-0.5">
-                      {n.currency}{n.price.toFixed(2)}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-
         {/* Feature row */}
-        <div ref={featuresRef} className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center mb-8 sm:mb-16">
+        <div ref={featuresRef} className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
           {[
             { title: "18K PVD Позлата", desc: "4-слойно покритие, устойчиво на вода, пот и парфюм" },
             { title: "316L Стомана", desc: "Хипоалергенна основа - безопасна за всяка кожа" },
