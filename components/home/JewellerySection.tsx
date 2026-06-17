@@ -22,87 +22,145 @@ export function JewellerySection() {
           </p>
         </div>
 
-        {/* Bracelets row */}
-        <div className="mb-6 sm:mb-10">
-          <div className="flex items-center gap-4 mb-3 sm:mb-5">
-            <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Гривни</p>
-            <div className="flex-1 h-px bg-border" />
-            <Link
-              href="/jewellery?category=bracelets"
-              className="font-sans text-[10px] tracking-[0.2em] uppercase text-navy/60 hover:text-navy transition-colors duration-200 flex items-center gap-1"
-            >
-              Виж всички <span className="group-hover:translate-x-0.5 inline-block">→</span>
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-            {bracelets.map((b) => (
-              <Link
-                key={b.id}
-                href={`/products/${b.slug}`}
-                className="group flex flex-col"
-              >
-                <div className="relative aspect-square bg-white border border-border overflow-hidden">
-                  <Image
-                    src={b.coverImage.src}
-                    alt={b.coverImage.alt}
-                    fill
-                    quality={80}
-                    sizes="(max-width: 640px) 50vw, 25vw"
-                    className="object-contain p-3 transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-                <div className="pt-2 sm:pt-3">
-                  <h3 className="font-serif text-sm sm:text-base text-charcoal group-hover:text-navy transition-colors duration-200 leading-snug">
-                    {b.name}
-                  </h3>
-                  <p className="font-serif text-xs sm:text-sm text-navy mt-0.5">
-                    {b.currency}{b.price.toFixed(2)}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
+        {/* ── Category Banners — Desktop only ── */}
+        <div className="hidden lg:grid lg:grid-cols-2 gap-4 mb-16">
+          {/* Chains banner */}
+          <Link
+            href="/jewellery?category=necklaces"
+            className="group relative overflow-hidden h-[420px] block"
+          >
+            <Image
+              src="/beautiful/banner-chains.webp"
+              alt="Lorenzo Ricci Ланци — 18К позлата"
+              fill
+              quality={90}
+              sizes="50vw"
+              className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent transition-opacity duration-500 group-hover:opacity-80" />
+            <div className="absolute bottom-7 left-7 right-7">
+              <p className="font-sans text-[9px] tracking-[0.32em] uppercase text-white/55 mb-2">
+                Колекция
+              </p>
+              <h3 className="font-serif text-4xl text-white leading-tight mb-4">
+                Ланци
+              </h3>
+              <span className="inline-flex items-center gap-2 font-sans text-[10px] tracking-[0.22em] uppercase text-white/65 group-hover:text-white transition-colors duration-300">
+                Разгледай
+                <span className="translate-x-0 group-hover:translate-x-1 transition-transform duration-300 inline-block">
+                  →
+                </span>
+              </span>
+            </div>
+          </Link>
+
+          {/* Bracelets banner */}
+          <Link
+            href="/jewellery?category=bracelets"
+            className="group relative overflow-hidden h-[420px] block"
+          >
+            <Image
+              src="/beautiful/banner-bracelets.webp"
+              alt="Lorenzo Ricci Гривни — 18К позлата"
+              fill
+              quality={90}
+              sizes="50vw"
+              className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent transition-opacity duration-500 group-hover:opacity-80" />
+            <div className="absolute bottom-7 left-7 right-7">
+              <p className="font-sans text-[9px] tracking-[0.32em] uppercase text-white/55 mb-2">
+                Колекция
+              </p>
+              <h3 className="font-serif text-4xl text-white leading-tight mb-4">
+                Гривни
+              </h3>
+              <span className="inline-flex items-center gap-2 font-sans text-[10px] tracking-[0.22em] uppercase text-white/65 group-hover:text-white transition-colors duration-300">
+                Разгледай
+                <span className="translate-x-0 group-hover:translate-x-1 transition-transform duration-300 inline-block">
+                  →
+                </span>
+              </span>
+            </div>
+          </Link>
         </div>
 
-        {/* Necklaces row */}
-        <div className="mb-8 sm:mb-16">
-          <div className="flex items-center gap-4 mb-3 sm:mb-5">
-            <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Колиета</p>
-            <div className="flex-1 h-px bg-border" />
-            <Link
-              href="/jewellery?category=necklaces"
-              className="font-sans text-[10px] tracking-[0.2em] uppercase text-navy/60 hover:text-navy transition-colors duration-200 flex items-center gap-1"
-            >
-              Виж всички <span className="inline-block">→</span>
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-            {necklaces.map((n) => (
+        {/* ── Product grid — Mobile only ── */}
+        <div className="lg:hidden">
+          {/* Bracelets row */}
+          <div className="mb-6">
+            <div className="flex items-center gap-4 mb-3">
+              <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Гривни</p>
+              <div className="flex-1 h-px bg-border" />
               <Link
-                key={n.id}
-                href={`/products/${n.slug}`}
-                className="group flex flex-col"
+                href="/jewellery?category=bracelets"
+                className="font-sans text-[10px] tracking-[0.2em] uppercase text-navy/60 hover:text-navy transition-colors duration-200 flex items-center gap-1"
               >
-                <div className="relative aspect-square bg-white border border-border overflow-hidden">
-                  <Image
-                    src={n.coverImage.src}
-                    alt={n.coverImage.alt}
-                    fill
-                    quality={80}
-                    sizes="(max-width: 640px) 50vw, 25vw"
-                    className="object-contain p-3 transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-                <div className="pt-2 sm:pt-3">
-                  <h3 className="font-serif text-sm sm:text-base text-charcoal group-hover:text-navy transition-colors duration-200 leading-snug">
-                    {n.name}
-                  </h3>
-                  <p className="font-serif text-xs sm:text-sm text-navy mt-0.5">
-                    {n.currency}{n.price.toFixed(2)}
-                  </p>
-                </div>
+                Виж всички <span className="inline-block">→</span>
               </Link>
-            ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {bracelets.map((b) => (
+                <Link key={b.id} href={`/products/${b.slug}`} className="group flex flex-col">
+                  <div className="relative aspect-square bg-white border border-border overflow-hidden">
+                    <Image
+                      src={b.coverImage.src}
+                      alt={b.coverImage.alt}
+                      fill
+                      quality={80}
+                      sizes="50vw"
+                      className="object-contain p-3 transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="pt-2">
+                    <h3 className="font-serif text-sm text-charcoal group-hover:text-navy transition-colors duration-200 leading-snug">
+                      {b.name}
+                    </h3>
+                    <p className="font-serif text-xs text-navy mt-0.5">
+                      {b.currency}{b.price.toFixed(2)}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Necklaces row */}
+          <div className="mb-8">
+            <div className="flex items-center gap-4 mb-3">
+              <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Ланци</p>
+              <div className="flex-1 h-px bg-border" />
+              <Link
+                href="/jewellery?category=necklaces"
+                className="font-sans text-[10px] tracking-[0.2em] uppercase text-navy/60 hover:text-navy transition-colors duration-200 flex items-center gap-1"
+              >
+                Виж всички <span className="inline-block">→</span>
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {necklaces.map((n) => (
+                <Link key={n.id} href={`/products/${n.slug}`} className="group flex flex-col">
+                  <div className="relative aspect-square bg-white border border-border overflow-hidden">
+                    <Image
+                      src={n.coverImage.src}
+                      alt={n.coverImage.alt}
+                      fill
+                      quality={80}
+                      sizes="50vw"
+                      className="object-contain p-3 transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="pt-2">
+                    <h3 className="font-serif text-sm text-charcoal group-hover:text-navy transition-colors duration-200 leading-snug">
+                      {n.name}
+                    </h3>
+                    <p className="font-serif text-xs text-navy mt-0.5">
+                      {n.currency}{n.price.toFixed(2)}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -122,7 +180,6 @@ export function JewellerySection() {
             </div>
           ))}
         </div>
-
       </div>
     </section>
   );
