@@ -99,7 +99,7 @@ const PRODUCT_LABELS: Record<string, string> = {
 };
 
 function ReviewCard({ review }: { review: Review }) {
-  const body = review.body.replace(/-|-/g, "-");
+  const body = review.body?.replace(/-|-/g, "-") ?? "";
   const productLabel = review.productSlug ? PRODUCT_LABELS[review.productSlug] : null;
 
   return (
