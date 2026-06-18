@@ -22,6 +22,7 @@ export interface Product {
   originalPrice?: number;
   currency: string;
   description: string;
+  materialNote?: string;
   shortDescription: string;
   specs: ProductSpec[];
   features: string[];

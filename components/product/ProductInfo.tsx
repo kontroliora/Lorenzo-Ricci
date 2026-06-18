@@ -240,9 +240,16 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
 
         <div className="pt-5">
           {activeTab === "description" && (
-            <p className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide">
-              {product.description}
-            </p>
+            <div className="flex flex-col gap-4">
+              <p className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide">
+                {product.description}
+              </p>
+              {product.materialNote && (
+                <p className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide">
+                  {product.materialNote}
+                </p>
+              )}
+            </div>
           )}
           {activeTab === "specs" && (
             <div className="flex flex-col gap-3">
