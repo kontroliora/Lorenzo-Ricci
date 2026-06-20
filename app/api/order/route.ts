@@ -70,6 +70,7 @@ async function sendToBigArena(order: OrderPayload): Promise<void> {
       "Accept":        "application/json",
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(7000),
   });
 
   if (!res.ok) {
@@ -137,9 +138,17 @@ async function checkBlacklist(phone: string): Promise<BlacklistResult> {
 // ─────────────────────────────────────────────────────────────
 // 2.  Admin notification email (HTML)
 // ─────────────────────────────────────────────────────────────
-function buildAdminEmail(order: Record<string, unknown>, bl: BlacklistResult): string {
+function buildAdminEmail(order: Record<string, unknown>, bl: BlacklistResult, bigArenaError?: string | null): string {
   const customer = (order.customer ?? {}) as Record<string, unknown>;
   const shipping  = (order.shipping  ?? {}) as Record<string, unknown>;
+
+  const bigArenaBlock = bigArenaError
+    ? `<div style="background:#d97706;color:#fff;padding:18px 24px;border-radius:6px;margin-bottom:16px">
+        <p style="margin:0;font-size:18px;font-weight:700">⚠️ BigArena НЕУСПЕШНО — РЪЧНА ОБРАБОТКА!</p>
+        <p style="margin:8px 0 0;font-size:13px;opacity:.9">Поръчката НЕ е изпратена към BigArena автоматично. Обработи я ръчно.</p>
+        <p style="margin:8px 0 0;font-size:12px;opacity:.75;font-family:monospace">${bigArenaError.slice(0, 300)}</p>
+      </div>`
+    : "";
 
   const safeBlock = bl.found
     ? `<div style="background:#ff1a1a;color:#fff;padding:18px 24px;border-radius:6px;margin-bottom:28px">
@@ -173,7 +182,7 @@ function buildAdminEmail(order: Record<string, unknown>, bl: BlacklistResult): s
       <p style="margin:0;color:rgba(255,255,255,.5);font-size:11px;letter-spacing:.25em;text-transform:uppercase">Нова поръчка</p>
     </div>
     <div style="padding:32px">
-      ${safeBlock}
+      ${bigArenaBlock}${safeBlock}
 
       <h3 style="margin:0 0 16px;font-size:16px;text-transform:uppercase;letter-spacing:.08em;color:#374151">Данни на клиента</h3>
       <table style="width:100%;border-collapse:collapse;margin-bottom:28px;font-size:14px">
@@ -435,22 +444,28 @@ export async function POST(req: NextRequest) {
     const order = await req.json() as Record<string, unknown>;
     const customer = (order.customer ?? {}) as Record<string, unknown>;
 
-    // 1. Submit to BigArena — awaited so a non-2xx response returns 500 to the frontend
-    await sendToBigArena(order);
+    // 1. Try BigArena (non-blocking) — a failure warns in admin email but never kills the order
+    let bigArenaError: string | null = null;
+    try {
+      await sendToBigArena(order);
+    } catch (err) {
+      bigArenaError = String(err);
+      console.error("[Order] BigArena failed (order will proceed):", err);
+    }
 
-    // 2. Blacklist check + emails fire concurrently after BigArena succeeds (best-effort)
+    // 2. Blacklist check + emails fire concurrently (best-effort)
     const customerAddress = String(customer.email ?? "").trim();
     const customerName    = String(customer.name  ?? "");
 
     Promise.allSettled([
       (async () => {
         const bl = await checkBlacklist(String(customer.phone ?? ""));
-        await sendAdminEmailViaZoho(
-          bl.found
-            ? `🚨 [BLACKLIST] Нова поръчка - ${customerName}`
-            : `✅ Нова поръчка - ${customerName}`,
-          buildAdminEmail(order, bl),
-        );
+        const subject = bl.found
+          ? `🚨 [BLACKLIST] Нова поръчка - ${customerName}`
+          : bigArenaError
+          ? `⚠️ [BIGARENA FAILED] Нова поръчка - ${customerName}`
+          : `✅ Нова поръчка - ${customerName}`;
+        await sendAdminEmailViaZoho(subject, buildAdminEmail(order, bl, bigArenaError));
       })(),
       ...(customerAddress
         ? [sendCustomerEmailViaZoho(customerAddress, buildCustomerEmail(order))]

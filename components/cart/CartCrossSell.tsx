@@ -106,7 +106,7 @@ export function CartCrossSell() {
                   src={product.coverImage.src}
                   alt={product.coverImage.alt}
                   fill
-                  quality={65}
+                  quality={60}
                   sizes="48px"
                   className="object-cover object-center"
                 />
