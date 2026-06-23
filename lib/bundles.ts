@@ -10,11 +10,11 @@ interface Bundle {
 
 export const BUNDLES: Bundle[] = [
   {
-    id: "diamante-cross-pair",
-    label: "Diamante Cross Комплект",
+    id: "aurelius-signature-pair",
+    label: "Aurelius Cross + Signature Комплект",
     slots: [
-      ["bracelet-diamante-cross"],
-      ["necklace-aurelius", "necklace-grande-imperiale"],
+      ["necklace-aurelius"],
+      ["bracelet-signature"],
     ],
     discountPct: 10,
   },
