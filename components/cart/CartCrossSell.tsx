@@ -23,9 +23,9 @@ const BUNDLE_PARTNER: Record<string, string> = {
 };
 
 const WATCH_UPSELL = [
-  "bracelet-diamante-cross",
+  "bracelet-milano-twist",
   "bracelet-milano-forte",
-  "necklace-aurelius",
+  "bracelet-signature",
 ];
 
 const FALLBACK_UPSELL = [
