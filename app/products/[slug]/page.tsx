@@ -12,6 +12,13 @@ import { BundleUpsell } from "@/components/product/BundleUpsell";
 import { JewelleryDescription } from "@/components/product/JewelleryDescription";
 import { LeatherDescription } from "@/components/product/LeatherDescription";
 
+const CARDHOLDER_VIDEOS: Record<string, string> = {
+  "cardholder-bianco":    "/cardholder-bianco-leather.mp4",
+  "cardholder-valentina": "/cardholder-valentina-leather.mp4",
+  "cardholder-zaffiro":   "/cardholder-zaffiro-leather.mp4",
+  "cardholder-ambra":     "/cardholder-ambra-leather.mp4",
+};
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
@@ -93,7 +100,9 @@ export default async function ProductPage({ params }: Props) {
         {product.category === "jewellery" && <JewelleryDescription />}
 
         {/* Leather description - material & craft Q&A */}
-        {(product.category === "wallets" || product.category === "cardholders") && <LeatherDescription />}
+        {(product.category === "wallets" || product.category === "cardholders") && (
+          <LeatherDescription videoSrc={CARDHOLDER_VIDEOS[product.slug]} />
+        )}
 
         {/* Reviews */}
         <div className="mt-20">

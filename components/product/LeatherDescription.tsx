@@ -2,6 +2,10 @@ import Image from "next/image";
 
 const TEXTURE_IMG = "/Products/wallets/description/croco 3.png";
 
+interface Props {
+  videoSrc?: string;
+}
+
 const BULLETS = [
   {
     term: "CITES Сертификат",
@@ -21,25 +25,37 @@ const BULLETS = [
   },
 ];
 
-export function LeatherDescription() {
+export function LeatherDescription({ videoSrc }: Props) {
   return (
     <div className="mt-16 border-t border-border">
 
-      {/* ── Image left + Bullets right — max-w-4xl, centred ─────────────── */}
+      {/* ── Media left + Bullets right — max-w-4xl, centred ─────────────── */}
       <div className="max-w-4xl mx-auto px-6 py-14 md:py-20">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14 items-center">
 
-          {/* Image — left on desktop, above bullets on mobile */}
+          {/* Left: video (cardholders) or static image (wallets) */}
           <div className="relative aspect-square overflow-hidden">
-            <Image
-              src={TEXTURE_IMG}
-              alt="Кожа от сиамски крокодил - Lorenzo Ricci Exotic Collection"
-              fill
-              quality={90}
-              sizes="(min-width: 768px) 448px, 100vw"
-              className="object-cover object-center"
-              unoptimized
-            />
+            {videoSrc ? (
+              <video
+                src={videoSrc}
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Image
+                src={TEXTURE_IMG}
+                alt="Кожа от сиамски крокодил - Lorenzo Ricci Exotic Collection"
+                fill
+                quality={90}
+                sizes="(min-width: 768px) 448px, 100vw"
+                className="object-cover object-center"
+                unoptimized
+              />
+            )}
           </div>
 
           {/* Bullets — right on desktop, below image on mobile */}
