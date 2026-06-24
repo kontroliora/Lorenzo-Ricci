@@ -40,25 +40,25 @@ export const BUNDLES: Bundle[] = [
     id: "bianco-alabastro-pair",
     label: "Bianco + Alabastro Комплект",
     slots: [["cardholder-bianco"], ["wallet-alabastro"]],
-    discountPct: 10,
+    discountPct: 0,
   },
   {
     id: "valentina-rubino-pair",
     label: "Valentina + Rubino Комплект",
     slots: [["cardholder-valentina"], ["wallet-rubino"]],
-    discountPct: 10,
+    discountPct: 0,
   },
   {
     id: "ambra-rubino-pair",
     label: "Ambra + Rubino Комплект",
     slots: [["cardholder-ambra"], ["wallet-rubino"]],
-    discountPct: 10,
+    discountPct: 0,
   },
   {
     id: "zaffiro-alabastro-pair",
     label: "Zaffiro + Alabastro Комплект",
     slots: [["cardholder-zaffiro"], ["wallet-alabastro"]],
-    discountPct: 10,
+    discountPct: 0,
   },
 ];
 
@@ -87,7 +87,7 @@ export function calcBundleDiscount(items: CartItem[]): BundleResult {
 
     const discount = Math.round(bundleSubtotal * bundle.discountPct) / 100;
     totalDiscount += discount;
-    active.push({ label: bundle.label, discount });
+    if (discount > 0) active.push({ label: bundle.label, discount });
   }
 
   return { totalDiscount, active };
