@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { CartItem } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { calcBundleDiscount } from "@/lib/bundles";
+import { trackFbEvent } from "@/lib/fbq";
 
 // ─── Shipping options ────────────────────────────────────────────────────────
 const SHIPPING_OPTIONS = [
@@ -138,6 +139,19 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     setSubmitting(false);
     setSubmitted(true);
     clearCart();
+
+    // Fire Purchase event — order confirmed, COD payment happens at delivery
+    trackFbEvent("Purchase", {
+      value:    capturedTotal,
+      currency: "EUR",
+      contents: items.map((i) => ({
+        id:       i.product.sku,
+        quantity: i.quantity,
+      })),
+      content_type: "product",
+      order_id: ref,
+    });
+
     setTimeout(() => onSuccess(), 4000);
   };
 
