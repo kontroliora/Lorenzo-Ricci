@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { CartItem } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { calcBundleDiscount } from "@/lib/bundles";
@@ -41,6 +41,7 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
   const [shippingId, setShippingId] = useState<ShippingId>("speedy-office");
   const [submitting, setSubmitting]         = useState(false);
   const [submitted, setSubmitted]           = useState(false);
+  const purchaseFired = useRef(false);
   const [errors, setErrors]                 = useState<Record<string, string>>({});
   const [submitError, setSubmitError]       = useState("");
   const [orderRef, setOrderRef]             = useState("");
@@ -140,17 +141,18 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     setSubmitted(true);
     clearCart();
 
-    // Fire Purchase event — order confirmed, COD payment happens at delivery
-    trackFbEvent("Purchase", {
-      value:    capturedTotal,
-      currency: "EUR",
-      contents: items.map((i) => ({
-        id:       i.product.sku,
-        quantity: i.quantity,
-      })),
-      content_type: "product",
-      order_id: ref,
-    });
+    // Fire Purchase event exactly once per confirmed order
+    if (!purchaseFired.current) {
+      purchaseFired.current = true;
+      trackFbEvent("Purchase", {
+        value:        capturedTotal,
+        currency:     "EUR",
+        content_ids:  items.map((i) => i.product.sku),
+        contents:     items.map((i) => ({ id: i.product.sku, quantity: i.quantity })),
+        content_type: "product",
+        order_id:     ref,
+      });
+    }
 
     setTimeout(() => onSuccess(), 4000);
   };
