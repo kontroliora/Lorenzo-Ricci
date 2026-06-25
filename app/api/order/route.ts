@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { supabase } from "@/lib/supabase";
 
 // ─────────────────────────────────────────────────────────────
 // 0.  BigArena fulfillment integration
@@ -455,6 +456,33 @@ export async function POST(req: NextRequest) {
         ? [sendCustomerEmail(customerAddress, buildCustomerEmail(order))]
         : []),
     ]);
+
+    // 3. Save to Supabase (best-effort — never blocks the response)
+    try {
+      const shipping = (order.shipping ?? {}) as Record<string, unknown>;
+      await supabase.from("orders").insert({
+        order_ref:               String(order.orderRef ?? ""),
+        name:                    String(customer.name          ?? ""),
+        phone:                   String(customer.phone         ?? ""),
+        email:                   String(customer.email         ?? "") || null,
+        city:                    String(customer.city          ?? ""),
+        post_code:               String(customer.postCode      ?? ""),
+        address:                 String(customer.officeAddress ?? ""),
+        shipping_method:         String(customer.shippingMethod ?? ""),
+        courier:                 String(customer.courier       ?? ""),
+        items:                   order.items ?? [],
+        subtotal:                Number(order.subtotal         ?? 0),
+        shipping_cost:           Number(shipping.cost          ?? 0),
+        total:                   Number(order.total            ?? 0),
+        sms_marketing_consent:   Boolean(customer.smsMarketingConsent),
+        email_marketing_consent: Boolean(customer.emailMarketingConsent),
+        notes:                   String(customer.notes         ?? "") || null,
+        bigarena_sent:           bigArenaError === null,
+      });
+      console.log("[Supabase] Order saved");
+    } catch (err) {
+      console.error("[Supabase] Failed to save order:", err);
+    }
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {

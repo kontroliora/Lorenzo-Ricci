@@ -9,9 +9,17 @@ export function NewsletterStrip() {
     e.preventDefault();
     if (!email.trim()) return;
     setStatus("loading");
-    // TODO: wire up to email provider (Klaviyo / Mailchimp / etc.)
-    await new Promise((r) => setTimeout(r, 600));
-    setStatus("done");
+    try {
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setStatus("done");
+    } catch {
+      setStatus("error");
+    }
   }
 
   return (
@@ -36,6 +44,10 @@ export function NewsletterStrip() {
                 Добавен сте към VIP листата. Очаквайте скоро.
               </p>
             </div>
+          ) : status === "error" ? (
+            <p className="font-sans text-sm text-red-400/80 tracking-wide">
+              Нещо се обърка. Опитайте отново.
+            </p>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
               <input
