@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 // ─────────────────────────────────────────────────────────────
 // 0.  BigArena fulfillment integration
@@ -374,66 +374,47 @@ function buildCustomerEmail(order: Record<string, unknown>): string {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 4.  Zoho SMTP helpers
+// 4.  Resend email helpers
 // ─────────────────────────────────────────────────────────────
-async function sendAdminEmailViaZoho(subject: string, html: string): Promise<void> {
-  const user = process.env.ZOHO_EMAIL;
-  const pass = process.env.ZOHO_PASSWORD;
-
-  if (!user || !pass) {
-    console.warn("[Zoho] ZOHO_EMAIL or ZOHO_PASSWORD not set — skipping admin email");
-    return;
+function getResend(): Resend | null {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) {
+    console.warn("[Resend] RESEND_API_KEY not set — skipping email");
+    return null;
   }
-
-  const transport = nodemailer.createTransport({
-    host:   "smtp.zoho.eu",
-    port:   465,
-    secure: true,
-    auth:   { user, pass },
-  });
-
-  try {
-    await transport.sendMail({
-      from:    `"Lorenzo Ricci Orders" <${user}>`,
-      to:      ["info@lorenzo-ricci.com", "sodolos3@gmail.com"],
-      subject,
-      html,
-    });
-    console.log("[Zoho] Admin email sent successfully");
-  } catch (err) {
-    console.error("[Zoho] Admin email failed:", err);
-    throw err;
-  }
+  return new Resend(key);
 }
 
-async function sendCustomerEmailViaZoho(to: string, html: string): Promise<void> {
-  const user = process.env.ZOHO_EMAIL;
-  const pass = process.env.ZOHO_PASSWORD;
-
-  if (!user || !pass) {
-    console.warn("[Zoho] ZOHO_EMAIL or ZOHO_PASSWORD not set — skipping customer email");
-    return;
-  }
-
-  const transport = nodemailer.createTransport({
-    host:   "smtp.zoho.eu",
-    port:   465,
-    secure: true,
-    auth:   { user, pass },
+async function sendAdminEmail(subject: string, html: string): Promise<void> {
+  const resend = getResend();
+  if (!resend) return;
+  const { error } = await resend.emails.send({
+    from:    "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>",
+    to:      ["info@lorenzo-ricci.com", "sodolos3@gmail.com"],
+    subject,
+    html,
   });
-
-  try {
-    await transport.sendMail({
-      from:    `"Lorenzo Ricci" <${user}>`,
-      to,
-      subject: "Вашата поръчка е получена - Lorenzo Ricci",
-      html,
-    });
-    console.log("[Zoho] Customer email sent to:", to);
-  } catch (err) {
-    console.error("[Zoho] Customer email failed:", err);
-    throw err;
+  if (error) {
+    console.error("[Resend] Admin email failed:", error);
+    throw new Error(String(error));
   }
+  console.log("[Resend] Admin email sent");
+}
+
+async function sendCustomerEmail(to: string, html: string): Promise<void> {
+  const resend = getResend();
+  if (!resend) return;
+  const { error } = await resend.emails.send({
+    from:    "Lorenzo Ricci <info@lorenzo-ricci.com>",
+    to,
+    subject: "Вашата поръчка е получена - Lorenzo Ricci",
+    html,
+  });
+  if (error) {
+    console.error("[Resend] Customer email failed:", error);
+    throw new Error(String(error));
+  }
+  console.log("[Resend] Customer email sent to:", to);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -441,34 +422,37 @@ async function sendCustomerEmailViaZoho(to: string, html: string): Promise<void>
 // ─────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const order = await req.json() as Record<string, unknown>;
+    const order    = await req.json() as Record<string, unknown>;
     const customer = (order.customer ?? {}) as Record<string, unknown>;
-
-    // 1. Try BigArena (non-blocking) — a failure warns in admin email but never kills the order
-    let bigArenaError: string | null = null;
-    try {
-      await sendToBigArena(order);
-    } catch (err) {
-      bigArenaError = String(err);
-      console.error("[Order] BigArena failed (order will proceed):", err);
-    }
-
-    // 2. Blacklist check + emails fire concurrently (best-effort)
     const customerAddress = String(customer.email ?? "").trim();
     const customerName    = String(customer.name  ?? "");
 
-    Promise.allSettled([
-      (async () => {
-        const bl = await checkBlacklist(String(customer.phone ?? ""));
-        const subject = bl.found
-          ? `🚨 [BLACKLIST] Нова поръчка - ${customerName}`
-          : bigArenaError
-          ? `⚠️ [BIGARENA FAILED] Нова поръчка - ${customerName}`
-          : `✅ Нова поръчка - ${customerName}`;
-        await sendAdminEmailViaZoho(subject, buildAdminEmail(order, bl, bigArenaError));
-      })(),
+    // 1. BigArena + blacklist run concurrently (saves ~3s vs sequential)
+    const [bigArenaSettled, blSettled] = await Promise.allSettled([
+      sendToBigArena(order),
+      checkBlacklist(String(customer.phone ?? "")),
+    ]);
+
+    const bigArenaError = bigArenaSettled.status === "rejected"
+      ? String(bigArenaSettled.reason)
+      : null;
+    if (bigArenaError) console.error("[Order] BigArena failed:", bigArenaError);
+
+    const bl = blSettled.status === "fulfilled"
+      ? blSettled.value
+      : { found: false, label: "CHECK ERROR", details: String(blSettled.reason) };
+
+    // 2. Send both emails and await them — without await they are killed by Vercel before sending
+    const subject = bl.found
+      ? `🚨 [BLACKLIST] Нова поръчка - ${customerName}`
+      : bigArenaError
+      ? `⚠️ [BIGARENA FAILED] Нова поръчка - ${customerName}`
+      : `✅ Нова поръчка - ${customerName}`;
+
+    await Promise.allSettled([
+      sendAdminEmail(subject, buildAdminEmail(order, bl, bigArenaError)),
       ...(customerAddress
-        ? [sendCustomerEmailViaZoho(customerAddress, buildCustomerEmail(order))]
+        ? [sendCustomerEmail(customerAddress, buildCustomerEmail(order))]
         : []),
     ]);
 
