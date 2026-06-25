@@ -157,6 +157,7 @@ export const products: Product[] = [
       { src: `/Products/watches/Polar Frost/description/polar-frost-editorial-1.webp`, alt: "Lorenzo Ricci Polar Frost - editorial лайфстайл, арктически хронограф" },
       { src: `/Products/watches/Polar Frost/description/polar-frost-editorial-2.webp`, alt: "Lorenzo Ricci Polar Frost - детайл на синия циферблат, арктическа колекция" },
     ],
+    descriptionVideo: "/polar-frost-description.mp4",
   },
 
   // ─── JEWELLERY ───────────────────────────────────────────────────────────────

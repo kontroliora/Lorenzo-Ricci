@@ -33,6 +33,7 @@ export interface Product {
   stock?: number;
   warranty: string;
   descriptionImages?: ProductImage[];
+  descriptionVideo?: string;
 }
 
 export interface CartItem {

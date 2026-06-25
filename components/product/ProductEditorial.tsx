@@ -57,17 +57,29 @@ export function ProductEditorial({ product }: Props) {
         </div>
       </div>
 
-      {/* ── Full-width second image with overlay ──────────────── */}
+      {/* ── Full-width second image/video with overlay ────────── */}
       {img2 && (
         <div className="relative w-full aspect-[21/9] overflow-hidden">
-          <Image
-            src={img2.src}
-            alt={img2.alt}
-            fill
-            quality={90}
-            sizes="100vw"
-            className="object-cover object-center"
-          />
+          {product.descriptionVideo ? (
+            <video
+              src={product.descriptionVideo}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 w-full h-full object-cover object-center"
+            />
+          ) : (
+            <Image
+              src={img2.src}
+              alt={img2.alt}
+              fill
+              quality={90}
+              sizes="100vw"
+              className="object-cover object-center"
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent flex items-center">
             <div className="px-10 sm:px-20 max-w-xl">
               <p className="font-sans text-[10px] tracking-[0.32em] uppercase text-white/50 mb-4">
