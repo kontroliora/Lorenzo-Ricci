@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { supabase } from "@/lib/supabase";
+import { createHash } from "crypto";
 
 // ─────────────────────────────────────────────────────────────
 // 0.  BigArena fulfillment integration
@@ -419,6 +420,79 @@ async function sendCustomerEmail(to: string, html: string): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────────────
+// 5.  Meta Conversions API (server-side Purchase event)
+// ─────────────────────────────────────────────────────────────
+const META_PIXEL_ID = "661480326560209";
+
+function sha256(value: string): string {
+  return createHash("sha256").update(value.trim().toLowerCase()).digest("hex");
+}
+
+async function sendCapiPurchase(
+  order: Record<string, unknown>,
+  orderRef: string,
+  total: number
+): Promise<void> {
+  const token = process.env.META_CAPI_ACCESS_TOKEN;
+  if (!token) {
+    console.warn("[CAPI] META_CAPI_ACCESS_TOKEN not set — skipping");
+    return;
+  }
+
+  const customer = (order.customer ?? {}) as Record<string, unknown>;
+  const items    = (order.items    ?? []) as Array<{ sku?: string; quantity?: number }>;
+
+  const nameParts = String(customer.name ?? "").trim().split(" ");
+  const firstName = nameParts[0] ?? "";
+  const lastName  = nameParts.slice(1).join(" ");
+
+  const userData: Record<string, unknown> = { country: ["bg"] };
+  const email = String(customer.email ?? "").trim();
+  const phone = String(customer.phone ?? "").replace(/\D/g, "");
+  if (email)     userData.em = [sha256(email)];
+  if (phone)     userData.ph = [sha256(phone)];
+  if (firstName) userData.fn = [sha256(firstName.toLowerCase())];
+  if (lastName)  userData.ln = [sha256(lastName.toLowerCase())];
+
+  const payload = {
+    data: [{
+      event_name:       "Purchase",
+      event_time:       Math.floor(Date.now() / 1000),
+      event_id:         orderRef,            // deduplicates with browser pixel eventID
+      event_source_url: "https://lorenzo-ricci.com",
+      action_source:    "website",
+      user_data:        userData,
+      custom_data: {
+        value:        total,
+        currency:     "EUR",
+        content_ids:  items.map((i) => i.sku ?? "").filter(Boolean),
+        content_type: "product",
+        order_id:     orderRef,
+      },
+    }],
+    access_token: token,
+  };
+
+  const res = await fetch(
+    `https://graph.facebook.com/v18.0/${META_PIXEL_ID}/events`,
+    {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(payload),
+      signal:  AbortSignal.timeout(5000),
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`CAPI ${res.status}: ${text.slice(0, 200)}`);
+  }
+
+  const result = await res.json();
+  console.log("[CAPI] Purchase sent:", JSON.stringify(result));
+}
+
+// ─────────────────────────────────────────────────────────────
 // POST /api/order
 // ─────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
@@ -455,6 +529,7 @@ export async function POST(req: NextRequest) {
       ...(customerAddress
         ? [sendCustomerEmail(customerAddress, buildCustomerEmail(order))]
         : []),
+      sendCapiPurchase(order, String(order.orderRef ?? ""), Number(order.total ?? 0)),
     ]);
 
     // 3. Save to Supabase (best-effort — never blocks the response)

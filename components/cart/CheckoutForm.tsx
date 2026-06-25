@@ -141,7 +141,7 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     setSubmitted(true);
     clearCart();
 
-    // Fire Purchase event exactly once per confirmed order
+    // Fire Purchase event exactly once — eventID=ref deduplicates with CAPI server event
     if (!purchaseFired.current) {
       purchaseFired.current = true;
       trackFbEvent("Purchase", {
@@ -151,7 +151,7 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
         contents:     items.map((i) => ({ id: i.product.sku, quantity: i.quantity })),
         content_type: "product",
         order_id:     ref,
-      });
+      }, ref);
     }
 
     setTimeout(() => onSuccess(), 4000);
