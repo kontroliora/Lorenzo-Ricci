@@ -34,7 +34,8 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     postCode: "",
     officeAddress: "",
     notes: "",
-    acceptsMarketing: true,
+    smsMarketingConsent:   false,
+    emailMarketingConsent: false,
   });
   const [shippingId, setShippingId] = useState<ShippingId>("speedy-office");
   const [submitting, setSubmitting]         = useState(false);
@@ -246,17 +247,15 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
             className="input-luxury" autoComplete="tel" inputMode="tel"
             style={errors.phone ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
         </Field>
-
-        {/* SMS marketing opt-in */}
-        <label className="flex items-start gap-3 cursor-pointer -mt-1">
+        <label className="flex items-start gap-2.5 cursor-pointer -mt-2">
           <input
             type="checkbox"
-            checked={form.acceptsMarketing}
-            onChange={(e) => setForm((f) => ({ ...f, acceptsMarketing: e.target.checked }))}
-            className="mt-0.5 flex-shrink-0 w-4 h-4 accent-white cursor-pointer"
+            checked={form.smsMarketingConsent}
+            onChange={(e) => setForm((f) => ({ ...f, smsMarketingConsent: e.target.checked }))}
+            className="mt-0.5 flex-shrink-0 w-3.5 h-3.5 accent-white cursor-pointer"
           />
-          <span className="font-sans text-[10px] text-white/50 leading-relaxed tracking-wide">
-            Искам да получавам ексклузивни оферти и статус на поръчката по SMS.
+          <span className="font-sans text-[10px] text-white/40 leading-relaxed tracking-wide">
+            Искам да получавам ексклузивни оферти по SMS
           </span>
         </label>
 
@@ -266,6 +265,17 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
             className="input-luxury" autoComplete="email" inputMode="email"
             style={errors.email ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
         </Field>
+        <label className="flex items-start gap-2.5 cursor-pointer -mt-2">
+          <input
+            type="checkbox"
+            checked={form.emailMarketingConsent}
+            onChange={(e) => setForm((f) => ({ ...f, emailMarketingConsent: e.target.checked }))}
+            className="mt-0.5 flex-shrink-0 w-3.5 h-3.5 accent-white cursor-pointer"
+          />
+          <span className="font-sans text-[10px] text-white/40 leading-relaxed tracking-wide">
+            Искам да получавам оферти и новини по имейл
+          </span>
+        </label>
 
         <Field id="field-city" label="Град *" error={errors.city}>
           <input type="text" placeholder="София" value={form.city}
