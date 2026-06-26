@@ -53,6 +53,7 @@ export const products: Product[] = [
       { src: `/Products/watches/Chrono Black/description/chrono-black-editorial.webp`, alt: "Lorenzo Ricci Chrono Black - лайфстайл editorial, луксозен хронограф" },
       { src: `/Products/watches/Chrono Black/chrono-black-lifestyle.webp`,             alt: "Lorenzo Ricci Chrono Black - lifestyle снимка на китката" },
     ],
+    quoteVideo: "/chrono-black-quote.mp4",
   },
   {
     id: "golden-eclipse",
@@ -106,6 +107,7 @@ export const products: Product[] = [
       { src: `/Products/watches/Golden Eclipse/description/golden-eclipse-editorial-1.webp`, alt: "Lorenzo Ricci Golden Eclipse - editorial лайфстайл, позлатен хронограф" },
       { src: `/Products/watches/Golden Eclipse/description/golden-eclipse-editorial-2.webp`, alt: "Lorenzo Ricci Golden Eclipse - луксозен детайл на позлатения циферблат" },
     ],
+    quoteVideo: "/golden-eclipse-quote.mp4",
   },
   {
     id: "polar-frost",

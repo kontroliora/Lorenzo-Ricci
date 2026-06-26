@@ -57,8 +57,36 @@ export function ProductEditorial({ product }: Props) {
         </div>
       </div>
 
-      {/* ── Full-width second image/video with overlay ────────── */}
-      {img2 && (
+      {/* ── Split: 4:5 video left + quote text right ─────────── */}
+      {product.quoteVideo && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+          {/* Video 4:5 */}
+          <div className="aspect-[4/5] overflow-hidden">
+            <video
+              src={product.quoteVideo}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          {/* Text */}
+          <div className="flex flex-col justify-center px-8 sm:px-12 lg:px-16 py-14 lg:py-0 bg-white">
+            <p className="font-sans text-[10px] tracking-[0.32em] uppercase text-ink-faint mb-6">
+              {product.warranty}
+            </p>
+            <blockquote className="font-serif text-display-sm text-charcoal leading-relaxed mb-8">
+              „Прецизност и характер – носен с увереност."
+            </blockquote>
+            <div className="w-10 h-px bg-navy/30" />
+          </div>
+        </div>
+      )}
+
+      {/* ── Full-width second image/video with overlay (Polar Frost) ── */}
+      {img2 && !product.quoteVideo && (
         <div className="relative w-full aspect-[21/9] overflow-hidden">
           {product.descriptionVideo ? (
             <video

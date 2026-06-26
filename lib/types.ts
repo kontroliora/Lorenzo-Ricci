@@ -34,6 +34,7 @@ export interface Product {
   warranty: string;
   descriptionImages?: ProductImage[];
   descriptionVideo?: string;
+  quoteVideo?: string;
 }
 
 export interface CartItem {
