@@ -5,6 +5,7 @@ import { Award, RefreshCw, Truck, Eye } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
+import { SummerCountdown } from "@/components/product/SummerCountdown";
 
 const WATCH_VARIANTS = [
   { slug: "chrono-black",   label: "Black", color: "#111111",  inStock: true },
@@ -138,6 +139,9 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           </>
         )}
       </div>
+
+      {/* Summer promo countdown - watches only */}
+      {product.category === "watches" && <SummerCountdown />}
 
       {/* Features */}
       <ul className="flex flex-col gap-2.5">
