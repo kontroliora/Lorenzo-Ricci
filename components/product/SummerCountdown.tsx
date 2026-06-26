@@ -40,34 +40,35 @@ export function SummerCountdown() {
   ] as const;
 
   return (
-    <div className="bg-[#0D1117] border border-[#C9A84C]/30 px-5 py-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-0.5 min-w-0">
-          <p className="font-sans text-[9px] font-semibold tracking-[0.32em] uppercase text-[#C9A84C]">
+    <div className="border border-navy/20 bg-navy/[0.03] px-5 py-4 flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="text-navy text-xs">◈</span>
+          <p className="font-sans text-[9px] font-semibold tracking-[0.3em] uppercase text-navy">
             Лятна промоция
           </p>
-          <p className="font-sans text-[11px] font-light text-white/60 leading-snug tracking-wide">
-            Намалението приключва след:
-          </p>
         </div>
+        <p className="font-sans text-[11px] font-light text-ink-muted tracking-wide leading-snug">
+          Намалението приключва след:
+        </p>
+      </div>
 
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          {units.map(({ val, label }, i) => (
-            <div key={label} className="flex items-center gap-1.5">
-              <div className="flex flex-col items-center">
-                <span className="font-serif text-xl text-white leading-none tabular-nums w-7 text-center">
-                  {pad(val)}
-                </span>
-                <span className="font-sans text-[8px] tracking-[0.2em] uppercase text-white/35 mt-0.5">
-                  {label}
-                </span>
-              </div>
-              {i < 3 && (
-                <span className="font-serif text-[#C9A84C]/50 text-base leading-none mb-3">:</span>
-              )}
+      <div className="flex items-center gap-1 flex-shrink-0">
+        {units.map(({ val, label }, i) => (
+          <div key={label} className="flex items-center gap-1">
+            <div className="flex flex-col items-center w-8">
+              <span className="font-serif text-[22px] text-charcoal leading-none tabular-nums">
+                {pad(val)}
+              </span>
+              <span className="font-sans text-[8px] tracking-[0.15em] uppercase text-ink-faint mt-0.5">
+                {label}
+              </span>
             </div>
-          ))}
-        </div>
+            {i < 3 && (
+              <span className="text-navy/30 font-serif text-lg leading-none mb-3.5">:</span>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
