@@ -8,7 +8,7 @@ import { createHash } from "crypto";
 // ─────────────────────────────────────────────────────────────
 
 type OrderPayload = Record<string, unknown>;
-type ItemPayload  = { sku?: string; qty?: number; quantity?: number };
+type ItemPayload  = { sku?: string; qty?: number; quantity?: number; slug?: string; name?: string; price?: number; currency?: string };
 
 function buildBigArenaBody(order: OrderPayload): Record<string, unknown> {
   const customer = (order.customer ?? {}) as Record<string, unknown>;
@@ -557,6 +557,24 @@ export async function POST(req: NextRequest) {
       console.log("[Supabase] Order saved");
     } catch (err) {
       console.error("[Supabase] Failed to save order:", err);
+    }
+
+    // 4. Decrement wallet inventory (best-effort, atomic — never blocks response)
+    const walletSlugs = (order.items as ItemPayload[] ?? [])
+      .filter((i) => String(i.slug ?? "").startsWith("wallet-"))
+      .map((i) => String(i.slug));
+
+    for (const slug of walletSlugs) {
+      try {
+        const { data: newStock, error: rpcError } = await supabase.rpc(
+          "decrement_wallet_stock",
+          { p_slug: slug }
+        );
+        if (rpcError) console.error(`[Inventory] Error decrementing ${slug}:`, rpcError);
+        else console.log(`[Inventory] ${slug} → stock now ${newStock}`);
+      } catch (err) {
+        console.error(`[Inventory] Failed to decrement ${slug}:`, err);
+      }
     }
 
     return NextResponse.json({ success: true }, { status: 200 });

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Award, RefreshCw, Truck, Eye } from "lucide-react";
 import type { Product } from "@/lib/types";
@@ -35,6 +35,24 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
   const { addItem } = useCartStore();
   const [added, setAdded] = useState(false);
   const [activeTab, setActiveTab] = useState<"description" | "specs" | "delivery">("description");
+  const [walletStock, setWalletStock] = useState<number | null>(null);
+  const [stockLoaded, setStockLoaded] = useState(false);
+
+  useEffect(() => {
+    if (product.category !== "wallets") return;
+    fetch(`/api/stock/${product.slug}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setWalletStock(typeof d.stock === "number" ? d.stock : null);
+        setStockLoaded(true);
+      })
+      .catch(() => setStockLoaded(true));
+  }, [product.slug, product.category]);
+
+  const effectiveInStock =
+    product.category === "wallets" && stockLoaded && walletStock !== null
+      ? walletStock > 0
+      : product.inStock;
 
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
   const discountPct = hasDiscount
@@ -143,6 +161,32 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       {/* Summer promo countdown - watches only */}
       {product.category === "watches" && <SummerCountdown />}
 
+      {/* Wallet stock indicator */}
+      {product.category === "wallets" && stockLoaded && walletStock !== null && (
+        <div className="flex items-center gap-2">
+          {walletStock === 0 ? (
+            <>
+              <span className="text-ink-faint text-xs">◈</span>
+              <span className="font-sans text-[11px] text-ink-faint tracking-wide">Изчерпан</span>
+            </>
+          ) : walletStock <= 5 ? (
+            <>
+              <span className="text-amber-600 text-xs">◈</span>
+              <span className="font-sans text-[11px] text-amber-700 tracking-wide font-medium">
+                Последни бройки · Остават {walletStock} бр.
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="text-navy text-xs">◈</span>
+              <span className="font-sans text-[11px] text-ink-soft tracking-wide">
+                Остават {walletStock} бр.
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Features */}
       <ul className="flex flex-col gap-2.5">
         {product.features.slice(0, 4).map((f) => (
@@ -155,15 +199,15 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
 
       {/* CTA */}
       <button
-        onClick={product.inStock ? handleAdd : undefined}
-        disabled={!product.inStock}
+        onClick={effectiveInStock ? handleAdd : undefined}
+        disabled={!effectiveInStock}
         className={`w-full justify-center text-center ${
-          product.inStock
+          effectiveInStock
             ? "btn-primary"
             : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-faint border border-border cursor-not-allowed"
         }`}
       >
-        {!product.inStock
+        {!effectiveInStock
           ? "ИЗЧЕРПАНА НАЛИЧНОСТ"
           : added
           ? "✓ ДОБАВЕНО В КОЛИЧКАТА"
@@ -173,15 +217,15 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       {/* Sticky mobile CTA */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-4 bg-white/98 backdrop-blur-sm border-t border-border">
         <button
-          onClick={product.inStock ? handleAdd : undefined}
-          disabled={!product.inStock}
+          onClick={effectiveInStock ? handleAdd : undefined}
+          disabled={!effectiveInStock}
           className={`w-full justify-center ${
-            product.inStock
+            effectiveInStock
               ? "btn-primary"
               : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-faint border border-border cursor-not-allowed w-full"
           }`}
         >
-          {!product.inStock ? "ИЗЧЕРПАНА" : added ? "✓ ДОБАВЕНО" : "ДОБАВИ В КОЛИЧКАТА"}
+          {!effectiveInStock ? "ИЗЧЕРПАНА" : added ? "✓ ДОБАВЕНО" : "ДОБАВИ В КОЛИЧКАТА"}
         </button>
       </div>
 
