@@ -6,6 +6,7 @@ import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
 import { SummerCountdown } from "@/components/product/SummerCountdown";
+import { StickyCartBar } from "@/components/product/StickyCartBar";
 
 const WATCH_VARIANTS = [
   { slug: "chrono-black",   label: "Black", color: "#111111",  inStock: true },
@@ -202,6 +203,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
 
       {/* CTA */}
       <button
+        data-main-cta="true"
         onClick={effectiveInStock ? handleAdd : undefined}
         disabled={!effectiveInStock}
         className={`w-full justify-center text-center ${
@@ -217,20 +219,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           : "ДОБАВИ В КОЛИЧКАТА"}
       </button>
 
-      {/* Sticky mobile CTA */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-4 bg-white/98 backdrop-blur-sm border-t border-border">
-        <button
-          onClick={effectiveInStock ? handleAdd : undefined}
-          disabled={!effectiveInStock}
-          className={`w-full justify-center ${
-            effectiveInStock
-              ? "btn-primary"
-              : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-faint border border-border cursor-not-allowed w-full"
-          }`}
-        >
-          {!effectiveInStock ? "ИЗЧЕРПАНА" : added ? "✓ ДОБАВЕНО" : "ДОБАВИ В КОЛИЧКАТА"}
-        </button>
-      </div>
+      <StickyCartBar product={product} effectiveInStock={effectiveInStock} />
 
       {/* Trust strip */}
       <div className="grid grid-cols-2 gap-0 border border-border">
