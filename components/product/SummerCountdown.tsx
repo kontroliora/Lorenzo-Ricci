@@ -2,14 +2,24 @@
 import { useState, useEffect } from "react";
 
 const DURATION_MS = 7 * 24 * 60 * 60 * 1000;
-const KEY = "lr_summer_promo_start";
+const COOKIE = "lr_summer_promo";
+
+function readStart(): number {
+  const m = document.cookie.match(new RegExp(`(?:^|; )${COOKIE}=([^;]*)`));
+  return m ? parseInt(decodeURIComponent(m[1]), 10) : 0;
+}
+
+function writeStart(start: number) {
+  const exp = new Date(start + 8 * 24 * 60 * 60 * 1000).toUTCString();
+  document.cookie = `${COOKIE}=${start}; expires=${exp}; path=/; SameSite=Lax`;
+}
 
 function getTimeLeft() {
-  let start = parseInt(localStorage.getItem(KEY) ?? "0", 10);
+  let start = readStart();
   const now = Date.now();
   if (!start || now - start >= DURATION_MS) {
     start = now;
-    localStorage.setItem(KEY, String(start));
+    writeStart(start);
   }
   const rem = DURATION_MS - (now - start);
   return {
@@ -40,19 +50,19 @@ export function SummerCountdown() {
   ] as const;
 
   return (
-    <div className="border border-navy/20 bg-navy/[0.03] px-5 py-4 flex items-center justify-between gap-4">
-      <div className="flex flex-col gap-0.5 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-navy text-xs">◈</span>
-          <p className="font-sans text-[9px] font-semibold tracking-[0.3em] uppercase text-navy">
-            Лятна промоция
-          </p>
-        </div>
-        <p className="font-sans text-[11px] font-light text-ink-muted tracking-wide leading-snug">
-          Намалението приключва след:
+    <div className="border border-navy/20 bg-navy/[0.03] px-5 py-4 flex items-center gap-5">
+      {/* Promo text */}
+      <div className="flex-1 min-w-0">
+        <p className="section-tag mb-1">Лятна разпродажба</p>
+        <p className="font-sans text-[11px] font-light text-ink-soft tracking-wide leading-snug">
+          Спестете €104 · Безплатна доставка в България
         </p>
       </div>
 
+      {/* Vertical divider */}
+      <div className="w-px h-9 bg-border flex-shrink-0" />
+
+      {/* Countdown */}
       <div className="flex items-center gap-1 flex-shrink-0">
         {units.map(({ val, label }, i) => (
           <div key={label} className="flex items-center gap-1">
@@ -60,12 +70,12 @@ export function SummerCountdown() {
               <span className="font-serif text-[22px] text-charcoal leading-none tabular-nums">
                 {pad(val)}
               </span>
-              <span className="font-sans text-[8px] tracking-[0.15em] uppercase text-ink-faint mt-0.5">
+              <span className="font-sans text-[8px] tracking-[0.12em] uppercase text-ink-faint mt-0.5">
                 {label}
               </span>
             </div>
             {i < 3 && (
-              <span className="text-navy/30 font-serif text-lg leading-none mb-3.5">:</span>
+              <span className="text-navy/30 font-serif text-base leading-none mb-3">:</span>
             )}
           </div>
         ))}
