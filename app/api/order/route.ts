@@ -559,7 +559,19 @@ export async function POST(req: NextRequest) {
       console.error("[Supabase] Failed to save order:", err);
     }
 
-    // 4. Decrement wallet inventory (best-effort, atomic — never blocks response)
+    // 4. Mark cart session as converted (best-effort)
+    const sessionId = order.sessionId as string | undefined;
+    if (sessionId) {
+      try {
+        await supabase
+          .from("cart_sessions")
+          .update({ status: "converted", converted_at: new Date().toISOString() })
+          .eq("session_id", sessionId)
+          .eq("status", "pending");
+      } catch { /* ignore */ }
+    }
+
+    // 5. Decrement wallet inventory (best-effort, atomic — never blocks response)
     const walletSlugs = (order.items as ItemPayload[] ?? [])
       .filter((i) => {
         const s = String(i.slug ?? "");

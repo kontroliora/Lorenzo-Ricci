@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { CartItem } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { calcBundleDiscount } from "@/lib/bundles";
@@ -41,7 +41,48 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
   const [shippingId, setShippingId] = useState<ShippingId>("speedy-office");
   const [submitting, setSubmitting]         = useState(false);
   const [submitted, setSubmitted]           = useState(false);
-  const purchaseFired = useRef(false);
+  const purchaseFired  = useRef(false);
+  const sessionIdRef   = useRef("");
+  const saveTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Generate a stable session ID for this checkout attempt
+  useEffect(() => {
+    let id = sessionStorage.getItem("lr_cart_session");
+    if (!id) { id = crypto.randomUUID(); sessionStorage.setItem("lr_cart_session", id); }
+    sessionIdRef.current = id;
+  }, []);
+
+  // Debounced cart session save — only when email is valid AND email consent is given
+  useEffect(() => {
+    if (!form.emailMarketingConsent) return;
+    if (!form.email.includes("@")) return;
+    if (items.length === 0) return;
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      fetch("/api/cart-session", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: sessionIdRef.current,
+          email:     form.email,
+          name:      form.name || undefined,
+          items:     items.map((i) => ({
+            name:        i.product.name,
+            sku:         i.product.sku,
+            slug:        i.product.slug,
+            price:       i.product.price,
+            currency:    i.product.currency,
+            quantity:    i.quantity,
+            coverImage:  i.product.coverImage,
+          })),
+          subtotal: total,
+        }),
+      }).catch(() => {});
+    }, 2000);
+
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+  }, [form.email, form.emailMarketingConsent, form.name, items, total]);
   const [errors, setErrors]                 = useState<Record<string, string>>({});
   const [submitError, setSubmitError]       = useState("");
   const [orderRef, setOrderRef]             = useState("");
@@ -97,7 +138,8 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
     const capturedTotal = grandTotal;
 
     const orderSummary = {
-      orderRef: ref,
+      orderRef:  ref,
+      sessionId: sessionIdRef.current || undefined,
       customer: { ...form, shippingMethod: selectedOption.label, courier: selectedOption.courier },
       items: items.map((i) => ({
         sku:      i.product.sku,
