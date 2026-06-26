@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 
-const DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+const DURATION_MS = 3 * 24 * 60 * 60 * 1000;
 const COOKIE = "lr_summer_promo";
 
 function readStart(): number {
@@ -10,7 +10,7 @@ function readStart(): number {
 }
 
 function writeStart(start: number) {
-  const exp = new Date(start + 8 * 24 * 60 * 60 * 1000).toUTCString();
+  const exp = new Date(start + 4 * 24 * 60 * 60 * 1000).toUTCString();
   document.cookie = `${COOKIE}=${start}; expires=${exp}; path=/; SameSite=Lax`;
 }
 
