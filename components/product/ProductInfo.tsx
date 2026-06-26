@@ -38,8 +38,11 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
   const [walletStock, setWalletStock] = useState<number | null>(null);
   const [stockLoaded, setStockLoaded] = useState(false);
 
+  const hasInventory =
+    product.category === "wallets" || product.category === "cardholders";
+
   useEffect(() => {
-    if (product.category !== "wallets") return;
+    if (!hasInventory) return;
     fetch(`/api/stock/${product.slug}`)
       .then((r) => r.json())
       .then((d) => {
@@ -47,10 +50,10 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         setStockLoaded(true);
       })
       .catch(() => setStockLoaded(true));
-  }, [product.slug, product.category]);
+  }, [product.slug, hasInventory]);
 
   const effectiveInStock =
-    product.category === "wallets" && stockLoaded && walletStock !== null
+    hasInventory && stockLoaded && walletStock !== null
       ? walletStock > 0
       : product.inStock;
 
@@ -161,8 +164,8 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       {/* Summer promo countdown - watches only */}
       {product.category === "watches" && <SummerCountdown />}
 
-      {/* Wallet stock indicator */}
-      {product.category === "wallets" && stockLoaded && walletStock !== null && (
+      {/* Stock indicator - wallets and cardholders */}
+      {hasInventory && stockLoaded && walletStock !== null && (
         <div className="flex items-center gap-2">
           {walletStock === 0 ? (
             <>

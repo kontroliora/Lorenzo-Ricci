@@ -561,7 +561,10 @@ export async function POST(req: NextRequest) {
 
     // 4. Decrement wallet inventory (best-effort, atomic — never blocks response)
     const walletSlugs = (order.items as ItemPayload[] ?? [])
-      .filter((i) => String(i.slug ?? "").startsWith("wallet-"))
+      .filter((i) => {
+        const s = String(i.slug ?? "");
+        return s.startsWith("wallet-") || s.startsWith("cardholder-");
+      })
       .map((i) => String(i.slug));
 
     for (const slug of walletSlugs) {
