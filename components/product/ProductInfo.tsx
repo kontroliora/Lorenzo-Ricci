@@ -59,6 +59,16 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       ? walletStock > 0
       : product.inStock;
 
+  useEffect(() => {
+    trackFbEvent("ViewContent", {
+      content_ids:  [product.sku],
+      content_name: product.name,
+      content_type: "product",
+      value:        product.price,
+      currency:     product.currency,
+    });
+  }, [product.slug]);
+
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
   const discountPct = hasDiscount
     ? Math.round((1 - product.price / product.originalPrice!) * 100)
