@@ -351,9 +351,9 @@ export function CartDrawer() {
               )}
 
               {itemSavings > 0 && (
-                <div className="flex items-center justify-between mb-4 px-3 py-2.5 bg-emerald-500/6 border border-emerald-500/15">
-                  <span className="font-sans text-[11px] text-emerald-400/80 tracking-wide">Спестявате от редовни цени</span>
-                  <span className="font-sans text-sm text-emerald-400 font-medium">€{itemSavings.toFixed(2)}</span>
+                <div className="flex items-center justify-between mb-4 px-3 py-2.5 bg-emerald-500/10 border border-emerald-500/25 rounded-sm">
+                  <span className="font-sans text-[11px] text-emerald-400 tracking-wide">Спестявате от редовни цени</span>
+                  <span className="font-sans text-sm text-emerald-400 font-semibold">€{itemSavings.toFixed(2)}</span>
                 </div>
               )}
 
@@ -447,7 +447,7 @@ function FreeShippingRing({
       <div>
         {reached ? (
           <p className="font-sans text-[11px] text-green-400 font-medium tracking-wide leading-snug">
-            Имаш безплатна доставка
+            Достигнахте сумата за безплатна доставка!
           </p>
         ) : (
           <p className="font-sans text-[11px] text-white/60 tracking-wide leading-snug">
