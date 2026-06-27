@@ -571,7 +571,25 @@ export async function POST(req: NextRequest) {
       } catch { /* ignore */ }
     }
 
-    // 5. Decrement wallet inventory (best-effort, atomic — never blocks response)
+    // 5. Mark promo code as used — atomic (best-effort)
+    const promoCode = order.promoCode as string | undefined;
+    if (promoCode) {
+      try {
+        const { data: redeemed } = await supabase
+          .from("newsletter_subscribers")
+          .update({ code_used: true })
+          .eq("promo_code", promoCode.toUpperCase())
+          .eq("code_used", false)
+          .select("email")
+          .single();
+        if (redeemed) console.log("[Promo] Code redeemed:", promoCode);
+        else console.warn("[Promo] Code already used or not found:", promoCode);
+      } catch (err) {
+        console.error("[Promo] Failed to redeem code:", err);
+      }
+    }
+
+    // 6. Decrement wallet inventory (best-effort, atomic — never blocks response)
     const walletSlugs = (order.items as ItemPayload[] ?? [])
       .filter((i) => {
         const s = String(i.slug ?? "");

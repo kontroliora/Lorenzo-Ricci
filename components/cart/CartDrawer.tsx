@@ -15,6 +15,7 @@ export function CartDrawer() {
   const [promoInput, setPromoInput] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoError, setPromoError] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const subtotal = totalPrice();
   const { totalDiscount, active: activeBundles } = bundleDiscount();
@@ -22,18 +23,33 @@ export function CartDrawer() {
   const itemSavings = items.reduce((sum, { product, quantity }) =>
     sum + (product.originalPrice && product.originalPrice > product.price
       ? (product.originalPrice - product.price) * quantity : 0), 0);
-  const VALID_PROMO = "WELCOME10";
   const promoDiscount = promoApplied ? parseFloat((afterBundles * 0.1).toFixed(2)) : 0;
   const total = afterBundles - promoDiscount;
   const count = totalItems();
   const freeShippingThreshold = 60;
 
-  const applyPromo = () => {
-    if (promoInput.trim().toUpperCase() === VALID_PROMO) {
-      setPromoApplied(true);
-      setPromoError("");
-    } else {
-      setPromoError("Невалиден промо код");
+  const applyPromo = async () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    setPromoLoading(true);
+    setPromoError("");
+    try {
+      const res = await fetch("/api/promo/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json() as { valid: boolean; error?: string };
+      if (data.valid) {
+        setPromoInput(code);
+        setPromoApplied(true);
+      } else {
+        setPromoError(data.error || "Невалиден промо код");
+      }
+    } catch {
+      setPromoError("Грешка при проверката. Опитайте отново.");
+    } finally {
+      setPromoLoading(false);
     }
   };
   const remaining = Math.max(0, freeShippingThreshold - total);
@@ -163,7 +179,7 @@ export function CartDrawer() {
             <CheckoutForm
               items={items}
               total={total}
-              promoCode={promoApplied ? VALID_PROMO : undefined}
+              promoCode={promoApplied ? promoInput : undefined}
               promoDiscount={promoDiscount}
               onSuccess={() => {
                 closeCart();
@@ -291,9 +307,10 @@ export function CartDrawer() {
                       <button
                         type="button"
                         onClick={applyPromo}
-                        className="font-sans text-[10px] tracking-widest uppercase bg-white/6 hover:bg-white/12 text-white/50 hover:text-white px-4 border-l border-white/10 transition-colors"
+                        disabled={promoLoading}
+                        className="font-sans text-[10px] tracking-widest uppercase bg-white/6 hover:bg-white/12 text-white/50 hover:text-white px-4 border-l border-white/10 transition-colors disabled:opacity-50"
                       >
-                        Приложи
+                        {promoLoading ? "..." : "Приложи"}
                       </button>
                     </div>
                     {promoError && (
@@ -304,10 +321,10 @@ export function CartDrawer() {
                   <>
                     <div className="flex items-center gap-2 text-emerald-400/80 mb-1.5">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                      <span className="font-sans text-[11px] tracking-wide">Промо код {VALID_PROMO} приложен</span>
+                      <span className="font-sans text-[11px] tracking-wide">Промо код {promoInput} приложен</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="font-sans text-xs text-emerald-400/70 tracking-wide">◈ {VALID_PROMO} -10%</span>
+                      <span className="font-sans text-xs text-emerald-400/70 tracking-wide">◈ {promoInput} -10%</span>
                       <span className="font-sans text-xs text-emerald-400/70">-€{promoDiscount.toFixed(2)}</span>
                     </div>
                   </>
