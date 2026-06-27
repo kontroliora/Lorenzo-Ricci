@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function StoryPage() {
   return (
-    <div className="min-h-screen pt-20">
+    <div className="min-h-screen pt-[116px]">
 
       {/* Hero */}
       <div className="py-24 px-5 sm:px-8 text-center border-b border-border">

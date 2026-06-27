@@ -140,7 +140,7 @@ export default function FaqPage() {
   const [open, setOpen] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen pt-20 pb-24">
+    <div className="min-h-screen pt-[116px] pb-24">
       <div className="py-20 px-5 sm:px-8 text-center bg-ivory-paper border-b border-border">
         <p className="section-tag mb-4">Имате въпрос?</p>
         <h1 className="font-serif text-display-lg text-charcoal mb-4">FAQ</h1>

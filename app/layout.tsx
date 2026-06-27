@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
+import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { SalesNotification } from "@/components/ui/SalesNotification";
+import { NewsletterPopup } from "@/components/ui/NewsletterPopup";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
 
@@ -60,11 +62,13 @@ export default function RootLayout({
       <body className="bg-ivory text-charcoal antialiased">
         <MetaPixel />
         <ThemeProvider>
+          <AnnouncementBar />
           <Header />
           <main>{children}</main>
           <Footer />
           <CartDrawer />
           <SalesNotification />
+          <NewsletterPopup />
         </ThemeProvider>
       </body>
     </html>

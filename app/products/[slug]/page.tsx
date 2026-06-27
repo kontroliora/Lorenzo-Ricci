@@ -59,7 +59,7 @@ export default async function ProductPage({ params }: Props) {
     : product.images;
 
   return (
-    <div className="min-h-screen pt-20 pb-24">
+    <div className="min-h-screen pt-[116px] pb-24">
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-[10px] font-sans tracking-widest uppercase text-ink-faint mb-10">

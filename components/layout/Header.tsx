@@ -30,7 +30,7 @@ export function Header() {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 bg-white border-b transition-all duration-500 ${
+        className={`fixed top-9 left-0 right-0 z-50 bg-white border-b transition-all duration-500 ${
           scrolled ? "py-3 border-border shadow-[0_1px_8px_rgba(0,0,0,0.06)]" : "py-5 border-border/70"
         }`}
       >

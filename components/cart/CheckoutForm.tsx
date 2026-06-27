@@ -19,11 +19,13 @@ type ShippingId = (typeof SHIPPING_OPTIONS)[number]["id"];
 // ─── Props ───────────────────────────────────────────────────────────────────
 interface CheckoutFormProps {
   items: CartItem[];
-  total: number; // already discounted subtotal from CartDrawer
+  total: number; // after bundle + promo discounts
+  promoCode?: string;
+  promoDiscount?: number;
   onSuccess: () => void;
 }
 
-export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
+export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuccess }: CheckoutFormProps) {
   const { clearCart } = useCartStore();
   const { totalDiscount, active: activeBundles } = calcBundleDiscount(items);
 
@@ -152,6 +154,8 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
       })),
       bundles:      activeBundles.map(({ label, discount }) => ({ label, discount })),
       discount:     totalDiscount,
+      promoCode:    promoCode || undefined,
+      promoDiscount: promoDiscount || 0,
       subtotal:     total,
       shipping:     { method: selectedOption.label, courier: selectedOption.courier, cost: shippingCost },
       total:        grandTotal,
@@ -269,6 +273,13 @@ export function CheckoutForm({ items, total, onSuccess }: CheckoutFormProps) {
             <span className="font-sans text-navy-light">-€{discount.toFixed(2)}</span>
           </div>
         ))}
+
+        {promoCode && promoDiscount > 0 && (
+          <div className="flex justify-between text-xs">
+            <span className="font-sans text-emerald-400/70 tracking-wide">◈ Промо {promoCode} -10%</span>
+            <span className="font-sans text-emerald-400/70">-€{promoDiscount.toFixed(2)}</span>
+          </div>
+        )}
 
         <div className="h-px bg-white/8 my-1" />
 

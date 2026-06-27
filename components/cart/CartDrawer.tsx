@@ -12,12 +12,27 @@ export function CartDrawer() {
   const { isOpen, closeCart, items, removeItem, updateQuantity, totalPrice, totalItems, bundleDiscount } =
     useCartStore();
   const [showCheckout, setShowCheckout] = useState(false);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [promoError, setPromoError] = useState("");
   const drawerRef = useRef<HTMLDivElement>(null);
   const subtotal = totalPrice();
   const { totalDiscount, active: activeBundles } = bundleDiscount();
-  const total = subtotal - totalDiscount;
+  const afterBundles = subtotal - totalDiscount;
+  const VALID_PROMO = "WELCOME10";
+  const promoDiscount = promoApplied ? parseFloat((afterBundles * 0.1).toFixed(2)) : 0;
+  const total = afterBundles - promoDiscount;
   const count = totalItems();
   const freeShippingThreshold = 60;
+
+  const applyPromo = () => {
+    if (promoInput.trim().toUpperCase() === VALID_PROMO) {
+      setPromoApplied(true);
+      setPromoError("");
+    } else {
+      setPromoError("Невалиден промо код");
+    }
+  };
   const remaining = Math.max(0, freeShippingThreshold - total);
   const progress = Math.min(1, total / freeShippingThreshold);
   const reached = remaining === 0 && items.length > 0;
@@ -145,6 +160,8 @@ export function CartDrawer() {
             <CheckoutForm
               items={items}
               total={total}
+              promoCode={promoApplied ? VALID_PROMO : undefined}
+              promoDiscount={promoDiscount}
               onSuccess={() => {
                 closeCart();
                 setShowCheckout(false);
@@ -248,6 +265,45 @@ export function CartDrawer() {
                 </div>
               ))}
 
+              {/* Promo code */}
+              <div className="mb-4">
+                {!promoApplied ? (
+                  <div>
+                    <div className="flex border border-white/10">
+                      <input
+                        type="text"
+                        value={promoInput}
+                        onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(""); }}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPromo(); } }}
+                        placeholder="Промо код"
+                        className="flex-1 bg-transparent text-white font-sans text-[11px] tracking-widest uppercase px-3 py-2.5 focus:outline-none placeholder:text-white/20 placeholder:normal-case placeholder:tracking-normal"
+                      />
+                      <button
+                        type="button"
+                        onClick={applyPromo}
+                        className="font-sans text-[10px] tracking-widest uppercase bg-white/6 hover:bg-white/12 text-white/50 hover:text-white px-4 border-l border-white/10 transition-colors"
+                      >
+                        Приложи
+                      </button>
+                    </div>
+                    {promoError && (
+                      <p className="font-sans text-[10px] text-red-400/60 mt-1.5 tracking-wide">{promoError}</p>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 text-emerald-400/80 mb-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      <span className="font-sans text-[11px] tracking-wide">Промо код {VALID_PROMO} приложен</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-sans text-xs text-emerald-400/70 tracking-wide">◈ {VALID_PROMO} -10%</span>
+                      <span className="font-sans text-xs text-emerald-400/70">-€{promoDiscount.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
               {total >= freeShippingThreshold ? (
                 <div className="flex items-center justify-between mb-4">
                   <span className="font-sans text-xs text-white/40 tracking-wide">Доставка</span>
@@ -260,7 +316,7 @@ export function CartDrawer() {
                 </div>
               )}
 
-              {totalDiscount > 0 && (
+              {(totalDiscount > 0 || promoDiscount > 0) && (
                 <div className="flex items-center justify-between mb-4 pt-2 border-t border-white/8">
                   <span className="font-sans text-xs font-medium text-white tracking-wide">Общо</span>
                   <span className="font-serif text-lg text-white">€{total.toFixed(2)}</span>

@@ -18,7 +18,7 @@ export default function BundlesPage() {
   });
 
   return (
-    <div className="min-h-screen pt-20 pb-24">
+    <div className="min-h-screen pt-[116px] pb-24">
       {/* Hero */}
       <div className="relative py-24 sm:py-32 px-5 sm:px-8 text-center overflow-hidden bg-charcoal-deep border-b border-white/5">
         <div

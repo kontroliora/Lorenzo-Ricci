@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function WatchManualPage() {
   return (
-    <div className="min-h-screen pt-20 pb-24">
+    <div className="min-h-screen pt-[116px] pb-24">
       {/* Hero */}
       <div className="py-20 px-5 sm:px-8 text-center bg-ivory-paper border-b border-border">
         <p className="section-tag mb-4">Lorenzo Ricci</p>

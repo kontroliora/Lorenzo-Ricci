@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     if (error) throw error;
 
     console.log("[Newsletter] Subscriber saved:", clean);
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, code: "WELCOME10" });
   } catch (err) {
     console.error("[Newsletter] Failed to save subscriber:", err);
     return NextResponse.json({ error: "Failed to subscribe" }, { status: 500 });

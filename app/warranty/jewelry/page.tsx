@@ -160,7 +160,7 @@ function WarrantyTable({
 
 export default function WarrantyPage() {
   return (
-    <div className="min-h-screen pt-20 pb-24">
+    <div className="min-h-screen pt-[116px] pb-24">
 
       {/* Hero */}
       <div className="py-20 sm:py-28 px-5 sm:px-8 text-center bg-charcoal-deep border-b border-white/5 relative overflow-hidden">
