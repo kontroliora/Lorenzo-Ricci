@@ -182,9 +182,16 @@ export function FeaturedWatches() {
           {/* Active watch info */}
           <div className="text-center px-6 mt-5">
             <h3 className="font-serif text-xl text-charcoal mb-1">{active.name}</h3>
-            <p className="font-serif text-lg text-navy mb-5">
-              {active.currency}{active.price.toFixed(2)}
-            </p>
+            <div className="flex items-baseline justify-center gap-3 mb-5">
+              <span className="font-serif text-lg text-navy">
+                {active.currency}{active.price.toFixed(2)}
+              </span>
+              {active.originalPrice && active.originalPrice > active.price && (
+                <span className="font-sans text-sm text-ink-faint line-through">
+                  {active.currency}{active.originalPrice.toFixed(2)}
+                </span>
+              )}
+            </div>
             <Link href={`/products/${active.slug}`} className="btn-primary">
               Виж Детайли
             </Link>
