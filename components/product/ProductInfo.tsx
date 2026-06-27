@@ -7,6 +7,7 @@ import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
 import { SummerCountdown } from "@/components/product/SummerCountdown";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
+import { trackFbEvent } from "@/lib/fbq";
 
 const WATCH_VARIANTS = [
   { slug: "chrono-black",   label: "Black", color: "#111111",  inStock: true },
@@ -67,6 +68,13 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
     addItem(product);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+    trackFbEvent("AddToCart", {
+      content_ids:  [product.sku],
+      content_name: product.name,
+      content_type: "product",
+      value:        product.price,
+      currency:     product.currency,
+    });
   };
 
   return (

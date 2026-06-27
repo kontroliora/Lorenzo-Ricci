@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
+import { trackFbEvent } from "@/lib/fbq";
 
 interface Props {
   product: Product;
@@ -27,11 +28,32 @@ export function StickyCartBar({ product, effectiveInStock }: Props) {
     return () => observer.disconnect();
   }, []);
 
+  // Expose bar visibility so SalesNotification can position itself above us
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--sticky-bar-h",
+      visible ? "88px" : "0px"
+    );
+  }, [visible]);
+
+  useEffect(() => {
+    return () => {
+      document.documentElement.style.setProperty("--sticky-bar-h", "0px");
+    };
+  }, []);
+
   const handleAdd = () => {
     if (!effectiveInStock) return;
     addItem(product);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+    trackFbEvent("AddToCart", {
+      content_ids:  [product.sku],
+      content_name: product.name,
+      content_type: "product",
+      value:        product.price,
+      currency:     product.currency,
+    });
   };
 
   return (

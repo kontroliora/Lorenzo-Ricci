@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCartStore } from "@/lib/store";
 import { CheckoutForm } from "./CheckoutForm";
 import { CartCrossSell } from "./CartCrossSell";
+import { trackFbEvent } from "@/lib/fbq";
 
 const CART_TIMEOUT = 5 * 60; // 300 seconds
 
@@ -267,7 +268,15 @@ export function CartDrawer() {
               )}
 
               <button
-                onClick={() => setShowCheckout(true)}
+                onClick={() => {
+                  setShowCheckout(true);
+                  trackFbEvent("InitiateCheckout", {
+                    content_ids: items.map((i) => i.product.sku),
+                    num_items:   items.reduce((s, i) => s + i.quantity, 0),
+                    value:       total,
+                    currency:    "EUR",
+                  });
+                }}
                 className="btn-primary w-full text-center justify-center"
               >
                 Поръчай сега - Наложен платеж
