@@ -120,7 +120,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("[Newsletter] Error:", err);
-    return NextResponse.json({ error: "Failed to subscribe" }, { status: 500 });
+    const msg = err instanceof Error ? err.message : JSON.stringify(err);
+    console.error("[Newsletter] Error:", msg);
+    return NextResponse.json({ error: "Failed to subscribe", _diag: msg }, { status: 500 });
   }
 }
