@@ -91,7 +91,7 @@ const DISPLAY_DURATION_MS = 6_000;
 
 export function SalesNotification() {
   const [notification, setNotification] = useState<NotificationState | null>(null);
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() => Math.floor(Math.random() * NOTIFICATIONS.length));
 
   const show = useCallback(() => {
     const n = NOTIFICATIONS[index % NOTIFICATIONS.length];
@@ -121,7 +121,10 @@ export function SalesNotification() {
 
   return (
     // HARD CONSTRAINT: hidden on mobile, only on lg+ screens
-    <div className="hidden lg:block fixed bottom-6 left-6 z-[60]">
+    <div
+      className="hidden lg:block fixed left-6 z-[60] transition-[bottom] duration-300 ease-out"
+      style={{ bottom: "calc(1.5rem + var(--sticky-bar-h, 0px))" }}
+    >
       <div
         key={notification.key}
         className={`bg-charcoal-deep border border-navy/20 shadow-xl flex items-center gap-3 pl-3 pr-4 py-3 max-w-[320px] ${
