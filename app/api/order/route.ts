@@ -428,10 +428,18 @@ function sha256(value: string): string {
   return createHash("sha256").update(value.trim().toLowerCase()).digest("hex");
 }
 
+type CapiContext = {
+  ip?:        string;
+  userAgent?: string;
+  fbc?:       string;
+  fbp?:       string;
+};
+
 async function sendCapiPurchase(
   order: Record<string, unknown>,
   orderRef: string,
-  total: number
+  total: number,
+  ctx: CapiContext = {}
 ): Promise<void> {
   const token = process.env.META_CAPI_ACCESS_TOKEN;
   if (!token) {
@@ -453,6 +461,18 @@ async function sendCapiPurchase(
   if (phone)     userData.ph = [sha256(phone)];
   if (firstName) userData.fn = [sha256(firstName.toLowerCase())];
   if (lastName)  userData.ln = [sha256(lastName.toLowerCase())];
+
+  // Enhanced matching parameters
+  if (ctx.ip)        userData.client_ip_address = ctx.ip;
+  if (ctx.userAgent) userData.client_user_agent = ctx.userAgent;
+  if (ctx.fbc)       userData.fbc = ctx.fbc;
+  if (ctx.fbp)       userData.fbp = ctx.fbp;
+
+  // City + zipcode (hashed per Meta spec)
+  const city = String(customer.city     ?? "").trim().toLowerCase().replace(/\s+/g, "");
+  const zip  = String(customer.postCode ?? "").trim().replace(/\s+/g, "").toLowerCase();
+  if (city) userData.ct = [sha256(city)];
+  if (zip)  userData.zp = [sha256(zip)];
 
   const payload = {
     data: [{
@@ -497,6 +517,16 @@ async function sendCapiPurchase(
 // ─────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
+    // Extract matching context before body is consumed
+    const capiCtx: CapiContext = {
+      ip:        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+                 ?? req.headers.get("x-real-ip")
+                 ?? undefined,
+      userAgent: req.headers.get("user-agent") ?? undefined,
+      fbc:       req.cookies.get("_fbc")?.value ?? undefined,
+      fbp:       req.cookies.get("_fbp")?.value ?? undefined,
+    };
+
     const order    = await req.json() as Record<string, unknown>;
     const customer = (order.customer ?? {}) as Record<string, unknown>;
     const customerAddress = String(customer.email ?? "").trim();
@@ -529,7 +559,7 @@ export async function POST(req: NextRequest) {
       ...(customerAddress
         ? [sendCustomerEmail(customerAddress, buildCustomerEmail(order))]
         : []),
-      sendCapiPurchase(order, String(order.orderRef ?? ""), Number(order.total ?? 0)),
+      sendCapiPurchase(order, String(order.orderRef ?? ""), Number(order.total ?? 0), capiCtx),
     ]);
 
     // 3. Save to Supabase (best-effort — never blocks the response)

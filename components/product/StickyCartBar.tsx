@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
-import { trackFbEvent } from "@/lib/fbq";
+import { trackWithCapi, genEventId } from "@/lib/fbq";
 
 interface Props {
   product: Product;
@@ -47,13 +47,14 @@ export function StickyCartBar({ product, effectiveInStock }: Props) {
     addItem(product);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
-    trackFbEvent("AddToCart", {
+    trackWithCapi("AddToCart", {
       content_ids:  [product.sku],
       content_name: product.name,
       content_type: "product",
       value:        product.price,
       currency:     product.currency,
-    });
+      num_items:    1,
+    }, genEventId("ATC"));
   };
 
   return (
