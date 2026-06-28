@@ -1863,7 +1863,7 @@ export const reviews: Review[] = [
     productSlug: "polar-frost",
     author: "Светлин Х.",
     rating: 5,
-    body: "Цяло лято го носих без сваляне. Никакви проблеми.",
+    body: "Уникален часовник, много е красив на живо.",
     date: "2024-06-13",
   },
   {
