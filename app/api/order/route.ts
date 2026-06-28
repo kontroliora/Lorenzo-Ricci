@@ -589,24 +589,27 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. Decrement wallet inventory (best-effort, atomic — never blocks response)
-    const walletSlugs = (order.items as ItemPayload[] ?? [])
+    // 6. Decrement wallet/cardholder inventory (best-effort, per-unit quantity)
+    const walletItems = (order.items as ItemPayload[] ?? [])
       .filter((i) => {
         const s = String(i.slug ?? "");
         return s.startsWith("wallet-") || s.startsWith("cardholder-");
-      })
-      .map((i) => String(i.slug));
+      });
 
-    for (const slug of walletSlugs) {
-      try {
-        const { data: newStock, error: rpcError } = await supabase.rpc(
-          "decrement_wallet_stock",
-          { p_slug: slug }
-        );
-        if (rpcError) console.error(`[Inventory] Error decrementing ${slug}:`, rpcError);
-        else console.log(`[Inventory] ${slug} → stock now ${newStock}`);
-      } catch (err) {
-        console.error(`[Inventory] Failed to decrement ${slug}:`, err);
+    for (const item of walletItems) {
+      const slug = String(item.slug);
+      const qty  = Math.max(1, Number(item.quantity ?? item.qty ?? 1));
+      for (let j = 0; j < qty; j++) {
+        try {
+          const { data: newStock, error: rpcError } = await supabase.rpc(
+            "decrement_wallet_stock",
+            { p_slug: slug }
+          );
+          if (rpcError) console.error(`[Inventory] Error decrementing ${slug}:`, rpcError);
+          else console.log(`[Inventory] ${slug} unit ${j + 1}/${qty} → stock now ${newStock}`);
+        } catch (err) {
+          console.error(`[Inventory] Failed to decrement ${slug}:`, err);
+        }
       }
     }
 
