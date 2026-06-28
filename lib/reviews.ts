@@ -1861,7 +1861,7 @@ export const reviews: Review[] = [
   {
     id: "r-133",
     productSlug: "polar-frost",
-    author: "Атила С.",
+    author: "Светлин Х.",
     rating: 5,
     body: "Цяло лято го носих без сваляне. Никакви проблеми.",
     date: "2024-06-13",
