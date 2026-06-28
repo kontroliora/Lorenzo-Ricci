@@ -5,6 +5,7 @@ import { Award, RefreshCw, Truck, Eye } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
+import { SummerCountdown } from "@/components/product/SummerCountdown";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { trackFbEvent } from "@/lib/fbq";
 
@@ -178,6 +179,9 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           </>
         )}
       </div>
+
+      {/* Summer promo banner - watches only, no timer */}
+      {product.category === "watches" && <SummerCountdown />}
 
       {/* Stock indicator - wallets and cardholders */}
       {hasInventory && stockLoaded && walletStock !== null && (
