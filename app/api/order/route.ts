@@ -295,7 +295,7 @@ function buildCustomerEmail(order: Record<string, unknown>): string {
           <tr>
             <td style="padding:40px 40px 0">
               <p style="margin:0 0 6px;font-family:'Georgia',serif;font-size:22px;color:#0a0e1f">Благодарим Ви, ${firstName}!</p>
-              <p style="margin:0 0 28px;color:#666;font-size:14px;line-height:1.6">Получихме Вашата поръчка. Ще се свържем с Вас по телефона за потвърждение.<br>Всички пратки се доставят чрез куриер в рамките на 1 до 2 работни дни. (Поръчки, направени след 14:00 ч., се обработват и изпращат на следващия работен ден).</p>
+              <p style="margin:0 0 28px;color:#666;font-size:14px;line-height:1.6">Получихме Вашата поръчка. Наш представител ще се свърже с Вас по телефона за потвърждение. Доставката се извършва чрез куриер в рамките на 1 до 2 работни дни.</p>
 
               <!-- Divider -->
               <div style="border-top:1px solid #e8dfc8;margin-bottom:28px"></div>
