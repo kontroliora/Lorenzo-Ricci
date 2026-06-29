@@ -68,7 +68,7 @@ export default function RootLayout({
           <Footer />
           <CartDrawer />
           <SalesNotification />
-          {/* <NewsletterPopup /> */}
+          <NewsletterPopup />
         </ThemeProvider>
       </body>
     </html>
