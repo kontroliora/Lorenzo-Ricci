@@ -44,7 +44,6 @@ export const products: Product[] = [
       { src: `/Products/watches/Chrono Black/chrono-black-lifestyle.webp`,                 alt: "Lorenzo Ricci Chrono Black - лайфстайл снимка, луксозен мъжки часовник" },
       { src: `/Products/watches/Chrono Black/chrono-black-zadna-strana.webp`,              alt: "Lorenzo Ricci Chrono Black - задна страна на корпуса 316L неръждаема стомана" },
       { src: `/Products/watches/Chrono Black/chrono-black-stranicen-izgled.webp`,          alt: "Lorenzo Ricci Chrono Black - страничен изглед, водоустойчивост 5 ATM" },
-      { src: `/Products/watches/Chrono Black/chrono-black-kaishka-kopchalka.webp`,         alt: "Lorenzo Ricci Chrono Black - закопчалка силиконова каишка хипоалергенна" },
       { src: `/Products/watches/Chrono Black/chrono-black-kutiya-otvorena.webp`,           alt: "Lorenzo Ricci Chrono Black в луксозна кутия - подаръчна опаковка отворена" },
       { src: `/Products/watches/Chrono Black/chrono-black-kutiya-zatvorena.webp`,          alt: "Lorenzo Ricci Chrono Black затворена подаръчна кутия" },
       { src: `/Products/watches/Chrono Black/chrono-black-skeletiziran-tsiferbat.webp`,    alt: "Lorenzo Ricci Chrono Black - детайл на хронографа, скелетизиран циферблат" },
