@@ -6,7 +6,7 @@ import { CheckoutForm } from "./CheckoutForm";
 import { CartCrossSell } from "./CartCrossSell";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 
-const CART_TIMEOUT = 5 * 60; // 300 seconds
+const CART_TIMEOUT = 15 * 60; // 900 seconds
 
 export function CartDrawer() {
   const { isOpen, closeCart, items, removeItem, updateQuantity, totalPrice, totalItems, bundleDiscount } =
