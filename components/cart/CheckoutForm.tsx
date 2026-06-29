@@ -38,7 +38,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
     officeAddress: "",
     notes: "",
     smsMarketingConsent:   false,
-    emailMarketingConsent: false,
+    emailMarketingConsent: true,
   });
   const [shippingId, setShippingId] = useState<ShippingId>("speedy-office");
   const [submitting, setSubmitting]         = useState(false);
@@ -46,6 +46,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
   const purchaseFired  = useRef(false);
   const sessionIdRef   = useRef("");
   const saveTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const phoneTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Generate a stable session ID for this checkout attempt
   useEffect(() => {
@@ -54,7 +55,42 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
     sessionIdRef.current = id;
   }, []);
 
-  // Debounced cart session save — only when email is valid AND email consent is given
+  const cartItemsPayload = () => items.map((i) => ({
+    name:       i.product.name,
+    sku:        i.product.sku,
+    slug:       i.product.slug,
+    price:      i.product.price,
+    currency:   i.product.currency,
+    quantity:   i.quantity,
+    coverImage: i.product.coverImage,
+  }));
+
+  // Phone-first capture: fires as soon as phone has ≥10 digits, even before email
+  useEffect(() => {
+    if (!form.emailMarketingConsent) return;
+    if (form.phone.replace(/\D/g, "").length < 10) return;
+    if (items.length === 0) return;
+
+    if (phoneTimerRef.current) clearTimeout(phoneTimerRef.current);
+    phoneTimerRef.current = setTimeout(() => {
+      fetch("/api/cart-session", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: sessionIdRef.current,
+          phone:     form.phone.trim(),
+          name:      form.name || undefined,
+          items:     cartItemsPayload(),
+          subtotal:  total,
+        }),
+      }).catch(() => {});
+    }, 1500);
+
+    return () => { if (phoneTimerRef.current) clearTimeout(phoneTimerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.phone, form.emailMarketingConsent, form.name, items, total]);
+
+  // Email capture: fires once email is valid — adds email (+ phone if known) to the session
   useEffect(() => {
     if (!form.emailMarketingConsent) return;
     if (!form.email.includes("@")) return;
@@ -68,23 +104,17 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
         body: JSON.stringify({
           sessionId: sessionIdRef.current,
           email:     form.email,
+          phone:     form.phone.replace(/\D/g, "").length >= 10 ? form.phone.trim() : undefined,
           name:      form.name || undefined,
-          items:     items.map((i) => ({
-            name:        i.product.name,
-            sku:         i.product.sku,
-            slug:        i.product.slug,
-            price:       i.product.price,
-            currency:    i.product.currency,
-            quantity:    i.quantity,
-            coverImage:  i.product.coverImage,
-          })),
-          subtotal: total,
+          items:     cartItemsPayload(),
+          subtotal:  total,
         }),
       }).catch(() => {});
     }, 2000);
 
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
-  }, [form.email, form.emailMarketingConsent, form.name, items, total]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.email, form.emailMarketingConsent, form.phone, form.name, items, total]);
   const [errors, setErrors]                 = useState<Record<string, string>>({});
   const [submitError, setSubmitError]       = useState("");
   const [orderRef, setOrderRef]             = useState("");

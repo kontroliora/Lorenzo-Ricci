@@ -4,22 +4,30 @@ import { supabase } from "@/lib/supabase";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { sessionId, email, name, items, subtotal } = body as {
+    const { sessionId, email, phone, name, items, subtotal } = body as {
       sessionId: string;
-      email: string;
-      name?: string;
-      items: unknown[];
-      subtotal: number;
+      email?:    string;
+      phone?:    string;
+      name?:     string;
+      items:     unknown[];
+      subtotal:  number;
     };
 
-    if (!sessionId || !email || !email.includes("@") || !Array.isArray(items)) {
+    const cleanEmail = email?.trim().toLowerCase() || null;
+    const cleanPhone = phone?.trim() || null;
+
+    if (!sessionId || !Array.isArray(items) || (!cleanEmail && !cleanPhone)) {
+      return NextResponse.json({ ok: false }, { status: 400 });
+    }
+    if (cleanEmail && !cleanEmail.includes("@")) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
 
     const { error } = await supabase.from("cart_sessions").upsert(
       {
         session_id:       sessionId,
-        email:            email.trim().toLowerCase(),
+        ...(cleanEmail ? { email: cleanEmail } : {}),
+        ...(cleanPhone ? { phone: cleanPhone } : {}),
         name:             name?.trim() || null,
         items,
         subtotal:         Number(subtotal) || 0,
