@@ -2146,7 +2146,7 @@ export const reviews: Review[] = [
     id: "r-653",
     productSlug: "cardholder-valentina",
     author: "Страхил Б.",
-    rating: 4,
+    rating: 5,
     body: "Фина обработка. Пази се лесно и с времето придобива характер.",
     date: "2025-11-30",
   },
