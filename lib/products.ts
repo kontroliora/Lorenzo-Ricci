@@ -672,7 +672,7 @@ export const products: Product[] = [
     coverImage: { src: `/Products/wallets/Bianco/kardholder-bianco-byal-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Bianco бял кардхолдър крокодилска кожа Crocodylus Siamensis - преден изглед' },
     images: [
       { src: `/Products/wallets/Bianco/kardholder-bianco-byal-krokodiilska-kozha.webp`,       alt: 'Lorenzo Ricci Bianco бял кардхолдър крокодилска кожа - продуктова снимка' },
-      { src: `/Products/wallets/Bianco/kardholder-bianco-detal-krokodiilska-tekstura.webp`,    alt: 'Lorenzo Ricci Bianco - детайл на крокодилската текстура, бял цвят' },
+      { src: `/Products/wallets/Bianco/kardholder-bianco-lifestyle-marble.webp`,               alt: 'Lorenzo Ricci Bianco бял кардхолдър крокодилска кожа - мраморна повърхност' },
       { src: `/Products/wallets/Bianco/kardholder-bianco-lifestyle.webp`,                      alt: 'Lorenzo Ricci Bianco кардхолдър - лайфстайл снимка, ежедневна употреба' },
       { src: `/Products/wallets/Bianco/kardholder-bianco-kutiya-sertifikat.webp`,              alt: 'Lorenzo Ricci Bianco в луксозна кутия с Сертификат за автентичност CITES' },
     ],
