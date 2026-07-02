@@ -323,7 +323,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           {activeTab === "delivery" && (
             <div className="flex flex-col gap-4 text-sm font-light text-ink-soft leading-relaxed tracking-wide">
               <p><strong className="text-charcoal font-normal">Безплатна доставка</strong> за поръчки над €60</p>
-              <p>Доставяме с <strong className="text-charcoal font-normal">Еконт и Спиди</strong> в цяла България</p>
+              <p>Доставяме с <strong className="text-charcoal font-normal">Еконт</strong> в цяла България</p>
               <p>Обработваме до 14:00 ч. - изпращаме същия ден. Доставка до <strong className="text-charcoal font-normal">2 работни дни</strong>.</p>
               <p><strong className="text-charcoal font-normal">Преглед и тест преди плащане</strong> - право да откажете на място.</p>
               <p><strong className="text-charcoal font-normal">30 дни лесна замяна</strong> - пишете на info@lorenzo-ricci.com</p>

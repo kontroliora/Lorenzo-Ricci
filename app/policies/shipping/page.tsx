@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Политика за Доставка",
-  description: "Безплатна доставка над €60 · Еконт и Спиди · До 2 работни дни.",
+  description: "Безплатна доставка над €60 · Еконт · До 2 работни дни.",
 };
 
 export default function ShippingPage() {
@@ -16,7 +16,7 @@ export default function ShippingPage() {
 
       <div className="max-w-3xl mx-auto px-5 sm:px-8 mt-12">
         <PolicySection title="Зона на доставка">
-          <p>Доставяме в цяла България - до офис/автомат на Еконт или Спиди, или до адрес.</p>
+          <p>Доставяме в цяла България - до офис/автомат на Еконт, или до адрес.</p>
         </PolicySection>
 
         <PolicySection title="Срок на доставка">
@@ -35,7 +35,7 @@ export default function ShippingPage() {
             </div>
             <div className="flex justify-between py-3">
               <span>Поръчки под €60</span>
-              <span>Стандартна тарифа на Еконт/Спиди</span>
+              <span>Стандартна тарифа на Еконт</span>
             </div>
           </div>
         </PolicySection>

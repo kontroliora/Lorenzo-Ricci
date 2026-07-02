@@ -46,7 +46,7 @@ export interface CheckoutData {
   name: string;
   phone: string;
   city: string;
-  courier: "econt" | "speedy";
+  courier: "econt" | "home";
   officeAddress: string;
   notes?: string;
 }

@@ -7,9 +7,8 @@ import { trackFbEvent } from "@/lib/fbq";
 
 // ─── Shipping options ────────────────────────────────────────────────────────
 const SHIPPING_OPTIONS = [
-  { id: "speedy-office", label: "Доставка чрез Спиди до офис", courier: "speedy", price: 3.95 },
-  { id: "econt-office",  label: "Доставка чрез Еконт до офис", courier: "econt",  price: 4.25 },
-  { id: "home-address",  label: "Доставка до адрес",            courier: "home",   price: 5.45 },
+  { id: "econt-office",  label: "Доставка чрез Еконт до офис",  courier: "econt", price: 4.25 },
+  { id: "home-address",  label: "Доставка чрез Еконт до адрес", courier: "home",  price: 5.45 },
 ] as const;
 
 const FREE_SHIPPING_THRESHOLD = 60;
@@ -40,7 +39,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
     smsMarketingConsent:   false,
     emailMarketingConsent: true,
   });
-  const [shippingId, setShippingId] = useState<ShippingId>("speedy-office");
+  const [shippingId, setShippingId] = useState<ShippingId>("econt-office");
   const [submitting, setSubmitting]         = useState(false);
   const [submitted, setSubmitted]           = useState(false);
   const purchaseFired  = useRef(false);
@@ -129,8 +128,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
 
   const addressLabel       = isHomeAddress ? "Адрес за доставка *" : "Адрес на офис / Автомат *";
   const addressPlaceholder =
-    shippingId === "speedy-office" ? "Спиди офис или автомат..." :
-    shippingId === "econt-office"  ? "Еконт офис или автомат..." :
+    shippingId === "econt-office" ? "Еконт офис или автомат..." :
     "Вашият точен адрес...";
 
   // ── Validation ─────────────────────────────────────────────────────────────
