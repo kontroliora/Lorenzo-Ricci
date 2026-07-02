@@ -1,17 +1,10 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { products } from "@/lib/products";
 import { readInventory } from "@/lib/inventory";
 import { InventoryTable, type InventoryRow } from "./InventoryTable";
+import { logout } from "../actions";
 
 export const dynamic = "force-dynamic";
-
-async function logout() {
-  "use server";
-  (await cookies()).delete("lr-admin-session");
-  redirect("/admin/login");
-}
 
 export default async function AdminInventoryPage() {
   const inventory = await readInventory();

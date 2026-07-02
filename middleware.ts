@@ -1,40 +1,41 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+import { updateSession } from "@/lib/supabase/middleware";
 
-async function sha256hex(str: string): Promise<string> {
-  const data = new TextEncoder().encode(str);
-  const buf = await globalThis.crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-
-  // Allow login endpoints through unconditionally
-  if (pathname === "/admin/login" || pathname === "/api/admin/login") {
+  // Programmatic endpoint with its own Bearer-token auth — bypass the session gate.
+  if (pathname.startsWith("/api/admin/cart-abandonment")) {
     return NextResponse.next();
   }
 
-  const session = req.cookies.get("lr-admin-session")?.value;
-  const pwd = process.env.ADMIN_PASSWORD ?? "";
+  // Refresh the Supabase session (also rotates auth cookies) and read the user.
+  const { supabaseResponse, user } = await updateSession(request);
 
-  if (!pwd || !session) {
+  // Login screen: always reachable. If already authenticated, skip straight in.
+  if (pathname === "/admin/login") {
+    if (user) {
+      return redirectWithCookies(new URL("/admin/inventory", request.url), supabaseResponse);
+    }
+    return supabaseResponse;
+  }
+
+  // Everything else under /admin and /api/admin requires an authenticated user.
+  if (!user) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    return NextResponse.redirect(new URL("/admin/login", req.url));
+    return redirectWithCookies(new URL("/admin/login", request.url), supabaseResponse);
   }
 
-  const expected = await sha256hex(pwd);
-  if (session !== expected) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    return NextResponse.redirect(new URL("/admin/login", req.url));
-  }
+  return supabaseResponse;
+}
 
-  return NextResponse.next();
+// Redirect while preserving any auth cookies that updateSession refreshed.
+function redirectWithCookies(url: URL, source: NextResponse): NextResponse {
+  const response = NextResponse.redirect(url);
+  source.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+  return response;
 }
 
 export const config = {

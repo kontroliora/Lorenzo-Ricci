@@ -1,17 +1,10 @@
 import { kv } from "@vercel/kv";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { logout } from "../actions";
 
 export const dynamic = "force-dynamic";
 
 type Lead = { name: string; phone: string; email: string; date: string };
-
-async function logout() {
-  "use server";
-  (await cookies()).delete("lr-admin-session");
-  redirect("/admin/login");
-}
 
 function formatDate(iso: string) {
   try {

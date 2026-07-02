@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 export default function AdminLogin() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -13,20 +15,21 @@ export default function AdminLogin() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
+    const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
     });
 
     setLoading(false);
-    if (res.ok) {
-      router.push("/admin/inventory");
-      router.refresh();
-    } else {
-      setError("Грешна парола");
+    if (signInError) {
+      setError("Грешен имейл или парола");
       setPassword("");
+      return;
     }
+
+    router.push("/admin/inventory");
+    router.refresh();
   };
 
   return (
@@ -46,6 +49,16 @@ export default function AdminLogin() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <input
+            type="email"
+            placeholder="Имейл"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full bg-white/5 border border-white/15 px-4 py-3.5 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-white/40 transition-colors font-sans"
+            autoFocus
+            autoComplete="email"
+            inputMode="email"
+          />
           <div>
             <input
               type="password"
@@ -53,7 +66,6 @@ export default function AdminLogin() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-white/5 border border-white/15 px-4 py-3.5 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-white/40 transition-colors font-sans"
-              autoFocus
               autoComplete="current-password"
             />
             {error && (
@@ -63,7 +75,7 @@ export default function AdminLogin() {
 
           <button
             type="submit"
-            disabled={loading || !password}
+            disabled={loading || !email || !password}
             className="bg-white text-[#0a0e1f] font-sans text-xs font-semibold tracking-[0.18em] uppercase py-3.5 hover:bg-white/90 transition-colors disabled:opacity-40"
           >
             {loading ? "Влизане..." : "Вход"}
