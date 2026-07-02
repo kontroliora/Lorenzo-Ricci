@@ -27,6 +27,9 @@ export function CartDrawer() {
   const total = afterBundles - promoDiscount;
   const count = totalItems();
   const freeShippingThreshold = 60;
+  // Free-shipping qualification is checked on the pre-promo amount (after bundle,
+  // before promo code) so a discount code never turns free shipping into paid.
+  const shippingQualifyingAmount = afterBundles;
 
   const applyPromo = async () => {
     const code = promoInput.trim().toUpperCase();
@@ -52,8 +55,8 @@ export function CartDrawer() {
       setPromoLoading(false);
     }
   };
-  const remaining = Math.max(0, freeShippingThreshold - total);
-  const progress = Math.min(1, total / freeShippingThreshold);
+  const remaining = Math.max(0, freeShippingThreshold - shippingQualifyingAmount);
+  const progress = Math.min(1, shippingQualifyingAmount / freeShippingThreshold);
   const reached = remaining === 0 && items.length > 0;
 
   // ── Cart countdown timer ────────────────────────────────────────────────────
@@ -331,7 +334,7 @@ export function CartDrawer() {
                 )}
               </div>
 
-              {total >= freeShippingThreshold ? (
+              {shippingQualifyingAmount >= freeShippingThreshold ? (
                 <div className="flex items-center justify-between mb-4">
                   <span className="font-sans text-xs text-white/40 tracking-wide">Доставка</span>
                   <span className="font-sans text-xs text-white tracking-wide">БЕЗПЛАТНА</span>

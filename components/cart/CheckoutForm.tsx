@@ -120,7 +120,8 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
   const [submittedTotal, setSubmittedTotal] = useState(0);
 
   // ── Derived values ─────────────────────────────────────────────────────────
-  const freeShipping     = total >= FREE_SHIPPING_THRESHOLD;
+  // Threshold is checked on the pre-promo amount so a discount code never adds shipping.
+  const freeShipping     = (total + promoDiscount) >= FREE_SHIPPING_THRESHOLD;
   const selectedOption   = SHIPPING_OPTIONS.find((o) => o.id === shippingId)!;
   const shippingCost     = freeShipping ? 0 : selectedOption.price;
   const grandTotal       = total + shippingCost;
