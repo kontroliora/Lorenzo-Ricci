@@ -139,7 +139,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
     if (!form.email.trim())                                errs.email = "Въведете имейл";
     else if (!form.email.includes("@"))                    errs.email = "Невалиден имейл";
     if (!form.city.trim())                                 errs.city = "Въведете град";
-    if (!form.postCode.trim())                             errs.postCode = "Моля, въведете пощенски код";
+    if (isHomeAddress && !form.postCode.trim())            errs.postCode = "Моля, въведете пощенски код";
     if (!form.officeAddress.trim())                        errs.officeAddress = isHomeAddress ? "Въведете личен адрес" : "Въведете адрес на офис";
     return errs;
   };
@@ -381,13 +381,6 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
             style={errors.city ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
         </Field>
 
-        <Field id="field-postCode" label="Пощенски код *" error={errors.postCode}>
-          <input type="text" placeholder="1000" value={form.postCode}
-            onChange={(e) => { setForm((f) => ({ ...f, postCode: e.target.value })); clearError("postCode"); }}
-            className="input-luxury" autoComplete="postal-code" inputMode="numeric"
-            style={errors.postCode ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
-        </Field>
-
         {/* ── Shipping method radio cards ──────────────────────────────── */}
         <div className="flex flex-col gap-1.5">
           <span className="font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-white/40">
@@ -411,7 +404,10 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
                       name="shippingMethod"
                       value={option.id}
                       checked={isSelected}
-                      onChange={() => setShippingId(option.id)}
+                      onChange={() => {
+                        setShippingId(option.id);
+                        if (option.id !== "home-address") { setForm((f) => ({ ...f, postCode: "" })); clearError("postCode"); }
+                      }}
                       className="sr-only"
                     />
                     {/* Custom radio circle */}
@@ -458,6 +454,15 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
             autoComplete={isHomeAddress ? "street-address" : "off"}
           />
         </Field>
+
+        {isHomeAddress && (
+          <Field id="field-postCode" label="Пощенски код *" error={errors.postCode}>
+            <input type="text" placeholder="1000" value={form.postCode}
+              onChange={(e) => { setForm((f) => ({ ...f, postCode: e.target.value })); clearError("postCode"); }}
+              className="input-luxury" autoComplete="postal-code" inputMode="numeric"
+              style={errors.postCode ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
+          </Field>
+        )}
 
         <Field label="Бележка (незадължително)" error={undefined}>
           <textarea
