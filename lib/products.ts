@@ -63,7 +63,6 @@ export const products: Product[] = [
     price: 195,
     originalPrice: 279,
     currency: "€",
-    badge: "Последни бройки",
     inStock: true,
     warranty: "2 години гаранция",
     shortDescription: "Италиански дизайн. Японска точност.",
