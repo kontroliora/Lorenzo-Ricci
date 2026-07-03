@@ -28,7 +28,7 @@ export default function AdminLogin() {
       return;
     }
 
-    router.push("/admin/inventory");
+    router.push("/lr-panel-v8m3q/inventory");
     router.refresh();
   };
 

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function AdminPage() {
-  redirect("/admin/inventory");
+  redirect("/lr-panel-v8m3q/inventory");
 }

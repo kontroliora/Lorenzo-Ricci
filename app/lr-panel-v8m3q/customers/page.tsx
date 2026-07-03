@@ -60,7 +60,7 @@ export default async function AdminCustomersPage() {
       <div className="border-b border-white/6">
         <div className="max-w-5xl mx-auto px-6 flex gap-6">
           <Link
-            href="/admin/inventory"
+            href="/lr-panel-v8m3q/inventory"
             className="font-sans text-[11px] tracking-widest uppercase py-3 text-white/35 hover:text-white transition-colors"
           >
             Инвентар

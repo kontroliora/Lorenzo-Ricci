@@ -13,19 +13,19 @@ export async function middleware(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request);
 
   // Login screen: always reachable. If already authenticated, skip straight in.
-  if (pathname === "/admin/login") {
+  if (pathname === "/lr-panel-v8m3q/login") {
     if (user) {
-      return redirectWithCookies(new URL("/admin/inventory", request.url), supabaseResponse);
+      return redirectWithCookies(new URL("/lr-panel-v8m3q/inventory", request.url), supabaseResponse);
     }
     return supabaseResponse;
   }
 
-  // Everything else under /admin and /api/admin requires an authenticated user.
+  // Everything else under /lr-panel-v8m3q and /api/admin requires an authenticated user.
   if (!user) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    return redirectWithCookies(new URL("/admin/login", request.url), supabaseResponse);
+    return redirectWithCookies(new URL("/lr-panel-v8m3q/login", request.url), supabaseResponse);
   }
 
   return supabaseResponse;
@@ -39,5 +39,5 @@ function redirectWithCookies(url: URL, source: NextResponse): NextResponse {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
+  matcher: ["/lr-panel-v8m3q/:path*", "/api/admin/:path*"],
 };

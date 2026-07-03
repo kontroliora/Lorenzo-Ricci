@@ -57,7 +57,7 @@ export default async function AdminInventoryPage() {
             Инвентар
           </span>
           <Link
-            href="/admin/customers"
+            href="/lr-panel-v8m3q/customers"
             className="font-sans text-[11px] tracking-widest uppercase py-3 text-white/35 hover:text-white transition-colors"
           >
             Клиенти
