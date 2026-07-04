@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AdminNav } from "@/components/admin/AdminNav";
 import { products } from "@/lib/products";
 import { readInventory } from "@/lib/inventory";
 import { getReservedMap } from "@/lib/orders";
@@ -57,26 +57,8 @@ export default async function AdminInventoryPage() {
         </div>
       </header>
 
-      {/* Nav tabs */}
-      <div className="border-b border-white/6">
-        <div className="max-w-5xl mx-auto px-6 flex gap-6">
-          <span className="font-sans text-[11px] tracking-widest uppercase py-3 text-white border-b-2 border-white -mb-px">
-            Инвентар
-          </span>
-          <Link
-            href="/lr-panel-v8m3q/orders"
-            className="font-sans text-[11px] tracking-widest uppercase py-3 text-white/35 hover:text-white transition-colors"
-          >
-            Поръчки
-          </Link>
-          <Link
-            href="/lr-panel-v8m3q/customers"
-            className="font-sans text-[11px] tracking-widest uppercase py-3 text-white/35 hover:text-white transition-colors"
-          >
-            Клиенти
-          </Link>
-        </div>
-      </div>
+      {/* Admin navigation */}
+      <AdminNav />
 
       {/* Stats strip */}
       <div className="border-b border-white/6 bg-white/2">

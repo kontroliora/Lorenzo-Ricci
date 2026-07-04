@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AdminNav } from "@/components/admin/AdminNav";
 import { logout } from "../actions";
 import { getOrders, getCustomerHistories, getStatusLog } from "@/lib/orders";
 import { OrderCard } from "./OrderCard";
@@ -28,14 +28,8 @@ export default async function OrdersPage() {
         </div>
       </header>
 
-      {/* Nav tabs */}
-      <div className="border-b border-white/6">
-        <div className="max-w-5xl mx-auto px-6 flex gap-6">
-          <Link href="/lr-panel-v8m3q/inventory" className="font-sans text-[11px] tracking-widest uppercase py-3 text-white/35 hover:text-white transition-colors">Инвентар</Link>
-          <span className="font-sans text-[11px] tracking-widest uppercase py-3 text-white border-b-2 border-white -mb-px">Поръчки</span>
-          <Link href="/lr-panel-v8m3q/customers" className="font-sans text-[11px] tracking-widest uppercase py-3 text-white/35 hover:text-white transition-colors">Клиенти</Link>
-        </div>
-      </div>
+      {/* Admin navigation */}
+      <AdminNav />
 
       {/* Stats strip */}
       <div className="border-b border-white/6 bg-white/2">
