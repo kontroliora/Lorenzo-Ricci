@@ -1,27 +1,34 @@
 import Link from "next/link";
 import { products } from "@/lib/products";
 import { readInventory } from "@/lib/inventory";
+import { getReservedMap } from "@/lib/orders";
 import { InventoryTable, type InventoryRow } from "./InventoryTable";
 import { logout } from "../actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminInventoryPage() {
-  const inventory = await readInventory();
+  const [inventory, reserved] = await Promise.all([readInventory(), getReservedMap()]);
 
-  const rows: InventoryRow[] = products.map((p) => ({
-    slug:      p.slug,
-    name:      p.name,
-    sku:       p.sku,
-    category:  p.category,
-    coverSrc:  p.coverImage.src,
-    coverAlt:  p.coverImage.alt,
-    stock:     inventory[p.slug] ?? 0,
-  }));
+  const rows: InventoryRow[] = products.map((p) => {
+    const stock = inventory[p.slug] ?? 0;
+    const res   = reserved[p.slug] ?? 0;
+    return {
+      slug:      p.slug,
+      name:      p.name,
+      sku:       p.sku,
+      category:  p.category,
+      coverSrc:  p.coverImage.src,
+      coverAlt:  p.coverImage.alt,
+      stock,
+      reserved:  res,
+      available: Math.max(0, stock - res),
+    };
+  });
 
   const totalProducts = rows.length;
-  const outOfStock    = rows.filter((r) => r.stock === 0).length;
-  const lowStock      = rows.filter((r) => r.stock > 0 && r.stock <= 5).length;
+  const outOfStock    = rows.filter((r) => r.available === 0).length;
+  const lowStock      = rows.filter((r) => r.available > 0 && r.available <= 5).length;
 
   return (
     <div className="min-h-screen bg-[#0a0e1f] text-white">
@@ -56,6 +63,12 @@ export default async function AdminInventoryPage() {
           <span className="font-sans text-[11px] tracking-widest uppercase py-3 text-white border-b-2 border-white -mb-px">
             Инвентар
           </span>
+          <Link
+            href="/lr-panel-v8m3q/orders"
+            className="font-sans text-[11px] tracking-widest uppercase py-3 text-white/35 hover:text-white transition-colors"
+          >
+            Поръчки
+          </Link>
           <Link
             href="/lr-panel-v8m3q/customers"
             className="font-sans text-[11px] tracking-widest uppercase py-3 text-white/35 hover:text-white transition-colors"

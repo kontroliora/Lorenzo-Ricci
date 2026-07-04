@@ -65,6 +65,12 @@ export default async function AdminCustomersPage() {
           >
             Инвентар
           </Link>
+          <Link
+            href="/lr-panel-v8m3q/orders"
+            className="font-sans text-[11px] tracking-widest uppercase py-3 text-white/35 hover:text-white transition-colors"
+          >
+            Поръчки
+          </Link>
           <span className="font-sans text-[11px] tracking-widest uppercase py-3 text-white border-b-2 border-white -mb-px">
             Клиенти
           </span>

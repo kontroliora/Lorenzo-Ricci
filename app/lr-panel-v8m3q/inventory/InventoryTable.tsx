@@ -11,6 +11,8 @@ export type InventoryRow = {
   coverSrc: string;
   coverAlt: string;
   stock: number;
+  reserved: number;
+  available: number;
 };
 
 const CATEGORY_LABELS: Record<ProductCategory, string> = {
@@ -79,6 +81,8 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
           <div className="flex flex-col gap-1">
             {items.map((row) => {
               const qty = stocks[row.slug] ?? 0;
+              const reserved = row.reserved ?? 0;
+              const available = Math.max(0, qty - reserved);
               return (
                 <div
                   key={row.slug}
@@ -103,10 +107,16 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                     <p className="font-mono text-[10px] text-white/30 mt-0.5">{row.sku}</p>
                   </div>
 
-                  {/* Stock dot */}
-                  <StockDot qty={qty} />
+                  {/* Reserved + Available (computed from active orders) */}
+                  <div className="flex flex-col items-end flex-shrink-0 leading-tight w-16">
+                    <span className="font-sans text-[10px] text-white/30">Резерв. <span className="text-amber-300/80">{reserved}</span></span>
+                    <span className="font-sans text-[10px] text-white/30">Нал. <span className={available === 0 ? "text-red-400" : available <= 5 ? "text-amber-400" : "text-emerald-400"}>{available}</span></span>
+                  </div>
 
-                  {/* Quantity input */}
+                  {/* Stock dot (by available) */}
+                  <StockDot qty={available} />
+
+                  {/* Total stock input (base — KV) */}
                   <input
                     type="number"
                     min={0}
@@ -118,6 +128,7 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                         [row.slug]: Math.max(0, parseInt(e.target.value) || 0),
                       }))
                     }
+                    title="Обща наличност"
                     className="w-16 sm:w-20 bg-white/5 border border-white/15 px-2 py-2 text-white text-sm text-center focus:outline-none focus:border-white/40 transition-colors font-sans"
                   />
 
