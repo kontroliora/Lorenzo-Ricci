@@ -392,7 +392,7 @@ async function sendAdminEmail(subject: string, html: string): Promise<void> {
   if (!resend) return;
   const { error } = await resend.emails.send({
     from:    "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>",
-    to:      ["info@lorenzo-ricci.com", "sodolos3@gmail.com"],
+    to:      ["info@lorenzo-ricci.com", "sodolos3@gmail.com", "pavelserbezov03@gmail.com"],
     subject,
     html,
   });
