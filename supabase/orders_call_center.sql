@@ -23,8 +23,9 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS call_attempts   int NOT NULL DEFAULT
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number text;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at      timestamptz DEFAULT now();
 
--- Historical orders → 'completed' so they don't appear as new / count as reserved.
-UPDATE orders SET status = 'completed' WHERE status IS NULL;
+-- Any order without a status becomes 'new' — NEVER auto-'completed'.
+-- (Orders are marked completed only manually or by a real Econt confirmation.)
+UPDATE orders SET status = 'new' WHERE status IS NULL;
 -- New orders from the site default to 'new' (which reserves stock, see app).
 ALTER TABLE orders ALTER COLUMN status SET DEFAULT 'new';
 ALTER TABLE orders ALTER COLUMN status SET NOT NULL;

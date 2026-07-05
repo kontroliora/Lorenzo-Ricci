@@ -28,6 +28,7 @@ export type AdminOrder = {
   call_notes: string | null;
   call_attempts: number;
   tracking_number: string | null;
+  excluded_from_stock: boolean;
   created_at: string;
 };
 
@@ -46,7 +47,7 @@ export type StatusLogRow = {
 export const ACTIVE_STATUSES = ["new", "confirmed", "shipped"] as const;
 
 const ORDER_COLUMNS =
-  "id, order_ref, name, phone, city, post_code, address, shipping_method, courier, items, total, notes, status, call_state, call_notes, call_attempts, tracking_number, created_at";
+  "id, order_ref, name, phone, city, post_code, address, shipping_method, courier, items, total, notes, status, call_state, call_notes, call_attempts, tracking_number, excluded_from_stock, created_at";
 
 export async function getOrders(limit = 150): Promise<AdminOrder[]> {
   const supabase = await createClient();

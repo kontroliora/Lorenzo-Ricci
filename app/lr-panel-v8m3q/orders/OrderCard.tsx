@@ -7,6 +7,7 @@ import {
   markNoAnswer,
   shipOrder,
   saveCallNotes,
+  setInventoryCategory,
 } from "./actions";
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
@@ -67,8 +68,12 @@ export function OrderCard({
     }
   }
 
+  const excluded = order.excluded_from_stock;
+  const category: "fulfilled" | "active" | "excluded" =
+    excluded ? "excluded" : order.status === "completed" ? "fulfilled" : "active";
+
   return (
-    <div style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "16px 18px" }}>
+    <div style={{ background: "rgba(255,255,255,0.03)", border: `0.5px solid ${excluded ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "16px 18px", opacity: excluded ? 0.55 : 1 }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
@@ -105,6 +110,30 @@ export function OrderCard({
         </div>
         <div style={{ color: "#fff", fontWeight: 500 }}>
           €{Number(order.total ?? 0).toFixed(2)}{cod && <span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · наложен платеж</span>}
+        </div>
+      </div>
+
+      {/* Inventory category — one-time reclassification + ongoing test/fake marking */}
+      <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", marginTop: 14, paddingTop: 12 }}>
+        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 8 }}>Наличност</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {([
+            { key: "fulfilled", label: "Изпълнена", on: "#3B6D11", fg: "#C0DD97" },
+            { key: "active",    label: "Активна",   on: "#854F0B", fg: "#FAC775" },
+            { key: "excluded",  label: "Изключена", on: "#5F5E5A", fg: "#D3D1C7" },
+          ] as const).map((c) => {
+            const sel = category === c.key;
+            return (
+              <button
+                key={c.key}
+                disabled={pending}
+                onClick={() => run(() => setInventoryCategory(order.id, c.key))}
+                style={{ border: `0.5px solid ${sel ? c.on : "rgba(255,255,255,0.15)"}`, color: sel ? c.fg : "rgba(255,255,255,0.45)", background: sel ? "rgba(255,255,255,0.05)" : "transparent", fontSize: 12, padding: "7px 13px", borderRadius: 8, cursor: "pointer" }}
+              >
+                {sel ? "● " : ""}{c.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 

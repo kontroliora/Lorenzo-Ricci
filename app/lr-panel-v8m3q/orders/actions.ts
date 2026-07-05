@@ -41,3 +41,20 @@ export async function shipOrder(id: number, tracking: string): Promise<string | 
 export async function saveCallNotes(id: number, notes: string): Promise<string | null> {
   return patchOrder(id, { call_notes: notes });
 }
+
+// Inventory category (one-time reclassification + ongoing test/fake marking):
+//  fulfilled → goods left the warehouse (deducts, status=completed)
+//  active    → real, still in process (deducts as reserved, status=new)
+//  excluded  → test / fake / not real (never counted against stock)
+export async function setInventoryCategory(
+  id: number,
+  category: "fulfilled" | "active" | "excluded",
+): Promise<string | null> {
+  if (category === "excluded") {
+    return patchOrder(id, { excluded_from_stock: true });
+  }
+  if (category === "fulfilled") {
+    return patchOrder(id, { excluded_from_stock: false, status: "completed" });
+  }
+  return patchOrder(id, { excluded_from_stock: false, status: "new" });
+}
