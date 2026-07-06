@@ -1,7 +1,7 @@
 // ⚠️ TEMPORARY DEBUG ROUTE — Econt connection probe (STEP 1).
 // Runs server-side on Vercel so ECONT_USER/ECONT_PASS never leave the secrets
-// store. Token-gated. Pulls a REAL tracking number from a shipped order, then
-// calls getShipmentStatuses. DELETE this file after the one-time test.
+// store. Token-gated. Runs the real creds AND a wrong-password control so we can
+// tell whether auth is actually enforced/accepted. DELETE after the test.
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -15,15 +15,33 @@ const ENDPOINTS: Record<string, string> = {
   demo: "https://demo.econt.com/ee/services/Shipments/ShipmentService.getShipmentStatuses.json",
 };
 
+async function callEcont(endpoint: string, user: string, pass: string, awb: string) {
+  const auth = "Basic " + Buffer.from(`${user}:${pass}`).toString("base64");
+  try {
+    const r = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: auth },
+      body: JSON.stringify({ shipmentNumbers: [awb] }),
+      cache: "no-store",
+    });
+    const text = await r.text();
+    let body: unknown;
+    try { body = JSON.parse(text); } catch { body = text.slice(0, 4000); }
+    return { httpStatus: r.status, body };
+  } catch (e) {
+    return { fetchError: String(e) };
+  }
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   if (searchParams.get("key") !== TOKEN) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const out: Record<string, unknown> = { marker: "econt-test-v2" };
+  const out: Record<string, unknown> = { marker: "econt-test-v3" };
 
-  // ── 1. Find a REAL tracking number from a shipped order ───────────────────
+  // ── 1. Try to find a REAL tracking number from a shipped order ────────────
   const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const serviceKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ??
@@ -61,19 +79,20 @@ export async function GET(req: NextRequest) {
   }
   out.db = db;
 
-  // ── 2. Econt getShipmentStatuses ──────────────────────────────────────────
+  // ── 2. Econt getShipmentStatuses: real creds vs. wrong-password control ────
   const user = process.env.ECONT_USER ?? "";
   const pass = process.env.ECONT_PASS ?? "";
   const which = searchParams.get("env") === "demo" ? "demo" : "prod";
   const endpoint = ENDPOINTS[which];
   const paramAwb = (searchParams.get("awb") ?? "").replace(/\s+/g, "");
-  const awb = paramAwb || dbTracking[0] || "";
+  // Fall back to the known-fake number so the auth control still runs without a real AWB.
+  const awb = paramAwb || dbTracking[0] || "105138004477";
 
   const econt: Record<string, unknown> = {
     credsPresent: { user: user.length > 0, pass: pass.length > 0, userLen: user.length, passLen: pass.length },
     endpoint,
     awbUsed: awb,
-    awbSource: paramAwb ? "query" : dbTracking[0] ? "database" : "none",
+    awbSource: paramAwb ? "query" : dbTracking[0] ? "database" : "fallback-fake",
     dbTrackingFound: dbTracking,
   };
   out.econt = econt;
@@ -82,29 +101,13 @@ export async function GET(req: NextRequest) {
     econt.error = "Missing ECONT_USER or ECONT_PASS in environment";
     return NextResponse.json(out, { status: 200 });
   }
-  if (!awb) {
-    econt.error = "No AWB available — none found in DB and none passed as ?awb=";
-    return NextResponse.json(out, { status: 200 });
-  }
 
-  const auth = "Basic " + Buffer.from(`${user}:${pass}`).toString("base64");
-  try {
-    const r = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: auth },
-      body: JSON.stringify({ shipmentNumbers: [awb] }),
-      cache: "no-store",
-    });
-    const text = await r.text();
-    econt.httpStatus = r.status;
-    try {
-      econt.response = JSON.parse(text);
-    } catch {
-      econt.rawText = text.slice(0, 8000);
-    }
-  } catch (e) {
-    econt.fetchError = String(e);
-  }
+  const [realCreds, controlBadPass] = await Promise.all([
+    callEcont(endpoint, user, pass, awb),
+    callEcont(endpoint, user, pass + "_WRONG", awb),
+  ]);
+  econt.realCreds = realCreds;
+  econt.controlBadPass = controlBadPass;
 
   return NextResponse.json(out, { status: 200 });
 }
