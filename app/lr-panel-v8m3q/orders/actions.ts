@@ -26,9 +26,17 @@ export async function cancelOrder(id: number): Promise<string | null> {
   return patchOrder(id, { status: "cancelled", call_state: "refused" });
 }
 
-// „Не вдига" → call marker only, no status change; bumps the attempt counter.
-export async function markNoAnswer(id: number, attempts: number): Promise<string | null> {
-  return patchOrder(id, { call_state: "no_answer", call_attempts: (attempts ?? 0) + 1 });
+// „Не вдига" → never locks. Atomic server-side increment (no race on rapid
+// presses); the audit trigger logs each attempt with the exact time + who.
+export async function markNoAnswer(id: number): Promise<string | null> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("mark_no_answer", { p_id: id });
+  if (error) {
+    console.error("[orders] no-answer error:", error.message);
+    return error.message;
+  }
+  revalidatePath(ORDERS_PATH);
+  return null;
 }
 
 // Ship → tracking required. The DB trigger also blocks 'shipped' without it.
