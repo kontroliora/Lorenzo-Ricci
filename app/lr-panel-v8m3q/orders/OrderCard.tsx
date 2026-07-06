@@ -155,13 +155,16 @@ export function OrderCard({
           )}
 
           {order.status === "shipped" && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>Тракинг {order.tracking_number} · чака Еконт да потвърди взимане</span>
-              <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button disabled={pending} onClick={() => run(() => markCompleted(order.id))} style={outlineBtn("rgba(255,255,255,0.2)", "rgba(255,255,255,0.6)")}>Ръчно завършена</button>
-                <button disabled={pending} onClick={() => run(() => markReturned(order.id))} style={outlineBtn("#A32D2D", "#F09595")}>Върната / невзета</button>
-              </span>
-            </div>
+            <>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>Тракинг {order.tracking_number} · чака Еконт да потвърди взимане</span>
+                <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button disabled={pending} onClick={() => run(() => markCompleted(order.id))} style={outlineBtn("rgba(255,255,255,0.2)", "rgba(255,255,255,0.6)")}>Ръчно завършена</button>
+                  <button disabled={pending} onClick={() => run(() => markReturned(order.id))} style={outlineBtn("#A32D2D", "#F09595")}>Върната / невзета</button>
+                </span>
+              </div>
+              <input value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => { if (notes !== (order.call_notes ?? "")) run(() => saveCallNotes(order.id, notes)); }} placeholder="Бележка — напр. клиентът каза да достави след 18ч" style={{ background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 12 }} />
+            </>
           )}
 
           {error && <p style={{ color: "#F09595", fontSize: 12, margin: 0 }}>{error}</p>}
