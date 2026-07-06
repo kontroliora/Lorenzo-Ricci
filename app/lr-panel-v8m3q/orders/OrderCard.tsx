@@ -52,11 +52,13 @@ export function OrderCard({
   const [tracking, setTracking] = useState(order.tracking_number ?? "");
   const [notes, setNotes] = useState(order.call_notes ?? "");
   const [expired, setExpired] = useState(false);
+  const [hoursOpen, setHoursOpen] = useState<number | null>(null);
 
   // Computed client-side to avoid a hydration mismatch on the time comparison.
   useEffect(() => {
-    const ageH = (Date.now() - new Date(order.created_at).getTime()) / 3_600_000;
-    setExpired(order.status === "new" && ageH > RESERVATION_TTL_HOURS);
+    const h = (Date.now() - new Date(order.created_at).getTime()) / 3_600_000;
+    setHoursOpen(h);
+    setExpired(order.status === "new" && h > RESERVATION_TTL_HOURS);
   }, [order.status, order.created_at]);
 
   const run = (fn: () => Promise<string | null>) =>
@@ -114,7 +116,11 @@ export function OrderCard({
         <div>{(order.items ?? []).map((it, i) => (<span key={i}>{it.name} <span style={{ color: "rgba(255,255,255,0.4)" }}>× {it.quantity ?? it.qty ?? 1}</span>{i < order.items.length - 1 ? " · " : ""}</span>))}</div>
         <div style={{ color: "#fff" }}>{order.shipping_method || (order.courier === "home" ? "Еконт до адрес" : "Еконт до офис")} — {order.address || "—"}{order.city ? `, ${order.city}` : ""}</div>
         <div style={{ color: "#fff", fontWeight: 500 }}>€{Number(order.total ?? 0).toFixed(2)}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · наложен платеж</span></div>
-        {expired && !excluded && <div style={{ color: "#FAC775", fontSize: 11, marginTop: 4 }}>⚠ резервацията изтече ({RESERVATION_TTL_HOURS}ч необработена) — стоката е върната в налична</div>}
+        {order.status === "new" && !excluded && hoursOpen !== null && (
+          <div style={{ color: hoursOpen > 24 ? "#F09595" : "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 4 }}>
+            ⏱ отворена преди {Math.floor(hoursOpen)}ч{hoursOpen > 24 ? " · заседнала" : ""}{expired ? ` · резервацията изтече (${RESERVATION_TTL_HOURS}ч)` : ""}
+          </div>
+        )}
       </div>
 
       {/* Controls — single flow, one action set per stage */}
