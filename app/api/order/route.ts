@@ -86,61 +86,9 @@ async function sendToBigArena(order: OrderPayload): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 1.  Blacklist check - nekorekten.com
+// Admin notification email (HTML)
 // ─────────────────────────────────────────────────────────────
-interface BlacklistResult {
-  found: boolean;
-  label: string;   // short human-readable verdict
-  details: string; // extra context scraped from the page (empty if clean)
-}
-
-async function checkBlacklist(phone: string): Promise<BlacklistResult> {
-  const clean = phone.replace(/\D/g, ""); // strip non-digits
-  const url = `https://nekorekten.com/?s=${encodeURIComponent(clean)}`;
-
-  try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; Lorenzo-Ricci-Bot/1.0)",
-        Accept: "text/html",
-      },
-      next: { revalidate: 0 },
-    });
-
-    if (!res.ok) {
-      return { found: false, label: "CHECK FAILED", details: `HTTP ${res.status}` };
-    }
-
-    const html = await res.text();
-
-    // nekorekten.com shows "Няма намерени резултати" when clean
-    const notFound =
-      html.includes("Няма намерени резултати") ||
-      html.includes("No results found") ||
-      html.includes("no results");
-
-    if (notFound) {
-      return { found: false, label: "CLEAN", details: "" };
-    }
-
-    // Try to extract a snippet of the listing title from the HTML
-    const titleMatch = html.match(/<h2[^>]*class="[^"]*entry-title[^"]*"[^>]*>([\s\S]*?)<\/h2>/i);
-    const snippet = titleMatch
-      ? titleMatch[1].replace(/<[^>]+>/g, "").trim().slice(0, 200)
-      : "Found in database";
-
-    return { found: true, label: "FOUND IN BLACKLIST", details: snippet };
-  } catch (err) {
-    console.error("Blacklist check error:", err);
-    return { found: false, label: "CHECK ERROR", details: String(err) };
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// 2.  Admin notification email (HTML)
-// ─────────────────────────────────────────────────────────────
-function buildAdminEmail(order: Record<string, unknown>, bl: BlacklistResult, bigArenaError?: string | null): string {
+function buildAdminEmail(order: Record<string, unknown>, bigArenaError?: string | null): string {
   const customer = (order.customer ?? {}) as Record<string, unknown>;
   const shipping  = (order.shipping  ?? {}) as Record<string, unknown>;
 
@@ -151,17 +99,6 @@ function buildAdminEmail(order: Record<string, unknown>, bl: BlacklistResult, bi
         <p style="margin:8px 0 0;font-size:12px;opacity:.75;font-family:monospace">${bigArenaError.slice(0, 300)}</p>
       </div>`
     : "";
-
-  const safeBlock = bl.found
-    ? `<div style="background:#ff1a1a;color:#fff;padding:18px 24px;border-radius:6px;margin-bottom:28px">
-        <p style="margin:0;font-size:20px;font-weight:700">🚨 DANGER - КЛИЕНТЪТ Е В БЛЕКЛИСТА!</p>
-        <p style="margin:8px 0 0;font-size:14px">Намерен на nekorekten.com · Помисли два пъти преди изпращане.</p>
-        ${bl.details ? `<p style="margin:8px 0 0;font-size:13px;opacity:.85">${bl.details}</p>` : ""}
-      </div>`
-    : `<div style="background:#16a34a;color:#fff;padding:18px 24px;border-radius:6px;margin-bottom:28px">
-        <p style="margin:0;font-size:20px;font-weight:700">✅ SAFE - Не е намерен в блеклиста</p>
-        <p style="margin:8px 0 0;font-size:14px">nekorekten.com: ${bl.label}</p>
-      </div>`;
 
   const items = Array.isArray(order.items)
     ? (order.items as Array<{ name?: string; sku?: string; quantity?: number; qty?: number; price?: number; currency?: string }>)
@@ -184,7 +121,7 @@ function buildAdminEmail(order: Record<string, unknown>, bl: BlacklistResult, bi
       <p style="margin:0;color:rgba(255,255,255,.5);font-size:11px;letter-spacing:.25em;text-transform:uppercase">Нова поръчка</p>
     </div>
     <div style="padding:32px">
-      ${bigArenaBlock}${safeBlock}
+      ${bigArenaBlock}
 
       <h3 style="margin:0 0 16px;font-size:16px;text-transform:uppercase;letter-spacing:.08em;color:#374151">Данни на клиента</h3>
       <table style="width:100%;border-collapse:collapse;margin-bottom:28px;font-size:14px">
@@ -532,10 +469,9 @@ export async function POST(req: NextRequest) {
     const customerAddress = String(customer.email ?? "").trim();
     const customerName    = String(customer.name  ?? "");
 
-    // 1. BigArena + blacklist run concurrently (saves ~3s vs sequential)
-    const [bigArenaSettled, blSettled] = await Promise.allSettled([
+    // BigArena fulfillment (best-effort — never blocks the order)
+    const [bigArenaSettled] = await Promise.allSettled([
       sendToBigArena(order),
-      checkBlacklist(String(customer.phone ?? "")),
     ]);
 
     const bigArenaError = bigArenaSettled.status === "rejected"
@@ -543,19 +479,13 @@ export async function POST(req: NextRequest) {
       : null;
     if (bigArenaError) console.error("[Order] BigArena failed:", bigArenaError);
 
-    const bl = blSettled.status === "fulfilled"
-      ? blSettled.value
-      : { found: false, label: "CHECK ERROR", details: String(blSettled.reason) };
-
-    // 2. Send both emails and await them — without await they are killed by Vercel before sending
-    const subject = bl.found
-      ? `🚨 [BLACKLIST] Нова поръчка - ${customerName}`
-      : bigArenaError
+    // Send emails and await them — without await they are killed by Vercel before sending
+    const subject = bigArenaError
       ? `⚠️ [BIGARENA FAILED] Нова поръчка - ${customerName}`
       : `✅ Нова поръчка - ${customerName}`;
 
     await Promise.allSettled([
-      sendAdminEmail(subject, buildAdminEmail(order, bl, bigArenaError)),
+      sendAdminEmail(subject, buildAdminEmail(order, bigArenaError)),
       ...(customerAddress
         ? [sendCustomerEmail(customerAddress, buildCustomerEmail(order))]
         : []),
