@@ -12,8 +12,6 @@ import {
   saveCallNotes,
 } from "./actions";
 
-const RESERVATION_TTL_HOURS = 48; // keep in sync with lib/orders.ts
-
 const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
   new:       { label: "Нова · за обаждане", bg: "#412402", fg: "#FAC775" },
   confirmed: { label: "За изпълнение",       bg: "#173404", fg: "#97C459" },
@@ -51,15 +49,12 @@ export function OrderCard({
   const [error, setError] = useState("");
   const [tracking, setTracking] = useState(order.tracking_number ?? "");
   const [notes, setNotes] = useState(order.call_notes ?? "");
-  const [expired, setExpired] = useState(false);
   const [hoursOpen, setHoursOpen] = useState<number | null>(null);
 
-  // Computed client-side to avoid a hydration mismatch on the time comparison.
+  // Age is a visual warning only — it never touches the reservation.
   useEffect(() => {
-    const h = (Date.now() - new Date(order.created_at).getTime()) / 3_600_000;
-    setHoursOpen(h);
-    setExpired(order.status === "new" && h > RESERVATION_TTL_HOURS);
-  }, [order.status, order.created_at]);
+    setHoursOpen((Date.now() - new Date(order.created_at).getTime()) / 3_600_000);
+  }, [order.created_at]);
 
   const run = (fn: () => Promise<string | null>) =>
     start(async () => { setError(""); const err = await fn(); if (err) setError(err); });
@@ -118,7 +113,7 @@ export function OrderCard({
         <div style={{ color: "#fff", fontWeight: 500 }}>€{Number(order.total ?? 0).toFixed(2)}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · наложен платеж</span></div>
         {order.status === "new" && !excluded && hoursOpen !== null && (
           <div style={{ color: hoursOpen > 24 ? "#F09595" : "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 4 }}>
-            ⏱ отворена преди {Math.floor(hoursOpen)}ч{hoursOpen > 24 ? " · заседнала" : ""}{expired ? ` · резервацията изтече (${RESERVATION_TTL_HOURS}ч)` : ""}
+            ⏱ отворена преди {Math.floor(hoursOpen)}ч{hoursOpen > 24 ? " · заседнала" : ""}
           </div>
         )}
       </div>

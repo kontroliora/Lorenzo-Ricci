@@ -44,10 +44,9 @@ export type StatusLogRow = {
   change_number: number;
 };
 
-// Statuses that hold stock. 'new' reserves immediately (overselling guard) but
-// its reservation expires after RESERVATION_TTL_HOURS if still uncalled.
+// Statuses that hold stock. A reservation is held INDEFINITELY until the order
+// is processed manually (confirmed / cancelled / returned / marked fake).
 export const RESERVING_STATUSES = ["new", "confirmed", "shipped", "completed"] as const;
-export const RESERVATION_TTL_HOURS = 48;
 
 const ORDER_COLUMNS =
   "id, order_ref, name, phone, city, post_code, address, shipping_method, courier, items, total, notes, status, call_state, call_notes, call_attempts, tracking_number, excluded_from_stock, created_at";
@@ -67,25 +66,22 @@ export async function getOrders(limit = 150): Promise<AdminOrder[]> {
 }
 
 // Computed reservation (Variant A). Inventory follows the status automatically:
-//  - new / confirmed / shipped / completed reduce available…
-//  - …EXCEPT a 'new' order older than RESERVATION_TTL_HOURS (reservation expired)
-//  - …EXCEPT orders flagged excluded_from_stock (test / fake)
+//  - new / confirmed / shipped / completed reduce available (held indefinitely)…
+//  - …EXCEPT orders flagged excluded_from_stock (test / fake).
 //  cancelled / returned never count (goods came back / never left).
 export async function getReservedMap(): Promise<Record<string, number>> {
   const supabase = await createClient();
-  const cutoffMs = Date.now() - RESERVATION_TTL_HOURS * 3_600_000;
   const { data, error } = await supabase
     .from("orders")
-    .select("items, status, created_at, excluded_from_stock")
+    .select("items, status, excluded_from_stock")
     .in("status", RESERVING_STATUSES as unknown as string[]);
   if (error) {
     console.error("[orders] reserved error:", error.message);
     return {};
   }
   const map: Record<string, number> = {};
-  for (const row of (data ?? []) as { items: OrderItem[]; status: string; created_at: string; excluded_from_stock: boolean }[]) {
+  for (const row of (data ?? []) as { items: OrderItem[]; excluded_from_stock: boolean }[]) {
     if (row.excluded_from_stock) continue;
-    if (row.status === "new" && new Date(row.created_at).getTime() < cutoffMs) continue; // reservation expired
     for (const it of row.items ?? []) {
       const slug = String(it.slug ?? "");
       if (!slug) continue;
