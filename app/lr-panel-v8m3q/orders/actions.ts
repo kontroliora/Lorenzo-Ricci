@@ -42,19 +42,17 @@ export async function saveCallNotes(id: number, notes: string): Promise<string |
   return patchOrder(id, { call_notes: notes });
 }
 
-// Inventory category (one-time reclassification + ongoing test/fake marking):
-//  fulfilled → goods left the warehouse (deducts, status=completed)
-//  active    → real, still in process (deducts as reserved, status=new)
-//  excluded  → test / fake / not real (never counted against stock)
-export async function setInventoryCategory(
-  id: number,
-  category: "fulfilled" | "active" | "excluded",
-): Promise<string | null> {
-  if (category === "excluded") {
-    return patchOrder(id, { excluded_from_stock: true });
-  }
-  if (category === "fulfilled") {
-    return patchOrder(id, { excluded_from_stock: false, status: "completed" });
-  }
-  return patchOrder(id, { excluded_from_stock: false, status: "new" });
+// Shipped → completed. Manual fallback until the Econt auto-close is built.
+export async function markCompleted(id: number): Promise<string | null> {
+  return patchOrder(id, { status: "completed" });
+}
+
+// Shipment came back / customer never took it → returns stock, flags the customer.
+export async function markReturned(id: number): Promise<string | null> {
+  return patchOrder(id, { status: "returned" });
+}
+
+// Discrete "mark as fake / test" toggle — excludes the order from stock entirely.
+export async function setFake(id: number, fake: boolean): Promise<string | null> {
+  return patchOrder(id, { excluded_from_stock: fake });
 }
