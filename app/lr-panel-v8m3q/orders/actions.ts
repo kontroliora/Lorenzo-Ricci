@@ -51,8 +51,14 @@ export async function saveCallNotes(id: number, notes: string): Promise<string |
 }
 
 // Shipped → completed. Manual fallback until the Econt auto-close is built.
+// Tagged 'manual' so it NEVER counts toward the bonus (only Econt-confirmed
+// deliveries, which set completed_source='econt', earn a bonus).
 export async function markCompleted(id: number): Promise<string | null> {
-  return patchOrder(id, { status: "completed" });
+  return patchOrder(id, {
+    status: "completed",
+    completed_at: new Date().toISOString(),
+    completed_source: "manual",
+  });
 }
 
 // Shipment came back / customer never took it → returns stock, flags the customer.

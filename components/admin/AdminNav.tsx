@@ -1,10 +1,18 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 const TABS = [
   { href: "/lr-panel-v8m3q/inventory", label: "Инвентар" },
   { href: "/lr-panel-v8m3q/orders",    label: "Поръчки" },
+];
+
+// Owner-only tab (bonus). Hidden from the employee — the page itself also
+// re-checks server-side, so hiding the tab is UX, not the security boundary.
+const OWNER_TABS = [
+  { href: "/lr-panel-v8m3q/bonus", label: "Бонус" },
 ];
 
 /**
@@ -13,11 +21,23 @@ const TABS = [
  */
 export function AdminNav() {
   const pathname = usePathname() ?? "";
+  const [owner, setOwner] = useState(false);
+
+  useEffect(() => {
+    // admin_users self-read RLS returns only the caller's own role row.
+    createClient()
+      .from("admin_users")
+      .select("role")
+      .maybeSingle()
+      .then(({ data }) => setOwner((data as { role?: string } | null)?.role === "owner"));
+  }, []);
+
+  const tabs = owner ? [...TABS, ...OWNER_TABS] : TABS;
 
   return (
     <nav className="border-b border-white/10 bg-[#0a0e1f] sticky top-0 z-30">
       <div className="max-w-5xl mx-auto px-2 sm:px-6 flex items-stretch">
-        {TABS.map((t) => {
+        {tabs.map((t) => {
           const active = pathname.startsWith(t.href);
           return (
             <Link
