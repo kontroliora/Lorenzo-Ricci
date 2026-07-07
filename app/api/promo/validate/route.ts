@@ -24,9 +24,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ valid: false, error: "Промо кодът вече е използван" });
     }
 
-    // 14-day validity, computed from creation date (resilient to migration timing).
-    const expiresAt = new Date(data.subscribed_at).getTime() + 14 * 86_400_000;
-    if (Date.now() > expiresAt) {
+    // 14-day validity applies ONLY to codes issued from the rule start onward.
+    // Codes issued before it were open-ended and are grandfathered (never expire).
+    const RULE_START = Date.parse("2026-07-07T15:40:00Z");
+    const created = new Date(data.subscribed_at).getTime();
+    if (created >= RULE_START && Date.now() > created + 14 * 86_400_000) {
       return NextResponse.json({ valid: false, error: "Кодът е изтекъл" });
     }
 

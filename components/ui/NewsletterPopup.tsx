@@ -169,9 +169,11 @@ export function NewsletterPopup() {
             }`}>
               {codeUsed
                 ? "Този код вече е използван"
+                : !expiresAt
+                ? "Валиден"
                 : isExpired
                 ? `Кодът е изтекъл на ${fmtExpiry(expiresAt)}`
-                : expiresAt ? `Валиден до ${fmtExpiry(expiresAt)}` : "Валиден 14 дни"}
+                : `Валиден до ${fmtExpiry(expiresAt)}`}
             </p>
 
             {/* Copy button */}
@@ -201,7 +203,9 @@ export function NewsletterPopup() {
             </button>
 
             <p className="font-sans text-[10px] text-white/25 leading-relaxed">
-              Въведете кода в количката при поръчка · Еднократна употреба · Валиден 14 дни
+              {expiresAt
+                ? "Въведете кода в количката при поръчка · Еднократна употреба · Валиден 14 дни"
+                : "Въведете кода в количката при поръчка · Еднократна употреба"}
             </p>
 
             <button onClick={close} className="btn-primary w-full text-center justify-center">

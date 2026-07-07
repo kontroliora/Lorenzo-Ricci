@@ -1,14 +1,19 @@
 -- ============================================================================
--- Newsletter promo codes: 14-day validity + explicit stored expiry.
--- The app logic computes expiry as subscribed_at + 14 days (resilient), so
--- signup keeps working even before this runs. This column just stores it too.
--- Run in: Supabase → SQL Editor → paste → Run. Idempotent.
+-- Newsletter promo codes: 14-day validity — but ONLY for codes issued from the
+-- rule start (2026-07-07 15:40 UTC) onward. Every code issued BEFORE that was
+-- open-ended and is GRANDFATHERED (never expires) — we don't shorten codes
+-- people already hold.
+--
+-- The app ENFORCES this in code (RULE_START in /api/newsletter + /api/promo).
+-- This column is optional/informational — run it only if you want the expiry
+-- (or "no expiry") visible in the table. Idempotent.
 -- ============================================================================
 
--- New rows auto-get expiry 14 days out (route doesn't need to set it).
-ALTER TABLE newsletter_subscribers
-  ADD COLUMN IF NOT EXISTS expires_at timestamptz DEFAULT (now() + interval '14 days');
+ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS expires_at timestamptz;
 
--- Existing codes expire 14 days after they were created (not from migration time).
 UPDATE newsletter_subscribers
-   SET expires_at = subscribed_at + interval '14 days';
+   SET expires_at = CASE
+     WHEN subscribed_at >= '2026-07-07T15:40:00Z'
+       THEN subscribed_at + interval '14 days'  -- new codes: 14-day validity
+       ELSE NULL                                -- grandfathered: no expiry
+   END;

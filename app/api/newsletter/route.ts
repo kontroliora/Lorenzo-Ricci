@@ -3,6 +3,12 @@ import { supabase } from "@/lib/supabase";
 
 const VALID_DAYS = 14;
 
+// The 14-day validity rule starts here. Codes issued BEFORE this moment were
+// open-ended and are GRANDFATHERED (never expire) — we don't shorten codes
+// people already hold. Only codes issued from here on expire after 14 days.
+// Set just after the newest pre-existing code so all already-issued codes qualify.
+const RULE_START = Date.parse("2026-07-07T15:40:00Z");
+
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars (0/O, 1/I)
   let code = "LR-";
@@ -10,10 +16,12 @@ function generateCode(): string {
   return code;
 }
 
-// Expiry = creation + 14 days. Computed from subscribed_at so it works even if
-// the expires_at column migration hasn't run yet.
-function expiryFrom(subscribedAtISO: string): string {
-  return new Date(new Date(subscribedAtISO).getTime() + VALID_DAYS * 86_400_000).toISOString();
+// null  → grandfathered (open-ended, never expires)
+// string → ISO expiry (creation + 14 days) for codes issued under the new rule
+function expiryFor(subscribedAtISO: string): string | null {
+  const created = Date.parse(subscribedAtISO);
+  if (isNaN(created) || created < RULE_START) return null;
+  return new Date(created + VALID_DAYS * 86_400_000).toISOString();
 }
 
 export async function POST(req: NextRequest) {
@@ -25,8 +33,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
 
-    // One email = one code. If it already exists, NEVER generate a new one —
-    // return the same code + its status so the UI can say "вече абониран".
+    // One email = one code. If it already exists, NEVER generate a new one.
     const { data: existing } = await supabase
       .from("newsletter_subscribers")
       .select("promo_code, code_used, subscribed_at")
@@ -39,12 +46,11 @@ export async function POST(req: NextRequest) {
         alreadySubscribed: true,
         code: existing.promo_code,
         used: existing.code_used,
-        expiresAt: expiryFrom(existing.subscribed_at),
+        expiresAt: expiryFor(existing.subscribed_at), // null if grandfathered
       });
     }
 
-    // New subscriber — generate + insert. expires_at is filled by the column
-    // DEFAULT (once the migration is run); the response computes it regardless.
+    // New subscriber — generate + insert (handles the unique-email race).
     let code = generateCode();
     let lastErr: unknown = null;
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -54,8 +60,6 @@ export async function POST(req: NextRequest) {
       if (!error) { lastErr = null; break; }
       lastErr = error;
 
-      // Someone inserted this email between our SELECT and INSERT (unique race)
-      // → return the existing code instead of minting a second one.
       const { data: raced } = await supabase
         .from("newsletter_subscribers")
         .select("promo_code, code_used, subscribed_at")
@@ -67,15 +71,15 @@ export async function POST(req: NextRequest) {
           alreadySubscribed: true,
           code: raced.promo_code,
           used: raced.code_used,
-          expiresAt: expiryFrom(raced.subscribed_at),
+          expiresAt: expiryFor(raced.subscribed_at),
         });
       }
-      // Otherwise a (astronomically rare) promo_code collision → regenerate.
-      code = generateCode();
+      code = generateCode(); // rare promo_code collision → regenerate
     }
     if (lastErr) throw lastErr;
 
     console.log("[Newsletter] New subscriber:", clean, "code:", code);
+    // Freshly issued → under the new rule → 14 days from now.
     return NextResponse.json({
       success: true,
       alreadySubscribed: false,
