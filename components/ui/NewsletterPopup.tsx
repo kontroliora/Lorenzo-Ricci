@@ -8,6 +8,9 @@ export function NewsletterPopup() {
   const [email, setEmail]         = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [promoCode, setPromoCode] = useState("");
+  const [expiresAt, setExpiresAt]           = useState("");
+  const [alreadySubscribed, setAlreadySubscribed] = useState(false);
+  const [codeUsed, setCodeUsed]             = useState(false);
   const [copied, setCopied]       = useState(false);
   const [error, setError]         = useState("");
 
@@ -52,12 +55,18 @@ export function NewsletterPopup() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: clean }),
       });
-      const data = await res.json() as { success?: boolean; code?: string; error?: string };
+      const data = await res.json() as {
+        success?: boolean; code?: string; error?: string;
+        expiresAt?: string; alreadySubscribed?: boolean; used?: boolean;
+      };
       if (!res.ok || !data.success) {
         setError("Нещо се обърка. Моля, опитайте отново.");
         return;
       }
       setPromoCode(data.code ?? "");
+      setExpiresAt(data.expiresAt ?? "");
+      setAlreadySubscribed(Boolean(data.alreadySubscribed));
+      setCodeUsed(Boolean(data.used));
       localStorage.setItem(STORAGE_KEY, "1");
     } catch {
       setError("Нещо се обърка. Моля, опитайте отново.");
@@ -83,6 +92,13 @@ export function NewsletterPopup() {
       setTimeout(() => setCopied(false), 2500);
     }
   };
+
+  const fmtExpiry = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleDateString("bg-BG", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Sofia" });
+    } catch { return ""; }
+  };
+  const isExpired = expiresAt ? Date.now() > new Date(expiresAt).getTime() : false;
 
   if (!visible) return null;
 
@@ -115,10 +131,12 @@ export function NewsletterPopup() {
 
             {/* Heading */}
             <div>
-              <p className="font-sans text-[10px] text-white/35 tracking-[0.28em] uppercase mb-2">Добре дошли</p>
-              <h3 className="font-serif text-[1.55rem] text-white leading-snug mb-2">Благодарим Ви!</h3>
+              <p className="font-sans text-[10px] text-white/35 tracking-[0.28em] uppercase mb-2">{alreadySubscribed ? "Вече абониран" : "Добре дошли"}</p>
+              <h3 className="font-serif text-[1.55rem] text-white leading-snug mb-2">{alreadySubscribed ? "Вече сте абонирани" : "Благодарим Ви!"}</h3>
               <p className="font-sans text-sm font-light text-white/45 leading-relaxed">
-                Успешно се абонирахте. Вашият личен код за 10% отстъпка е:
+                {alreadySubscribed
+                  ? "Този имейл вече е абониран. Ето вашия код за 10% отстъпка:"
+                  : "Успешно се абонирахте. Вашият личен код за 10% отстъпка е:"}
               </p>
             </div>
 
@@ -144,6 +162,17 @@ export function NewsletterPopup() {
                 </p>
               </div>
             </button>
+
+            {/* Validity / status — directly under the code */}
+            <p className={`font-sans text-[11px] tracking-wide -mt-1 ${
+              codeUsed ? "text-amber-400/70" : isExpired ? "text-red-400/70" : "text-emerald-400/80"
+            }`}>
+              {codeUsed
+                ? "Този код вече е използван"
+                : isExpired
+                ? `Кодът е изтекъл на ${fmtExpiry(expiresAt)}`
+                : expiresAt ? `Валиден до ${fmtExpiry(expiresAt)}` : "Валиден 14 дни"}
+            </p>
 
             {/* Copy button */}
             <button
@@ -172,7 +201,7 @@ export function NewsletterPopup() {
             </button>
 
             <p className="font-sans text-[10px] text-white/25 leading-relaxed">
-              Въведете кода в количката при поръчка · Еднократна употреба
+              Въведете кода в количката при поръчка · Еднократна употреба · Валиден 14 дни
             </p>
 
             <button onClick={close} className="btn-primary w-full text-center justify-center">
