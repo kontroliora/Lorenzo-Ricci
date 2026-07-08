@@ -31,6 +31,9 @@ export type AdminOrder = {
   excluded_from_stock: boolean;
   last_attempt_at: string | null;
   return_reviewed?: boolean; // undefined until the migration runs (resilient fallback)
+  is_manual?: boolean;
+  cancel_category?: string | null;
+  cancel_reason?: string | null;
   created_at: string;
 };
 
@@ -52,7 +55,7 @@ export const RESERVING_STATUSES = ["new", "confirmed", "shipped", "completed"] a
 
 const BASE_COLUMNS =
   "id, order_ref, name, phone, city, post_code, address, shipping_method, courier, items, total, notes, status, call_state, call_notes, call_attempts, tracking_number, excluded_from_stock, created_at";
-const ORDER_COLUMNS = `${BASE_COLUMNS}, last_attempt_at, return_reviewed`;
+const ORDER_COLUMNS = `${BASE_COLUMNS}, last_attempt_at, return_reviewed, is_manual, cancel_category, cancel_reason`;
 
 export async function getOrders(limit = 150): Promise<AdminOrder[]> {
   const supabase = await createClient();

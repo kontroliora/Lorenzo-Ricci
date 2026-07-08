@@ -38,6 +38,13 @@ const primaryBtn: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 6, background: "#3B6D11", color: "#fff",
   border: "none", fontSize: 12, padding: "8px 16px", borderRadius: 8, fontWeight: 500, cursor: "pointer",
 };
+const pillBtn: React.CSSProperties = {
+  border: "0.5px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.85)", background: "rgba(255,255,255,0.04)",
+  fontSize: 12, padding: "7px 12px", borderRadius: 20, cursor: "pointer",
+};
+const backLink: React.CSSProperties = {
+  background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 11, cursor: "pointer", padding: 0, textAlign: "left",
+};
 
 export function OrderCard({
   order, history, log,
@@ -53,6 +60,8 @@ export function OrderCard({
   const [hoursOpen, setHoursOpen] = useState<number | null>(null);
 
   const [lastAttemptH, setLastAttemptH] = useState<number | null>(null);
+  const [cancelStep, setCancelStep] = useState<"closed" | "category" | "refuse" | "other">("closed");
+  const [cancelText, setCancelText] = useState("");
 
   // Age is a visual warning only — it never touches the reservation.
   useEffect(() => {
@@ -77,6 +86,12 @@ export function OrderCard({
         setError(e instanceof Error ? e.message : "Възникна грешка. Опитай пак.");
       }
     });
+
+  const doCancel = (category: string, reason: string) => {
+    setCancelStep("closed");
+    setCancelText("");
+    run(() => cancelOrder(order.id, category, reason));
+  };
 
   const badge = STATUS_BADGE[order.status] ?? STATUS_BADGE.new;
   const excluded = order.excluded_from_stock;
@@ -117,6 +132,7 @@ export function OrderCard({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           {excluded && <span style={{ background: "#2C2C2A", color: "#D3D1C7", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>Фалшива</span>}
+          {order.is_manual && <span style={{ background: "#3C3489", color: "#CECBF6", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>Ръчна</span>}
           <span style={{ background: badge.bg, color: badge.fg, fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>{badge.label}</span>
           <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 12 }}>{fmtDate(order.created_at)}</span>
         </div>
@@ -151,26 +167,26 @@ export function OrderCard({
         </div>
       ) : (
         <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", marginTop: 14, paddingTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
-          {order.status === "new" && (
+          {cancelStep === "closed" && order.status === "new" && (
             <>
               <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>Резултат от обаждането</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button disabled={pending} onClick={() => run(() => confirmOrder(order.id))} style={primaryBtn}>✓ Потвърждава</button>
                 <button onClick={() => run(() => markNoAnswer(order.id))} style={outlineBtn("#854F0B", "#FAC775")}>✆ Не вдига{order.call_attempts > 0 ? ` (${order.call_attempts})` : ""}</button>
-                <button disabled={pending} onClick={() => run(() => cancelOrder(order.id))} style={outlineBtn("#A32D2D", "#F09595")}>✕ Отказва</button>
+                <button onClick={() => setCancelStep("category")} style={outlineBtn("#A32D2D", "#F09595")}>✕ Отказва</button>
               </div>
               <input value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => { if (notes !== (order.call_notes ?? "")) run(() => saveCallNotes(order.id, notes)); }} placeholder="Коментар — напр. звънна утре след 18ч" style={{ background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 12 }} />
               <div>{fakeLink}</div>
             </>
           )}
 
-          {order.status === "confirmed" && (
+          {cancelStep === "closed" && order.status === "confirmed" && (
             <>
               <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>Пакетиране и изпращане</div>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <input value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder="Тракинг номер от Еконт…" style={{ flex: 1, minWidth: 150, background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 13 }} />
                 <button disabled={pending} onClick={() => run(() => shipOrder(order.id, tracking))} style={primaryBtn}>Маркирай изпратена</button>
-                <button disabled={pending} onClick={() => run(() => cancelOrder(order.id))} style={outlineBtn("#A32D2D", "#F09595")}>Откажи</button>
+                <button onClick={() => setCancelStep("category")} style={outlineBtn("#A32D2D", "#F09595")}>Откажи</button>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                 <span style={{ color: "#FAC775", fontSize: 11 }}>⚠ без тракинг не може да стане изпратена</span>
@@ -179,7 +195,7 @@ export function OrderCard({
             </>
           )}
 
-          {order.status === "shipped" && (
+          {cancelStep === "closed" && order.status === "shipped" && (
             <>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                 <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>Тракинг {order.tracking_number} · чака Еконт да потвърди взимане</span>
@@ -192,7 +208,7 @@ export function OrderCard({
             </>
           )}
 
-          {order.status === "returned" && order.return_reviewed !== undefined && (
+          {cancelStep === "closed" && order.status === "returned" && order.return_reviewed !== undefined && (
             order.return_reviewed ? (
               <span style={{ color: "#97C459", fontSize: 12 }}>✓ Прегледана · стоката е върната в наличност</span>
             ) : (
@@ -201,6 +217,44 @@ export function OrderCard({
                 <button disabled={pending} onClick={() => run(() => markReturnReviewed(order.id))} style={primaryBtn}>Маркирай прегледана</button>
               </div>
             )
+          )}
+
+          {cancelStep !== "closed" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {cancelStep === "category" && (
+                <>
+                  <span style={{ color: "#F09595", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>Причина за отказ</span>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button onClick={() => setCancelStep("refuse")} style={pillBtn}>Отказа по телефон</button>
+                    <button onClick={() => doCancel("unreachable", "не вдига 3+ опита")} style={pillBtn}>Не вдига 3+ опита</button>
+                    <button onClick={() => doCancel("wrong_number", "")} style={pillBtn}>Грешен / невалиден номер</button>
+                    <button onClick={() => setCancelStep("other")} style={pillBtn}>Друго</button>
+                  </div>
+                  <button onClick={() => setCancelStep("closed")} style={backLink}>← назад</button>
+                </>
+              )}
+              {cancelStep === "refuse" && (
+                <>
+                  <span style={{ color: "#F09595", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>Защо отказа клиентът?</span>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {["размисли", "цена висока", "намерил по-евтино", "не помни да е поръчвал", "друго"].map((r) => (
+                      <button key={r} onClick={() => doCancel("refused", r)} style={pillBtn}>{r}</button>
+                    ))}
+                  </div>
+                  <button onClick={() => setCancelStep("category")} style={backLink}>← назад</button>
+                </>
+              )}
+              {cancelStep === "other" && (
+                <>
+                  <span style={{ color: "#F09595", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>Причина (свободен текст)</span>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    <input value={cancelText} onChange={(e) => setCancelText(e.target.value)} placeholder="Опиши причината…" style={{ flex: 1, minWidth: 160, background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 12 }} />
+                    <button onClick={() => doCancel("other", cancelText.trim() || "друго")} style={primaryBtn}>Запази отказа</button>
+                  </div>
+                  <button onClick={() => setCancelStep("category")} style={backLink}>← назад</button>
+                </>
+              )}
+            </div>
           )}
 
           {error && <p style={{ color: "#F09595", fontSize: 12, margin: 0 }}>{error}</p>}

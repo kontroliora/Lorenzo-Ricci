@@ -1,6 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { OrderCard } from "./OrderCard";
+import { CreateOrderForm } from "./CreateOrderForm";
 import { checkEcontStatuses } from "./actions";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
 
@@ -29,6 +30,7 @@ export function OrdersBoard({
 }) {
   const [tab, setTab] = useState<Tab>("new");
   const [showFake, setShowFake] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
 
   const ageH = (o: AdminOrder) => (nowMs - new Date(o.created_at).getTime()) / 3_600_000;
 
@@ -61,7 +63,14 @@ export function OrdersBoard({
 
       {/* Sub-tabs by status */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
+          <button
+            onClick={() => setShowCreate(true)}
+            className="order-last sm:order-none ml-auto sm:ml-0 sm:mr-2"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#0F6E56", color: "#fff", border: "none", borderRadius: 20, padding: "8px 16px", fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+          >
+            + Създай поръчка
+          </button>
           {TABS.map((t) => {
             const active = tab === t.key;
             const c = count(t.key);
@@ -137,6 +146,8 @@ export function OrdersBoard({
           </div>
         )}
       </main>
+
+      {showCreate && <CreateOrderForm onClose={() => setShowCreate(false)} />}
     </>
   );
 }

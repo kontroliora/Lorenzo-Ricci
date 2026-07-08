@@ -22,9 +22,18 @@ export async function confirmOrder(id: number): Promise<string | null> {
   return patchOrder(id, { status: "confirmed", call_state: "confirmed" });
 }
 
-// Отказва / big ОТКАЖИ button → cancelled (reservation is released automatically).
-export async function cancelOrder(id: number): Promise<string | null> {
-  return patchOrder(id, { status: "cancelled", call_state: "refused" });
+// Отказва → cancelled, with a structured reason so an ACTIVE refusal (lost sale)
+// is distinguishable from UNREACHABLE contact (logistics) in the stats.
+// category: refused | unreachable | wrong_number | other. Only a genuine phone
+// refusal counts as call_state='refused' (the customer-history badge).
+export async function cancelOrder(id: number, category: string, reason: string): Promise<string | null> {
+  const callState = category === "refused" ? "refused" : category;
+  return patchOrder(id, {
+    status: "cancelled",
+    call_state: callState,
+    cancel_category: category,
+    cancel_reason: reason || null,
+  });
 }
 
 // „Не вдига" → never locks. Atomic server-side increment (no race on rapid
@@ -94,4 +103,57 @@ export async function checkEcontStatuses(): Promise<{ ok: boolean; message: stri
 // Discrete "mark as fake / test" toggle — excludes the order from stock entirely.
 export async function setFake(id: number, fake: boolean): Promise<string | null> {
   return patchOrder(id, { excluded_from_stock: fake });
+}
+
+// ── Manual order creation ("Създай поръчка" — from Viber/Instagram/chat) ──────
+export type ManualItemInput = { slug: string; name: string; sku: string; price: number; currency: string; quantity: number };
+export type ManualOrderInput = {
+  name: string;
+  phone: string;
+  city: string;
+  courier: "econt" | "home";   // office vs personal address
+  address: string;             // office name OR personal address
+  items: ManualItemInput[];
+  total: number;               // COD amount (auto from items, or manually adjusted)
+  notes: string;
+  status: "new" | "confirmed";
+};
+
+export async function createManualOrder(input: ManualOrderInput): Promise<{ ok: boolean; message: string; ref?: string }> {
+  const name = input.name.trim();
+  const phone = input.phone.trim();
+  if (name.length < 2)                      return { ok: false, message: "Въведи две имена" };
+  if (phone.replace(/\D/g, "").length < 9)  return { ok: false, message: "Въведи валиден телефон" };
+  if (!input.city.trim())                   return { ok: false, message: "Въведи град" };
+  if (!input.address.trim())                return { ok: false, message: input.courier === "home" ? "Въведи адрес" : "Въведи офис на Еконт" };
+  if (!input.items.length)                  return { ok: false, message: "Добави поне един продукт" };
+
+  const supabase = await createClient();
+  const ref = `LR-${Date.now().toString(36).slice(-6).toUpperCase()}`;
+  const goods = input.items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const shippingMethod = input.courier === "home" ? "Доставка чрез Еконт до адрес" : "Доставка чрез Еконт до офис";
+
+  const { error } = await supabase.from("orders").insert({
+    order_ref:       ref,
+    name,
+    phone,
+    city:            input.city.trim(),
+    address:         input.address.trim(),
+    shipping_method: shippingMethod,
+    courier:         input.courier,
+    items:           input.items.map((i) => ({ name: i.name, sku: i.sku, slug: i.slug, price: i.price, currency: i.currency, quantity: i.quantity, qty: i.quantity })),
+    subtotal:        goods,
+    shipping_cost:   0,
+    total:           Number.isFinite(input.total) ? input.total : goods,
+    notes:           input.notes.trim() || null,
+    status:          input.status === "confirmed" ? "confirmed" : "new",
+    call_state:      input.status === "confirmed" ? "confirmed" : "pending",
+    is_manual:       true,
+  });
+  if (error) {
+    console.error("[orders] manual create error:", error.message);
+    return { ok: false, message: error.message };
+  }
+  revalidatePath(ORDERS_PATH);
+  return { ok: true, message: `Създадена ${ref}`, ref };
 }
