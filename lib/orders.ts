@@ -142,7 +142,7 @@ export async function getStatusLog(orderIds: number[]): Promise<Record<number, S
     .from("order_status_log")
     .select("order_id, old_status, new_status, changed_by_email, changed_at, change_number")
     .in("order_id", orderIds)
-    .order("changed_at", { ascending: false });
+    .order("changed_at", { ascending: true }); // chronological: oldest → newest
   if (error) return {};
   const map: Record<number, StatusLogRow[]> = {};
   for (const row of (data ?? []) as StatusLogRow[]) {
