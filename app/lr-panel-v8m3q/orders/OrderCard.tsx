@@ -10,7 +10,7 @@ import {
   markReturned,
   markReturnReviewed,
   setFake,
-  saveCallNotes,
+  addOrderNote,
 } from "./actions";
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
@@ -28,6 +28,13 @@ function fmtDate(iso: string): string {
       day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Sofia",
     });
   } catch { return iso; }
+}
+
+// A stored comment line looks like "[8 юли 14:30] текст"; split the stamp off
+// for styling. Old plain-text notes (no stamp) render as-is.
+function splitNote(line: string): { stamp: string | null; text: string } {
+  const m = line.match(/^\[([^\]]+)\]\s*(.*)$/);
+  return m ? { stamp: m[1], text: m[2] || "" } : { stamp: null, text: line };
 }
 
 const outlineBtn = (border: string, color: string): React.CSSProperties => ({
@@ -56,7 +63,7 @@ export function OrderCard({
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
   const [tracking, setTracking] = useState(order.tracking_number ?? "");
-  const [notes, setNotes] = useState(order.call_notes ?? "");
+  const [noteDraft, setNoteDraft] = useState("");
   const [hoursOpen, setHoursOpen] = useState<number | null>(null);
 
   const [lastAttemptH, setLastAttemptH] = useState<number | null>(null);
@@ -96,6 +103,21 @@ export function OrderCard({
   const badge = STATUS_BADGE[order.status] ?? STATUS_BADGE.new;
   const excluded = order.excluded_from_stock;
   const digits = (order.phone ?? "").replace(/[^\d+]/g, "");
+
+  // Notes shown on every card, every status, to owner AND employee. Two sources:
+  // the note from "Създай поръчка" (order.notes) + appended call comments
+  // (order.call_notes, newline-separated history). Nothing is ever hidden.
+  const creationNote = (order.notes ?? "").trim();
+  const commentLines = (order.call_notes ?? "").split("\n").map((s) => s.trim()).filter(Boolean);
+  const hasNotes = creationNote.length > 0 || commentLines.length > 0;
+  const noteCount = commentLines.length + (creationNote ? 1 : 0);
+  const addNote = () => run(async () => {
+    const t = noteDraft.trim();
+    if (!t) return null;
+    const err = await addOrderNote(order.id, t);
+    if (!err) setNoteDraft("");
+    return err;
+  });
 
   let histBadge: { text: string; bg: string; fg: string };
   if (history && (history.confirmed || history.refused || history.notTaken)) {
@@ -159,6 +181,47 @@ export function OrderCard({
         )}
       </div>
 
+      {/* Notes — always visible, every status; seen by owner AND employee */}
+      <div style={{ marginTop: 14 }}>
+        {hasNotes && (
+          <div style={{ background: "rgba(250,199,117,0.1)", border: "0.5px solid rgba(250,199,117,0.35)", borderRadius: 8, padding: "10px 12px", marginBottom: excluded ? 0 : 8 }}>
+            <div style={{ color: "#FAC775", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 6 }}>
+              {noteCount > 1 ? "Бележки" : "Бележка"}
+            </div>
+            {creationNote && (
+              <div style={{ color: "#fff", fontSize: 13, lineHeight: 1.55 }}>
+                {creationNote}
+                <span style={{ color: "rgba(250,199,117,0.7)", fontSize: 10, marginLeft: 8, textTransform: "uppercase", letterSpacing: "0.08em" }}>от създаването</span>
+              </div>
+            )}
+            {commentLines.map((ln, i) => {
+              const { stamp, text } = splitNote(ln);
+              const first = i === 0 && !creationNote;
+              return (
+                <div key={i} style={{ color: "rgba(255,255,255,0.9)", fontSize: 13, lineHeight: 1.55, marginTop: first ? 0 : 5, paddingTop: first ? 0 : 5, borderTop: first ? "none" : "0.5px solid rgba(255,255,255,0.08)" }}>
+                  {stamp && <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginRight: 6 }}>{stamp}</span>}
+                  {text}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {!excluded && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              value={noteDraft}
+              onChange={(e) => setNoteDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNote(); } }}
+              placeholder="Добави коментар…"
+              style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 12 }}
+            />
+            {noteDraft.trim() && (
+              <button disabled={pending} onClick={addNote} style={{ background: "rgba(250,199,117,0.15)", border: "0.5px solid rgba(250,199,117,0.4)", color: "#FAC775", fontSize: 12, padding: "8px 14px", borderRadius: 8, cursor: "pointer", whiteSpace: "nowrap" }}>Добави</button>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Controls — single flow, one action set per stage */}
       {excluded ? (
         <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", marginTop: 14, paddingTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
@@ -175,7 +238,6 @@ export function OrderCard({
                 <button onClick={() => run(() => markNoAnswer(order.id))} style={outlineBtn("#854F0B", "#FAC775")}>✆ Не вдига{order.call_attempts > 0 ? ` (${order.call_attempts})` : ""}</button>
                 <button onClick={() => setCancelStep("category")} style={outlineBtn("#A32D2D", "#F09595")}>✕ Отказва</button>
               </div>
-              <input value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => { if (notes !== (order.call_notes ?? "")) run(() => saveCallNotes(order.id, notes)); }} placeholder="Коментар — напр. звънна утре след 18ч" style={{ background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 12 }} />
               <div>{fakeLink}</div>
             </>
           )}
@@ -204,7 +266,6 @@ export function OrderCard({
                   <button disabled={pending} onClick={() => run(() => markReturned(order.id))} style={outlineBtn("#A32D2D", "#F09595")}>Върната / невзета</button>
                 </span>
               </div>
-              <input value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => { if (notes !== (order.call_notes ?? "")) run(() => saveCallNotes(order.id, notes)); }} placeholder="Бележка — напр. клиентът каза да достави след 18ч" style={{ background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 12 }} />
             </>
           )}
 

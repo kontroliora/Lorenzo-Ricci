@@ -61,8 +61,25 @@ export async function shipOrder(id: number, tracking: string): Promise<string | 
   return patchOrder(id, { tracking_number: t, status: "shipped" });
 }
 
-export async function saveCallNotes(id: number, notes: string): Promise<string | null> {
-  return patchOrder(id, { call_notes: notes });
+// Append a timestamped comment to the order's note history. Append-only —
+// stored as newline-separated lines inside call_notes (no schema change) so a
+// note a caller wrote is NEVER overwritten/lost. Time stamped in Europe/Sofia.
+export async function addOrderNote(id: number, text: string): Promise<string | null> {
+  const t = (text ?? "").trim();
+  if (!t) return null;
+  const supabase = await createClient();
+  const { data, error: readErr } = await supabase
+    .from("orders").select("call_notes").eq("id", id).single();
+  if (readErr) {
+    console.error("[orders] note read error:", readErr.message);
+    return readErr.message;
+  }
+  const stamp = new Date().toLocaleString("bg-BG", {
+    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Sofia",
+  });
+  const line = `[${stamp}] ${t}`;
+  const prev = (data?.call_notes ?? "").trim();
+  return patchOrder(id, { call_notes: prev ? `${prev}\n${line}` : line });
 }
 
 // Shipped → completed. Manual fallback until the Econt auto-close is built.
