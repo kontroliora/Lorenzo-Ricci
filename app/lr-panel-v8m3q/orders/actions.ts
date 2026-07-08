@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { reconcileShippedOrders } from "@/lib/econt";
 
 const ORDERS_PATH = "/lr-panel-v8m3q/orders";
 
@@ -69,6 +70,20 @@ export async function markReturned(id: number): Promise<string | null> {
 // Returned goods physically inspected and put back on the shelf.
 export async function markReturnReviewed(id: number): Promise<string | null> {
   return patchOrder(id, { return_reviewed: true });
+}
+
+// Manual "check Econt now" — reconciles shipped orders against Econt using the
+// admin's own session (works without the service-role key). Only completes
+// orders Econt actually reports delivered, so it's still tamper-proof.
+export async function checkEcontStatuses(): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  try {
+    const r = await reconcileShippedOrders(supabase);
+    revalidatePath(ORDERS_PATH);
+    return { ok: true, message: `Проверени ${r.checked} · завършени ${r.completed} · върнати ${r.returned}` };
+  } catch (e) {
+    return { ok: false, message: String(e) };
+  }
 }
 
 // Discrete "mark as fake / test" toggle — excludes the order from stock entirely.

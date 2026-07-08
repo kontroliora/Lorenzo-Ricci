@@ -1,6 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { OrderCard } from "./OrderCard";
+import { checkEcontStatuses } from "./actions";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
 
 type Tab = "new" | "confirmed" | "shipped" | "completed" | "returned" | "cancelled";
@@ -101,6 +102,13 @@ export function OrdersBoard({
               </>
             )}
           </>
+        ) : tab === "shipped" ? (
+          <>
+            <EcontCheck />
+            {tabOrders.length === 0
+              ? <Empty text="Няма изпратени пратки." />
+              : tabOrders.map(card)}
+          </>
         ) : tab === "returned" ? (
           <>
             <ReturnsSummary orders={tabOrders} dispatched={count("shipped") + count("completed") + tabOrders.length} />
@@ -143,6 +151,30 @@ function SectionHeader({ label, color }: { label: string; color?: string }) {
 
 function Empty({ text }: { text: string }) {
   return <p className="text-white/40 text-sm text-center py-12">{text}</p>;
+}
+
+function EcontCheck() {
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState("");
+  const run = () => start(async () => {
+    setMsg("");
+    const r = await checkEcontStatuses();
+    setMsg(r.message);
+  });
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", background: "rgba(93,202,165,0.08)", border: "0.5px solid rgba(93,202,165,0.3)", borderRadius: 10, padding: "12px 16px" }}>
+      <button
+        disabled={pending}
+        onClick={run}
+        style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "#0F6E56", color: "#fff", border: "none", fontSize: 12, padding: "8px 16px", borderRadius: 8, fontWeight: 500, cursor: "pointer", opacity: pending ? 0.6 : 1 }}
+      >
+        {pending ? "Проверявам…" : "↻ Провери статуса от Еконт сега"}
+      </button>
+      <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 12 }}>
+        {msg || "Доставените от Еконт автоматично стават завършени и носят бонус."}
+      </span>
+    </div>
+  );
 }
 
 function ReturnsSummary({ orders, dispatched }: { orders: AdminOrder[]; dispatched: number }) {
