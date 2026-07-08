@@ -2,6 +2,7 @@
 import { useState, useTransition } from "react";
 import { OrderCard } from "./OrderCard";
 import { CreateOrderForm } from "./CreateOrderForm";
+import { MatchPanel } from "./MatchPanel";
 import { checkEcontStatuses } from "./actions";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
 
@@ -110,6 +111,13 @@ export function OrdersBoard({
                 {recall.map(card)}
               </>
             )}
+          </>
+        ) : tab === "confirmed" ? (
+          <>
+            <MatchPanel />
+            {tabOrders.length === 0
+              ? <Empty text="Няма поръчки за изпълнение." />
+              : tabOrders.map(card)}
           </>
         ) : tab === "shipped" ? (
           <>

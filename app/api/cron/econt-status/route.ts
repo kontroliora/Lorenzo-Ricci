@@ -5,7 +5,7 @@
 // exists. Vercel injects Authorization: Bearer ${CRON_SECRET}.
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { reconcileShippedOrders } from "@/lib/econt";
+import { reconcileShippedOrders, matchTrackingNumbers } from "@/lib/econt";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,9 +27,12 @@ export async function GET(req: NextRequest) {
 
   try {
     const sb = createClient(url, key, { auth: { persistSession: false } });
-    const result = await reconcileShippedOrders(sb);
-    console.log("[EcontCron]", JSON.stringify({ checked: result.checked, completed: result.completed, returned: result.returned }));
-    return NextResponse.json({ ok: true, ...result });
+    // 1. auto-fill tracking numbers (sure matches only — never confirms uncertain)
+    const match = await matchTrackingNumbers(sb);
+    // 2. reconcile shipped → delivered/returned
+    const status = await reconcileShippedOrders(sb);
+    console.log("[EcontCron]", JSON.stringify({ autoFilled: match.autoFilled.length, pending: match.pending.length, completed: status.completed, returned: status.returned }));
+    return NextResponse.json({ ok: true, autoFilled: match.autoFilled.length, pending: match.pending.length, ...status });
   } catch (e) {
     console.error("[EcontCron] error:", e);
     return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });

@@ -98,3 +98,109 @@ export async function reconcileShippedOrders(sb: SupabaseClient): Promise<Reconc
   }
   return { checked: list.length, completed, returned, details };
 }
+
+// ── Tracking auto-fill (Method 2 — FIND, never create) ───────────────────────
+// Pull my shipments from Econt (getMyAWB) and match them to confirmed orders
+// that still have no tracking number, by phone + amount + date.
+
+export type MyAWB = { shipmentNumber: string; receiverPhone: string; cdAmount: number; createdDate: number; status: string };
+
+// Normalize a BG phone to its 9-digit core (drops +359 / leading 0 / spaces).
+function normPhone(p: string): string {
+  let d = (p || "").replace(/\D/g, "");
+  if (d.startsWith("359")) d = d.slice(3);
+  if (d.startsWith("0")) d = d.slice(1);
+  return d;
+}
+
+export async function getMyAWB(dateFrom: string, dateTo: string, side = "sender"): Promise<MyAWB[]> {
+  const auth = authHeader();
+  const out: MyAWB[] = [];
+  for (let page = 1; page <= 20; page++) {
+    const r = await fetch(`${BASE}.getMyAWB.json`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: auth },
+      body: JSON.stringify({ dateFrom, dateTo, page, side }),
+      cache: "no-store",
+    });
+    const data = (await r.json()) as { results?: Array<Record<string, unknown>>; totalPages?: number };
+    for (const x of data.results ?? []) {
+      out.push({
+        shipmentNumber: String(x.shipmentNumber ?? ""),
+        receiverPhone: String(x.receiverPhone ?? ""),
+        cdAmount: Number(x.cdAmount ?? 0),
+        createdDate: Number(x.createdDate ?? 0),
+        status: String(x.status ?? ""),
+      });
+    }
+    if (page >= (data.totalPages ?? 1)) break;
+  }
+  return out;
+}
+
+export type MatchCandidate = { awb: string; cdAmount: number; status: string; createdDate: number };
+export type MatchResult = {
+  scanned: number;
+  autoFilled: Array<{ orderId: number; ref: string | null; name: string | null; awb: string }>;
+  pending: Array<{ orderId: number; ref: string | null; name: string | null; phone: string | null; total: number; candidates: MatchCandidate[] }>;
+};
+
+export async function matchTrackingNumbers(sb: SupabaseClient): Promise<MatchResult> {
+  const { data: ordersData, error } = await sb
+    .from("orders")
+    .select("id, order_ref, name, phone, total, subtotal, created_at")
+    .eq("status", "confirmed")
+    .is("tracking_number", null);
+  if (error) throw new Error(error.message);
+  const orders = (ordersData ?? []) as Array<{ id: number; order_ref: string | null; name: string | null; phone: string | null; total: number | null; subtotal: number | null; created_at: string }>;
+  if (!orders.length) return { scanned: 0, autoFilled: [], pending: [] };
+
+  // AWBs already assigned anywhere → never reuse.
+  const { data: usedData } = await sb.from("orders").select("tracking_number").not("tracking_number", "is", null);
+  const usedAwbs = new Set((usedData ?? []).map((r) => String((r as { tracking_number: unknown }).tracking_number).replace(/\s+/g, "")));
+
+  const now = Date.now();
+  const day = (d: number) => new Date(d).toISOString().slice(0, 10);
+  const awbs = await getMyAWB(day(now - 14 * 86_400_000), day(now + 86_400_000), "sender");
+
+  const byPhone = new Map<string, MyAWB[]>();
+  for (const a of awbs) {
+    if (usedAwbs.has(a.shipmentNumber)) continue;
+    const p = normPhone(a.receiverPhone);
+    if (!p) continue;
+    const arr = byPhone.get(p) ?? [];
+    arr.push(a);
+    byPhone.set(p, arr);
+  }
+
+  const autoFilled: MatchResult["autoFilled"] = [];
+  const pending: MatchResult["pending"] = [];
+  const claimed = new Set<string>();
+
+  for (const o of orders) {
+    const p = normPhone(o.phone ?? "");
+    if (!p) continue;
+    const orderCreated = new Date(o.created_at).getTime();
+    const cands = (byPhone.get(p) ?? []).filter(
+      (a) => !claimed.has(a.shipmentNumber) && a.createdDate >= orderCreated - 12 * 3_600_000,
+    );
+    if (!cands.length) continue;
+
+    const total = Number(o.total ?? 0);
+    const subtotal = Number(o.subtotal ?? 0);
+    const amountOk = (v: number) => Math.abs(v - total) <= 2 || (subtotal > 0 && Math.abs(v - subtotal) <= 2);
+
+    if (cands.length === 1 && amountOk(cands[0].cdAmount)) {
+      const awb = cands[0].shipmentNumber;
+      claimed.add(awb);
+      await sb.from("orders").update({ tracking_number: awb, status: "shipped" }).eq("id", o.id);
+      autoFilled.push({ orderId: o.id, ref: o.order_ref, name: o.name, awb });
+    } else {
+      pending.push({
+        orderId: o.id, ref: o.order_ref, name: o.name, phone: o.phone, total,
+        candidates: cands.map((a) => ({ awb: a.shipmentNumber, cdAmount: a.cdAmount, status: a.status, createdDate: a.createdDate })),
+      });
+    }
+  }
+  return { scanned: orders.length, autoFilled, pending };
+}

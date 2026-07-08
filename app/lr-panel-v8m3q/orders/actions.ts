@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { reconcileShippedOrders } from "@/lib/econt";
+import { reconcileShippedOrders, matchTrackingNumbers, type MatchResult } from "@/lib/econt";
 
 const ORDERS_PATH = "/lr-panel-v8m3q/orders";
 
@@ -84,6 +84,29 @@ export async function markReturned(id: number): Promise<string | null> {
 // Returned goods physically inspected and put back on the shelf.
 export async function markReturnReviewed(id: number): Promise<string | null> {
   return patchOrder(id, { return_reviewed: true });
+}
+
+// Manual "check for new tracking numbers" — pulls getMyAWB and matches confirmed
+// orders. Sure matches (unique phone + amount + date) are auto-filled; uncertain
+// ones are returned for one-click confirmation. Uses the admin's own session.
+export async function matchTracking(): Promise<{ ok: boolean; message: string; result?: MatchResult }> {
+  const supabase = await createClient();
+  try {
+    const r = await matchTrackingNumbers(supabase);
+    revalidatePath(ORDERS_PATH);
+    return {
+      ok: true,
+      message: `Сканирани ${r.scanned} · попълнени ${r.autoFilled.length} · за потвърждение ${r.pending.length}`,
+      result: r,
+    };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+// Confirm a suggested (uncertain) match → fill the tracking number + mark shipped.
+export async function confirmMatch(orderId: number, awb: string): Promise<string | null> {
+  return patchOrder(orderId, { tracking_number: awb, status: "shipped" });
 }
 
 // Manual "check Econt now" — reconciles shipped orders against Econt using the
