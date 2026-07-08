@@ -4,16 +4,15 @@ import { supabase } from "@/lib/supabase";
 import { buildRecoveryEmail, type RecoverySession } from "@/lib/recovery-email";
 
 // ── GET /api/cron/abandoned-cart ─────────────────────────────────────────────
-// Called by Vercel Cron every 10 minutes.
+// Called by Vercel Cron daily (schedule in vercel.json).
 // Vercel automatically injects Authorization: Bearer ${CRON_SECRET}.
 
 export async function GET(req: NextRequest) {
+  // Fail CLOSED: without CRON_SECRET set (and matching) the endpoint refuses —
+  // it never runs open, so nobody can trigger customer emails on demand.
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const auth = req.headers.get("authorization");
-    if (auth !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ ok: false }, { status: 401 });
-    }
+  if (!cronSecret || req.headers.get("authorization") !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ ok: false }, { status: 401 });
   }
 
   const resendKey = process.env.RESEND_API_KEY;
@@ -67,7 +66,7 @@ export async function GET(req: NextRequest) {
         .eq("session_id", session.session_id);
 
       sent++;
-      console.log(`[AbandonedCart] Sent to ${session.email}`);
+      console.log(`[AbandonedCart] Sent to session ${session.session_id}`);
     } catch (err) {
       console.error(`[AbandonedCart] Error for session ${session.session_id}:`, err);
     }
