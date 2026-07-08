@@ -1,10 +1,11 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { OrderCard } from "./OrderCard";
 import { CreateOrderForm } from "./CreateOrderForm";
 import { MatchPanel } from "./MatchPanel";
 import { checkEcontStatuses } from "./actions";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
+import { activeWindow, nextWindow, callTimer } from "@/lib/callSchedule";
 
 type Tab = "new" | "confirmed" | "shipped" | "completed" | "returned" | "cancelled";
 
@@ -73,13 +74,29 @@ export function OrdersBoard({
   const [showCreate, setShowCreate] = useState(false);
   const [query, setQuery] = useState("");
 
-  const ageH = (o: AdminOrder) => (nowMs - new Date(o.created_at).getTime()) / 3_600_000;
+  // Live clock — ticks so the call-window banner + per-order timers update
+  // without a manual refresh. Seeds from the server value (no hydration
+  // mismatch), then switches to the client clock on mount.
+  const [now, setNow] = useState(nowMs);
+  useEffect(() => {
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const ageH = (o: AdminOrder) => (now - new Date(o.created_at).getTime()) / 3_600_000;
 
   const real = orders.filter((o) => !o.excluded_from_stock);
   const fake = orders.filter((o) => o.excluded_from_stock);
 
   const count = (t: Tab) => real.filter((o) => inTab(o, t)).length;
   const stuckCount = real.filter((o) => o.status === "new" && ageH(o) > 24).length;
+
+  // Orders due for a call in the currently-active window — drives the banner count.
+  const dueNow = (o: AdminOrder) =>
+    o.status === "new" &&
+    callTimer(o.call_attempts ?? 0, o.last_attempt_at ? Date.parse(o.last_attempt_at) : null, now).status === "due";
+  const dueCount = real.filter(dueNow).length;
 
   const tabOrders = real.filter((o) => inTab(o, tab));
   // "За обаждане" splits into first-call vs re-call (не вдига).
@@ -91,11 +108,16 @@ export function OrdersBoard({
   const matches = searching ? real.filter((o) => orderMatches(o, query)) : [];
 
   const card = (o: AdminOrder) => (
-    <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} />
+    <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} now={now} />
   );
 
   return (
     <>
+      {/* Call-window timer — always visible; guidance only, no penalty */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
+        <CallWindowBanner now={now} dueCount={dueCount} />
+      </div>
+
       {/* Summary — overview over everything; hidden while searching */}
       {!searching && (
         <div className="border-b border-white/6">
@@ -258,6 +280,28 @@ function SearchBox({
           ×
         </button>
       )}
+    </div>
+  );
+}
+
+function CallWindowBanner({ now, dueCount }: { now: number; dueCount: number }) {
+  const active = activeWindow(now);
+  const next = nextWindow(now);
+  if (active) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(151,196,89,0.14)", border: "1px solid #97C459", borderRadius: 12, padding: "12px 16px", flexWrap: "wrap" }}>
+        <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#97C459", display: "inline-block", flexShrink: 0 }} />
+        <span style={{ color: "#C0DD97", fontSize: 14, fontWeight: 500 }}>Сега е време за обаждане · {active.label}</span>
+        <span style={{ color: "rgba(192,221,151,0.75)", fontSize: 12 }}>{dueCount} {dueCount === 1 ? "чака" : "чакат"} сега</span>
+        <span style={{ marginLeft: "auto", color: "rgba(255,255,255,0.4)", fontSize: 11 }}>следващ прозорец: {next.when} {next.label}</span>
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "12px 16px", flexWrap: "wrap" }}>
+      <span style={{ width: 9, height: 9, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "inline-block", flexShrink: 0 }} />
+      <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Извън прозорец за обаждане</span>
+      <span style={{ marginLeft: "auto", color: "rgba(255,255,255,0.5)", fontSize: 12 }}>следващо обаждане: <span style={{ color: "#FAC775" }}>{next.when} {next.label}</span></span>
     </div>
   );
 }

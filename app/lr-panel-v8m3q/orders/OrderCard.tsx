@@ -12,6 +12,7 @@ import {
   setFake,
   addOrderNote,
 } from "./actions";
+import { callTimer, sofiaHHMM, formatAttemptList, formatAttemptAudit } from "@/lib/callSchedule";
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
   new:       { label: "Нова · за обаждане", bg: "#412402", fg: "#FAC775" },
@@ -54,11 +55,12 @@ const backLink: React.CSSProperties = {
 };
 
 export function OrderCard({
-  order, history, log,
+  order, history, log, now,
 }: {
   order: AdminOrder;
   history?: CustomerHistory;
   log?: StatusLogRow[];
+  now: number;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
@@ -66,7 +68,6 @@ export function OrderCard({
   const [noteDraft, setNoteDraft] = useState("");
   const [hoursOpen, setHoursOpen] = useState<number | null>(null);
 
-  const [lastAttemptH, setLastAttemptH] = useState<number | null>(null);
   const [cancelStep, setCancelStep] = useState<"closed" | "category" | "refuse" | "other">("closed");
   const [cancelText, setCancelText] = useState("");
 
@@ -75,11 +76,16 @@ export function OrderCard({
     setHoursOpen((Date.now() - new Date(order.created_at).getTime()) / 3_600_000);
   }, [order.created_at]);
 
-  // "Не вдига" — how long since the last no-answer attempt (visual only).
-  useEffect(() => {
-    if (!order.last_attempt_at) { setLastAttemptH(null); return; }
-    setLastAttemptH((Date.now() - new Date(order.last_attempt_at).getTime()) / 3_600_000);
-  }, [order.last_attempt_at]);
+  // Visual call timer (guidance only, no penalty) — derived from the schedule
+  // windows + this order's own attempt data. Recomputes as `now` ticks upstream.
+  const attemptTimes = (order.call_attempt_times ?? []).filter(Boolean);
+  const lastAttemptMs = order.last_attempt_at
+    ? Date.parse(order.last_attempt_at)
+    : (attemptTimes.length ? Date.parse(attemptTimes[attemptTimes.length - 1]) : null);
+  const timer = order.status === "new" && !order.excluded_from_stock
+    ? callTimer(order.call_attempts ?? 0, lastAttemptMs, now)
+    : null;
+  const isDue = timer?.status === "due";
 
   // Never let an action error bubble to React's error boundary (which shows the
   // "client-side exception" full-page crash). Always surface it as inline text.
@@ -142,7 +148,7 @@ export function OrderCard({
   );
 
   return (
-    <div style={{ background: "rgba(255,255,255,0.03)", border: `0.5px solid ${excluded ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "16px 18px", opacity: excluded ? 0.55 : 1 }}>
+    <div style={{ background: isDue ? "rgba(151,196,89,0.06)" : "rgba(255,255,255,0.03)", border: `${isDue ? "1px" : "0.5px"} solid ${excluded ? "rgba(255,255,255,0.06)" : isDue ? "#97C459" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "16px 18px", opacity: excluded ? 0.55 : 1 }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
@@ -173,10 +179,29 @@ export function OrderCard({
             ⏱ отворена преди {Math.floor(hoursOpen)}ч{hoursOpen > 24 ? " · заседнала" : ""}
           </div>
         )}
-        {order.status === "new" && !excluded && order.call_attempts > 0 && (
-          <div style={{ color: "#FAC775", fontSize: 11, marginTop: 4 }}>
-            ✆ {order.call_attempts} {order.call_attempts === 1 ? "опит" : "опита"} за връзка
-            {lastAttemptH !== null ? ` · последен преди ${Math.floor(lastAttemptH)}ч` : ""}
+        {timer && (
+          <div style={{ fontSize: 12, marginTop: 5, lineHeight: 1.55 }}>
+            {timer.status === "due" ? (
+              <div style={{ color: "#C0DD97", fontWeight: 500 }}>
+                ✆ Звънни сега · прозорец {timer.activeLabel}
+                {(order.call_attempts ?? 0) > 0
+                  ? <span style={{ color: "rgba(255,255,255,0.55)", fontWeight: 400 }}> · {formatAttemptList(attemptTimes)}</span>
+                  : <span style={{ color: "rgba(192,221,151,0.7)", fontWeight: 400 }}> · още няма опит</span>}
+              </div>
+            ) : timer.status === "called_this_window" ? (
+              <div style={{ color: "#FAC775" }}>
+                ✆ Не вдига (опит {order.call_attempts}){lastAttemptMs ? ` · звъннал в ${sofiaHHMM(lastAttemptMs)}` : ""} → следващо обаждане: {timer.next.when} {timer.next.label}
+              </div>
+            ) : timer.status === "exhausted" ? (
+              <div style={{ color: "#F0997B" }}>
+                ✆ 3 опита · {formatAttemptList(attemptTimes)} · чака ръчно затваряне
+              </div>
+            ) : (
+              <div style={{ color: "rgba(255,255,255,0.6)" }}>
+                ✆ Следващо обаждане: {timer.next.when} {timer.next.label}
+                {attemptTimes.length > 0 && <span style={{ color: "rgba(255,255,255,0.5)" }}> · {formatAttemptList(attemptTimes)}</span>}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -329,6 +354,14 @@ export function OrderCard({
           <div style={{ display: "flex", flexDirection: "column", gap: 7, fontFamily: "monospace", fontSize: 11.5, color: "rgba(255,255,255,0.7)" }}>
             {log.map((l, i) => (<div key={i}><span style={{ color: "#F09595" }}>{l.old_status ?? "—"}</span> → <span style={{ color: "#5DCAA5" }}>{l.new_status}</span> · {l.changed_by_email ?? "—"} · {fmtDate(l.changed_at)} · промяна #{l.change_number}</div>))}
           </div>
+          {attemptTimes.length > 0 && (
+            <div style={{ marginTop: 10, paddingTop: 9, borderTop: "0.5px solid rgba(133,183,235,0.25)" }}>
+              <div style={{ color: "#85B7EB", fontSize: 11, marginBottom: 4 }}>Обаждания „не вдига" · точен час · прозорец</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, fontFamily: "monospace", fontSize: 11.5, color: "rgba(255,255,255,0.7)" }}>
+                {formatAttemptAudit(attemptTimes).map((s, i) => (<div key={i}>· {s}</div>))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
