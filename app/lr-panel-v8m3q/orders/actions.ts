@@ -30,14 +30,19 @@ export async function cancelOrder(id: number): Promise<string | null> {
 // „Не вдига" → never locks. Atomic server-side increment (no race on rapid
 // presses); the audit trigger logs each attempt with the exact time + who.
 export async function markNoAnswer(id: number): Promise<string | null> {
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("mark_no_answer", { p_id: id });
-  if (error) {
-    console.error("[orders] no-answer error:", error.message);
-    return error.message;
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("mark_no_answer", { p_id: id });
+    if (error) {
+      console.error("[orders] no-answer error:", error.message);
+      return error.message;
+    }
+    revalidatePath(ORDERS_PATH);
+    return null;
+  } catch (e) {
+    console.error("[orders] no-answer exception:", e);
+    return e instanceof Error ? e.message : "Грешка при 'не вдига'";
   }
-  revalidatePath(ORDERS_PATH);
-  return null;
 }
 
 // Ship → tracking required. The DB trigger also blocks 'shipped' without it.

@@ -65,8 +65,18 @@ export function OrderCard({
     setLastAttemptH((Date.now() - new Date(order.last_attempt_at).getTime()) / 3_600_000);
   }, [order.last_attempt_at]);
 
+  // Never let an action error bubble to React's error boundary (which shows the
+  // "client-side exception" full-page crash). Always surface it as inline text.
   const run = (fn: () => Promise<string | null>) =>
-    start(async () => { setError(""); const err = await fn(); if (err) setError(err); });
+    start(async () => {
+      setError("");
+      try {
+        const err = await fn();
+        if (err) setError(err);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Възникна грешка. Опитай пак.");
+      }
+    });
 
   const badge = STATUS_BADGE[order.status] ?? STATUS_BADGE.new;
   const excluded = order.excluded_from_stock;
