@@ -8,6 +8,7 @@ import {
   shipOrder,
   markCompleted,
   markReturned,
+  markReturnReviewed,
   setFake,
   saveCallNotes,
 } from "./actions";
@@ -179,6 +180,17 @@ export function OrderCard({
               </div>
               <input value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => { if (notes !== (order.call_notes ?? "")) run(() => saveCallNotes(order.id, notes)); }} placeholder="Бележка — напр. клиентът каза да достави след 18ч" style={{ background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 12 }} />
             </>
+          )}
+
+          {order.status === "returned" && order.return_reviewed !== undefined && (
+            order.return_reviewed ? (
+              <span style={{ color: "#97C459", fontSize: 12 }}>✓ Прегледана · стоката е върната в наличност</span>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                <span style={{ color: "#FAC775", fontSize: 12 }}>⏳ Чака преглед на върнатата стока</span>
+                <button disabled={pending} onClick={() => run(() => markReturnReviewed(order.id))} style={primaryBtn}>Маркирай прегледана</button>
+              </div>
+            )
           )}
 
           {error && <p style={{ color: "#F09595", fontSize: 12, margin: 0 }}>{error}</p>}

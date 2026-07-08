@@ -66,6 +66,11 @@ export async function markReturned(id: number): Promise<string | null> {
   return patchOrder(id, { status: "returned" });
 }
 
+// Returned goods physically inspected and put back on the shelf.
+export async function markReturnReviewed(id: number): Promise<string | null> {
+  return patchOrder(id, { return_reviewed: true });
+}
+
 // Discrete "mark as fake / test" toggle — excludes the order from stock entirely.
 export async function setFake(id: number, fake: boolean): Promise<string | null> {
   return patchOrder(id, { excluded_from_stock: fake });

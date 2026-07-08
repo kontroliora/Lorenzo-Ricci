@@ -3,18 +3,18 @@ import { useState } from "react";
 import { OrderCard } from "./OrderCard";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
 
-type Tab = "new" | "confirmed" | "shipped" | "completed" | "archive";
+type Tab = "new" | "confirmed" | "shipped" | "completed" | "returned" | "cancelled";
 
 const TABS: { key: Tab; label: string; accent: string; fg: string; bg: string }[] = [
-  { key: "new",       label: "За обаждане",        accent: "#FAC775", fg: "#FAC775", bg: "rgba(250,199,117,0.14)" },
-  { key: "confirmed", label: "За изпълнение",      accent: "#97C459", fg: "#97C459", bg: "rgba(151,196,89,0.14)" },
-  { key: "shipped",   label: "Изпратени",          accent: "#5DCAA5", fg: "#5DCAA5", bg: "rgba(93,202,165,0.14)" },
-  { key: "completed", label: "Завършени",          accent: "#85B7EB", fg: "#85B7EB", bg: "rgba(133,183,235,0.14)" },
-  { key: "archive",   label: "Отказани / Върнати", accent: "#F09595", fg: "#F09595", bg: "rgba(240,149,149,0.14)" },
+  { key: "new",       label: "За обаждане",   accent: "#FAC775", fg: "#FAC775", bg: "rgba(250,199,117,0.14)" },
+  { key: "confirmed", label: "За изпълнение", accent: "#97C459", fg: "#97C459", bg: "rgba(151,196,89,0.14)" },
+  { key: "shipped",   label: "Изпратени",     accent: "#5DCAA5", fg: "#5DCAA5", bg: "rgba(93,202,165,0.14)" },
+  { key: "completed", label: "Завършени",     accent: "#85B7EB", fg: "#85B7EB", bg: "rgba(133,183,235,0.14)" },
+  { key: "returned",  label: "Върнати",       accent: "#F0997B", fg: "#F0997B", bg: "rgba(240,153,123,0.14)" },
+  { key: "cancelled", label: "Отказани",      accent: "#F09595", fg: "#F09595", bg: "rgba(240,149,149,0.14)" },
 ];
 
 function inTab(o: AdminOrder, tab: Tab): boolean {
-  if (tab === "archive") return o.status === "cancelled" || o.status === "returned";
   return o.status === tab;
 }
 
@@ -101,6 +101,13 @@ export function OrdersBoard({
               </>
             )}
           </>
+        ) : tab === "returned" ? (
+          <>
+            <ReturnsSummary orders={tabOrders} dispatched={count("shipped") + count("completed") + tabOrders.length} />
+            {tabOrders.length === 0
+              ? <Empty text="Няма върнати пратки." />
+              : tabOrders.map(card)}
+          </>
         ) : (
           <>
             {tabOrders.length === 0
@@ -136,6 +143,19 @@ function SectionHeader({ label, color }: { label: string; color?: string }) {
 
 function Empty({ text }: { text: string }) {
   return <p className="text-white/40 text-sm text-center py-12">{text}</p>;
+}
+
+function ReturnsSummary({ orders, dispatched }: { orders: AdminOrder[]; dispatched: number }) {
+  const total = orders.length;
+  const awaiting = orders.filter((o) => o.return_reviewed === false).length;
+  const rate = dispatched > 0 ? Math.round((total / dispatched) * 100) : 0;
+  return (
+    <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center", background: "rgba(240,153,123,0.08)", border: "0.5px solid rgba(240,153,123,0.3)", borderRadius: 10, padding: "12px 16px", fontSize: 13 }}>
+      <span style={{ color: "rgba(255,255,255,0.75)" }}>Върнати: <b style={{ color: "#F0997B" }}>{total}</b></span>
+      {awaiting > 0 && <span style={{ color: "#FAC775" }}>⏳ чакат преглед: <b>{awaiting}</b></span>}
+      <span style={{ color: "rgba(255,255,255,0.5)" }}>процент връщания ~{rate}% <span style={{ color: "rgba(255,255,255,0.3)" }}>от изпратените</span></span>
+    </div>
+  );
 }
 
 function Chip({
