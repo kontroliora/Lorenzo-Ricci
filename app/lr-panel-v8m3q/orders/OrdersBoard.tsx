@@ -3,11 +3,20 @@ import { useState } from "react";
 import { OrderCard } from "./OrderCard";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
 
-type Filter = "all" | "new" | "stuck" | "confirmed";
+type Tab = "new" | "confirmed" | "shipped" | "completed" | "archive";
 
-const FILTER_LABEL: Record<Filter, string> = {
-  all: "", new: "Непотвърдени", stuck: "Над 24 часа", confirmed: "За изпълнение",
-};
+const TABS: { key: Tab; label: string; accent: string; fg: string; bg: string }[] = [
+  { key: "new",       label: "За обаждане",        accent: "#FAC775", fg: "#FAC775", bg: "rgba(250,199,117,0.14)" },
+  { key: "confirmed", label: "За изпълнение",      accent: "#97C459", fg: "#97C459", bg: "rgba(151,196,89,0.14)" },
+  { key: "shipped",   label: "Изпратени",          accent: "#5DCAA5", fg: "#5DCAA5", bg: "rgba(93,202,165,0.14)" },
+  { key: "completed", label: "Завършени",          accent: "#85B7EB", fg: "#85B7EB", bg: "rgba(133,183,235,0.14)" },
+  { key: "archive",   label: "Отказани / Върнати", accent: "#F09595", fg: "#F09595", bg: "rgba(240,149,149,0.14)" },
+];
+
+function inTab(o: AdminOrder, tab: Tab): boolean {
+  if (tab === "archive") return o.status === "cancelled" || o.status === "returned";
+  return o.status === tab;
+}
 
 export function OrdersBoard({
   orders, histories, log, nowMs,
@@ -17,74 +26,130 @@ export function OrdersBoard({
   log: Record<number, StatusLogRow[]>;
   nowMs: number;
 }) {
-  const [filter, setFilter] = useState<Filter>("all");
+  const [tab, setTab] = useState<Tab>("new");
+  const [showFake, setShowFake] = useState(false);
 
   const ageH = (o: AdminOrder) => (nowMs - new Date(o.created_at).getTime()) / 3_600_000;
-  const isNew = (o: AdminOrder) => o.status === "new" && !o.excluded_from_stock;
 
-  const newCount       = orders.filter(isNew).length;
-  const stuckCount     = orders.filter((o) => isNew(o) && ageH(o) > 24).length;
-  const confirmedCount = orders.filter((o) => o.status === "confirmed" && !o.excluded_from_stock).length;
+  const real = orders.filter((o) => !o.excluded_from_stock);
+  const fake = orders.filter((o) => o.excluded_from_stock);
 
-  const filtered = orders.filter((o) => {
-    if (filter === "new") return isNew(o);
-    if (filter === "stuck") return isNew(o) && ageH(o) > 24;
-    if (filter === "confirmed") return o.status === "confirmed" && !o.excluded_from_stock;
-    return true;
-  });
+  const count = (t: Tab) => real.filter((o) => inTab(o, t)).length;
+  const stuckCount = real.filter((o) => o.status === "new" && ageH(o) > 24).length;
 
-  const toggle = (f: Filter) => setFilter((cur) => (cur === f ? "all" : f));
+  const tabOrders = real.filter((o) => inTab(o, tab));
+  // "За обаждане" splits into first-call vs re-call (не вдига).
+  const fresh  = tabOrders.filter((o) => (o.call_attempts ?? 0) === 0);
+  const recall = tabOrders.filter((o) => (o.call_attempts ?? 0) > 0);
+
+  const card = (o: AdminOrder) => (
+    <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} />
+  );
 
   return (
     <>
-      {/* Summary bar */}
+      {/* Summary — overview over everything; clicking opens the matching sub-tab */}
       <div className="border-b border-white/6">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex gap-2.5 items-stretch flex-wrap">
-          <Chip active={filter === "stuck"}     onClick={() => toggle("stuck")}     count={stuckCount}     title="Над 24 часа"   sub="заседнали · обработи спешно" accent="#A32D2D"                  fg="#F09595" bg="rgba(163,45,45,0.16)" strong />
-          <Chip active={filter === "new"}       onClick={() => toggle("new")}       count={newCount}       title="Непотвърдени"  sub="за обаждане"                accent="rgba(255,255,255,0.12)" fg="#FAC775" />
-          <Chip active={filter === "confirmed"} onClick={() => toggle("confirmed")} count={confirmedCount} title="За изпълнение" sub="чакат пакетиране"           accent="rgba(255,255,255,0.12)" fg="#97C459" />
-          <span className="ml-auto self-center text-white/25 text-[11px] hidden sm:block">клик = филтрирай списъка</span>
+          <Chip onClick={() => setTab("new")}       count={stuckCount}    title="Над 24 часа"   sub="заседнали · обработи спешно" accent="#A32D2D"                  fg="#F09595" bg="rgba(163,45,45,0.16)" strong />
+          <Chip onClick={() => setTab("new")}       count={count("new")}       title="Непотвърдени"  sub="за обаждане"                accent="rgba(255,255,255,0.12)" fg="#FAC775" />
+          <Chip onClick={() => setTab("confirmed")} count={count("confirmed")} title="За изпълнение" sub="чакат пакетиране"           accent="rgba(255,255,255,0.12)" fg="#97C459" />
+          <span className="ml-auto self-center text-white/25 text-[11px] hidden sm:block">клик = отвори подтаба</span>
         </div>
       </div>
 
-      {/* Active filter hint */}
-      {filter !== "all" && (
-        <div className="max-w-5xl mx-auto px-6 pt-3 flex items-center gap-2 text-white/40 text-[11px]">
-          <button
-            onClick={() => setFilter("all")}
-            style={{ background: "rgba(255,255,255,0.06)", border: "0.5px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", borderRadius: 20, padding: "3px 10px", cursor: "pointer" }}
-          >
-            Филтър: {FILTER_LABEL[filter]} ✕
-          </button>
-          <span>· показани {filtered.length} от {orders.length}</span>
+      {/* Sub-tabs by status */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
+        <div className="flex gap-2 flex-wrap">
+          {TABS.map((t) => {
+            const active = tab === t.key;
+            const c = count(t.key);
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                aria-current={active ? "page" : undefined}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 7,
+                  background: active ? t.bg : "rgba(255,255,255,0.03)",
+                  border: `${active ? "1px" : "0.5px"} solid ${active ? t.accent : "rgba(255,255,255,0.12)"}`,
+                  borderRadius: 20, padding: "7px 14px", cursor: "pointer",
+                  fontSize: 12, color: active ? t.fg : "rgba(255,255,255,0.55)", fontWeight: active ? 500 : 400,
+                }}
+              >
+                {t.label}
+                <span style={{ background: active ? t.accent : "rgba(255,255,255,0.1)", color: active ? "#0a0e1f" : "rgba(255,255,255,0.7)", borderRadius: 20, padding: "0 7px", fontSize: 11, fontWeight: 500 }}>{c}</span>
+              </button>
+            );
+          })}
         </div>
-      )}
+      </div>
 
-      {/* List */}
+      {/* Content */}
       <main className="max-w-5xl mx-auto px-6 py-6 flex flex-col gap-4">
-        {filtered.length === 0 && (
-          <p className="text-white/40 text-sm text-center py-16">Няма поръчки за показване.</p>
+        {tab === "new" ? (
+          <>
+            <SectionHeader label={`Нови · за първо обаждане (${fresh.length})`} />
+            {fresh.length === 0
+              ? <Empty text="Няма нови поръчки за първо обаждане." />
+              : fresh.map(card)}
+
+            {recall.length > 0 && (
+              <>
+                <SectionHeader label={`✆ Чакат повторно обаждане · не вдига (${recall.length})`} color="#FAC775" />
+                {recall.map(card)}
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            {tabOrders.length === 0
+              ? <Empty text="Няма поръчки в този подтаб." />
+              : tabOrders.map(card)}
+          </>
         )}
-        {filtered.map((o) => (
-          <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} />
-        ))}
+
+        {/* Fake / test orders — kept out of the working tabs, revealable */}
+        {fake.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-white/6">
+            <button
+              onClick={() => setShowFake((s) => !s)}
+              style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", fontSize: 12, cursor: "pointer", padding: 0 }}
+            >
+              {showFake ? "▾" : "▸"} {fake.length} маркирани фалшиви / тестови
+            </button>
+            {showFake && <div className="flex flex-col gap-4 mt-3">{fake.map(card)}</div>}
+          </div>
+        )}
       </main>
     </>
   );
 }
 
+function SectionHeader({ label, color }: { label: string; color?: string }) {
+  return (
+    <div style={{ color: color ?? "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", marginTop: 2 }}>
+      {label}
+    </div>
+  );
+}
+
+function Empty({ text }: { text: string }) {
+  return <p className="text-white/40 text-sm text-center py-12">{text}</p>;
+}
+
 function Chip({
-  count, title, sub, accent, fg, bg, active, strong, onClick,
+  count, title, sub, accent, fg, bg, strong, onClick,
 }: {
-  count: number; title: string; sub: string; accent: string; fg: string; bg?: string; active: boolean; strong?: boolean; onClick: () => void;
+  count: number; title: string; sub: string; accent: string; fg: string; bg?: string; strong?: boolean; onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
       style={{
         display: "flex", alignItems: "center", gap: 11,
-        background: active ? "rgba(255,255,255,0.09)" : (bg ?? "rgba(255,255,255,0.03)"),
-        border: `0.5px solid ${active ? "#fff" : accent}`,
+        background: bg ?? "rgba(255,255,255,0.03)",
+        border: `0.5px solid ${accent}`,
         borderRadius: 10, padding: "10px 16px", cursor: "pointer",
       }}
     >

@@ -51,10 +51,18 @@ export function OrderCard({
   const [notes, setNotes] = useState(order.call_notes ?? "");
   const [hoursOpen, setHoursOpen] = useState<number | null>(null);
 
+  const [lastAttemptH, setLastAttemptH] = useState<number | null>(null);
+
   // Age is a visual warning only — it never touches the reservation.
   useEffect(() => {
     setHoursOpen((Date.now() - new Date(order.created_at).getTime()) / 3_600_000);
   }, [order.created_at]);
+
+  // "Не вдига" — how long since the last no-answer attempt (visual only).
+  useEffect(() => {
+    if (!order.last_attempt_at) { setLastAttemptH(null); return; }
+    setLastAttemptH((Date.now() - new Date(order.last_attempt_at).getTime()) / 3_600_000);
+  }, [order.last_attempt_at]);
 
   const run = (fn: () => Promise<string | null>) =>
     start(async () => { setError(""); const err = await fn(); if (err) setError(err); });
@@ -114,6 +122,12 @@ export function OrderCard({
         {order.status === "new" && !excluded && hoursOpen !== null && (
           <div style={{ color: hoursOpen > 24 ? "#F09595" : "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 4 }}>
             ⏱ отворена преди {Math.floor(hoursOpen)}ч{hoursOpen > 24 ? " · заседнала" : ""}
+          </div>
+        )}
+        {order.status === "new" && !excluded && order.call_attempts > 0 && (
+          <div style={{ color: "#FAC775", fontSize: 11, marginTop: 4 }}>
+            ✆ {order.call_attempts} {order.call_attempts === 1 ? "опит" : "опита"} за връзка
+            {lastAttemptH !== null ? ` · последен преди ${Math.floor(lastAttemptH)}ч` : ""}
           </div>
         )}
       </div>

@@ -29,6 +29,7 @@ export type AdminOrder = {
   call_attempts: number;
   tracking_number: string | null;
   excluded_from_stock: boolean;
+  last_attempt_at: string | null;
   created_at: string;
 };
 
@@ -48,16 +49,30 @@ export type StatusLogRow = {
 // is processed manually (confirmed / cancelled / returned / marked fake).
 export const RESERVING_STATUSES = ["new", "confirmed", "shipped", "completed"] as const;
 
-const ORDER_COLUMNS =
+const BASE_COLUMNS =
   "id, order_ref, name, phone, city, post_code, address, shipping_method, courier, items, total, notes, status, call_state, call_notes, call_attempts, tracking_number, excluded_from_stock, created_at";
+const ORDER_COLUMNS = `${BASE_COLUMNS}, last_attempt_at`;
 
 export async function getOrders(limit = 150): Promise<AdminOrder[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const primary = await supabase
     .from("orders")
     .select(ORDER_COLUMNS)
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  let data: unknown = primary.data;
+  let error = primary.error;
+  // Fallback if last_attempt_at isn't migrated yet — the view still works.
+  if (error) {
+    const fallback = await supabase
+      .from("orders")
+      .select(BASE_COLUMNS)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    data = fallback.data;
+    error = fallback.error;
+  }
   if (error) {
     console.error("[orders] read error:", error.message);
     return [];
