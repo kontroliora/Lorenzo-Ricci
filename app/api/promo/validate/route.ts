@@ -10,24 +10,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ valid: false, error: "Въведете промо код" });
     }
 
+    // Look up just this one code via a SECURITY DEFINER function — the anon key
+    // can no longer read the subscribers table directly.
     const { data } = await supabase
-      .from("newsletter_subscribers")
-      .select("promo_code, code_used, subscribed_at")
-      .eq("promo_code", clean)
-      .maybeSingle();
+      .rpc("promo_lookup", { p_code: clean })
+      .single();
+    const row = data as { found: boolean; code_used: boolean; subscribed_at: string | null } | null;
 
-    if (!data) {
+    if (!row || !row.found) {
       return NextResponse.json({ valid: false, error: "Невалиден промо код" });
     }
 
-    if (data.code_used) {
+    if (row.code_used) {
       return NextResponse.json({ valid: false, error: "Промо кодът вече е използван" });
     }
 
     // 14-day validity applies ONLY to codes issued from the rule start onward.
     // Codes issued before it were open-ended and are grandfathered (never expire).
     const RULE_START = Date.parse("2026-07-07T15:40:00Z");
-    const created = new Date(data.subscribed_at).getTime();
+    const created = new Date(row.subscribed_at as string).getTime();
     if (created >= RULE_START && Date.now() > created + 14 * 86_400_000) {
       return NextResponse.json({ valid: false, error: "Кодът е изтекъл" });
     }

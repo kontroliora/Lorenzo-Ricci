@@ -492,10 +492,12 @@ export async function POST(req: NextRequest) {
       sendCapiPurchase(order, String(order.orderRef ?? ""), Number(order.total ?? 0), capiCtx),
     ]);
 
-    // 3. Save to Supabase (best-effort — never blocks the response)
+    // 3. Save to Supabase. If this fails the order is NOT in the admin panel —
+    //    the customer already saw success, so make failure LOUD (alert email)
+    //    instead of silently swallowing it.
     try {
       const shipping = (order.shipping ?? {}) as Record<string, unknown>;
-      await supabase.from("orders").insert({
+      const { error: dbError } = await supabase.from("orders").insert({
         order_ref:               String(order.orderRef ?? ""),
         name:                    String(customer.name          ?? ""),
         phone:                   String(customer.phone         ?? ""),
@@ -514,9 +516,16 @@ export async function POST(req: NextRequest) {
         notes:                   String(customer.notes         ?? "") || null,
         bigarena_sent:           bigArenaError === null,
       });
+      if (dbError) throw dbError;
       console.log("[Supabase] Order saved");
     } catch (err) {
-      console.error("[Supabase] Failed to save order:", err);
+      const reason = err instanceof Error ? err.message : String(err);
+      console.error("[Supabase] Failed to save order:", reason);
+      // Order won't appear in the panel — send a distinct alert so it isn't lost.
+      await sendAdminEmail(
+        `🚨 [НЕ Е ЗАПИСАНА В ПАНЕЛА] ${customerName} — ${String(order.orderRef ?? "")}`,
+        buildAdminEmail(order, `Поръчката НЕ се записа в базата (${reason}). Добави я РЪЧНО в панела.`),
+      ).catch((e) => console.error("[Supabase] alert email also failed:", e));
     }
 
     // 4. Mark cart session as converted (best-effort)
@@ -536,14 +545,9 @@ export async function POST(req: NextRequest) {
     if (promoCode) {
       try {
         const { data: redeemed } = await supabase
-          .from("newsletter_subscribers")
-          .update({ code_used: true })
-          .eq("promo_code", promoCode.toUpperCase())
-          .eq("code_used", false)
-          .select("email")
-          .single();
-        if (redeemed) console.log("[Promo] Code redeemed:", promoCode);
-        else console.warn("[Promo] Code already used or not found:", promoCode);
+          .rpc("promo_mark_used", { p_code: promoCode });
+        if (redeemed) console.log("[Promo] Code redeemed");
+        else console.warn("[Promo] Code already used or not found");
       } catch (err) {
         console.error("[Promo] Failed to redeem code:", err);
       }
