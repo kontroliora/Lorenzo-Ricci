@@ -3,87 +3,8 @@ import { Resend } from "resend";
 import { supabase } from "@/lib/supabase";
 import { createHash } from "crypto";
 
-// ─────────────────────────────────────────────────────────────
-// 0.  BigArena fulfillment integration
-// ─────────────────────────────────────────────────────────────
-
-type OrderPayload = Record<string, unknown>;
-type ItemPayload  = { sku?: string; qty?: number; quantity?: number; slug?: string; name?: string; price?: number; currency?: string };
-
-function buildBigArenaBody(order: OrderPayload): Record<string, unknown> {
-  const customer = (order.customer ?? {}) as Record<string, unknown>;
-  const items    = (order.items    ?? []) as ItemPayload[];
-  const shipping = (order.shipping ?? {}) as Record<string, unknown>;
-
-  // Map checkout couriers → BigArena courier codes
-  const raw       = String(shipping.courier ?? "econt");
-  const isHome    = raw === "home";
-  const courier   = isHome ? "econt" : raw;                         // default home → econt
-  const service   = isHome ? "econt_door" : `${courier}_office`;   // office vs door
-
-  return {
-    client_order_id:              `LR-${Date.now()}`,
-    api_order_id:                 String(order.orderRef ?? `LR-${Date.now()}`),
-    status:                       "pending",
-    customer_name:                String(customer.name     ?? ""),
-    customer_telephone:           String(customer.phone    ?? ""),
-    country_code:                 "BG",
-    shipping_address: {
-      address_text:               String(customer.officeAddress ?? ""),
-      city:                       String(customer.city          ?? ""),
-      post_code:                  String(customer.postCode ?? ""),
-    },
-    products: items.map((i) => ({
-      sku:      String(i.sku      ?? ""),
-      quantity: Number(i.qty ?? i.quantity ?? 1),
-    })),
-    courier,
-    courier_service:              service,
-    payment_method:               "cod",
-    payment_amount:               String(Number(order.total ?? 0).toFixed(2)),
-    order_payment_amount:         String(Number(order.total ?? 0).toFixed(2)),
-    original_order_payment_amount: String(Number(order.total ?? 0).toFixed(2)),
-    currency_code:                "EUR",
-    note_customer:                String(customer.notes    ?? ""),
-    original_order_payment_method: "cod",
-  };
-}
-
-async function sendToBigArena(order: OrderPayload): Promise<void> {
-  const rawKey = process.env.BIGARENA_API_KEY;
-  if (!rawKey) {
-    console.warn("[BigArena] BIGARENA_API_KEY not set — skipping fulfillment");
-    return;
-  }
-
-  const apiKey = rawKey.trim();
-  console.log(
-    `[BigArena] API key length: ${apiKey.length}` +
-    (apiKey.length !== rawKey.length ? ` (trimmed ${rawKey.length - apiKey.length} whitespace chars)` : "")
-  );
-
-  const body = buildBigArenaBody(order);
-
-  const res = await fetch("https://my.bigarena.net/api/v1/orders", {
-    method:  "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type":  "application/json",
-      "Accept":        "application/json",
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(7000),
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "(no body)");
-    console.error(`[BigArena] API error ${res.status}:`, text);
-    throw new Error(`BigArena ${res.status}: ${text.slice(0, 200)}`);
-  }
-
-  const result = await res.json();
-  console.log("[BigArena] Order created →", result);
-}
+// Order line item shape (used for the wallet-inventory decrement below).
+type ItemPayload = { sku?: string; qty?: number; quantity?: number; slug?: string; name?: string; price?: number; currency?: string };
 
 // ─────────────────────────────────────────────────────────────
 // Admin notification email (HTML)
@@ -93,7 +14,6 @@ function buildAdminEmail(order: Record<string, unknown>, alertMessage?: string |
   const shipping  = (order.shipping  ?? {}) as Record<string, unknown>;
 
   // Generic manual-processing alert (e.g. the order failed to save to the DB).
-  // BigArena failures are NOT surfaced here — they're logged silently instead.
   const alertBlock = alertMessage
     ? `<div style="background:#b91c1c;color:#fff;padding:18px 24px;border-radius:6px;margin-bottom:16px">
         <p style="margin:0;font-size:18px;font-weight:700">⚠️ ВНИМАНИЕ — РЪЧНА ОБРАБОТКА</p>
@@ -486,18 +406,7 @@ export async function POST(req: NextRequest) {
     const customerAddress = String(customer.email ?? "").trim();
     const customerName    = String(customer.name  ?? "");
 
-    // BigArena fulfillment (best-effort — never blocks the order)
-    const [bigArenaSettled] = await Promise.allSettled([
-      sendToBigArena(order),
-    ]);
-
-    const bigArenaError = bigArenaSettled.status === "rejected"
-      ? String(bigArenaSettled.reason)
-      : null;
-    if (bigArenaError) console.error("[Order] BigArena failed:", bigArenaError);
-
     // Send emails and await them — without await they are killed by Vercel before sending
-    // BigArena failures are logged silently above — never surfaced in the email.
     const subject = `✅ Нова поръчка - ${customerName}`;
 
     await Promise.allSettled([
@@ -530,7 +439,6 @@ export async function POST(req: NextRequest) {
         sms_marketing_consent:   Boolean(customer.smsMarketingConsent),
         email_marketing_consent: Boolean(customer.emailMarketingConsent),
         notes:                   String(customer.notes         ?? "") || null,
-        bigarena_sent:           bigArenaError === null,
       });
       if (dbError) throw dbError;
       console.log("[Supabase] Order saved");
