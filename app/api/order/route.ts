@@ -88,15 +88,16 @@ async function sendToBigArena(order: OrderPayload): Promise<void> {
 // ─────────────────────────────────────────────────────────────
 // Admin notification email (HTML)
 // ─────────────────────────────────────────────────────────────
-function buildAdminEmail(order: Record<string, unknown>, bigArenaError?: string | null): string {
+function buildAdminEmail(order: Record<string, unknown>, alertMessage?: string | null): string {
   const customer = (order.customer ?? {}) as Record<string, unknown>;
   const shipping  = (order.shipping  ?? {}) as Record<string, unknown>;
 
-  const bigArenaBlock = bigArenaError
-    ? `<div style="background:#d97706;color:#fff;padding:18px 24px;border-radius:6px;margin-bottom:16px">
-        <p style="margin:0;font-size:18px;font-weight:700">⚠️ BigArena НЕУСПЕШНО — РЪЧНА ОБРАБОТКА!</p>
-        <p style="margin:8px 0 0;font-size:13px;opacity:.9">Поръчката НЕ е изпратена към BigArena автоматично. Обработи я ръчно.</p>
-        <p style="margin:8px 0 0;font-size:12px;opacity:.75;font-family:monospace">${bigArenaError.slice(0, 300)}</p>
+  // Generic manual-processing alert (e.g. the order failed to save to the DB).
+  // BigArena failures are NOT surfaced here — they're logged silently instead.
+  const alertBlock = alertMessage
+    ? `<div style="background:#b91c1c;color:#fff;padding:18px 24px;border-radius:6px;margin-bottom:16px">
+        <p style="margin:0;font-size:18px;font-weight:700">⚠️ ВНИМАНИЕ — РЪЧНА ОБРАБОТКА</p>
+        <p style="margin:8px 0 0;font-size:13px;opacity:.9">${alertMessage}</p>
       </div>`
     : "";
 
@@ -121,7 +122,7 @@ function buildAdminEmail(order: Record<string, unknown>, bigArenaError?: string 
       <p style="margin:0;color:rgba(255,255,255,.5);font-size:11px;letter-spacing:.25em;text-transform:uppercase">Нова поръчка</p>
     </div>
     <div style="padding:32px">
-      ${bigArenaBlock}
+      ${alertBlock}
 
       <h3 style="margin:0 0 16px;font-size:16px;text-transform:uppercase;letter-spacing:.08em;color:#374151">Данни на клиента</h3>
       <table style="width:100%;border-collapse:collapse;margin-bottom:28px;font-size:14px">
@@ -496,12 +497,11 @@ export async function POST(req: NextRequest) {
     if (bigArenaError) console.error("[Order] BigArena failed:", bigArenaError);
 
     // Send emails and await them — without await they are killed by Vercel before sending
-    const subject = bigArenaError
-      ? `⚠️ [BIGARENA FAILED] Нова поръчка - ${customerName}`
-      : `✅ Нова поръчка - ${customerName}`;
+    // BigArena failures are logged silently above — never surfaced in the email.
+    const subject = `✅ Нова поръчка - ${customerName}`;
 
     await Promise.allSettled([
-      sendAdminEmail(subject, buildAdminEmail(order, bigArenaError)),
+      sendAdminEmail(subject, buildAdminEmail(order)),
       ...(customerAddress
         ? [sendCustomerEmail(customerAddress, buildCustomerEmail(order))]
         : []),
