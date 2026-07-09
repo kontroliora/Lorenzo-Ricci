@@ -54,6 +54,47 @@ export async function markNoAnswer(id: number): Promise<string | null> {
   }
 }
 
+// ── Bulk actions on a visually-grouped set of orders (same customer, identical
+// address). Each row is updated individually so the audit trigger fires (and
+// logs) once per order — a group action leaves one audit entry per order. ──────
+export async function confirmOrders(ids: number[]): Promise<string | null> {
+  if (!ids.length) return null;
+  const supabase = await createClient();
+  const { error } = await supabase.from("orders")
+    .update({ status: "confirmed", call_state: "confirmed" })
+    .in("id", ids);
+  if (error) { console.error("[orders] bulk confirm error:", error.message); return error.message; }
+  revalidatePath(ORDERS_PATH);
+  return null;
+}
+
+export async function cancelOrders(ids: number[], category: string, reason: string): Promise<string | null> {
+  if (!ids.length) return null;
+  const callState = category === "refused" ? "refused" : category;
+  const supabase = await createClient();
+  const { error } = await supabase.from("orders")
+    .update({ status: "cancelled", call_state: callState, cancel_category: category, cancel_reason: reason || null })
+    .in("id", ids);
+  if (error) { console.error("[orders] bulk cancel error:", error.message); return error.message; }
+  revalidatePath(ORDERS_PATH);
+  return null;
+}
+
+export async function markNoAnswerOrders(ids: number[]): Promise<string | null> {
+  if (!ids.length) return null;
+  try {
+    const supabase = await createClient();
+    for (const id of ids) {
+      const { error } = await supabase.rpc("mark_no_answer", { p_id: id });
+      if (error) { console.error("[orders] bulk no-answer error:", error.message); return error.message; }
+    }
+    revalidatePath(ORDERS_PATH);
+    return null;
+  } catch (e) {
+    return e instanceof Error ? e.message : "Грешка при 'не вдига'";
+  }
+}
+
 // Ship → tracking required. The DB trigger also blocks 'shipped' without it.
 export async function shipOrder(id: number, tracking: string): Promise<string | null> {
   const t = (tracking ?? "").trim();

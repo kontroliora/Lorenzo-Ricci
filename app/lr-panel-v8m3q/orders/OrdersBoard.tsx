@@ -1,6 +1,7 @@
 "use client";
 import { useState, useTransition, useEffect } from "react";
 import { OrderCard } from "./OrderCard";
+import { GroupedOrderCard } from "./GroupedOrderCard";
 import { CreateOrderForm } from "./CreateOrderForm";
 import { MatchPanel } from "./MatchPanel";
 import { checkEcontStatuses } from "./actions";
@@ -61,6 +62,43 @@ function orderMatches(o: AdminOrder, rawQuery: string): boolean {
   return false;
 }
 
+// --- Group same-customer NEW orders (visual only; DB rows stay separate) ---
+// Same normalized phone, and each order within 24h of the previous → one cluster.
+const DAY_MS = 24 * 3_600_000;
+function groupByCustomer(orders: AdminOrder[]): AdminOrder[][] {
+  const buckets = new Map<string, AdminOrder[]>();
+  const noPhone: AdminOrder[][] = [];
+  for (const o of orders) {
+    const key = phoneCore(o.phone ?? "");
+    if (!key) { noPhone.push([o]); continue; }
+    const b = buckets.get(key);
+    if (b) b.push(o); else buckets.set(key, [o]);
+  }
+  const groups: AdminOrder[][] = [];
+  for (const arr of buckets.values()) {
+    if (arr.length === 1) { groups.push(arr); continue; }
+    const sorted = [...arr].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    let cluster: AdminOrder[] = [sorted[0]];
+    for (let i = 1; i < sorted.length; i++) {
+      if (new Date(sorted[i].created_at).getTime() - new Date(sorted[i - 1].created_at).getTime() <= DAY_MS) cluster.push(sorted[i]);
+      else { groups.push(cluster); cluster = [sorted[i]]; }
+    }
+    groups.push(cluster);
+  }
+  const all = [...groups, ...noPhone];
+  const newest = (g: AdminOrder[]) => Math.max(...g.map((o) => new Date(o.created_at).getTime()));
+  all.sort((a, b) => newest(b) - newest(a)); // newest group first
+  return all;
+}
+// Identical delivery destination? (courier + city + address, normalized)
+function addressKey(o: AdminOrder): string {
+  return [o.courier ?? "", o.city ?? "", o.address ?? ""].map((s) => s.trim().toLowerCase().replace(/\s+/g, " ")).join("|");
+}
+function sameAddress(g: AdminOrder[]): boolean {
+  const k = addressKey(g[0]);
+  return g.every((o) => addressKey(o) === k);
+}
+
 export function OrdersBoard({
   orders, histories, log, nowMs,
 }: {
@@ -73,6 +111,7 @@ export function OrdersBoard({
   const [showFake, setShowFake] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [query, setQuery] = useState("");
+  const [splitGroups, setSplitGroups] = useState<Set<string>>(new Set());
 
   // Live clock — ticks so the call-window banner + per-order timers update
   // without a manual refresh. Seeds from the server value (no hydration
@@ -110,6 +149,39 @@ export function OrdersBoard({
   const card = (o: AdminOrder) => (
     <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} now={now} />
   );
+
+  // Render a same-customer cluster: single → normal card; 2+ identical address →
+  // merged card; 2+ different addresses → auto-split with a note; manually split
+  // → separate cards.
+  const renderGroup = (g: AdminOrder[]) => {
+    if (g.length === 1) return card(g[0]);
+    const key = g.map((o) => o.id).sort((a, b) => a - b).join("-");
+    const sorted = [...g].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    const last = sorted[sorted.length - 1];
+
+    if (!sameAddress(g)) {
+      return (
+        <div key={key} className="flex flex-col gap-4">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(250,199,117,0.08)", border: "0.5px solid rgba(250,199,117,0.3)", borderRadius: 10, padding: "9px 14px" }}>
+            <span style={{ color: "#FAC775", fontSize: 13 }} aria-hidden>⚠</span>
+            <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 12 }}>Един телефон, различни адреси — потвърди поотделно</span>
+          </div>
+          {sorted.map(card)}
+        </div>
+      );
+    }
+    if (splitGroups.has(key)) {
+      return <div key={key} className="flex flex-col gap-4">{sorted.map(card)}</div>;
+    }
+    return (
+      <GroupedOrderCard
+        key={key}
+        orders={g}
+        history={last.phone ? histories[last.phone] : undefined}
+        onSplit={() => setSplitGroups((s) => { const next = new Set(s); next.add(key); return next; })}
+      />
+    );
+  };
 
   return (
     <>
@@ -187,12 +259,12 @@ export function OrdersBoard({
                 <SectionHeader label={`Нови · за първо обаждане (${fresh.length})`} />
                 {fresh.length === 0
                   ? <Empty text="Няма нови поръчки за първо обаждане." />
-                  : fresh.map(card)}
+                  : groupByCustomer(fresh).map(renderGroup)}
 
                 {recall.length > 0 && (
                   <>
                     <SectionHeader label={`✆ Чакат повторно обаждане · не вдига (${recall.length})`} color="#FAC775" />
-                    {recall.map(card)}
+                    {groupByCustomer(recall).map(renderGroup)}
                   </>
                 )}
               </>
