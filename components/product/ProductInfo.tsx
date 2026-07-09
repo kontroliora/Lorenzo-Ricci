@@ -33,6 +33,10 @@ const CARDHOLDER_VARIANTS = [
 // tappable on iOS/Android. %2B is the encoded leading "+".
 const VIBER_LINK = "viber://chat?number=%2B359888081811";
 
+// Product-page Viber quick-order button. Hidden for now — flip to `true` to
+// bring it back (nothing is deleted).
+const SHOW_VIBER = false;
+
 interface ProductInfoProps {
   product: Product;
   reviewCount?: number;
@@ -258,7 +262,8 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           : "ДОБАВИ В КОЛИЧКАТА"}
       </button>
 
-      {/* Viber quick order — secondary option; the checkout above stays primary */}
+      {/* Viber quick order — hidden via SHOW_VIBER (flip the flag to bring it back) */}
+      {SHOW_VIBER && (
       <div className="flex flex-col gap-3 -mt-2">
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-ink-faint/20" />
@@ -277,6 +282,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           или ни добавете: <span className="text-ink-soft">+359 888 081 811</span>
         </p>
       </div>
+      )}
 
       <StickyCartBar product={product} effectiveInStock={effectiveInStock} />
 
