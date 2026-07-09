@@ -100,11 +100,14 @@ export function OrderCard({
       }
     });
 
-  const doCancel = (category: string, reason: string) => {
-    setCancelStep("closed");
-    setCancelText("");
-    run(() => cancelOrder(order.id, category, reason));
-  };
+  // Close the picker only if the cancel actually succeeded — on error the run()
+  // helper surfaces it inline and we stay put (no silent "looks like it worked").
+  const doCancel = (category: string, reason: string) =>
+    run(async () => {
+      const err = await cancelOrder(order.id, category, reason);
+      if (!err) { setCancelStep("closed"); setCancelText(""); }
+      return err;
+    });
 
   const badge = STATUS_BADGE[order.status] ?? STATUS_BADGE.new;
   const excluded = order.excluded_from_stock;
@@ -260,7 +263,7 @@ export function OrderCard({
               <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>Резултат от обаждането</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button disabled={pending} onClick={() => run(() => confirmOrder(order.id))} style={primaryBtn}>✓ Потвърждава</button>
-                <button onClick={() => run(() => markNoAnswer(order.id))} style={outlineBtn("#854F0B", "#FAC775")}>✆ Не вдига{order.call_attempts > 0 ? ` (${order.call_attempts})` : ""}</button>
+                <button disabled={pending} onClick={() => run(() => markNoAnswer(order.id))} style={outlineBtn("#854F0B", "#FAC775")}>✆ Не вдига{order.call_attempts > 0 ? ` (${order.call_attempts})` : ""}</button>
                 <button onClick={() => setCancelStep("category")} style={outlineBtn("#A32D2D", "#F09595")}>✕ Отказва</button>
               </div>
               <div>{fakeLink}</div>

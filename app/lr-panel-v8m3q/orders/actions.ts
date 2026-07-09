@@ -27,13 +27,13 @@ export async function confirmOrder(id: number): Promise<string | null> {
 // category: refused | unreachable | wrong_number | other. Only a genuine phone
 // refusal counts as call_state='refused' (the customer-history badge).
 export async function cancelOrder(id: number, category: string, reason: string): Promise<string | null> {
-  const callState = category === "refused" ? "refused" : category;
-  return patchOrder(id, {
-    status: "cancelled",
-    call_state: callState,
-    cancel_category: category,
-    cancel_reason: reason || null,
-  });
+  // Only a genuine phone refusal touches call_state (it feeds the customer-
+  // history "отказал" badge). Other reasons keep their detail in cancel_category
+  // and leave call_state alone — the enum call_state_t only allows
+  // pending/confirmed/no_answer/refused, so writing the raw category throws.
+  const patch: Record<string, unknown> = { status: "cancelled", cancel_category: category, cancel_reason: reason || null };
+  if (category === "refused") patch.call_state = "refused";
+  return patchOrder(id, patch);
 }
 
 // „Не вдига" → never locks. Atomic server-side increment (no race on rapid
@@ -70,11 +70,10 @@ export async function confirmOrders(ids: number[]): Promise<string | null> {
 
 export async function cancelOrders(ids: number[], category: string, reason: string): Promise<string | null> {
   if (!ids.length) return null;
-  const callState = category === "refused" ? "refused" : category;
+  const patch: Record<string, unknown> = { status: "cancelled", cancel_category: category, cancel_reason: reason || null };
+  if (category === "refused") patch.call_state = "refused";
   const supabase = await createClient();
-  const { error } = await supabase.from("orders")
-    .update({ status: "cancelled", call_state: callState, cancel_category: category, cancel_reason: reason || null })
-    .in("id", ids);
+  const { error } = await supabase.from("orders").update(patch).in("id", ids);
   if (error) { console.error("[orders] bulk cancel error:", error.message); return error.message; }
   revalidatePath(ORDERS_PATH);
   return null;

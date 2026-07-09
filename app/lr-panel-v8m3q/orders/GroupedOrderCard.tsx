@@ -55,10 +55,12 @@ export function GroupedOrderCard({
       try { const e = await fn(); if (e) setError(e); }
       catch (e) { setError(e instanceof Error ? e.message : "Възникна грешка. Опитай пак."); }
     });
-  const doCancel = (category: string, reason: string) => {
-    setCancelStep("closed"); setCancelText("");
-    run(() => cancelOrders(ids, category, reason));
-  };
+  const doCancel = (category: string, reason: string) =>
+    run(async () => {
+      const err = await cancelOrders(ids, category, reason);
+      if (!err) { setCancelStep("closed"); setCancelText(""); }
+      return err;
+    });
 
   let histBadge: { text: string; bg: string; fg: string };
   if (history && (history.confirmed || history.refused || history.notTaken)) {
