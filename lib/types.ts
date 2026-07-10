@@ -22,6 +22,7 @@ export interface Product {
   originalPrice?: number;
   currency: string;
   description: string;
+  tabDescription?: string[];   // multi-paragraph "ОПИСАНИЕ" tab copy; falls back to `description`
   materialNote?: string;
   shortDescription: string;
   specs: ProductSpec[];

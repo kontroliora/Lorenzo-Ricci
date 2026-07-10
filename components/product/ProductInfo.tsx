@@ -346,9 +346,17 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         <div className="pt-5">
           {activeTab === "description" && (
             <div className="flex flex-col gap-4">
-              <p className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide">
-                {product.description}
-              </p>
+              {product.tabDescription ? (
+                product.tabDescription.map((para, i) => (
+                  <p key={i} className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide">
+                    {para}
+                  </p>
+                ))
+              ) : (
+                <p className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide">
+                  {product.description}
+                </p>
+              )}
               {product.materialNote && (
                 <p className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide">
                   {product.materialNote}
