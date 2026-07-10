@@ -230,6 +230,7 @@ export const products: Product[] = [
       { label: "Дължина", value: "20 см" },
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
+      { label: "Пол", value: "Унисекс" },
       { label: "Цвят", value: "Златен" },
     ],
     coverImage: {
@@ -271,6 +272,7 @@ export const products: Product[] = [
       { label: "Дължина", value: "22 см" },
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
+      { label: "Пол", value: "Унисекс" },
       { label: "Цвят", value: "Златен" },
     ],
     coverImage: {
@@ -312,6 +314,7 @@ export const products: Product[] = [
       { label: "Дължина", value: "22 см" },
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
+      { label: "Пол", value: "Унисекс" },
       { label: "Цвят", value: "Златен" },
     ],
     coverImage: {
@@ -354,6 +357,7 @@ export const products: Product[] = [
       { label: "Дължина", value: "60 см" },
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
+      { label: "Пол", value: "Унисекс" },
       { label: "Цвят", value: "Златен" },
     ],
     coverImage: {
