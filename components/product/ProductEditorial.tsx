@@ -5,12 +5,24 @@ interface Props {
   product: Product;
 }
 
+// Split the editorial description into two paragraphs at a SENTENCE boundary
+// (never mid-word). The layout wants two blocks; slicing by raw character count
+// used to cut whole words in half (e.g. "скелетизира|ният"). One-sentence text
+// stays a single paragraph.
+function splitParagraphs(text: string): [string, string] {
+  const sentences = text.match(/[^.]+\.(?:\s+|$)/g)?.map((s) => s.trim()) ?? [];
+  if (sentences.length <= 1) return [text.trim(), ""];
+  const mid = Math.ceil(sentences.length / 2);
+  return [sentences.slice(0, mid).join(" "), sentences.slice(mid).join(" ")];
+}
+
 export function ProductEditorial({ product }: Props) {
   const imgs = product.descriptionImages;
   if (!imgs || imgs.length === 0) return null;
 
   const img1 = imgs[0];
   const img2 = imgs[1] ?? null;
+  const [descPara1, descPara2] = splitParagraphs(product.description);
 
   return (
     <section className="mt-28 border-t border-border pt-20">
@@ -37,11 +49,13 @@ export function ProductEditorial({ product }: Props) {
           </h3>
           <div className="w-10 h-px bg-navy/30 mb-8" />
           <p className="font-sans text-sm font-light text-ink-soft leading-[1.9] tracking-wide mb-6">
-            {product.description.slice(0, Math.ceil(product.description.length / 2))}
+            {descPara1}
           </p>
-          <p className="font-sans text-sm font-light text-ink-soft leading-[1.9] tracking-wide">
-            {product.description.slice(Math.ceil(product.description.length / 2))}
-          </p>
+          {descPara2 && (
+            <p className="font-sans text-sm font-light text-ink-soft leading-[1.9] tracking-wide">
+              {descPara2}
+            </p>
+          )}
         </div>
 
         {/* Image 1 */}
