@@ -191,6 +191,7 @@ export const products: Product[] = [
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
       { label: "Пол", value: "Унисекс" },
+      { label: "Цвят", value: "Златен" },
     ],
     coverImage: {
       src: `/Products/jewellery/bracelet Diamante Cross/grivna-diamante-cross-18k-pvd-preden-izgled.webp`,
@@ -232,6 +233,7 @@ export const products: Product[] = [
       { label: "Дължина", value: "20 см" },
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
+      { label: "Цвят", value: "Златен" },
     ],
     coverImage: {
       src: `/Products/jewellery/Bracelet Milano Forte/grivna-milano-forte-18k-pvd-preden-izgled.webp`,
@@ -269,8 +271,11 @@ export const products: Product[] = [
     ],
     specs: [
       { label: "Материал", value: "316L неръждаема стомана с 18K PVD покритие" },
+      { label: "Дебелина", value: "6 мм" },
+      { label: "Дължина", value: "22 см" },
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
+      { label: "Цвят", value: "Златен" },
     ],
     coverImage: {
       src: `/Products/jewellery/Bracelet Milano Twist/grivna-milano-twist-18k-pvd-preden-izgled.webp`,
@@ -312,6 +317,7 @@ export const products: Product[] = [
       { label: "Дължина", value: "22 см" },
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
+      { label: "Цвят", value: "Златен" },
     ],
     coverImage: {
       src: `/Products/jewellery/Bracelet Signature/grivna-signature-18k-pvd-preden-izgled.webp`,
@@ -355,6 +361,7 @@ export const products: Product[] = [
       { label: "Дължина", value: "60 см" },
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
+      { label: "Цвят", value: "Златен" },
     ],
     coverImage: {
       src: `/Products/jewellery/Necklace Aurelius Cross/kolie-aurelius-cross-18k-pvd-preden-izgled.webp`,
@@ -400,6 +407,7 @@ export const products: Product[] = [
       { label: "Дължина", value: "60 см" },
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
+      { label: "Цвят", value: "Златен" },
     ],
     coverImage: {
       src: `/Products/jewellery/Necklace Grande Imperiale /kolie-grande-imperiale-18k-pvd-preden-izgled.webp`,
@@ -437,8 +445,11 @@ export const products: Product[] = [
     ],
     specs: [
       { label: "Материал", value: "316L неръждаема стомана с 18K PVD покритие" },
+      { label: "Ширина", value: "8 мм" },
+      { label: "Дължина", value: "55 см" },
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
+      { label: "Цвят", value: "Златен" },
     ],
     coverImage: {
       src: `/Products/jewellery/Necklace Milano Forte/kolie-milano-forte-18k-pvd-preden-izgled.webp`,
@@ -480,6 +491,7 @@ export const products: Product[] = [
       { label: "Дължина", value: "55 см" },
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
+      { label: "Цвят", value: "Златен" },
     ],
     coverImage: {
       src: `/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-18k-pvd-preden-izgled.webp`,
