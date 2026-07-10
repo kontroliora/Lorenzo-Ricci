@@ -28,7 +28,7 @@ export function JewellerySection() {
           >
             <Image
               src="/beautiful/banner-bracelets.jpg"
-              alt="Lorenzo Ricci Гривни — 18К позлата"
+              alt="Lorenzo Ricci Гривни, 18К позлата"
               fill
               quality={90}
               sizes="(max-width: 640px) 100vw, 50vw"
@@ -56,7 +56,7 @@ export function JewellerySection() {
           >
             <Image
               src="/beautiful/banner-necklaces.jpg"
-              alt="Lorenzo Ricci Колиета — 18К позлата"
+              alt="Lorenzo Ricci Колиета, 18К позлата"
               fill
               quality={90}
               sizes="(max-width: 640px) 100vw, 50vw"

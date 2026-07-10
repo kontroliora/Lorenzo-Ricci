@@ -62,7 +62,7 @@ function buildRecoveryEmail(opts: {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Продуктът ви чака — Lorenzo Ricci</title>
+  <title>Продуктът ви чака. Lorenzo Ricci</title>
 </head>
 <body style="margin:0;padding:0;background:#f8f6f2;-webkit-font-smoothing:antialiased;">
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f8f6f2;">
@@ -91,7 +91,7 @@ function buildRecoveryEmail(opts: {
             <p style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6b7280;line-height:1.75;margin:0 0 32px;font-weight:300;letter-spacing:0.015em;">
               Скъпи ${firstName},<br><br>
               Количката ви съдържа продукти, но поръчката не беше завършена.
-              Наличностите ни са ограничени — запазете своя избор, преди да е изчерпан.
+              Наличностите ни са ограничени. Запазете своя избор, преди да е изчерпан.
             </p>
 
             ${productsHtml}
@@ -125,7 +125,7 @@ function buildRecoveryEmail(opts: {
               <tr>
                 <td style="padding:14px 0;border-bottom:1px solid #f0ebe3;">
                   <span style="font-family:Arial,sans-serif;font-size:11px;color:#c4bdb6;">&#9672;</span>&nbsp;&nbsp;
-                  <span style="font-family:Arial,sans-serif;font-size:12px;color:#9ca3af;font-weight:300;">Плащане при получаване — наложен платеж</span>
+                  <span style="font-family:Arial,sans-serif;font-size:12px;color:#9ca3af;font-weight:300;">Плащане при получаване, наложен платеж</span>
                 </td>
               </tr>
               <tr>
@@ -165,7 +165,7 @@ function buildRecoveryEmail(opts: {
 </body>
 </html>`;
 
-  return { subject: "Продуктът ви чака — Lorenzo Ricci", html };
+  return { subject: "Продуктът ви чака. Lorenzo Ricci", html };
 }
 
 // ─── Mask email for privacy in analytics ──────────────────────────────────

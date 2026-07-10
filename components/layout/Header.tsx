@@ -66,7 +66,7 @@ export function Header() {
                     <div className="py-2">
                       <DropdownLink href="/jewellery">Всички бижута</DropdownLink>
                       <div className="mx-4 h-px bg-border my-1" />
-                      <DropdownLink href="/bundles">Комплекти  –10%</DropdownLink>
+                      <DropdownLink href="/bundles">Комплекти  -10%</DropdownLink>
                     </div>
                   </div>
                 </div>
@@ -171,7 +171,7 @@ export function Header() {
                     </Link>
                     <Link href="/bundles" onClick={closeMobile}
                       className="font-sans text-sm font-light tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors duration-300">
-                      Комплекти  –10%
+                      Комплекти  -10%
                     </Link>
                   </div>
                 )}

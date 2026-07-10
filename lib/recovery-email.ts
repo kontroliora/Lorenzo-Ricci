@@ -50,7 +50,7 @@ export function buildRecoveryEmail(session: RecoverySession): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>Вашата количка ви очаква — Lorenzo Ricci</title>
+  <title>Вашата количка ви очаква. Lorenzo Ricci</title>
 </head>
 <body style="margin:0;padding:0;background:#ede9e0;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
 
@@ -95,7 +95,7 @@ export function buildRecoveryEmail(session: RecoverySession): string {
                 ${greeting}
               </p>
               <p style="margin:0 0 36px;font-size:13px;color:#6b6456;line-height:1.7">
-                Запазихме вашите избрани артикули. Завършете поръчката, когато сте готови — доставката е безплатна за поръчки над €60.
+                Запазихме вашите избрани артикули. Завършете поръчката, когато сте готови. Доставката е безплатна за поръчки над €60.
               </p>
 
               <!-- Section label -->

@@ -92,7 +92,7 @@ export function ProductEditorial({ product }: Props) {
               {product.warranty}
             </p>
             <blockquote className="font-serif text-display-sm text-charcoal leading-relaxed mb-8">
-              „Прецизност и характер – носен с увереност."
+              „Прецизност и характер, носен с увереност."
             </blockquote>
             <div className="w-10 h-px bg-navy/30" />
           </div>

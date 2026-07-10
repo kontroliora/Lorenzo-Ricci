@@ -31,7 +31,7 @@ export default function WatchManualPage() {
           <ul className="flex flex-col gap-3">
             <Item label="Японски кварцов механизъм">
               Захранван с батерия за прецизно отчитане на времето. Точност ±15 секунди месечно.
-              Живот на батерията 2–3 години.
+              Живот на батерията 2 до 3 години.
             </Item>
             <Item label="Хронограф функция">
               Секундомер за измерване на времеви интервали чрез страничните бутони.
@@ -88,7 +88,7 @@ export default function WatchManualPage() {
         <Section number="4" title="Грижа и поддръжка">
           <ul className="flex flex-col gap-3">
             <Item label="Смяна на батерия">
-              Японската кварцова батерия се сменя на всеки <strong className="text-charcoal font-normal">2–3 години</strong> в часовникарски сервиз.
+              Японската кварцова батерия се сменя на всеки <strong className="text-charcoal font-normal">2 до 3 години</strong> в часовникарски сервиз.
               При отслабен ход или спрял часовник - проверете батерията.
             </Item>
             <Item label="Почистване">
