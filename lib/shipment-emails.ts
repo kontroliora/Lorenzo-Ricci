@@ -72,7 +72,7 @@ function trackButton(d: ShipmentEmailData): string {
 function refBlock(d: ShipmentEmailData, withTracking: boolean): string {
   return `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#444">
-    <tr><td style="padding:5px 0;width:190px;color:#888">Поръчка</td><td style="padding:5px 0;color:#1a1a1a">${d.ref}</td></tr>
+    <tr><td style="padding:5px 0;width:150px;color:#888">Поръчка</td><td style="padding:5px 0;color:#1a1a1a">${d.ref}</td></tr>
     ${withTracking ? `<tr><td style="padding:5px 0;color:#888">Тракинг номер</td><td style="padding:5px 0;color:#1a1a1a;font-family:Georgia,serif">${d.tracking}</td></tr>` : ""}
     <tr><td style="padding:5px 0;color:#888">Сума при получаване</td><td style="padding:5px 0;color:#1a1a1a">${d.currency}${d.total} (наложен платеж)</td></tr>
   </table>`;
@@ -97,8 +97,11 @@ export function buildShippedEmail(d: ShipmentEmailData): string {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
     <tbody>${itemRows}</tbody>
     <tfoot><tr>
-      <td colspan="2" style="padding:14px 0 0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#888">Обща сума (наложен платеж)</td>
-      <td style="padding:14px 0 0;text-align:right;font-family:Georgia,serif;font-size:20px;color:${NAVY};font-weight:700">${d.currency}${d.total}</td>
+      <td colspan="2" style="padding:16px 0 0;vertical-align:bottom">
+        <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#888">Обща сума</span><br>
+        <span style="font-size:10px;color:#aaa">наложен платеж</span>
+      </td>
+      <td style="padding:16px 0 0;text-align:right;vertical-align:bottom;white-space:nowrap;font-family:Georgia,serif;font-size:17px;color:${NAVY};font-weight:700">${d.currency}${d.total}</td>
     </tr></tfoot>
   </table>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#444;margin-top:18px">
