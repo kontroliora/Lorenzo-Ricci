@@ -33,6 +33,7 @@ export async function GET(req: Request) {
     currency: "€",
     tracking: "1234567890",
     trackUrl: trackPageUrl("1234567890"),
+    officeName: "Русе Чародейка",
   };
 
   const emails = [

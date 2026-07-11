@@ -30,7 +30,7 @@ type OrderRow = {
   tracking_number: string | null; items: unknown; total: number | null;
 };
 
-export function toEmailData(o: OrderRow, awb: string): ShipmentEmailData {
+export function toEmailData(o: OrderRow, awb: string, officeName = ""): ShipmentEmailData {
   const raw = Array.isArray(o.items) ? (o.items as Array<Record<string, unknown>>) : [];
   const items: ShipmentItem[] = raw.map((i) => ({
     name: String(i.name ?? "Артикул"),
@@ -46,6 +46,7 @@ export function toEmailData(o: OrderRow, awb: string): ShipmentEmailData {
     currency: items[0]?.currency ?? "€",
     tracking: awb,
     trackUrl: trackPageUrl(awb),
+    officeName,
   };
 }
 
@@ -106,7 +107,7 @@ export async function sendReminders(sb: SupabaseClient): Promise<{ sent: number;
     const officeCase = a.deliveryType === "office";
     const doorCase = a.deliveryType === "door" && a.deliveryAttemptCount > 0;
     if (!officeCase && !doorCase) continue;
-    const d = toEmailData(o, clean(o.tracking_number));
+    const d = toEmailData(o, clean(o.tracking_number), a.officeName);
     const html = doorCase ? buildReminderDoorEmail(d) : buildReminderOfficeEmail(d);
     const { error: e } = await resend.emails.send({ from: FROM, to: [o.email!], subject: shipmentSubjects.reminder(d.ref), html });
     if (e) { console.error("[reminder] email failed", o.id, e.message); continue; }

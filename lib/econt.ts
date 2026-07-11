@@ -60,7 +60,7 @@ export async function getShipmentStatusesRaw(awbs: string[]): Promise<unknown> {
 
 // ── Structured analysis of a raw getShipmentStatuses object (Stage 1 fields) ──
 // All decisions use structured, code-based fields — never office-name text.
-type RawEvent = { destinationType?: string; officeCode?: string | null; time?: number };
+type RawEvent = { destinationType?: string; officeCode?: string | null; time?: number; officeName?: string };
 type RawStatus = {
   shipmentNumber?: string;
   sendTime?: number | null;          // set ONLY when Econt physically accepts the parcel
@@ -68,6 +68,7 @@ type RawStatus = {
   cdCollectedTime?: number | null;   // set when COD is collected
   receiverDeliveryType?: string;     // "office" | "door"
   receiverOfficeCode?: string | null;
+  storageOfficeName?: string | null; // where the parcel currently sits — the office name to tell the customer
   deliveryAttemptCount?: number | null;
   shortDeliveryStatus?: string | null;
   trackingEvents?: RawEvent[];
@@ -82,6 +83,7 @@ export type ShipmentAnalysis = {
   atFinalOffice: boolean;            // at recipient's final office AND not collected
   arrivedAtFinalOfficeMs: number | null; // count the 4-5 days from HERE, not from ship date
   deliveryAttemptCount: number;      // >0 → a failed door attempt (parcel parked at office)
+  officeName: string;                // storageOfficeName → final-office event name → "" (for the reminder)
 };
 
 const FINAL_OFFICE_TYPES = new Set(["in_delivery_office", "in_pickup_office"]);
@@ -98,12 +100,17 @@ export function analyzeShipment(raw: unknown): ShipmentAnalysis {
   // First arrival at the recipient's FINAL office (structural: type ∈ final-set
   // AND officeCode === receiverOfficeCode). Transit offices/hubs have other codes.
   let arrivedAtFinalOfficeMs: number | null = null;
+  let finalOfficeName = "";
   for (const e of events) {
     if (FINAL_OFFICE_TYPES.has(e?.destinationType ?? "") && e?.officeCode != null && roc != null && String(e.officeCode) === roc) {
       arrivedAtFinalOfficeMs = Number(e.time) || null;
+      finalOfficeName = String(e.officeName ?? "");
       break;
     }
   }
+  // Which office to name in the reminder: the live storage location first, then
+  // the final-office event name, else empty (template omits the name gracefully).
+  const officeName = String(s.storageOfficeName ?? "").trim() || finalOfficeName || "";
 
   return {
     accepted: s.sendTime != null,
@@ -114,6 +121,7 @@ export function analyzeShipment(raw: unknown): ShipmentAnalysis {
     atFinalOffice: arrivedAtFinalOfficeMs != null && !delivered && !returned,
     arrivedAtFinalOfficeMs,
     deliveryAttemptCount: Number(s.deliveryAttemptCount ?? 0) || 0,
+    officeName,
   };
 }
 

@@ -28,7 +28,7 @@ function isWeekendSofia(): boolean {
 
 type OrderRow = { id: number; order_ref: string | null; name: string | null; email: string | null; tracking_number: string | null; items: unknown; total: number | null };
 
-function toEmailData(o: OrderRow, awb: string): ShipmentEmailData {
+function toEmailData(o: OrderRow, awb: string, officeName = ""): ShipmentEmailData {
   const raw = Array.isArray(o.items) ? (o.items as Array<Record<string, unknown>>) : [];
   const items: ShipmentItem[] = raw.map((i) => ({ name: String(i.name ?? "Артикул"), qty: Number(i.qty ?? i.quantity ?? 1) || 1, price: Number(i.price ?? 0) || 0, currency: String(i.currency ?? "€") }));
   return {
@@ -36,6 +36,7 @@ function toEmailData(o: OrderRow, awb: string): ShipmentEmailData {
     ref: o.order_ref ?? String(o.id),
     items, total: (Number(o.total ?? 0) || 0).toFixed(2),
     currency: items[0]?.currency ?? "€", tracking: awb, trackUrl: trackPageUrl(awb),
+    officeName,
   };
 }
 
@@ -84,7 +85,7 @@ export async function GET(req: NextRequest) {
     eligible.push({ ref: o.order_ref ?? String(o.id), email: maskEmail(o.email!), case: doorCase ? "door" : "office", daysAtOffice: Math.round(days * 10) / 10 });
 
     if (send && resend) {
-      const d = toEmailData(o, awb);
+      const d = toEmailData(o, awb, a.officeName);
       const html = doorCase ? buildReminderDoorEmail(d) : buildReminderOfficeEmail(d);
       const { error: e } = await resend.emails.send({ from: FROM, to: [o.email!], subject: shipmentSubjects.reminder(d.ref), html });
       if (!e) { await sb.from("orders").update({ reminder_sent_at: new Date(now).toISOString() }).eq("id", o.id); sent++; }
