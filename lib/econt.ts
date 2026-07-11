@@ -42,6 +42,22 @@ export async function getShipmentStatuses(awbs: string[]): Promise<EcontStatus[]
   });
 }
 
+// DEBUG (Stage 1 research): return the COMPLETE raw getShipmentStatuses payload,
+// unmapped — so we can inspect every structured field (office codes/types, event
+// history, flags, deliveryTime) and find which ones reliably distinguish a
+// transit office from the recipient's final office / "available for pickup".
+export async function getShipmentStatusesRaw(awbs: string[]): Promise<unknown> {
+  const clean = awbs.map((a) => String(a).replace(/\s+/g, "")).filter(Boolean);
+  if (!clean.length) return { shipmentStatuses: [] };
+  const r = await fetch(`${BASE}.getShipmentStatuses.json`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: authHeader() },
+    body: JSON.stringify({ shipmentNumbers: clean }),
+    cache: "no-store",
+  });
+  return await r.json();
+}
+
 // Check "върната" BEFORE "доставена": a returned parcel reads "Върната и
 // доставена към подател" — it contains both words, but it's a return.
 export function classify(s: EcontStatus): EcontVerdict {
