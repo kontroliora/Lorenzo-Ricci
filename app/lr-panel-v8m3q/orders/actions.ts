@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { reconcileShippedOrders, matchTrackingNumbers, type MatchResult } from "@/lib/econt";
+import { sendShipConfirmations } from "@/lib/shipment-notify";
 
 const ORDERS_PATH = "/lr-panel-v8m3q/orders";
 
@@ -150,10 +151,20 @@ export async function matchTracking(): Promise<{ ok: boolean; message: string; r
   const supabase = await createClient();
   try {
     const r = await matchTrackingNumbers(supabase);
+    // Instant Email 1 for parcels Econt has just physically accepted (sendTime
+    // != null); dedup via ship_email_sent_at. Non-fatal — a mail/Econt/DB hiccup
+    // (or the migration not yet run) must never fail the tracking match itself.
+    let shipMsg = "";
+    try {
+      const s = await sendShipConfirmations(supabase);
+      if (s.sent > 0) shipMsg = ` · изпратени ${s.sent} имейла „изпратена"`;
+    } catch (e) {
+      console.error("[orders] ship-confirm emails failed:", e);
+    }
     revalidatePath(ORDERS_PATH);
     return {
       ok: true,
-      message: `Сканирани ${r.scanned} · попълнени ${r.autoFilled.length} · за потвърждение ${r.pending.length}`,
+      message: `Сканирани ${r.scanned} · попълнени ${r.autoFilled.length} · за потвърждение ${r.pending.length}${shipMsg}`,
       result: r,
     };
   } catch (e) {
