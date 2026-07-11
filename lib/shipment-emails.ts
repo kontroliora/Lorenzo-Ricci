@@ -41,7 +41,7 @@ function shell(d: ShipmentEmailData, preheader: string, bodyHtml: string): strin
   <tr><td align="center">
     <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#fff;max-width:560px;width:100%">
       <tr><td class="lr-header" bgcolor="${NAVY}" style="background:${NAVY};background-color:${NAVY};padding:34px 40px;text-align:center">
-        <img src="https://lorenzo-ricci.com/email-logo.png" alt="Lorenzo Ricci" width="190" style="max-width:190px;height:auto;display:block;margin:0 auto;border:0">
+        <img src="https://lorenzo-ricci.com/email-logo-dark.png" alt="Lorenzo Ricci" width="205" style="max-width:205px;height:auto;display:block;margin:0 auto;border:0">
       </td></tr>
       <tr><td style="padding:0;line-height:0;font-size:0"><div style="height:2px;background:linear-gradient(to right,#b8944a,#d4af6a,#e8c878,#d4af6a,#b8944a)"></div></td></tr>
       <tr><td style="padding:40px 40px 8px">${bodyHtml}</td></tr>
