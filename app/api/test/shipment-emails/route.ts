@@ -41,9 +41,11 @@ export async function GET(req: Request) {
     { subject: `${shipmentSubjects.reminder(d.ref)} [тест: офис]`, html: buildReminderOfficeEmail(d) },
     { subject: `${shipmentSubjects.reminder(d.ref)} [тест: адрес]`, html: buildReminderDoorEmail(d) },
   ];
+  // ?only=reminders → send just the two Email 2 variants (skip Email 1).
+  const toSend = new URL(req.url).searchParams.get("only") === "reminders" ? emails.slice(1) : emails;
 
   const results: Array<{ subject: string; id: string | null; error: string | null }> = [];
-  for (const e of emails) {
+  for (const e of toSend) {
     const { data, error } = await resend.emails.send({ from: FROM, to: [TEST_TO], subject: e.subject, html: e.html });
     results.push({ subject: e.subject, id: data?.id ?? null, error: error?.message ?? null });
   }
