@@ -19,7 +19,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   // Just a clean title + gold rule + content, with breathing room below the
   // real header so nothing jams up.
   return (
-    <div style={{ padding: "56px 16px 72px", fontFamily: "Arial, Helvetica, sans-serif" }}>
+    <div style={{ padding: "130px 16px 72px", fontFamily: "Arial, Helvetica, sans-serif" }}>
       <div style={{ maxWidth: 600, margin: "0 auto", background: "#fff", boxShadow: "0 2px 24px rgba(15,12,8,.09)", padding: "38px 40px 44px" }}>
         <p style={{ margin: 0, fontSize: 12, letterSpacing: ".24em", textTransform: "uppercase", color: NAVY, textAlign: "center" }}>Проследяване на пратка</p>
         <div style={{ height: 2, width: 56, margin: "18px auto 0", background: "linear-gradient(to right,#b8944a,#d4af6a,#e8c878,#d4af6a,#b8944a)" }} />
