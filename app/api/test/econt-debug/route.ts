@@ -25,6 +25,15 @@ export async function GET(req: Request) {
   // delivered and the older backlog.
   const awbs = await getMyAWB(day(now - 45 * 86_400_000), day(now + 86_400_000), "sender");
 
+  // Stage 1.5: ?awaiting=1 → only "generated tracking, not physically handed
+  // over" shipments, to confirm sendTime is null / trackingEvents is empty.
+  if (new URL(req.url).searchParams.get("awaiting") === "1") {
+    const match = awbs.filter((a) => (a.status || "").includes("Очаква предаване"));
+    const picked = match.slice(0, 5).map((a) => a.shipmentNumber);
+    const raw = await getShipmentStatusesRaw(picked);
+    return NextResponse.json({ ok: true, matchedFromMyAWB: match.slice(0, 5), sampledAwbCount: picked.length, raw });
+  }
+
   // Group by Econt's own getMyAWB status, keep true counts, sample up to 2 per
   // distinct status so every status kind is represented without a huge payload.
   const byStatus = new Map<string, string[]>();
