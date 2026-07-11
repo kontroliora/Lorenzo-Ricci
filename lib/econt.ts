@@ -58,6 +58,76 @@ export async function getShipmentStatusesRaw(awbs: string[]): Promise<unknown> {
   return await r.json();
 }
 
+// ── Structured analysis of a raw getShipmentStatuses object (Stage 1 fields) ──
+// All decisions use structured, code-based fields — never office-name text.
+type RawEvent = { destinationType?: string; officeCode?: string | null; time?: number };
+type RawStatus = {
+  shipmentNumber?: string;
+  sendTime?: number | null;          // set ONLY when Econt physically accepts the parcel
+  deliveryTime?: number | null;      // set on delivery
+  cdCollectedTime?: number | null;   // set when COD is collected
+  receiverDeliveryType?: string;     // "office" | "door"
+  receiverOfficeCode?: string | null;
+  deliveryAttemptCount?: number | null;
+  shortDeliveryStatus?: string | null;
+  trackingEvents?: RawEvent[];
+};
+
+export type ShipmentAnalysis = {
+  accepted: boolean;                 // Econt physically took it (sendTime != null) — Email 1 gate
+  shippedAtMs: number | null;        // = sendTime
+  delivered: boolean;                // never remind
+  returned: boolean;                 // never remind
+  deliveryType: string;              // "office" | "door"
+  atFinalOffice: boolean;            // at recipient's final office AND not collected
+  arrivedAtFinalOfficeMs: number | null; // count the 4-5 days from HERE, not from ship date
+  deliveryAttemptCount: number;      // >0 → a failed door attempt (parcel parked at office)
+};
+
+const FINAL_OFFICE_TYPES = new Set(["in_delivery_office", "in_pickup_office"]);
+
+export function analyzeShipment(raw: unknown): ShipmentAnalysis {
+  const s = (raw ?? {}) as RawStatus;
+  const events = Array.isArray(s.trackingEvents) ? s.trackingEvents : [];
+  const roc = s.receiverOfficeCode == null ? null : String(s.receiverOfficeCode);
+  const lastType = events.length ? events[events.length - 1]?.destinationType : null;
+
+  const delivered = s.deliveryTime != null || s.cdCollectedTime != null || lastType === "client";
+  const returned = String(s.shortDeliveryStatus ?? "").toLowerCase().includes("върната");
+
+  // First arrival at the recipient's FINAL office (structural: type ∈ final-set
+  // AND officeCode === receiverOfficeCode). Transit offices/hubs have other codes.
+  let arrivedAtFinalOfficeMs: number | null = null;
+  for (const e of events) {
+    if (FINAL_OFFICE_TYPES.has(e?.destinationType ?? "") && e?.officeCode != null && roc != null && String(e.officeCode) === roc) {
+      arrivedAtFinalOfficeMs = Number(e.time) || null;
+      break;
+    }
+  }
+
+  return {
+    accepted: s.sendTime != null,
+    shippedAtMs: s.sendTime != null ? Number(s.sendTime) : null,
+    delivered,
+    returned,
+    deliveryType: String(s.receiverDeliveryType ?? ""),
+    atFinalOffice: arrivedAtFinalOfficeMs != null && !delivered && !returned,
+    arrivedAtFinalOfficeMs,
+    deliveryAttemptCount: Number(s.deliveryAttemptCount ?? 0) || 0,
+  };
+}
+
+// awb → raw status object, for the cron / tracking page.
+export async function getRawStatuses(awbs: string[]): Promise<Map<string, RawStatus>> {
+  const data = (await getShipmentStatusesRaw(awbs)) as { shipmentStatuses?: Array<{ status: RawStatus | null }> };
+  const map = new Map<string, RawStatus>();
+  for (const x of data.shipmentStatuses ?? []) {
+    const num = x.status?.shipmentNumber;
+    if (x.status && num) map.set(String(num).replace(/\s+/g, ""), x.status);
+  }
+  return map;
+}
+
 // Check "върната" BEFORE "доставена": a returned parcel reads "Върната и
 // доставена към подател" — it contains both words, but it's a return.
 export function classify(s: EcontStatus): EcontVerdict {

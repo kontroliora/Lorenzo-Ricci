@@ -1,24 +1,32 @@
 // Transactional shipment / uncollected-parcel emails (Resend). Plain, personal,
-// minimal — designed to land in the inbox, NOT read as marketing. No caps, no
-// exclamation, no "buy". One CTA (Econt tracking), one logo, nothing else.
+// premium — designed to land in the inbox, not read as marketing. No caps for
+// emphasis, no exclamation, no "buy". One CTA (own /track page), one logo.
+
+export interface ShipmentItem {
+  name: string;
+  qty: number;
+  price: number;      // unit price
+  currency: string;
+}
 
 export interface ShipmentEmailData {
-  firstName: string;   // customer first name (or "клиент")
-  ref: string;         // order_ref, e.g. LR-9MR9IO
-  product: string;     // product name(s), comma-joined
-  tracking: string;    // AWB
-  amount: string;      // COD amount formatted, e.g. "65.00"
-  trackUrl: string;    // Econt tracking link
+  firstName: string;  // customer first name (or "клиент")
+  ref: string;        // order_ref
+  items: ShipmentItem[];
+  total: string;      // formatted order total, e.g. "65.00"
+  currency: string;
+  tracking: string;   // AWB
+  trackUrl: string;   // own branded /track/{awb} page
 }
 
 export const shipmentSubjects = {
   shipped: (ref: string) => `Поръчка ${ref} е изпратена`,
   reminder: (ref: string) => `Пратката Ви очаква в офис на Еконт (${ref})`,
-  final: (ref: string) => `Последно напомняне за пратка ${ref}`,
 };
 
-export function econtTrackUrl(awb: string): string {
-  return `https://www.econt.com/services/track-shipment/${encodeURIComponent(String(awb).replace(/\s+/g, ""))}`;
+// All emails point to our own branded page, never econt.com.
+export function trackPageUrl(awb: string): string {
+  return `https://lorenzo-ricci.com/track/${encodeURIComponent(String(awb).replace(/\s+/g, ""))}`;
 }
 
 const NAVY = "#0a0e1f";
@@ -49,15 +57,8 @@ function shell(d: ShipmentEmailData, preheader: string, bodyHtml: string): strin
 </body></html>`;
 }
 
-function detailRows(d: ShipmentEmailData, withAmount: boolean): string {
-  return `
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#444;margin:0 0 8px">
-    <tr><td style="padding:5px 0;width:180px;color:#888">Номер на поръчка</td><td style="padding:5px 0;color:#1a1a1a">${d.ref}</td></tr>
-    <tr><td style="padding:5px 0;color:#888">Продукт</td><td style="padding:5px 0;color:#1a1a1a">${d.product}</td></tr>
-    <tr><td style="padding:5px 0;color:#888">Тракинг номер</td><td style="padding:5px 0;color:#1a1a1a;font-family:Georgia,serif">${d.tracking}</td></tr>
-    ${withAmount ? `<tr><td style="padding:5px 0;color:#888">Сума при получаване</td><td style="padding:5px 0;color:#1a1a1a">€${d.amount} (наложен платеж)</td></tr>` : ""}
-  </table>`;
-}
+const LABEL = (t: string) => `<p style="margin:0 0 14px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#888">${t}</p>`;
+const DIV = `<div style="border-top:1px solid #e8dfc8;margin:26px 0"></div>`;
 
 function trackButton(d: ShipmentEmailData): string {
   return `
@@ -66,33 +67,60 @@ function trackButton(d: ShipmentEmailData): string {
   </td></tr></table>`;
 }
 
-const LABEL = (t: string) => `<p style="margin:0 0 14px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#888">${t}</p>`;
-const DIV = `<div style="border-top:1px solid #e8dfc8;margin:26px 0"></div>`;
-
-// Email 1 — shipped (on tracking link). Neutral, informative, positive.
-export function buildShippedEmail(d: ShipmentEmailData): string {
-  return shell(d, "Вашата поръчка е изпратена и пътува към Вас.", `
-  <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Здравейте, ${d.firstName},</p>
-  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">Вашата поръчка е предадена на куриер Еконт и вече пътува към Вас. По-долу ще намерите тракинг номера, с който можете да следите пратката.</p>
-  ${DIV}${LABEL("Детайли за пратката")}${detailRows(d, false)}${trackButton(d)}
-  <p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7">Очаквано време на доставка: <strong style="color:#1a1a1a">1 до 2 работни дни</strong>. Еконт ще Ви уведоми, когато пратката пристигне в офиса за получаване.</p>`);
+// Small "Поръчка / Тракинг / Сума" line block, shared by the reminders.
+function refBlock(d: ShipmentEmailData, withTracking: boolean): string {
+  return `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#444">
+    <tr><td style="padding:5px 0;width:190px;color:#888">Поръчка</td><td style="padding:5px 0;color:#1a1a1a">${d.ref}</td></tr>
+    ${withTracking ? `<tr><td style="padding:5px 0;color:#888">Тракинг номер</td><td style="padding:5px 0;color:#1a1a1a;font-family:Georgia,serif">${d.tracking}</td></tr>` : ""}
+    <tr><td style="padding:5px 0;color:#888">Сума при получаване</td><td style="padding:5px 0;color:#1a1a1a">${d.currency}${d.total} (наложен платеж)</td></tr>
+  </table>`;
 }
 
-// Email 2 — reminder, parcel waiting (day 2-3). Polite, helpful.
-export function buildReminderEmail(d: ShipmentEmailData): string {
+// ── EMAIL 1 — shipped (trigger: Econt accepted, sendTime != null) ────────────
+export function buildShippedEmail(d: ShipmentEmailData): string {
+  const itemRows = d.items
+    .map(
+      (i) => `<tr>
+        <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;font-family:Georgia,serif;color:#1a1a1a;font-size:14px">${i.name}</td>
+        <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;text-align:center;color:#555;font-size:14px">×${i.qty}</td>
+        <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;text-align:right;font-family:Georgia,serif;color:#1a1a1a;font-size:14px">${i.currency}${i.price.toFixed(2)}</td>
+      </tr>`,
+    )
+    .join("");
+
+  return shell(d, "Вашата поръчка е предадена на Еконт и пътува към Вас.", `
+  <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Здравейте, ${d.firstName},</p>
+  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">Благодарим Ви за доверието към Lorenzo Ricci. Вашата поръчка е предадена на куриер Еконт и вече пътува към Вас.</p>
+  ${DIV}${LABEL("Поръчка " + d.ref)}
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+    <tbody>${itemRows}</tbody>
+    <tfoot><tr>
+      <td colspan="2" style="padding:14px 0 0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#888">Обща сума (наложен платеж)</td>
+      <td style="padding:14px 0 0;text-align:right;font-family:Georgia,serif;font-size:20px;color:${NAVY};font-weight:700">${d.currency}${d.total}</td>
+    </tr></tfoot>
+  </table>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#444;margin-top:18px">
+    <tr><td style="padding:4px 0;width:150px;color:#888">Тракинг номер</td><td style="padding:4px 0;color:#1a1a1a;font-family:Georgia,serif">${d.tracking}</td></tr>
+  </table>
+  ${trackButton(d)}
+  <p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7">Очаквано време на доставка: <strong style="color:#1a1a1a">1-2 работни дни</strong>.</p>`);
+}
+
+// ── EMAIL 2, CASE A — office delivery, waiting at final office ───────────────
+export function buildReminderOfficeEmail(d: ShipmentEmailData): string {
   return shell(d, "Пратката Ви очаква в офиса на Еконт.", `
   <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Здравейте, ${d.firstName},</p>
-  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">Вашата пратка пристигна в офиса на Еконт и Ви очаква. Можете да я вземете в удобно за Вас време през работните часове на офиса.</p>
-  ${DIV}${LABEL("Детайли за пратката")}${detailRows(d, true)}${trackButton(d)}
-  <p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7">Ако вече сте получили пратката, моля не обръщайте внимание на това съобщение.</p>`);
+  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">Вашата пратка от Lorenzo Ricci Ви очаква в офиса на Еконт. Съгласно условията на куриера, тя се съхранява до 7 дни от пристигането, след което се връща към нас. За да Ви спестим повторно изпращане, бихме искали любезно да Ви напомним да я вземете в оставащите дни.</p>
+  ${DIV}${refBlock(d, true)}${trackButton(d)}
+  <p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7">Оставаме на разположение при въпроси на info@lorenzo-ricci.com. Ако вече сте получили пратката, моля не обръщайте внимание на това съобщение.</p>`);
 }
 
-// Email 3 — final reminder (day 5-6). Firmer, not aggressive.
-export function buildFinalReminderEmail(d: ShipmentEmailData): string {
-  return shell(d, "Последно напомняне: пратката Ви скоро ще бъде върната.", `
+// ── EMAIL 2, CASE B — door delivery, failed attempt → parked at office ───────
+export function buildReminderDoorEmail(d: ShipmentEmailData): string {
+  return shell(d, "Пратката Ви вече очаква в офис на Еконт.", `
   <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Здравейте, ${d.firstName},</p>
-  <p style="margin:0 0 16px;color:#666;font-size:14px;line-height:1.7">Вашата пратка все още Ви очаква в офиса на Еконт. Съгласно условията на куриера, тя се съхранява до 7 дни от пристигането си, след което се връща обратно към нас.</p>
-  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">За да не се налага повторно изпращане, моля вземете я в оставащите дни.</p>
-  ${DIV}${LABEL("Детайли за пратката")}${detailRows(d, true)}${trackButton(d)}
-  <p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7">При въпрос или нужда от съдействие ни пишете на info@lorenzo-ricci.com. Ако вече сте получили пратката, моля не обръщайте внимание на това съобщение.</p>`);
+  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">Опитахме да доставим Вашата пратка от Lorenzo Ricci на посочения адрес, но не успяхме да Ви открием. Пратката вече Ви очаква в офис на Еконт и се съхранява до 7 дни, след което се връща към нас. За да Ви спестим повторно изпращане, бихме искали любезно да Ви напомним да я вземете в оставащите дни.</p>
+  ${DIV}${refBlock(d, true)}${trackButton(d)}
+  <p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7">Оставаме на разположение при въпроси на info@lorenzo-ricci.com.</p>`);
 }
