@@ -9,6 +9,7 @@ import { NewsletterPopup } from "@/components/ui/NewsletterPopup";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { HideOnAdmin } from "@/components/layout/HideOnAdmin";
+import { HideOnTrack } from "@/components/layout/HideOnTrack";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://lorenzo-ricci.com"),
@@ -71,8 +72,10 @@ export default function RootLayout({
           <HideOnAdmin>
             <Footer />
             <CartDrawer />
-            <SalesNotification />
-            <NewsletterPopup />
+            <HideOnTrack>
+              <SalesNotification />
+              <NewsletterPopup />
+            </HideOnTrack>
           </HideOnAdmin>
         </ThemeProvider>
       </body>
