@@ -96,6 +96,15 @@ export const reviews: Review[] = [
 
   // ─── GOLDEN ECLIPSE ─────────────────────────────────────────────────────────
   {
+    id: "r-163",
+    productSlug: "golden-eclipse",
+    author: "Мартин Д.",
+    rating: 5,
+    body: "Часовникът надмина очакванията ми. Препоръчвам на всеки, който търси лукс на достъпна цена.",
+    imageUrl: "/reviews/golden-eclipse-na-ruka-review.webp",
+    date: "2026-07-12",
+  },
+  {
     id: "r-15",
     productSlug: "golden-eclipse",
     author: "Петър С.",

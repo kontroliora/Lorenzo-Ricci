@@ -101,7 +101,7 @@ export const products: Product[] = [
     images: [
       { src: `/Products/watches/Golden Eclipse/golden-eclipse-hronograf-preden-izgled.webp`, alt: "Lorenzo Ricci Golden Eclipse хронограф - преден изглед, позлатен корпус 18K PVD" },
       { src: `/Products/watches/Golden Eclipse/golden-eclipse-lume-noshten-rejim.webp`,      alt: "Lorenzo Ricci Golden Eclipse нощен режим - светещи маркери lume, скелетизиран циферблат" },
-      { src: `/Products/watches/Golden Eclipse/golden-eclipse-lifestyle-1.webp`,             alt: "Lorenzo Ricci Golden Eclipse - лайфстайл снимка, луксозен мъжки часовник" },
+      { src: `/Products/watches/Golden Eclipse/golden-eclipse-na-ruka.webp`,                 alt: "Lorenzo Ricci Golden Eclipse на ръка - позлатен хронограф, лайфстайл изглед" },
       { src: `/Products/watches/Golden Eclipse/golden-eclipse-lifestyle-2.webp`,             alt: "Lorenzo Ricci Golden Eclipse - лайфстайл снимка, италиански дизайн" },
       { src: `/Products/watches/Golden Eclipse/golden-eclipse-pozlaten-tsiferbat.webp`,      alt: "Lorenzo Ricci Golden Eclipse - детайл на позлатения циферблат 18K PVD" },
       { src: `/Products/watches/Golden Eclipse/golden-eclipse-zadna-strana.webp`,            alt: "Lorenzo Ricci Golden Eclipse - задна страна на корпуса, 316L неръждаема стомана" },
