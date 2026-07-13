@@ -423,7 +423,8 @@ export async function POST(req: NextRequest) {
     //    instead of silently swallowing it.
     try {
       const shipping = (order.shipping ?? {}) as Record<string, unknown>;
-      const { error: dbError } = await supabase.from("orders").insert({
+      const promoCode = typeof order.promoCode === "string" ? order.promoCode.trim() : "";
+      const orderRow: Record<string, unknown> = {
         order_ref:               String(order.orderRef ?? ""),
         name:                    String(customer.name          ?? ""),
         phone:                   String(customer.phone         ?? ""),
@@ -440,7 +441,18 @@ export async function POST(req: NextRequest) {
         sms_marketing_consent:   Boolean(customer.smsMarketingConsent),
         email_marketing_consent: Boolean(customer.emailMarketingConsent),
         notes:                   String(customer.notes         ?? "") || null,
-      });
+        promo_code:              promoCode || null,
+        promo_discount:          Number(order.promoDiscount ?? 0) || null,
+      };
+      let dbError = (await supabase.from("orders").insert(orderRow)).error;
+      // If the promo columns aren't migrated yet, save the order WITHOUT them
+      // rather than losing the whole order (it's already shown as success).
+      if (dbError && /promo_(code|discount)|schema cache|column/i.test(dbError.message)) {
+        const rowNoPromo: Record<string, unknown> = { ...orderRow };
+        delete rowNoPromo.promo_code;
+        delete rowNoPromo.promo_discount;
+        dbError = (await supabase.from("orders").insert(rowNoPromo)).error;
+      }
       if (dbError) throw dbError;
       console.log("[Supabase] Order saved");
     } catch (err) {

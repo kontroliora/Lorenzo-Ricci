@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { HideOnAdmin } from "@/components/layout/HideOnAdmin";
 import { HideOnTrack } from "@/components/layout/HideOnTrack";
+import { HideOnCart } from "@/components/layout/HideOnCart";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://lorenzo-ricci.com"),
@@ -73,8 +74,10 @@ export default function RootLayout({
             <Footer />
             <CartDrawer />
             <HideOnTrack>
-              <SalesNotification />
-              <NewsletterPopup />
+              <HideOnCart>
+                <SalesNotification />
+                <NewsletterPopup />
+              </HideOnCart>
             </HideOnTrack>
           </HideOnAdmin>
         </ThemeProvider>

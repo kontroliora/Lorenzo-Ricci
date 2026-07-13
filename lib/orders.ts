@@ -35,6 +35,8 @@ export type AdminOrder = {
   is_manual?: boolean;
   cancel_category?: string | null;
   cancel_reason?: string | null;
+  promo_code?: string | null;      // undefined until the orders_promo migration runs
+  promo_discount?: number | null;
   created_at: string;
 };
 
@@ -60,26 +62,23 @@ const ORDER_COLUMNS = `${BASE_COLUMNS}, last_attempt_at, call_attempt_times, ret
 
 export async function getOrders(limit = 150): Promise<AdminOrder[]> {
   const supabase = await createClient();
-  const primary = await supabase
-    .from("orders")
-    .select(ORDER_COLUMNS)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  let data: unknown = primary.data;
-  let error = primary.error;
-  // Fallback if last_attempt_at isn't migrated yet — the view still works.
-  if (error) {
-    const fallback = await supabase
+  // Try the richest column set first, degrade gracefully if a migration hasn't
+  // run yet: promo columns → extended columns → base. A missing column must
+  // never blank the whole panel.
+  const tiers = [`${ORDER_COLUMNS}, promo_code, promo_discount`, ORDER_COLUMNS, BASE_COLUMNS];
+  let data: unknown = null;
+  let lastError: { message: string } | null = null;
+  for (const cols of tiers) {
+    const res = await supabase
       .from("orders")
-      .select(BASE_COLUMNS)
+      .select(cols)
       .order("created_at", { ascending: false })
       .limit(limit);
-    data = fallback.data;
-    error = fallback.error;
+    if (!res.error) { data = res.data; lastError = null; break; }
+    lastError = res.error;
   }
-  if (error) {
-    console.error("[orders] read error:", error.message);
+  if (lastError) {
+    console.error("[orders] read error:", lastError.message);
     return [];
   }
   return (data ?? []) as AdminOrder[];

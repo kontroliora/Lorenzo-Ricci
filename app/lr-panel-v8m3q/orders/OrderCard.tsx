@@ -13,6 +13,7 @@ import {
   addOrderNote,
 } from "./actions";
 import { callTimer, sofiaHHMM, formatAttemptList, formatAttemptAudit } from "@/lib/callSchedule";
+import { OrderItemsList } from "./OrderItemsList";
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
   new:       { label: "Нова · за обаждане", bg: "#412402", fg: "#FAC775" },
@@ -174,9 +175,15 @@ export function OrderCard({
 
       {/* Details */}
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
-        <div>{(order.items ?? []).map((it, i) => (<span key={i}>{it.name} <span style={{ color: "rgba(255,255,255,0.4)" }}>× {it.quantity ?? it.qty ?? 1}</span>{i < order.items.length - 1 ? " · " : ""}</span>))}</div>
+        <OrderItemsList items={order.items ?? []} />
         <div style={{ color: "#fff" }}>{order.shipping_method || (order.courier === "home" ? "Еконт до адрес" : "Еконт до офис")} — {order.address || "—"}{order.city ? `, ${order.city}` : ""}</div>
         <div style={{ color: "#fff", fontWeight: 500 }}>€{Number(order.total ?? 0).toFixed(2)}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · наложен платеж</span></div>
+        {order.promo_code && (
+          <div style={{ marginTop: 4, fontSize: 12, color: "#C0DD97" }}>
+            ◈ Промо код: <span style={{ fontFamily: "monospace", color: "#fff", letterSpacing: "0.04em" }}>{order.promo_code}</span>
+            {order.promo_discount ? <span style={{ color: "rgba(255,255,255,0.5)" }}> · отстъпка −€{Number(order.promo_discount).toFixed(2)}</span> : null}
+          </div>
+        )}
         {order.status === "new" && !excluded && hoursOpen !== null && (
           <div style={{ color: hoursOpen > 24 ? "#F09595" : "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 4 }}>
             ⏱ отворена преди {Math.floor(hoursOpen)}ч{hoursOpen > 24 ? " · заседнала" : ""}

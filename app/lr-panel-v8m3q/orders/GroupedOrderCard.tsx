@@ -2,6 +2,7 @@
 import { useState, useTransition } from "react";
 import type { AdminOrder, CustomerHistory } from "@/lib/orders";
 import { confirmOrders, cancelOrders, markNoAnswerOrders } from "./actions";
+import { OrderItemsList } from "./OrderItemsList";
 
 function fmtDT(iso: string): string {
   try {
@@ -47,6 +48,7 @@ export function GroupedOrderCard({
   const n = sorted.length;
   const total = sorted.reduce((s, o) => s + Number(o.total ?? 0), 0);
   const allItems = sorted.flatMap((o) => o.items ?? []);
+  const promoCodes = Array.from(new Set(sorted.map((o) => o.promo_code).filter(Boolean))) as string[];
   const digits = (last.phone ?? "").replace(/[^\d+]/g, "");
 
   const run = (fn: () => Promise<string | null>) =>
@@ -92,9 +94,14 @@ export function GroupedOrderCard({
 
       {/* Details */}
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
-        <div>{allItems.map((it, i) => (<span key={i}>{it.name} <span style={{ color: "rgba(255,255,255,0.4)" }}>× {it.quantity ?? it.qty ?? 1}</span>{i < allItems.length - 1 ? " · " : ""}</span>))}</div>
+        <OrderItemsList items={allItems} />
         <div style={{ color: "#fff" }}>{last.shipping_method || (last.courier === "home" ? "Еконт до адрес" : "Еконт до офис")} — {last.address || "—"}{last.city ? `, ${last.city}` : ""}</div>
         <div style={{ color: "#fff", fontWeight: 500 }}>€{total.toFixed(2)}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · обща сума от {n}-те</span></div>
+        {promoCodes.length > 0 && (
+          <div style={{ marginTop: 4, fontSize: 12, color: "#C0DD97" }}>
+            ◈ Промо {promoCodes.length > 1 ? "кодове" : "код"}: <span style={{ fontFamily: "monospace", color: "#fff", letterSpacing: "0.04em" }}>{promoCodes.join(" · ")}</span>
+          </div>
+        )}
         <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 4, fontFamily: "monospace" }}>
           Поръчано на {n} пъти: {sorted.map((o) => fmtDT(o.created_at)).join(" · ")} · {sorted.map((o) => o.order_ref).filter(Boolean).join(" · ")}
         </div>
