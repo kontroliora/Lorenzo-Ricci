@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
   if (send && isWeekendSofia()) return NextResponse.json({ ok: false, error: "weekend — не се праща събота/неделя" }, { status: 400 });
 
   const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").replace(/\s/g, "");
   const resendKey = process.env.RESEND_API_KEY;
   if (!url || !key) return NextResponse.json({ ok: false, error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
   if (send && !resendKey) return NextResponse.json({ ok: false, error: "RESEND_API_KEY not configured" }, { status: 500 });

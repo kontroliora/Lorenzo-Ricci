@@ -14,13 +14,14 @@ export async function GET(req: NextRequest) {
   // Fail CLOSED: without CRON_SECRET set (and matching) the endpoint refuses —
   // it never runs open to the public. Vercel injects the Bearer once the secret
   // is set on the project.
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret || req.headers.get("authorization") !== `Bearer ${cronSecret}`) {
+  const cronSecret = (process.env.CRON_SECRET ?? "").trim();
+  const auth = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  if (!cronSecret || auth !== cronSecret) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
   const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").replace(/\s/g, "");
   if (!url || !key) {
     return NextResponse.json(
       { ok: false, error: "SUPABASE_SERVICE_ROLE_KEY not configured — the cron can't read/update orders (RLS)." },
