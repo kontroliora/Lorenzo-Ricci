@@ -28,9 +28,13 @@ export async function GET(req: NextRequest) {
 
   const supabase = supabaseAdmin();
 
-  // Sessions: pending, >1 h idle, no recovery email yet, email known.
-  // Send policy = ALL captured carts with an email (no consent filter, by choice).
-  const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  // Window: abandoned 1 h–7 days ago. The upper bound matters — capture was
+  // RLS-broken until 2026-07-13, so any pre-existing rows could be weeks old;
+  // we must not email someone about a cart from last month on the first run.
+  // Also: pending, no recovery email yet, email known. Send policy = ALL such
+  // carts (no consent filter, by choice).
+  const idleCutoff = new Date(Date.now() -            60 * 60 * 1000).toISOString(); // >1 h idle
+  const ageCutoff  = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(); // <7 days old
 
   const { data: sessions, error } = await supabase
     .from("cart_sessions")
@@ -38,7 +42,8 @@ export async function GET(req: NextRequest) {
     .eq("status", "pending")
     .is("recovery_sent_at", null)
     .not("email", "is", null)
-    .lt("updated_at", cutoff)
+    .lt("updated_at", idleCutoff)
+    .gt("updated_at", ageCutoff)
     .limit(50);
 
   if (error) {
