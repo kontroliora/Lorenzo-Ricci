@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error("[CartSession] upsert error:", error.message);
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      return NextResponse.json({ ok: false }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });
