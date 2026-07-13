@@ -44,6 +44,8 @@ export async function GET(req: NextRequest) {
   const u = new URL(req.url);
   if (u.searchParams.get("token") !== TOKEN) return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   const send = u.searchParams.get("send") === "1";
+  const limitRaw = u.searchParams.get("limit");
+  const limit = limitRaw ? Math.max(0, parseInt(limitRaw, 10) || 0) : 0;   // 0 = no cap (send all)
   if (send && isWeekendSofia()) return NextResponse.json({ ok: false, error: "weekend — не се праща събота/неделя" }, { status: 400 });
 
   const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -59,7 +61,8 @@ export async function GET(req: NextRequest) {
     .eq("status", "shipped")
     .not("tracking_number", "is", null)
     .not("email", "is", null)
-    .is("reminder_sent_at", null);
+    .is("reminder_sent_at", null)
+    .order("id", { ascending: true });   // stable order → canary sends the first N shown in the dry-run
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
 
   const orders = (data ?? []) as OrderRow[];
@@ -67,31 +70,54 @@ export async function GET(req: NextRequest) {
   const resend = send && resendKey ? new Resend(resendKey) : null;
   const now = Date.now();
 
-  const eligible: Array<{ ref: string; email: string; case: string; daysAtOffice: number }> = [];
+  const eligible: Array<{ ref: string; email: string; office: string; amount: string; tracking: string; case: string; daysAtOffice: number; sent: boolean }> = [];
+  const skipped = { noEcontData: 0, deliveredOrReturned: 0, notAtFinalOffice: 0, tooRecent: 0, doorNoFailedAttempt: 0 };
   let sent = 0;
 
   for (const o of orders) {
     const awb = String(o.tracking_number).replace(/\s+/g, "");
     const raw = statuses.get(awb);
-    if (!raw) continue;
+    if (!raw) { skipped.noEcontData++; continue; }
     const a = analyzeShipment(raw);
-    if (a.delivered || a.returned || !a.atFinalOffice || !a.arrivedAtFinalOfficeMs) continue;
+    if (a.delivered || a.returned) { skipped.deliveredOrReturned++; continue; }
+    if (!a.atFinalOffice || !a.arrivedAtFinalOfficeMs) { skipped.notAtFinalOffice++; continue; }
     const days = (now - a.arrivedAtFinalOfficeMs) / DAY;
-    if (days < MIN_DAYS_BACKLOG) continue;
+    if (days < MIN_DAYS_BACKLOG) { skipped.tooRecent++; continue; }
     const officeCase = a.deliveryType === "office";
     const doorCase = a.deliveryType === "door" && a.deliveryAttemptCount > 0;
-    if (!officeCase && !doorCase) continue;
+    if (!officeCase && !doorCase) { skipped.doorNoFailedAttempt++; continue; }
 
-    eligible.push({ ref: o.order_ref ?? String(o.id), email: maskEmail(o.email!), case: doorCase ? "door" : "office", daysAtOffice: Math.round(days * 10) / 10 });
-
-    if (send && resend) {
+    // Canary: with ?limit=N only the first N eligible are actually emailed; the
+    // rest still appear in the list (sent:false) and keep reminder_sent_at NULL,
+    // so a later unlimited run picks them up.
+    let didSend = false;
+    if (send && resend && (!limit || sent < limit)) {
       const d = toEmailData(o, awb, a.officeName);
       const html = doorCase ? buildReminderDoorEmail(d) : buildReminderOfficeEmail(d);
       const { error: e } = await resend.emails.send({ from: FROM, to: [o.email!], subject: shipmentSubjects.reminder(d.ref), html });
-      if (!e) { await sb.from("orders").update({ reminder_sent_at: new Date(now).toISOString() }).eq("id", o.id); sent++; }
+      if (!e) { await sb.from("orders").update({ reminder_sent_at: new Date(now).toISOString() }).eq("id", o.id); sent++; didSend = true; }
       else console.error("[Backlog] failed", o.id, e.message);
     }
+
+    eligible.push({
+      ref: o.order_ref ?? String(o.id),
+      email: maskEmail(o.email!),
+      office: a.officeName || "(няма име)",
+      amount: `€${(Number(o.total ?? 0) || 0).toFixed(2)}`,
+      tracking: awb,
+      case: doorCase ? "door" : "office",
+      daysAtOffice: Math.round(days * 10) / 10,
+      sent: didSend,
+    });
   }
 
-  return NextResponse.json({ ok: true, mode: send ? "SENT" : "DRY-RUN", candidatesScanned: orders.length, eligible: eligible.length, sent, list: eligible });
+  return NextResponse.json({
+    ok: true,
+    mode: send ? (limit ? `SENT (canary ${sent}/${limit})` : "SENT (all)") : "DRY-RUN",
+    candidatesScanned: orders.length,
+    eligibleCount: eligible.length,
+    sent,
+    skipped,
+    list: eligible,
+  });
 }
