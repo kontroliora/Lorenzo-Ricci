@@ -4,11 +4,8 @@ import { updateSession } from "@/lib/supabase/middleware";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Programmatic endpoints with their own token auth — bypass the session gate.
-  if (
-    pathname.startsWith("/api/admin/cart-abandonment") ||
-    pathname.startsWith("/api/admin/shipment-backlog")
-  ) {
+  // Programmatic endpoint with its own Bearer-token auth — bypass the session gate.
+  if (pathname.startsWith("/api/admin/cart-abandonment")) {
     return NextResponse.next();
   }
 
