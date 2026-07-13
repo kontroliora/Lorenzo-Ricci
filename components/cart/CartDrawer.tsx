@@ -9,7 +9,8 @@ import { trackWithCapi, genEventId } from "@/lib/fbq";
 const CART_TIMEOUT = 15 * 60; // 900 seconds
 
 export function CartDrawer() {
-  const { isOpen, closeCart, items, removeItem, updateQuantity, totalPrice, totalItems, bundleDiscount } =
+  const { isOpen, closeCart, items, removeItem, updateQuantity, totalPrice, totalItems, bundleDiscount,
+    pendingCheckout, clearPendingCheckout } =
     useCartStore();
   const [showCheckout, setShowCheckout] = useState(false);
   const [promoInput, setPromoInput] = useState("");
@@ -87,6 +88,14 @@ export function CartDrawer() {
   useEffect(() => {
     if (!isOpen) setShowCheckout(false);
   }, [isOpen]);
+
+  // Recovery link landed → jump straight to the checkout step.
+  useEffect(() => {
+    if (pendingCheckout && items.length > 0) {
+      setShowCheckout(true);
+      clearPendingCheckout();
+    }
+  }, [pendingCheckout, items.length, clearPendingCheckout]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {

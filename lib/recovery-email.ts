@@ -22,6 +22,10 @@ export function buildRecoveryEmail(session: RecoverySession): string {
   const rawName   = session.name?.trim() ?? "";
   const firstName = rawName ? rawName.split(" ")[0] : "";
 
+  // Tokenised restore link — the token IS the (random UUID) session_id. Clicking
+  // it repopulates the cart and drops the customer straight at checkout.
+  const recoverUrl = `https://www.lorenzo-ricci.com/vazstanovi?t=${encodeURIComponent(session.session_id)}`;
+
   const greeting = firstName
     ? `Уважаеми ${firstName},`
     : "Уважаеми клиент,";
@@ -125,7 +129,7 @@ export function buildRecoveryEmail(session: RecoverySession): string {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center" style="padding:0 0 40px">
-                    <a href="https://lorenzo-ricci.com"
+                    <a href="${recoverUrl}"
                        style="display:inline-block;background:#0a0e1f;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:400;letter-spacing:.3em;text-transform:uppercase;text-decoration:none;padding:16px 52px;border:none;mso-padding-alt:0">
                       <!--[if mso]><i style="letter-spacing:.3em;mso-font-width:-100%">&nbsp;</i><![endif]-->
                       Завърши поръчката
@@ -172,9 +176,9 @@ export function buildRecoveryEmail(session: RecoverySession): string {
                 <a href="https://lorenzo-ricci.com" style="color:#b0a898;text-decoration:none">lorenzo-ricci.com</a>
               </p>
               <p style="margin:0;font-size:10px;color:#c8c2ba;line-height:1.8">
-                Получавате това писмо, защото сте дали съгласие за маркетингови съобщения.
+                Получавате това писмо, защото оставихте артикули в количката си в lorenzo-ricci.com.
                 <br>
-                <a href="https://lorenzo-ricci.com" style="color:#c8c2ba;text-decoration:underline">Отпишете се</a>
+                <a href="mailto:info@lorenzo-ricci.com?subject=Отписване%20от%20имейли" style="color:#c8c2ba;text-decoration:underline">Отпишете се</a>
               </p>
             </td>
           </tr>

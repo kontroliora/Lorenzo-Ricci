@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createHash } from "crypto";
 
 // Order line item shape (used for the wallet-inventory decrement below).
@@ -452,11 +453,13 @@ export async function POST(req: NextRequest) {
       ).catch((e) => console.error("[Supabase] alert email also failed:", e));
     }
 
-    // 4. Mark cart session as converted (best-effort)
+    // 4. Mark cart session as converted (best-effort). Uses the service key —
+    //    anon can't UPDATE cart_sessions under RLS, so this silently no-op'd
+    //    before and recovery emails kept going out after a purchase.
     const sessionId = order.sessionId as string | undefined;
     if (sessionId) {
       try {
-        await supabase
+        await supabaseAdmin()
           .from("cart_sessions")
           .update({ status: "converted", converted_at: new Date().toISOString() })
           .eq("session_id", sessionId)

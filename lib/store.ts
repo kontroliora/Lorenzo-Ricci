@@ -3,6 +3,12 @@ import { create } from "zustand";
 import type { CartItem, Product } from "./types";
 import { calcBundleDiscount, type BundleResult } from "./bundles";
 
+export interface RecoveryPrefill {
+  name?:  string;
+  email?: string;
+  phone?: string;
+}
+
 interface CartStore {
   items: CartItem[];
   isOpen: boolean;
@@ -15,6 +21,13 @@ interface CartStore {
   totalItems: () => number;
   totalPrice: () => number;
   bundleDiscount: () => BundleResult;
+
+  // Abandoned-cart recovery: repopulate the cart from a saved session and open
+  // the drawer straight at the checkout step, with contact fields pre-filled.
+  pendingCheckout: boolean;
+  recoveryPrefill: RecoveryPrefill | null;
+  restoreCart: (items: CartItem[], prefill?: RecoveryPrefill) => void;
+  clearPendingCheckout: () => void;
 }
 
 export const useCartStore = create<CartStore>((set, get) => ({
@@ -56,7 +69,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
     }));
   },
 
-  clearCart: () => set({ items: [] }),
+  clearCart: () => set({ items: [], recoveryPrefill: null, pendingCheckout: false }),
   openCart: () => set({ isOpen: true }),
   closeCart: () => set({ isOpen: false }),
 
@@ -64,4 +77,11 @@ export const useCartStore = create<CartStore>((set, get) => ({
   totalPrice: () =>
     get().items.reduce((sum, i) => sum + i.product.price * i.quantity, 0),
   bundleDiscount: () => calcBundleDiscount(get().items),
+
+  // ── Recovery ────────────────────────────────────────────────────────────────
+  pendingCheckout: false,
+  recoveryPrefill: null,
+  restoreCart: (items, prefill) =>
+    set({ items, isOpen: true, pendingCheckout: true, recoveryPrefill: prefill ?? null }),
+  clearPendingCheckout: () => set({ pendingCheckout: false }),
 }));

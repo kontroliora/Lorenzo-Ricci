@@ -28,16 +28,21 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
   const { clearCart } = useCartStore();
   const { totalDiscount, active: activeBundles } = calcBundleDiscount(items);
 
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    city: "",
-    postCode: "",
-    officeAddress: "",
-    notes: "",
-    smsMarketingConsent:   false,
-    emailMarketingConsent: true,
+  // Seed contact fields from a recovered session (abandoned-cart link) so the
+  // customer doesn't retype anything. Read once at mount from the store.
+  const [form, setForm] = useState(() => {
+    const p = useCartStore.getState().recoveryPrefill;
+    return {
+      name:  p?.name  ?? "",
+      phone: p?.phone ?? "",
+      email: p?.email ?? "",
+      city: "",
+      postCode: "",
+      officeAddress: "",
+      notes: "",
+      smsMarketingConsent:   false,
+      emailMarketingConsent: true,
+    };
   });
   const [shippingId, setShippingId] = useState<ShippingId>("econt-office");
   const [submitting, setSubmitting]         = useState(false);
@@ -64,9 +69,10 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
     coverImage: i.product.coverImage,
   }));
 
-  // Phone-first capture: fires as soon as phone has ≥10 digits, even before email
+  // Phone-first capture: fires as soon as phone has ≥10 digits, even before email.
+  // Captured regardless of consent — the customer's real consent value is sent
+  // along and stored; the send policy is decided server-side.
   useEffect(() => {
-    if (!form.emailMarketingConsent) return;
     if (form.phone.replace(/\D/g, "").length < 10) return;
     if (items.length === 0) return;
 
@@ -76,11 +82,12 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sessionId: sessionIdRef.current,
-          phone:     form.phone.trim(),
-          name:      form.name || undefined,
-          items:     cartItemsPayload(),
-          subtotal:  total,
+          sessionId:    sessionIdRef.current,
+          phone:        form.phone.trim(),
+          name:         form.name || undefined,
+          items:        cartItemsPayload(),
+          subtotal:     total,
+          emailConsent: form.emailMarketingConsent,
         }),
       }).catch(() => {});
     }, 1500);
@@ -89,9 +96,9 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.phone, form.emailMarketingConsent, form.name, items, total]);
 
-  // Email capture: fires once email is valid — adds email (+ phone if known) to the session
+  // Email capture: fires the moment the email looks valid — even if the customer
+  // hasn't ticked consent or pressed submit. Adds email (+ phone if known).
   useEffect(() => {
-    if (!form.emailMarketingConsent) return;
     if (!form.email.includes("@")) return;
     if (items.length === 0) return;
 
@@ -101,15 +108,16 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sessionId: sessionIdRef.current,
-          email:     form.email,
-          phone:     form.phone.replace(/\D/g, "").length >= 10 ? form.phone.trim() : undefined,
-          name:      form.name || undefined,
-          items:     cartItemsPayload(),
-          subtotal:  total,
+          sessionId:    sessionIdRef.current,
+          email:        form.email,
+          phone:        form.phone.replace(/\D/g, "").length >= 10 ? form.phone.trim() : undefined,
+          name:         form.name || undefined,
+          items:        cartItemsPayload(),
+          subtotal:     total,
+          emailConsent: form.emailMarketingConsent,
         }),
       }).catch(() => {});
-    }, 2000);
+    }, 1200);
 
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps

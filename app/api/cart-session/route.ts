@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
 
@@ -7,22 +7,18 @@ export const runtime = "nodejs";
 // bypasses RLS. The anon key is (correctly) denied writes to cart_sessions, so
 // the shared anon client hit "new row violates row-level security policy". The
 // service key stays server-only; the route validates input before writing.
-function serviceClient() {
-  const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").replace(/\s/g, "");
-  return createClient(url, key, { auth: { persistSession: false } });
-}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { sessionId, email, phone, name, items, subtotal } = body as {
-      sessionId: string;
-      email?:    string;
-      phone?:    string;
-      name?:     string;
-      items:     unknown[];
-      subtotal:  number;
+    const { sessionId, email, phone, name, items, subtotal, emailConsent } = body as {
+      sessionId:    string;
+      email?:       string;
+      phone?:       string;
+      name?:        string;
+      items:        unknown[];
+      subtotal:     number;
+      emailConsent?: boolean;
     };
 
     const cleanEmail = email?.trim().toLowerCase() || null;
@@ -35,7 +31,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
 
-    const supabase = serviceClient();
+    const supabase = supabaseAdmin();
     const { error } = await supabase.from("cart_sessions").upsert(
       {
         session_id:       sessionId,
@@ -44,7 +40,10 @@ export async function POST(req: NextRequest) {
         name:             name?.trim() || null,
         items,
         subtotal:         Number(subtotal) || 0,
-        recovery_consent: true,
+        // Record the customer's actual marketing-consent choice for the record.
+        // The recovery send policy is decided separately (currently: send to all
+        // captured carts), but storing the true value keeps the option open.
+        recovery_consent: emailConsent !== false,
         status:           "pending",
         updated_at:       new Date().toISOString(),
       },

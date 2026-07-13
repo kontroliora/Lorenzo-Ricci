@@ -1,18 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { buildRecoveryEmail, type RecoverySession } from "@/lib/recovery-email";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // ── GET /api/cron/abandoned-cart ─────────────────────────────────────────────
-// Called by Vercel Cron daily (schedule in vercel.json).
-// Vercel automatically injects Authorization: Bearer ${CRON_SECRET}.
+// Vercel Cron (daily, schedule in vercel.json). Vercel injects
+// Authorization: Bearer ${CRON_SECRET}. Reads cart_sessions with the SERVICE
+// key — anon can't SELECT the table under RLS (that silently returned 0 for as
+// long as this cron used the anon client, so no recovery email ever went out).
 
 export async function GET(req: NextRequest) {
-  // Fail CLOSED: without CRON_SECRET set (and matching) the endpoint refuses —
-  // it never runs open, so nobody can trigger customer emails on demand.
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret || req.headers.get("authorization") !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ ok: false }, { status: 401 });
+  // Fail CLOSED. Guard tolerates a stray "Bearer " prefix / surrounding whitespace.
+  const cronSecret = (process.env.CRON_SECRET ?? "").trim();
+  const auth = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  if (!cronSecret || auth !== cronSecret) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
   const resendKey = process.env.RESEND_API_KEY;
@@ -21,7 +26,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, sent: 0 });
   }
 
-  // Sessions pending, >1 h old, no recovery email sent yet, email known
+  const supabase = supabaseAdmin();
+
+  // Sessions: pending, >1 h idle, no recovery email yet, email known.
+  // Send policy = ALL captured carts with an email (no consent filter, by choice).
   const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
   const { data: sessions, error } = await supabase
@@ -47,6 +55,8 @@ export async function GET(req: NextRequest) {
   let sent = 0;
 
   for (const session of sessions as RecoverySession[]) {
+    // Skip empty carts — nothing to recover.
+    if (!Array.isArray(session.items) || session.items.length === 0) continue;
     try {
       const { error: emailError } = await resend.emails.send({
         from:    "Lorenzo Ricci <info@lorenzo-ricci.com>",
