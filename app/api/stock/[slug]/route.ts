@@ -43,9 +43,5 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   } catch {
     return NextResponse.json({ stock: kv }); // fail-open
   }
-  const available = Math.max(0, kv - reserved);
-  if (_req.nextUrl.searchParams.get("debug") === "1") {
-    return NextResponse.json({ stock: available, kv, reserved });
-  }
-  return NextResponse.json({ stock: available });
+  return NextResponse.json({ stock: Math.max(0, kv - reserved) });
 }
