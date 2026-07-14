@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
@@ -17,6 +17,18 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
   const [added, setAdded] = useState(false);
   const [isNight, setIsNight] = useState(false);
   const { addItem } = useCartStore();
+
+  // Live availability — a product at 0 available is shown sold-out in the grid,
+  // automatically, for every category (matches /api/stock = the panel's "Налични").
+  const [soldOut, setSoldOut] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/stock/${product.slug}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d && typeof d.stock === "number") setSoldOut(d.stock === 0); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [product.slug]);
 
   const isWatch = product.category === "watches";
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
@@ -50,7 +62,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
       onMouseLeave={() => setHovered(false)}
     >
       {/* Image container */}
-      <Link href={`/products/${product.slug}`} className="block relative overflow-hidden bg-white aspect-square">
+      <Link href={`/products/${product.slug}`} className={`block relative overflow-hidden bg-white aspect-square ${soldOut ? "grayscale" : ""}`}>
 
         {isWatch ? (
           <>
@@ -131,7 +143,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
-          {product.badge && (
+          {product.badge && !soldOut && (
             <span className="bg-white/95 text-navy border border-navy/20 font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
               {product.badge}
             </span>
@@ -139,7 +151,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
         </div>
 
         {/* Quick-add / learn-more overlay */}
-        {product.inStock && (
+        {product.inStock && !soldOut && (
           <div
             className={`absolute inset-x-0 bottom-0 bg-navy/90 backdrop-blur-sm py-3.5 px-4 transition-all duration-400 ${
               hovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full"
@@ -162,6 +174,15 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
                 {added ? "✓ ДОБАВЕНО" : "ДОБАВИ В КОЛИЧКАТА"}
               </button>
             )}
+          </div>
+        )}
+
+        {/* Sold-out overlay — automatic when live available === 0 */}
+        {soldOut && (
+          <div className="absolute inset-0 z-[15] flex items-center justify-center bg-ivory/25">
+            <span className="font-sans text-[10px] tracking-[0.22em] uppercase bg-charcoal/90 text-white px-3 py-1.5">
+              Изчерпана наличност
+            </span>
           </div>
         )}
       </Link>
