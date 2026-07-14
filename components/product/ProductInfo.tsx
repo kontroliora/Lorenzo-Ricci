@@ -37,6 +37,10 @@ const VIBER_LINK = "viber://chat?number=%2B359888081811";
 // bring it back (nothing is deleted).
 const SHOW_VIBER = false;
 
+// Show the low-stock badge only when AVAILABLE units drop below this. Easily
+// bumped (e.g. to 10 for the pricier watches).
+const LOW_STOCK_THRESHOLD = 6;
+
 interface ProductInfoProps {
   product: Product;
   reviewCount?: number;
@@ -50,7 +54,9 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
   const [stockLoaded, setStockLoaded] = useState(false);
 
   const hasInventory =
-    product.category === "wallets" || product.category === "cardholders";
+    product.category === "watches" ||
+    product.category === "wallets" ||
+    product.category === "cardholders";
 
   useEffect(() => {
     if (!hasInventory) return;
@@ -206,34 +212,23 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       {/* Summer promo banner - watches only, no timer */}
       {product.category === "watches" && <SummerCountdown />}
 
-      {/* Stock indicator — real available (wallet_inventory, net of orders).
-          The count is only revealed at low stock; above 5 we just show "В
-          наличност" so we don't disclose how much stock we hold. */}
-      {hasInventory && stockLoaded && walletStock !== null && (
+      {/* Stock indicator — the number AVAILABLE (free to order), matching the
+          admin panel's "Налични". Shown only below the low-stock threshold; above
+          it nothing is revealed (we don't disclose how much we hold). Premium and
+          restrained — a quiet nudge, never a loud "HURRY". */}
+      {hasInventory && stockLoaded && walletStock !== null && walletStock < LOW_STOCK_THRESHOLD && (
         <div className="flex items-center gap-2">
           {walletStock === 0 ? (
             <>
               <span className="text-ink-faint text-xs">◈</span>
               <span className="font-sans text-[11px] text-ink-faint tracking-wide">Изчерпан</span>
             </>
-          ) : walletStock <= 3 ? (
-            <span className="inline-flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-2.5 py-1">
-              <span className="text-red-600 text-[13px] leading-none">●</span>
-              <span className="font-sans text-[13px] text-red-700 font-semibold tracking-wide">
-                {walletStock === 1 ? "Само 1 останал" : `Само ${walletStock} останали`}
-              </span>
-            </span>
-          ) : walletStock <= 5 ? (
-            <>
-              <span className="text-amber-600 text-xs">◈</span>
-              <span className="font-sans text-[11px] text-amber-700 tracking-wide font-medium">
-                Последни бройки · остават {walletStock} бр.
-              </span>
-            </>
           ) : (
             <>
-              <span className="text-green-700 text-xs">◈</span>
-              <span className="font-sans text-[11px] text-green-800 tracking-wide">В наличност</span>
+              <span className="text-amber-600/80 text-xs">◈</span>
+              <span className="font-sans text-[11px] text-amber-700/90 tracking-wide font-medium">
+                {walletStock === 1 ? "Остава последен 1 брой" : `Остават ${walletStock} бройки`}
+              </span>
             </>
           )}
         </div>
