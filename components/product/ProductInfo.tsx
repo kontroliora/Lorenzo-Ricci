@@ -53,8 +53,13 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
   const [walletStock, setWalletStock] = useState<number | null>(null);
   const [stockLoaded, setStockLoaded] = useState(false);
 
+  // ALL sellable categories read the live available number (/api/stock =
+  // KV − reserved for watches/jewellery, wallet_inventory for leather) — same as
+  // the admin panel. So a product at 0 available shows "Изчерпан" + a locked
+  // button automatically, for every category (no manual per-product flag).
   const hasInventory =
     product.category === "watches" ||
+    product.category === "jewellery" ||
     product.category === "wallets" ||
     product.category === "cardholders";
 
