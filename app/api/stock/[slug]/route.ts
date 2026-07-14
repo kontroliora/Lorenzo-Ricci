@@ -29,10 +29,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   const kv = await getStock(slug);
   let reserved = 0;
   try {
-    const { data } = await supabaseAdmin()
+    const { data, error } = await supabaseAdmin()
       .from("orders")
       .select("items, excluded_from_stock")
       .in("status", RESERVING);
+    if (error) console.error("[stock] reserved query error:", error.message);
     for (const o of (data ?? []) as { items: { slug?: string; quantity?: number; qty?: number }[]; excluded_from_stock: boolean }[]) {
       if (o.excluded_from_stock) continue;
       for (const it of o.items ?? []) {
@@ -42,5 +43,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   } catch {
     return NextResponse.json({ stock: kv }); // fail-open
   }
-  return NextResponse.json({ stock: Math.max(0, kv - reserved) });
+  const available = Math.max(0, kv - reserved);
+  if (_req.nextUrl.searchParams.get("debug") === "1") {
+    return NextResponse.json({ stock: available, kv, reserved });
+  }
+  return NextResponse.json({ stock: available });
 }
