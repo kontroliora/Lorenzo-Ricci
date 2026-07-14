@@ -2,10 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { supabase } from "@/lib/supabase";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getStock } from "@/lib/inventory";
 import { createHash } from "crypto";
 
-// Order line item shape (used for the wallet-inventory decrement below).
+// Order line item shape.
 type ItemPayload = { sku?: string; qty?: number; quantity?: number; slug?: string; name?: string; price?: number; currency?: string };
+
+const isLeather = (slug: string) => slug.startsWith("wallet-") || slug.startsWith("cardholder-");
+const qtyOf = (i: ItemPayload) => Math.max(1, Number(i.quantity ?? i.qty ?? 1));
+
+// Customer-facing message when an order can't be fully stocked.
+function stockErrorMessage(items: { name: string; available: number }[]): string {
+  const parts = items.map((s) =>
+    s.available <= 0
+      ? `„${s.name}" вече е изчерпан`
+      : `„${s.name}" — наличен само ${s.available} брой${s.available === 1 ? "" : "а"}`
+  );
+  return `${parts.join(". ")}. Моля, коригирайте количеството в количката.`;
+}
 
 // ─────────────────────────────────────────────────────────────
 // Admin notification email (HTML)
@@ -407,6 +421,66 @@ export async function POST(req: NextRequest) {
     const customerAddress = String(customer.email ?? "").trim();
     const customerName    = String(customer.name  ?? "");
 
+    // ── STOCK GUARD — final defence against overselling. Runs BEFORE emails and
+    //    the DB insert, so an impossible order is never created. Watches/jewellery
+    //    use the reservation model (KV − active orders, a read-only check); leather
+    //    uses an ATOMIC check-and-decrement (reserve_wallet_stock) that decrements
+    //    only when every item fits. Order matters: check watches first (read-only,
+    //    nothing to undo), then reserve leather (which decrements).
+    {
+      const lines = (order.items ?? []) as ItemPayload[];
+
+      // 1) Watches + jewellery — read-only availability (fail-open on error; they
+      //    rarely oversell and blocking a valid sale on a query blip is worse).
+      const nonLeather = lines.filter((i) => i.slug && !isLeather(String(i.slug)));
+      if (nonLeather.length) {
+        try {
+          const admin = supabaseAdmin();
+          const { data: active } = await admin
+            .from("orders").select("items, excluded_from_stock")
+            .in("status", ["new", "confirmed", "shipped", "completed"]);
+          const reserved: Record<string, number> = {};
+          for (const o of (active ?? []) as { items: ItemPayload[]; excluded_from_stock: boolean }[]) {
+            if (o.excluded_from_stock) continue;
+            for (const it of o.items ?? []) {
+              const s = String(it.slug ?? ""); if (!s) continue;
+              reserved[s] = (reserved[s] ?? 0) + qtyOf(it);
+            }
+          }
+          const short: { name: string; available: number }[] = [];
+          for (const it of nonLeather) {
+            const slug = String(it.slug);
+            const available = Math.max(0, (await getStock(slug)) - (reserved[slug] ?? 0));
+            if (qtyOf(it) > available) short.push({ name: String(it.name ?? slug), available });
+          }
+          if (short.length) {
+            return NextResponse.json({ success: false, error: stockErrorMessage(short) }, { status: 409 });
+          }
+        } catch (e) {
+          console.error("[Order] watch stock check failed (allowing):", e);
+        }
+      }
+
+      // 2) Leather — atomic reserve (fail-closed: block on shortfall OR error, so
+      //    we never oversell the low-stock cardholders/wallets).
+      const leather = lines.filter((i) => isLeather(String(i.slug ?? "")))
+        .map((i) => ({ slug: String(i.slug), qty: qtyOf(i), name: String(i.name ?? i.slug) }));
+      if (leather.length) {
+        const { data: res, error: resErr } = await supabase.rpc("reserve_wallet_stock", {
+          p_items: leather.map(({ slug, qty }) => ({ slug, qty })),
+        });
+        if (resErr) {
+          console.error("[Order] reserve_wallet_stock error:", resErr.message);
+          return NextResponse.json({ success: false, error: "Възникна проблем с проверката на наличността. Моля, опитайте отново." }, { status: 503 });
+        }
+        if (res && (res as { ok?: boolean }).ok === false) {
+          const sf = ((res as { shortfall?: { slug: string; available: number }[] }).shortfall ?? []);
+          const named = sf.map((s) => ({ name: leather.find((l) => l.slug === s.slug)?.name ?? s.slug, available: s.available }));
+          return NextResponse.json({ success: false, error: stockErrorMessage(named) }, { status: 409 });
+        }
+      }
+    }
+
     // Send emails and await them — without await they are killed by Vercel before sending
     const subject = `✅ Нова поръчка - ${customerName}`;
 
@@ -492,29 +566,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. Decrement wallet/cardholder inventory (best-effort, per-unit quantity)
-    const walletItems = (order.items as ItemPayload[] ?? [])
-      .filter((i) => {
-        const s = String(i.slug ?? "");
-        return s.startsWith("wallet-") || s.startsWith("cardholder-");
-      });
-
-    for (const item of walletItems) {
-      const slug = String(item.slug);
-      const qty  = Math.max(1, Number(item.quantity ?? item.qty ?? 1));
-      for (let j = 0; j < qty; j++) {
-        try {
-          const { data: newStock, error: rpcError } = await supabase.rpc(
-            "decrement_wallet_stock",
-            { p_slug: slug }
-          );
-          if (rpcError) console.error(`[Inventory] Error decrementing ${slug}:`, rpcError);
-          else console.log(`[Inventory] ${slug} unit ${j + 1}/${qty} → stock now ${newStock}`);
-        } catch (err) {
-          console.error(`[Inventory] Failed to decrement ${slug}:`, err);
-        }
-      }
-    }
+    // 6. Leather stock was already decremented atomically by the STOCK GUARD at
+    //    the top (reserve_wallet_stock) — nothing to do here. (Watches/jewellery
+    //    follow the reservation model; this new order becomes the reservation.)
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { reconcileShippedOrders, matchTrackingNumbers, type MatchResult } from "@/lib/econt";
 import { sendShipConfirmations } from "@/lib/shipment-notify";
+import { RESERVING_STATUSES, type OrderItem } from "@/lib/orders";
 
 const ORDERS_PATH = "/lr-panel-v8m3q/orders";
 
@@ -17,6 +18,26 @@ async function patchOrder(id: number, patch: Record<string, unknown>): Promise<s
   revalidatePath(ORDERS_PATH);
   return null;
 }
+
+// Leather goods (wallet_inventory) are decremented at order time, so a cancel or
+// return must put the units back — otherwise the counter only ever drifts down.
+// Watches/jewellery need nothing here: their availability is computed live
+// (KV − active orders), so leaving the reserving statuses frees them by itself.
+// Only restock when the order was actually holding stock (prevents double-restock
+// on a re-cancel of an already-cancelled order).
+async function restockLeatherItems(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  items: OrderItem[] | null | undefined,
+): Promise<void> {
+  const leather = (items ?? [])
+    .map((it) => ({ slug: String(it.slug ?? ""), qty: Math.max(1, Number(it.quantity ?? it.qty ?? 1)) }))
+    .filter((x) => x.slug.startsWith("wallet-") || x.slug.startsWith("cardholder-"));
+  if (!leather.length) return;
+  const { error } = await supabase.rpc("restock_wallet_stock", { p_items: leather });
+  if (error) console.error("[orders] restock_wallet_stock error:", error.message);
+}
+
+const HOLDS_STOCK = (status: string) => (RESERVING_STATUSES as readonly string[]).includes(status);
 
 // Потвърждава / big ПОТВЪРДИ button → confirmed (stock stays reserved).
 export async function confirmOrder(id: number): Promise<string | null> {
@@ -34,7 +55,14 @@ export async function cancelOrder(id: number, category: string, reason: string):
   // pending/confirmed/no_answer/refused, so writing the raw category throws.
   const patch: Record<string, unknown> = { status: "cancelled", cancel_category: category, cancel_reason: reason || null };
   if (category === "refused") patch.call_state = "refused";
-  return patchOrder(id, patch);
+  const supabase = await createClient();
+  const { data: before } = await supabase.from("orders").select("status, items").eq("id", id).single();
+  const { error } = await supabase.from("orders").update(patch).eq("id", id);
+  if (error) { console.error("[orders] cancel error:", error.message); return error.message; }
+  const b = before as { status: string; items: OrderItem[] } | null;
+  if (b && HOLDS_STOCK(b.status)) await restockLeatherItems(supabase, b.items);
+  revalidatePath(ORDERS_PATH);
+  return null;
 }
 
 // „Не вдига" → never locks. Atomic server-side increment (no race on rapid
@@ -74,8 +102,12 @@ export async function cancelOrders(ids: number[], category: string, reason: stri
   const patch: Record<string, unknown> = { status: "cancelled", cancel_category: category, cancel_reason: reason || null };
   if (category === "refused") patch.call_state = "refused";
   const supabase = await createClient();
+  const { data: before } = await supabase.from("orders").select("id, status, items").in("id", ids);
   const { error } = await supabase.from("orders").update(patch).in("id", ids);
   if (error) { console.error("[orders] bulk cancel error:", error.message); return error.message; }
+  for (const o of (before ?? []) as { status: string; items: OrderItem[] }[]) {
+    if (HOLDS_STOCK(o.status)) await restockLeatherItems(supabase, o.items);
+  }
   revalidatePath(ORDERS_PATH);
   return null;
 }
@@ -134,9 +166,16 @@ export async function markCompleted(id: number): Promise<string | null> {
   });
 }
 
-// Shipment came back / customer never took it → returns stock, flags the customer.
+// Shipment came back / customer never took it → returns leather stock, flags the customer.
 export async function markReturned(id: number): Promise<string | null> {
-  return patchOrder(id, { status: "returned" });
+  const supabase = await createClient();
+  const { data: before } = await supabase.from("orders").select("status, items").eq("id", id).single();
+  const { error } = await supabase.from("orders").update({ status: "returned" }).eq("id", id);
+  if (error) { console.error("[orders] return error:", error.message); return error.message; }
+  const b = before as { status: string; items: OrderItem[] } | null;
+  if (b && HOLDS_STOCK(b.status)) await restockLeatherItems(supabase, b.items);
+  revalidatePath(ORDERS_PATH);
+  return null;
 }
 
 // Returned goods physically inspected and put back on the shelf.

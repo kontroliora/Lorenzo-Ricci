@@ -68,6 +68,11 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       ? walletStock > 0
       : product.inStock;
 
+  // Cap the cart quantity at the LIVE stock (not the static products.ts value)
+  // for leather goods, so the +/− stepper and re-adds can't exceed what we hold.
+  const effectiveStock =
+    hasInventory && stockLoaded && walletStock !== null ? walletStock : product.stock;
+
   useEffect(() => {
     trackFbEvent("ViewContent", {
       content_ids:  [product.sku],
@@ -84,7 +89,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
     : 0;
 
   const handleAdd = () => {
-    addItem(product);
+    addItem({ ...product, stock: effectiveStock });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
     trackWithCapi("AddToCart", {
