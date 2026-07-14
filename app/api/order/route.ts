@@ -13,10 +13,12 @@ const qtyOf = (i: ItemPayload) => Math.max(1, Number(i.quantity ?? i.qty ?? 1));
 
 // Customer-facing message when an order can't be fully stocked.
 function stockErrorMessage(items: { name: string; available: number }[]): string {
+  // Phrased so the adjective agrees with "брой/броя" (masculine), never the
+  // product name — otherwise gender would be wrong (колие→изчерпанО, гривна→изчерпанА).
   const parts = items.map((s) =>
     s.available <= 0
-      ? `„${s.name}" вече е изчерпан`
-      : `„${s.name}" — наличен само ${s.available} брой${s.available === 1 ? "" : "а"}`
+      ? `За ${s.name} вече няма наличност`
+      : `От ${s.name} е наличен само ${s.available} ${s.available === 1 ? "брой" : "броя"}`
   );
   return `${parts.join(". ")}. Моля, коригирайте количеството в количката.`;
 }
