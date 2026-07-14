@@ -17,24 +17,14 @@ export async function GET(req: NextRequest) {
   const { data, error } = await sb.from("orders").select("items, status, excluded_from_stock");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  type B = { active: number; completed: number; cancelled: number; returned: number; fake: number; orders: number };
-  const acc: Record<string, B> = {};
-  const bucketOf = (status: string, fake: boolean): keyof B | null =>
-    fake ? "fake"
-    : status === "completed" ? "completed"
-    : status === "cancelled" ? "cancelled"
-    : status === "returned"  ? "returned"
-    : ["new", "confirmed", "shipped"].includes(status) ? "active"
-    : null;
-
+  const acc: Record<string, Record<string, number>> = {};
   for (const o of (data ?? []) as { items: { slug?: string; quantity?: number; qty?: number }[]; status: string; excluded_from_stock: boolean }[]) {
-    const b = bucketOf(o.status, o.excluded_from_stock);
-    if (!b) continue;
+    const key = o.excluded_from_stock ? "fake" : o.status; // raw status, or "fake"
     for (const it of o.items ?? []) {
       const s = String(it.slug ?? ""); if (!s) continue;
       if (slugFilter && s !== slugFilter) continue;
-      acc[s] ??= { active: 0, completed: 0, cancelled: 0, returned: 0, fake: 0, orders: 0 };
-      (acc[s][b] as number) += Math.max(1, Number(it.quantity ?? it.qty ?? 1));
+      acc[s] ??= {};
+      acc[s][key] = (acc[s][key] ?? 0) + Math.max(1, Number(it.quantity ?? it.qty ?? 1));
     }
   }
   return NextResponse.json(acc);
