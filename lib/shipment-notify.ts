@@ -74,6 +74,7 @@ export async function sendShipConfirmations(sb: SupabaseClient): Promise<{ sent:
     const a = analyzeShipment(raw);
     if (!a.accepted) continue;                                  // sendTime == null → the "prepared" trap
     if (a.returning || a.delivered) continue;                   // already heading back to sender / delivered → never send "on its way" (the LR-K2Y30V after-return bug)
+    if (a.arrivedAtFinalOfficeMs != null) continue;             // already waiting at the destination office → "пътува към Вас" is stale; Email 2 (reminder) covers it. Only email while genuinely in transit.
     const d = toEmailData(o, clean(o.tracking_number));
     const { error: e } = await resend.emails.send({ from: FROM, to: [o.email!], subject: shipmentSubjects.shipped(d.ref), html: buildShippedEmail(d) });
     if (e) { console.error("[ship] email failed", o.id, e.message); continue; }
