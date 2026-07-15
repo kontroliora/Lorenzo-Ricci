@@ -78,7 +78,8 @@ export type ShipmentAnalysis = {
   accepted: boolean;                 // Econt physically took it (sendTime != null) — Email 1 gate
   shippedAtMs: number | null;        // = sendTime
   delivered: boolean;                // never remind
-  returned: boolean;                 // never remind
+  returned: boolean;                 // completed return ("върната" in status text)
+  returning: boolean;                // heading back to sender (in progress) OR returned — Email 1 must never call this "on its way"
   deliveryType: string;              // "office" | "door"
   atFinalOffice: boolean;            // at recipient's final office AND not collected
   arrivedAtFinalOfficeMs: number | null; // count the 4-5 days from HERE, not from ship date
@@ -87,6 +88,10 @@ export type ShipmentAnalysis = {
 };
 
 const FINAL_OFFICE_TYPES = new Set(["in_delivery_office", "in_pickup_office"]);
+// Return-to-sender events (in progress OR completed) — the reliable signal that
+// a parcel is no longer heading to the customer. Shared by analyzeShipment (the
+// Email-1 gate) and classifyReturn (the uncollected/refused split).
+const RETURN_EVENT_TYPES = new Set(["returned_to_sender", "is_returning_to_sender"]);
 
 export function analyzeShipment(raw: unknown): ShipmentAnalysis {
   const s = (raw ?? {}) as RawStatus;
@@ -96,6 +101,10 @@ export function analyzeShipment(raw: unknown): ShipmentAnalysis {
 
   const delivered = s.deliveryTime != null || s.cdCollectedTime != null || lastType === "client";
   const returned = String(s.shortDeliveryStatus ?? "").toLowerCase().includes("върната");
+  // Robust "heading back to sender" check: any return event in the history, OR
+  // the completed-return text. Catches is_returning_to_sender (in progress),
+  // which the "върната" text alone misses — the LR-K2Y30V email-after-return bug.
+  const returning = returned || events.some((e) => RETURN_EVENT_TYPES.has(e?.destinationType ?? ""));
 
   // First arrival at the recipient's FINAL office (structural: type ∈ final-set
   // AND officeCode === receiverOfficeCode). Transit offices/hubs have other codes.
@@ -117,6 +126,7 @@ export function analyzeShipment(raw: unknown): ShipmentAnalysis {
     shippedAtMs: s.sendTime != null ? Number(s.sendTime) : null,
     delivered,
     returned,
+    returning,
     deliveryType: String(s.receiverDeliveryType ?? ""),
     atFinalOffice: arrivedAtFinalOfficeMs != null && !delivered && !returned,
     arrivedAtFinalOfficeMs,
@@ -136,7 +146,6 @@ export function analyzeShipment(raw: unknown): ShipmentAnalysis {
 // refused ones come back in 1-2 days. A door delivery with failed attempts and
 // no contact is treated as uncollected too.
 export const RETURN_UNCOLLECTED_DAYS = 6; // calendar-day dwell threshold (configurable)
-const RETURN_EVENT_TYPES = new Set(["returned_to_sender", "is_returning_to_sender"]);
 
 export type ReturnKind = "uncollected" | "refused" | "unknown";
 
