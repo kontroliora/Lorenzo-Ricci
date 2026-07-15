@@ -14,6 +14,7 @@ const TABS = [
 const OWNER_TABS = [
   { href: "/lr-panel-v8m3q/bonus", label: "Бонус" },
   { href: "/lr-panel-v8m3q/revenue", label: "Оборот" },
+  { href: "/lr-panel-v8m3q/roas", label: "ROAS" },
 ];
 
 /**
