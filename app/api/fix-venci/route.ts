@@ -24,6 +24,16 @@ export async function GET(req: NextRequest) {
   const mode = sp.get("mode") ?? "inspect";
   const sb = supabaseAdmin();
 
+  // Query the Resend log for a given email id → returns last_event (delivered/bounced/…).
+  if (mode === "check") {
+    const id = sp.get("id");
+    const key = process.env.RESEND_API_KEY;
+    if (!id || !key) return NextResponse.json({ error: "need id + key" }, { status: 400 });
+    const r = await fetch(`https://api.resend.com/emails/${id}`, { headers: { Authorization: `Bearer ${key}` } });
+    const j = await r.json();
+    return NextResponse.json({ httpStatus: r.status, last_event: j?.last_event ?? null, to: j?.to ?? null, subject: j?.subject ?? null, created_at: j?.created_at ?? null });
+  }
+
   const { data, error } = await sb
     .from("orders")
     .select("id, order_ref, name, email, tracking_number, items, total, status, ship_email_sent_at")
