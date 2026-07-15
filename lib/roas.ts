@@ -74,9 +74,9 @@ export async function computeRoas(startISO: string, endISO: string): Promise<Roa
   return computeRoasCore(startISO, endISO);
 }
 
-// The pure computation, without the owner gate. Only the gated wrapper above
-// and (temporarily) the verification endpoint call this directly.
-export async function computeRoasCore(startISO: string, endISO: string): Promise<RoasData> {
+// The pure computation, without the owner gate. Module-private — only the
+// gated wrapper above calls it.
+async function computeRoasCore(startISO: string, endISO: string): Promise<RoasData> {
   const sb = supabaseAdmin();
 
   // Orders in window — resilient to a missing return_kind column.
