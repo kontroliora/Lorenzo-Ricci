@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { products } from "@/lib/products";
 import { createManualOrder, type ManualItemInput } from "./actions";
 
@@ -22,10 +22,21 @@ export function CreateOrderForm({ onClose }: { onClose: () => void }) {
   const [address, setAddress] = useState("");
   const [items, setItems]     = useState<ManualItemInput[]>([]);
   const [total, setTotal]     = useState("");
+  const [manualTotal, setManualTotal] = useState(false);
   const [notes, setNotes]     = useState("");
   const [status, setStatus]   = useState<"new" | "confirmed">("new");
 
   const goods = items.reduce((s, i) => s + i.price * i.quantity, 0);
+
+  // Пре-попълни сумата с авто-изчислената (цена × количество), докато не бъде
+  // редактирана ръчно. Изтриване на полето връща авто-режима. Пази срещу
+  // случайно въвеждане на единична цена вместо общата (бъгът от LR-IRC30C).
+  useEffect(() => {
+    if (!manualTotal) setTotal(goods > 0 ? goods.toFixed(2) : "");
+  }, [goods, manualTotal]);
+
+  const totalNum = total.trim() && !isNaN(parseFloat(total)) ? parseFloat(total) : goods;
+  const underGoods = goods > 0 && manualTotal && totalNum < goods - 0.01;
 
   const addProduct = (slug: string) => {
     const p = products.find((x) => x.slug === slug);
@@ -42,7 +53,7 @@ export function CreateOrderForm({ onClose }: { onClose: () => void }) {
     setMsg("");
     const r = await createManualOrder({
       name, phone, city, courier, address, items,
-      total: total.trim() ? parseFloat(total) : goods,
+      total: totalNum,
       notes, status,
     });
     if (r.ok) onClose();
@@ -110,12 +121,32 @@ export function CreateOrderForm({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
-          <div style={{ flex: 1 }}>
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
             <span style={label}>Сума за наложен платеж</span>
-            <input value={total} onChange={(e) => setTotal(e.target.value)} placeholder={goods > 0 ? `авто: ${goods.toFixed(2)} €` : "0.00"} inputMode="decimal" style={field} />
+            {manualTotal && (
+              <button onClick={() => setManualTotal(false)}
+                style={{ background: "none", border: "none", color: "#85B7EB", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", padding: 0 }}>
+                ↺ авто ({goods.toFixed(2)} €)
+              </button>
+            )}
           </div>
-          <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, paddingBottom: 10 }}>Наложен платеж</span>
+          <input
+            value={total}
+            onChange={(e) => { const v = e.target.value; setTotal(v); setManualTotal(v.trim() !== ""); }}
+            placeholder={goods > 0 ? `${goods.toFixed(2)}` : "0.00"}
+            inputMode="decimal"
+            style={{ ...field, borderColor: underGoods ? "rgba(240,149,149,0.65)" : "rgba(255,255,255,0.12)" }}
+          />
+          {underGoods ? (
+            <p style={{ color: "#F0A855", fontSize: 11, margin: "6px 0 0", lineHeight: 1.4 }}>
+              ⚠️ Под изчислената сума (цена × количество = <b>{goods.toFixed(2)} €</b>). Разлика −{(goods - totalNum).toFixed(2)} €. Ако е нарочна отстъпка — ОК; иначе натисни „↺ авто".
+            </p>
+          ) : (
+            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, margin: "6px 0 0" }}>
+              {manualTotal ? "Ръчно въведена." : "Автоматично от количеството. Промени само при отстъпка."}
+            </p>
+          )}
         </div>
 
         <div>
