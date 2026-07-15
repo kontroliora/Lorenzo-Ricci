@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { getRawStatuses } from "@/lib/econt";
+import { getRawStatuses, analyzeShipment } from "@/lib/econt";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,6 +22,31 @@ type Raw = { trackingEvents?: Ev[]; deliveryTime?: number | string | null; cdCol
 export async function GET(req: NextRequest) {
   if (req.nextUrl.searchParams.get("k") !== TOKEN) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const sb = supabaseAdmin();
+
+  // Single-order deep look: timing + live analysis + whether the new guard blocks it.
+  const ref = req.nextUrl.searchParams.get("ref");
+  if (ref) {
+    const { data: o } = await sb.from("orders").select("order_ref, name, status, tracking_number, ship_email_sent_at").eq("order_ref", ref).single();
+    if (!o) return NextResponse.json({ error: "not found" }, { status: 404 });
+    const raw = (await getRawStatuses([clean(o.tracking_number)])).get(clean(o.tracking_number)) as Raw | undefined;
+    const a = raw ? analyzeShipment(raw) : null;
+    const events = raw && Array.isArray(raw.trackingEvents) ? raw.trackingEvents : [];
+    const rt = events.filter((e) => RETURN.has(e?.destinationType ?? "")).map((e) => toMs(e?.time)).filter(Boolean);
+    const returnStartMs = rt.length ? Math.min(...rt) : null;
+    const deliveredMs = raw?.deliveryTime ? toMs(raw.deliveryTime) : raw?.cdCollectedTime ? toMs(raw.cdCollectedTime) : null;
+    return NextResponse.json({
+      ref: o.order_ref,
+      status: o.status,
+      tracking: o.tracking_number,
+      ship_email_sent_at: o.ship_email_sent_at,
+      hasEcontStatus: !!raw,
+      returnStart: returnStartMs != null ? new Date(returnStartMs).toISOString() : null,
+      delivered: deliveredMs != null ? new Date(deliveredMs).toISOString() : null,
+      analysis: a,
+      guardWouldBlockNow: a ? a.returning || a.delivered : null,
+    });
+  }
+
   const { data, error } = await sb
     .from("orders")
     .select("order_ref, name, status, tracking_number, ship_email_sent_at, excluded_from_stock")
