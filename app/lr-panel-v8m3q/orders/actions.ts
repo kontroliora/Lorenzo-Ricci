@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { reconcileShippedOrders, matchTrackingNumbers, type MatchResult } from "@/lib/econt";
+import { reconcileShippedOrders, matchTrackingNumbers, classifyExistingReturns, type MatchResult } from "@/lib/econt";
 import { sendShipConfirmations } from "@/lib/shipment-notify";
 import { RESERVING_STATUSES, type OrderItem } from "@/lib/orders";
 
@@ -223,8 +223,9 @@ export async function checkEcontStatuses(): Promise<{ ok: boolean; message: stri
   const supabase = await createClient();
   try {
     const r = await reconcileShippedOrders(supabase);
+    const backfilled = await classifyExistingReturns(supabase);
     revalidatePath(ORDERS_PATH);
-    return { ok: true, message: `Проверени ${r.checked} · завършени ${r.completed} · върнати ${r.returned}` };
+    return { ok: true, message: `Проверени ${r.checked} · завършени ${r.completed} · върнати ${r.returned}${backfilled ? ` · класифицирани ${backfilled}` : ""}` };
   } catch (e) {
     return { ok: false, message: String(e) };
   }

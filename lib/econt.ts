@@ -125,6 +125,94 @@ export function analyzeShipment(raw: unknown): ShipmentAnalysis {
   };
 }
 
+// ── Return classification ────────────────────────────────────────────────────
+// Econt gives NO explicit reason code — a return reads identically whether the
+// parcel expired in storage or the customer refused it (destinationType
+// returned_to_sender / is_returning_to_sender, detail "Връщане на пратката",
+// lastProcessedInstruction "return"). rejectReturnParcelPaySide is a per-shipment
+// CONFIG (set even on delivered parcels), not who actually paid. The reliable
+// signal is DWELL at the recipient's final office: uncollected parcels sit the
+// full ~7-working-day storage window (≈8-9 calendar days) before auto-returning;
+// refused ones come back in 1-2 days. A door delivery with failed attempts and
+// no contact is treated as uncollected too.
+export const RETURN_UNCOLLECTED_DAYS = 6; // calendar-day dwell threshold (configurable)
+const RETURN_EVENT_TYPES = new Set(["returned_to_sender", "is_returning_to_sender"]);
+
+export type ReturnKind = "uncollected" | "refused" | "unknown";
+
+export function classifyReturn(raw: RawStatus): { kind: ReturnKind; dwellDays: number | null } {
+  const events = Array.isArray(raw.trackingEvents) ? raw.trackingEvents : [];
+  const roc = raw.receiverOfficeCode == null ? null : String(raw.receiverOfficeCode);
+
+  let arrivedMs: number | null = null;   // first arrival at the recipient's FINAL office
+  let returnMs: number | null = null;    // when it started heading back
+  for (const e of events) {
+    if (arrivedMs == null && FINAL_OFFICE_TYPES.has(e?.destinationType ?? "") && e?.officeCode != null && roc != null && String(e.officeCode) === roc) {
+      arrivedMs = Number(e.time) || null;
+    }
+    if (returnMs == null && RETURN_EVENT_TYPES.has(e?.destinationType ?? "")) {
+      returnMs = Number(e.time) || null;
+    }
+  }
+
+  let dwellDays: number | null = null;
+  if (arrivedMs != null && returnMs != null && returnMs >= arrivedMs) {
+    dwellDays = Math.round(((returnMs - arrivedMs) / 86_400_000) * 10) / 10;
+  }
+
+  const doorFailed = String(raw.receiverDeliveryType ?? "") === "door" && (Number(raw.deliveryAttemptCount ?? 0) || 0) > 0;
+
+  let kind: ReturnKind = "unknown";
+  if (dwellDays != null) kind = dwellDays >= RETURN_UNCOLLECTED_DAYS ? "uncollected" : "refused";
+  else if (doorFailed) kind = "uncollected";
+
+  return { kind, dwellDays };
+}
+
+// Verdict straight from a raw status (delivered / returned / in_transit).
+function rawVerdict(raw: RawStatus): EcontVerdict {
+  const bg = String(raw.shortDeliveryStatus ?? "").toLowerCase();
+  const events = Array.isArray(raw.trackingEvents) ? raw.trackingEvents : [];
+  const lastType = events.length ? events[events.length - 1]?.destinationType : null;
+  if (bg.includes("върната") || RETURN_EVENT_TYPES.has(lastType ?? "")) return "returned";
+  if (raw.deliveryTime != null || raw.cdCollectedTime != null || bg === "доставена" || lastType === "client") return "delivered";
+  if (raw.shortDeliveryStatus) return "in_transit";
+  return "unknown";
+}
+
+// Persist a return with its auto-classification, resilient to a missing migration
+// (falls back to updating just the status so a return is never dropped).
+async function markReturnedWithKind(sb: SupabaseClient, id: number, kind: ReturnKind, dwellDays: number | null): Promise<void> {
+  let { error } = await sb.from("orders").update({ status: "returned", return_kind: kind, return_dwell_days: dwellDays }).eq("id", id);
+  if (error && /return_kind|return_dwell_days|column|schema cache/i.test(error.message)) {
+    ({ error } = await sb.from("orders").update({ status: "returned" }).eq("id", id));
+  }
+  if (error) console.error("[econt] mark returned error:", error.message);
+}
+
+// Backfill return_kind for orders already marked returned but not yet classified
+// (e.g. the 2 historical returns, or manual markReturned).
+export async function classifyExistingReturns(sb: SupabaseClient): Promise<number> {
+  const { data } = await sb
+    .from("orders")
+    .select("id, tracking_number, return_kind")
+    .eq("status", "returned")
+    .not("tracking_number", "is", null);
+  const rows = ((data ?? []) as { id: number; tracking_number: string; return_kind: string | null }[])
+    .filter((o) => !o.return_kind);
+  if (!rows.length) return 0;
+  const rawMap = await getRawStatuses(rows.map((o) => o.tracking_number));
+  let done = 0;
+  for (const o of rows) {
+    const raw = rawMap.get(String(o.tracking_number).replace(/\s+/g, ""));
+    if (!raw) continue;
+    const { kind, dwellDays } = classifyReturn(raw);
+    await markReturnedWithKind(sb, o.id, kind, dwellDays);
+    done++;
+  }
+  return done;
+}
+
 // awb → raw status object, for the cron / tracking page.
 export async function getRawStatuses(awbs: string[]): Promise<Map<string, RawStatus>> {
   const data = (await getShipmentStatusesRaw(awbs)) as { shipmentStatuses?: Array<{ status: RawStatus | null }> };
@@ -169,8 +257,8 @@ export async function reconcileShippedOrders(sb: SupabaseClient): Promise<Reconc
   const list = (data ?? []) as Array<{ id: number; tracking_number: string }>;
   if (!list.length) return { checked: 0, completed: 0, returned: 0, details: [] };
 
-  const statuses = await getShipmentStatuses(list.map((o) => o.tracking_number));
-  const byAwb = new Map(statuses.map((s) => [s.shipmentNumber, s]));
+  // Raw statuses — we need the tracking events to classify returns (dwell).
+  const rawMap = await getRawStatuses(list.map((o) => o.tracking_number));
 
   const now = new Date().toISOString();
   let completed = 0, returned = 0;
@@ -178,15 +266,16 @@ export async function reconcileShippedOrders(sb: SupabaseClient): Promise<Reconc
 
   for (const o of list) {
     const awb = String(o.tracking_number).replace(/\s+/g, "");
-    const s = byAwb.get(awb);
-    const verdict: EcontVerdict = s ? classify(s) : "unknown";
-    details.push({ id: o.id, awb, status: s?.shortDeliveryStatus ?? "—", verdict });
+    const raw = rawMap.get(awb);
+    const verdict: EcontVerdict = raw ? rawVerdict(raw) : "unknown";
+    details.push({ id: o.id, awb, status: raw?.shortDeliveryStatus ?? "—", verdict });
 
     if (verdict === "delivered") {
       await sb.from("orders").update({ status: "completed", completed_at: now, completed_source: "econt" }).eq("id", o.id);
       completed++;
-    } else if (verdict === "returned") {
-      await sb.from("orders").update({ status: "returned" }).eq("id", o.id);
+    } else if (verdict === "returned" && raw) {
+      const { kind, dwellDays } = classifyReturn(raw);
+      await markReturnedWithKind(sb, o.id, kind, dwellDays);
       returned++;
     }
   }

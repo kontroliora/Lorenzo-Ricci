@@ -5,7 +5,7 @@
 // exists. Vercel injects Authorization: Bearer ${CRON_SECRET}.
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { reconcileShippedOrders, matchTrackingNumbers } from "@/lib/econt";
+import { reconcileShippedOrders, matchTrackingNumbers, classifyExistingReturns } from "@/lib/econt";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,10 +33,12 @@ export async function GET(req: NextRequest) {
     const sb = createClient(url, key, { auth: { persistSession: false } });
     // 1. auto-fill tracking numbers (sure matches only — never confirms uncertain)
     const match = await matchTrackingNumbers(sb);
-    // 2. reconcile shipped → delivered/returned
+    // 2. reconcile shipped → delivered/returned (returns get auto-classified)
     const status = await reconcileShippedOrders(sb);
-    console.log("[EcontCron]", JSON.stringify({ autoFilled: match.autoFilled.length, pending: match.pending.length, completed: status.completed, returned: status.returned }));
-    return NextResponse.json({ ok: true, autoFilled: match.autoFilled.length, pending: match.pending.length, ...status });
+    // 3. backfill return_kind for any already-returned orders not yet classified
+    const backfilledReturns = await classifyExistingReturns(sb);
+    console.log("[EcontCron]", JSON.stringify({ autoFilled: match.autoFilled.length, pending: match.pending.length, completed: status.completed, returned: status.returned, backfilledReturns }));
+    return NextResponse.json({ ok: true, autoFilled: match.autoFilled.length, pending: match.pending.length, ...status, backfilledReturns });
   } catch (e) {
     console.error("[EcontCron] error:", e);
     return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });

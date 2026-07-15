@@ -189,6 +189,17 @@ export function OrderCard({
             ⏱ отворена преди {Math.floor(hoursOpen)}ч{hoursOpen > 24 ? " · заседнала" : ""}
           </div>
         )}
+        {order.status === "returned" && (
+          <div style={{ fontSize: 12, marginTop: 4 }}>
+            {order.return_kind === "uncollected" ? (
+              <span style={{ color: "#F0997B" }}>↩ Непотърсена{order.return_dwell_days != null ? ` · върната след ${order.return_dwell_days} дни` : ""}</span>
+            ) : order.return_kind === "refused" ? (
+              <span style={{ color: "rgba(255,255,255,0.6)" }}>↩ Върната след преглед{order.return_dwell_days != null ? ` · след ${order.return_dwell_days} дни` : ""}</span>
+            ) : (
+              <span style={{ color: "rgba(255,255,255,0.5)" }}>↩ Върната{order.return_dwell_days != null ? ` · след ${order.return_dwell_days} дни` : " · класифицира се на следващия Econt синх."}</span>
+            )}
+          </div>
+        )}
         {timer && (
           <div style={{ fontSize: 12, marginTop: 5, lineHeight: 1.55 }}>
             {timer.status === "due" ? (

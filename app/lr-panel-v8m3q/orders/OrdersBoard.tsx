@@ -416,13 +416,20 @@ function EcontCheck() {
 
 function ReturnsSummary({ orders, dispatched }: { orders: AdminOrder[]; dispatched: number }) {
   const total = orders.length;
+  const uncollected  = orders.filter((o) => o.return_kind === "uncollected").length;
+  const refused      = orders.filter((o) => o.return_kind === "refused").length;
+  const unclassified = total - uncollected - refused;
   const awaiting = orders.filter((o) => o.return_reviewed === false).length;
-  const rate = dispatched > 0 ? Math.round((total / dispatched) * 100) : 0;
+  const rate            = dispatched > 0 ? Math.round((total / dispatched) * 100) : 0;
+  const uncollectedRate = dispatched > 0 ? Math.round((uncollected / dispatched) * 100) : 0;
   return (
     <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center", background: "rgba(240,153,123,0.08)", border: "0.5px solid rgba(240,153,123,0.3)", borderRadius: 10, padding: "12px 16px", fontSize: 13 }}>
       <span style={{ color: "rgba(255,255,255,0.75)" }}>Върнати: <b style={{ color: "#F0997B" }}>{total}</b></span>
+      <span style={{ color: "#F0997B" }}>↩ Непотърсени: <b>{uncollected}</b>{dispatched > 0 && <span style={{ color: "rgba(255,255,255,0.4)" }}> (~{uncollectedRate}% · твоя загуба)</span>}</span>
+      <span style={{ color: "rgba(255,255,255,0.7)" }}>Върнати след преглед: <b>{refused}</b></span>
+      {unclassified > 0 && <span style={{ color: "rgba(255,255,255,0.4)" }}>некласифицирани: {unclassified}</span>}
       {awaiting > 0 && <span style={{ color: "#FAC775" }}>⏳ чакат преглед: <b>{awaiting}</b></span>}
-      <span style={{ color: "rgba(255,255,255,0.5)" }}>процент връщания ~{rate}% <span style={{ color: "rgba(255,255,255,0.3)" }}>от изпратените</span></span>
+      <span style={{ color: "rgba(255,255,255,0.5)" }}>общо връщания ~{rate}% <span style={{ color: "rgba(255,255,255,0.3)" }}>от изпратените</span></span>
     </div>
   );
 }

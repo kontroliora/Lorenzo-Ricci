@@ -37,6 +37,8 @@ export type AdminOrder = {
   cancel_reason?: string | null;
   promo_code?: string | null;      // undefined until the orders_promo migration runs
   promo_discount?: number | null;
+  return_kind?: string | null;         // 'uncollected' | 'refused' | null — until orders_return_kind migration
+  return_dwell_days?: number | null;   // calendar days at the final office before returning
   created_at: string;
 };
 
@@ -65,7 +67,12 @@ export async function getOrders(limit = 150): Promise<AdminOrder[]> {
   // Try the richest column set first, degrade gracefully if a migration hasn't
   // run yet: promo columns → extended columns → base. A missing column must
   // never blank the whole panel.
-  const tiers = [`${ORDER_COLUMNS}, promo_code, promo_discount`, ORDER_COLUMNS, BASE_COLUMNS];
+  const tiers = [
+    `${ORDER_COLUMNS}, promo_code, promo_discount, return_kind, return_dwell_days`,
+    `${ORDER_COLUMNS}, promo_code, promo_discount`,
+    ORDER_COLUMNS,
+    BASE_COLUMNS,
+  ];
   let data: unknown = null;
   let lastError: { message: string } | null = null;
   for (const cols of tiers) {
@@ -118,21 +125,30 @@ export async function getCustomerHistories(
   const uniq = Array.from(new Set(phones.filter(Boolean)));
   if (!uniq.length) return {};
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .select("phone, status, call_state")
-    .in("phone", uniq);
-  if (error) {
-    console.error("[orders] history error:", error.message);
-    return {};
+  // Include return_kind so "невзел" (notTaken) counts ONLY uncollected returns —
+  // the real no-shows (seller pays both legs), not refused-after-inspection.
+  // Falls back to counting any return if the column isn't migrated yet.
+  type Row = { phone: string; status: string; call_state: string; return_kind?: string | null };
+  let rows: Row[];
+  const primary = await supabase.from("orders").select("phone, status, call_state, return_kind").in("phone", uniq);
+  if (primary.error) {
+    const fb = await supabase.from("orders").select("phone, status, call_state").in("phone", uniq);
+    if (fb.error) { console.error("[orders] history error:", fb.error.message); return {}; }
+    rows = (fb.data ?? []) as Row[];
+  } else {
+    rows = (primary.data ?? []) as Row[];
   }
   const map: Record<string, CustomerHistory> = {};
-  for (const row of (data ?? []) as { phone: string; status: string; call_state: string }[]) {
+  for (const row of rows) {
     const p = row.phone;
     if (!map[p]) map[p] = { confirmed: 0, refused: 0, notTaken: 0 };
     if (row.call_state === "confirmed") map[p].confirmed++;
     if (row.call_state === "refused") map[p].refused++;
-    if (row.status === "returned") map[p].notTaken++;
+    // невзел = uncollected only. If return_kind is absent (not migrated / column
+    // not selected), fall back to counting any return.
+    if (row.status === "returned" && (row.return_kind === "uncollected" || row.return_kind === undefined)) {
+      map[p].notTaken++;
+    }
   }
   return map;
 }
