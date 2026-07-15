@@ -46,6 +46,17 @@ export default function ShippingPage() {
           </p>
         </PolicySection>
 
+        <PolicySection title="Връщане и замяна">
+          <p>
+            Имате законно право на отказ в рамките на <strong className="text-charcoal font-normal">14 дни</strong> от получаването — за <strong className="text-charcoal font-normal">всички продукти</strong>, включително закупените на намаление или промоция.
+            <br /><br />
+            Доброволната ни <strong className="text-charcoal font-normal">удължена 30-дневна замяна</strong> важи само за продукти, закупени на <strong className="text-charcoal font-normal">редовна цена</strong>. Продуктите на намаление или промоция <strong className="text-charcoal font-normal">не подлежат на 30-дневната замяна</strong> — за тях остава 14-дневното законно право на отказ, описано по-горе.
+            <br /><br />
+            Пълни условия:{" "}
+            <a href="/policies/returns" className="text-navy hover:underline">Политика за връщане и замяна</a>.
+          </p>
+        </PolicySection>
+
         <PolicySection title="При повредена пратка">
           <p>
             При видими повреди по опаковката или продукта при получаване, поискайте протокол от куриера и ни уведомете в рамките на <strong className="text-charcoal font-normal">24 часа</strong> на{" "}
