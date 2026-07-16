@@ -52,6 +52,8 @@ export default function ShippingPage() {
             <br /><br />
             Доброволната ни <strong className="text-charcoal font-normal">удължена 30-дневна замяна</strong> важи само за продукти, закупени на <strong className="text-charcoal font-normal">редовна цена</strong>. Продуктите на намаление или промоция <strong className="text-charcoal font-normal">не подлежат на 30-дневната замяна</strong> — за тях остава 14-дневното законно право на отказ, описано по-горе.
             <br /><br />
+            Върнатият продукт трябва да е в <strong className="text-charcoal font-normal">състоянието, в което е получен</strong> — неизползван, с пълната оригинална опаковка, всички аксесоари и <strong className="text-charcoal font-normal">сертификата за автентичност</strong>. При законния 14-дневен отказ имате право да разгледате продукта, но ако е използван извън необходимото за проверка или върнат непълен, стойността на възстановяването може да бъде намалена съответно.
+            <br /><br />
             Пълни условия:{" "}
             <a href="/policies/returns" className="text-navy hover:underline">Политика за връщане и замяна</a>.
           </p>
