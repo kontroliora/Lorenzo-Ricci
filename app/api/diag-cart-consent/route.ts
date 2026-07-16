@@ -28,6 +28,11 @@ export async function GET(req: NextRequest) {
   const optOuts = await sb.from("cart_sessions").select("session_id", { count: "exact", head: true })
     .eq("status", "pending").not("email", "is", null).eq("recovery_consent", false);
 
+  // Mechanical proof the filter drops recovery_consent=false: any-status counts
+  // with email known, without vs with the filter. Delta = opt-outs excluded.
+  const allNoFilter = await sb.from("cart_sessions").select("session_id", { count: "exact", head: true }).not("email", "is", null);
+  const allFiltered = await sb.from("cart_sessions").select("session_id", { count: "exact", head: true }).not("email", "is", null).not("recovery_consent", "is", false);
+
   const oldCount = oldQ.count ?? 0;
   const newCount = newQ.count ?? 0;
   return NextResponse.json({
@@ -35,6 +40,11 @@ export async function GET(req: NextRequest) {
     windowNewBehaviour_wouldEmail: newCount,
     optOutsNowProtectedInWindow: oldCount - newCount,
     totalPendingOptOuts_allTime: optOuts.count ?? 0,
+    mechanicalProof: {
+      allWithEmail_noFilter: allNoFilter.count ?? 0,
+      allWithEmail_withFilter: allFiltered.count ?? 0,
+      excludedByFilter: (allNoFilter.count ?? 0) - (allFiltered.count ?? 0),
+    },
     errors: { old: oldQ.error?.message ?? null, new: newQ.error?.message ?? null, optOuts: optOuts.error?.message ?? null },
   });
 }
