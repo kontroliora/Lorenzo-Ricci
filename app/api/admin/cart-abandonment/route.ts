@@ -272,8 +272,11 @@ export async function POST(req: NextRequest) {
   const now  = Date.now();
   const READY_AFTER_MS = 30 * 60 * 1000;
 
-  // Fetch pending sessions
-  let query = supabase.from("cart_sessions").select("*").eq("status", "pending");
+  // Fetch pending sessions. NOTE: this manual endpoint is currently dead code —
+  // not wired to any UI and it uses the anon client, which RLS denies SELECT on
+  // cart_sessions (returns 0). Kept consent-safe anyway: never send to anyone who
+  // unticked the marketing box (recovery_consent = false).
+  let query = supabase.from("cart_sessions").select("*").eq("status", "pending").not("recovery_consent", "is", false);
   if (body.ids?.length) {
     query = query.in("id", body.ids);
   }

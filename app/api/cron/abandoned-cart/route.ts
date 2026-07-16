@@ -31,8 +31,9 @@ export async function GET(req: NextRequest) {
   // Window: abandoned 1 h–7 days ago. The upper bound matters — capture was
   // RLS-broken until 2026-07-13, so any pre-existing rows could be weeks old;
   // we must not email someone about a cart from last month on the first run.
-  // Also: pending, no recovery email yet, email known. Send policy = ALL such
-  // carts (no consent filter, by choice).
+  // Also: pending, no recovery email yet, email known, AND recovery_consent is
+  // NOT an explicit false — anyone who UNTICKED the marketing box has opted out
+  // and must never get a recovery email. true / null (the default) still send.
   const idleCutoff = new Date(Date.now() -            60 * 60 * 1000).toISOString(); // >1 h idle
   const ageCutoff  = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(); // <7 days old
 
@@ -40,6 +41,7 @@ export async function GET(req: NextRequest) {
     .from("cart_sessions")
     .select("session_id, email, name, phone, items, subtotal, updated_at")
     .eq("status", "pending")
+    .not("recovery_consent", "is", false) // GDPR: skip explicit opt-outs (unticked box); true/null still send
     .is("recovery_sent_at", null)
     .not("email", "is", null)
     .lt("updated_at", idleCutoff)
