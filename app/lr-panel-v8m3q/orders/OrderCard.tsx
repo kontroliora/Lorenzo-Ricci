@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useTransition } from "react";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
+import { isReturn } from "@/lib/orders";
 import {
   confirmOrder,
   cancelOrder,
@@ -8,7 +9,7 @@ import {
   shipOrder,
   markCompleted,
   markReturned,
-  markReturnReviewed,
+  markRestocked,
   setFake,
   addOrderNote,
 } from "./actions";
@@ -22,6 +23,8 @@ const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = 
   completed: { label: "Завършена",           bg: "#0C447C", fg: "#85B7EB" },
   cancelled: { label: "Отказана",            bg: "#501313", fg: "#F09595" },
   returned:  { label: "Върната",             bg: "#4A1B0C", fg: "#F0997B" },
+  returning: { label: "Връща се",            bg: "#4A1B0C", fg: "#F0997B" },
+  restocked: { label: "Върната · в наличност", bg: "#173404", fg: "#97C459" },
 };
 
 function fmtDate(iso: string): string {
@@ -189,7 +192,7 @@ export function OrderCard({
             ⏱ отворена преди {Math.floor(hoursOpen)}ч{hoursOpen > 24 ? " · заседнала" : ""}
           </div>
         )}
-        {order.status === "returned" && (
+        {isReturn(order.status) && (
           <div style={{ fontSize: 12, marginTop: 4 }}>
             {order.return_kind === "uncollected" ? (
               <span style={{ color: "#F0997B" }}>↩ Непотърсена{order.return_dwell_days != null ? ` · върната след ${order.return_dwell_days} дни` : ""}</span>
@@ -315,15 +318,19 @@ export function OrderCard({
             </>
           )}
 
-          {cancelStep === "closed" && order.status === "returned" && order.return_reviewed !== undefined && (
-            order.return_reviewed ? (
-              <span style={{ color: "#97C459", fontSize: 12 }}>✓ Прегледана · стоката е върната в наличност</span>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                <span style={{ color: "#FAC775", fontSize: 12 }}>⏳ Чака преглед на върнатата стока</span>
-                <button disabled={pending} onClick={() => run(() => markReturnReviewed(order.id))} style={primaryBtn}>Маркирай прегледана</button>
-              </div>
-            )
+          {cancelStep === "closed" && order.status === "returning" && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ color: "#FAC775", fontSize: 12 }}>⏳ Чака да я получа обратно от Еконт</span>
+              <button disabled={pending} onClick={() => run(() => markRestocked(order.id))} style={primaryBtn}>Взех пратката</button>
+            </div>
+          )}
+
+          {cancelStep === "closed" && order.status === "restocked" && (
+            <span style={{ color: "#97C459", fontSize: 12 }}>
+              ✓ Взета · стоката е върната в наличност
+              {order.restocked_at ? ` · ${fmtDate(order.restocked_at)}` : ""}
+              {order.restocked_source ? ` · ${order.restocked_source === "cron" ? "авто от Еконт" : "ръчно"}` : ""}
+            </span>
           )}
 
           {cancelStep !== "closed" && (

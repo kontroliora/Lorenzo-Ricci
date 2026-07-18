@@ -6,6 +6,7 @@ import { CreateOrderForm } from "./CreateOrderForm";
 import { MatchPanel } from "./MatchPanel";
 import { checkEcontStatuses } from "./actions";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
+import { isReturn } from "@/lib/orders";
 import { activeWindow, nextWindow, callTimer } from "@/lib/callSchedule";
 
 type Tab = "new" | "confirmed" | "shipped" | "completed" | "returned" | "cancelled";
@@ -20,6 +21,9 @@ const TABS: { key: Tab; label: string; accent: string; fg: string; bg: string }[
 ];
 
 function inTab(o: AdminOrder, tab: Tab): boolean {
+  // The "Върнати" tab holds both return sub-statuses (returning / restocked) +
+  // the legacy value, so returns never vanish after the split.
+  if (tab === "returned") return isReturn(o.status);
   return o.status === tab;
 }
 
@@ -419,7 +423,9 @@ function ReturnsSummary({ orders, dispatched }: { orders: AdminOrder[]; dispatch
   const uncollected  = orders.filter((o) => o.return_kind === "uncollected").length;
   const refused      = orders.filter((o) => o.return_kind === "refused").length;
   const unclassified = total - uncollected - refused;
-  const awaiting = orders.filter((o) => o.return_reviewed === false).length;
+  // returning (or the legacy value) = not yet physically in hand · restocked = received, stock +1.
+  const awaiting  = orders.filter((o) => o.status === "returning" || o.status === "returned").length;
+  const restocked = orders.filter((o) => o.status === "restocked").length;
   const rate            = dispatched > 0 ? Math.round((total / dispatched) * 100) : 0;
   const uncollectedRate = dispatched > 0 ? Math.round((uncollected / dispatched) * 100) : 0;
   return (
@@ -428,7 +434,8 @@ function ReturnsSummary({ orders, dispatched }: { orders: AdminOrder[]; dispatch
       <span style={{ color: "#F0997B" }}>↩ Непотърсени: <b>{uncollected}</b>{dispatched > 0 && <span style={{ color: "rgba(255,255,255,0.4)" }}> (~{uncollectedRate}% · твоя загуба)</span>}</span>
       <span style={{ color: "rgba(255,255,255,0.7)" }}>Върнати след преглед: <b>{refused}</b></span>
       {unclassified > 0 && <span style={{ color: "rgba(255,255,255,0.4)" }}>некласифицирани: {unclassified}</span>}
-      {awaiting > 0 && <span style={{ color: "#FAC775" }}>⏳ чакат преглед: <b>{awaiting}</b></span>}
+      {awaiting > 0 && <span style={{ color: "#FAC775" }}>⏳ чакат взимане: <b>{awaiting}</b></span>}
+      {restocked > 0 && <span style={{ color: "#97C459" }}>✓ в наличност: <b>{restocked}</b></span>}
       <span style={{ color: "rgba(255,255,255,0.5)" }}>общо връщания ~{rate}% <span style={{ color: "rgba(255,255,255,0.3)" }}>от изпратените</span></span>
     </div>
   );

@@ -39,6 +39,9 @@ export type AdminOrder = {
   promo_discount?: number | null;
   return_kind?: string | null;         // 'uncollected' | 'refused' | null — until orders_return_kind migration
   return_dwell_days?: number | null;   // calendar days at the final office before returning
+  returning_at?: string | null;        // when the parcel started coming back (set by cron/manual, going forward)
+  restocked_at?: string | null;        // when we received it back — leather +1 done; idempotency key
+  restocked_source?: string | null;    // 'cron' | 'button'
   created_at: string;
 };
 
@@ -56,7 +59,14 @@ export type StatusLogRow = {
 
 // Statuses that hold stock. A reservation is held INDEFINITELY until the order
 // is processed manually (confirmed / cancelled / returned / marked fake).
+// NOTE: neither `returning` nor `restocked` reserve — a return frees KV stock the
+// same as the legacy `returned` did (KV model left unchanged, by decision).
 export const RESERVING_STATUSES = ["new", "confirmed", "shipped", "completed"] as const;
+
+// Every status that represents a return (the two sub-statuses + the legacy value
+// during the migration window). Use this instead of === "returned" everywhere.
+export const RETURN_STATUSES = ["returning", "restocked", "returned"] as const;
+export const isReturn = (status: string): boolean => (RETURN_STATUSES as readonly string[]).includes(status);
 
 const BASE_COLUMNS =
   "id, order_ref, name, phone, city, post_code, address, shipping_method, courier, items, total, notes, status, call_state, call_notes, call_attempts, tracking_number, excluded_from_stock, created_at";
@@ -68,6 +78,7 @@ export async function getOrders(limit = 150): Promise<AdminOrder[]> {
   // run yet: promo columns → extended columns → base. A missing column must
   // never blank the whole panel.
   const tiers = [
+    `${ORDER_COLUMNS}, promo_code, promo_discount, return_kind, return_dwell_days, returning_at, restocked_at, restocked_source`,
     `${ORDER_COLUMNS}, promo_code, promo_discount, return_kind, return_dwell_days`,
     `${ORDER_COLUMNS}, promo_code, promo_discount`,
     ORDER_COLUMNS,
@@ -145,8 +156,9 @@ export async function getCustomerHistories(
     if (row.call_state === "confirmed") map[p].confirmed++;
     if (row.call_state === "refused") map[p].refused++;
     // невзел = uncollected only. If return_kind is absent (not migrated / column
-    // not selected), fall back to counting any return.
-    if (row.status === "returned" && (row.return_kind === "uncollected" || row.return_kind === undefined)) {
+    // not selected), fall back to counting any return. Covers both return
+    // sub-statuses (returning / restocked) + the legacy value.
+    if (isReturn(row.status) && (row.return_kind === "uncollected" || row.return_kind === undefined)) {
       map[p].notTaken++;
     }
   }

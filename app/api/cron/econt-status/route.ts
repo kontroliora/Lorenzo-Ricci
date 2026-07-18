@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     const status = await reconcileShippedOrders(sb);
     // 3. backfill return_kind for any already-returned orders not yet classified
     const backfilledReturns = await classifyExistingReturns(sb);
-    console.log("[EcontCron]", JSON.stringify({ autoFilled: match.autoFilled.length, pending: match.pending.length, completed: status.completed, returned: status.returned, backfilledReturns }));
+    console.log("[EcontCron]", JSON.stringify({ autoFilled: match.autoFilled.length, pending: match.pending.length, completed: status.completed, returned: status.returned, restocked: status.restocked, backfilledReturns }));
     return NextResponse.json({ ok: true, autoFilled: match.autoFilled.length, pending: match.pending.length, ...status, backfilledReturns });
   } catch (e) {
     console.error("[EcontCron] error:", e);

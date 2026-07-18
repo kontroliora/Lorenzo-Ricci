@@ -109,10 +109,16 @@ async function computeRoasCore(startISO: string, endISO: string): Promise<RoasDa
   const inMotion = B("shipped").total;
   const pending = round2(B("new").total + B("confirmed").total);
   const cancelled = B("cancelled");
-  const returned = B("returned");
+  // Returns split into returning / restocked (+ legacy 'returned') — merge for the
+  // single "Върнати" figure.
+  const returned: StatusBucket = {
+    count: B("returning").count + B("restocked").count + B("returned").count,
+    total: round2(B("returning").total + B("restocked").total + B("returned").total),
+  };
 
+  const isRet = (s: string) => s === "returning" || s === "restocked" || s === "returned";
   const uncollectedCount = classified
-    ? orders.filter((r) => r.status === "returned" && r.return_kind === "uncollected").length
+    ? orders.filter((r) => isRet(r.status) && r.return_kind === "uncollected").length
     : 0;
 
   // Pro-rate each spend entry by the fraction of its days that fall in the window.

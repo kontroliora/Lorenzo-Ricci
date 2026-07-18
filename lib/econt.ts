@@ -189,14 +189,63 @@ function rawVerdict(raw: RawStatus): EcontVerdict {
   return "unknown";
 }
 
-// Persist a return with its auto-classification, resilient to a missing migration
-// (falls back to updating just the status so a return is never dropped).
+// Persist a return (status → `returning`) with its auto-classification + the
+// returning_at stamp (which makes it eligible for the cron's auto-restock later).
+// Resilient: degrades to a bare status set, and to the legacy `returned` value if
+// the enum migration hasn't been applied yet, so a return is never dropped.
 async function markReturnedWithKind(sb: SupabaseClient, id: number, kind: ReturnKind, dwellDays: number | null): Promise<void> {
-  let { error } = await sb.from("orders").update({ status: "returned", return_kind: kind, return_dwell_days: dwellDays }).eq("id", id);
-  if (error && /return_kind|return_dwell_days|column|schema cache/i.test(error.message)) {
-    ({ error } = await sb.from("orders").update({ status: "returned" }).eq("id", id));
+  const nowIso = new Date().toISOString();
+  let { error } = await sb.from("orders").update({ status: "returning", returning_at: nowIso, return_kind: kind, return_dwell_days: dwellDays }).eq("id", id);
+  if (error && /returning|returning_at|return_kind|return_dwell_days|column|schema cache|enum|invalid input/i.test(error.message)) {
+    ({ error } = await sb.from("orders").update({ status: "returning", returning_at: nowIso }).eq("id", id));
+    if (error) ({ error } = await sb.from("orders").update({ status: "returned" }).eq("id", id)); // pre-migration
   }
-  if (error) console.error("[econt] mark returned error:", error.message);
+  if (error) console.error("[econt] mark returning error:", error.message);
+}
+
+// Leather (wallet_inventory) is decremented at order time, so a physically-
+// received return must add it back. KV items (watches/jewellery) are handled by
+// the reservation model and need no write.
+const IS_LEATHER = (slug: string) => slug.startsWith("wallet-") || slug.startsWith("cardholder-");
+async function restockOrderLeather(sb: SupabaseClient, items: unknown): Promise<void> {
+  const leather = (Array.isArray(items) ? items : [])
+    .map((it) => {
+      const o = (it ?? {}) as { slug?: unknown; quantity?: unknown; qty?: unknown };
+      return { slug: String(o.slug ?? ""), qty: Math.max(1, Number(o.quantity ?? o.qty ?? 1)) };
+    })
+    .filter((x) => IS_LEATHER(x.slug));
+  if (!leather.length) return;
+  const { error } = await sb.rpc("restock_wallet_stock", { p_items: leather });
+  if (error) console.error("[econt] restock_wallet_stock error:", error.message);
+}
+
+// A returning parcel is "received back by us" once Econt sets a delivery time on
+// the return leg (status "Върната и доставена към подател", final event "client").
+// Verified against real data: deliveryTime is null while it is still travelling.
+function returnReceivedMs(raw: RawStatus): number | null {
+  const t = raw.deliveryTime ?? raw.cdCollectedTime ?? null;
+  return t != null ? Number(t) : null;
+}
+
+// Atomic `returning` → `restocked` transition + leather +1. IDEMPOTENT: the
+// UPDATE only fires while status='returning' AND restocked_at IS NULL, so the
+// cron and the button can never double-count (whoever claims the row first wins;
+// the loser's UPDATE matches nothing). tsISO = Econt receipt time (cron) or now
+// (button). The status change is audited by the DB trigger (changed_by = null
+// for the cron/service role, = the admin's uid for the button); restocked_source
+// records cron/button explicitly.
+export async function markRestocked(
+  sb: SupabaseClient, orderId: number, source: "cron" | "button", tsISO: string,
+): Promise<"done" | "already"> {
+  const { data, error } = await sb
+    .from("orders")
+    .update({ status: "restocked", restocked_at: tsISO, restocked_source: source })
+    .eq("id", orderId).eq("status", "returning").is("restocked_at", null)
+    .select("id, items");
+  if (error) { console.error("[econt] restock claim error:", error.message); return "already"; }
+  if (!data?.length) return "already"; // already restocked, or no longer returning
+  await restockOrderLeather(sb, (data[0] as { items?: unknown }).items);
+  return "done";
 }
 
 // Backfill return_kind for orders already marked returned but not yet classified
@@ -205,7 +254,7 @@ export async function classifyExistingReturns(sb: SupabaseClient): Promise<numbe
   const { data } = await sb
     .from("orders")
     .select("id, tracking_number, return_kind")
-    .eq("status", "returned")
+    .in("status", ["returning", "returned"])
     .not("tracking_number", "is", null);
   const rows = ((data ?? []) as { id: number; tracking_number: string; return_kind: string | null }[])
     .filter((o) => !o.return_kind);
@@ -248,6 +297,7 @@ export type ReconcileResult = {
   checked: number;
   completed: number;
   returned: number;
+  restocked: number;
   details: Array<{ id: number; awb: string; status: string; verdict: EcontVerdict }>;
 };
 
@@ -264,31 +314,54 @@ export async function reconcileShippedOrders(sb: SupabaseClient): Promise<Reconc
   if (error) throw new Error(error.message);
 
   const list = (data ?? []) as Array<{ id: number; tracking_number: string }>;
-  if (!list.length) return { checked: 0, completed: 0, returned: 0, details: [] };
-
-  // Raw statuses — we need the tracking events to classify returns (dwell).
-  const rawMap = await getRawStatuses(list.map((o) => o.tracking_number));
-
   const now = new Date().toISOString();
-  let completed = 0, returned = 0;
+  let completed = 0, returned = 0, restocked = 0;
   const details: ReconcileResult["details"] = [];
 
-  for (const o of list) {
-    const awb = String(o.tracking_number).replace(/\s+/g, "");
-    const raw = rawMap.get(awb);
-    const verdict: EcontVerdict = raw ? rawVerdict(raw) : "unknown";
-    details.push({ id: o.id, awb, status: raw?.shortDeliveryStatus ?? "—", verdict });
+  // Pass 1: shipped → completed (delivered) / returning (coming back).
+  if (list.length) {
+    const rawMap = await getRawStatuses(list.map((o) => o.tracking_number));
+    for (const o of list) {
+      const awb = String(o.tracking_number).replace(/\s+/g, "");
+      const raw = rawMap.get(awb);
+      const verdict: EcontVerdict = raw ? rawVerdict(raw) : "unknown";
+      details.push({ id: o.id, awb, status: raw?.shortDeliveryStatus ?? "—", verdict });
 
-    if (verdict === "delivered") {
-      await sb.from("orders").update({ status: "completed", completed_at: now, completed_source: "econt" }).eq("id", o.id);
-      completed++;
-    } else if (verdict === "returned" && raw) {
-      const { kind, dwellDays } = classifyReturn(raw);
-      await markReturnedWithKind(sb, o.id, kind, dwellDays);
-      returned++;
+      if (verdict === "delivered") {
+        await sb.from("orders").update({ status: "completed", completed_at: now, completed_source: "econt" }).eq("id", o.id);
+        completed++;
+      } else if (verdict === "returned" && raw) {
+        const { kind, dwellDays } = classifyReturn(raw);
+        await markReturnedWithKind(sb, o.id, kind, dwellDays);
+        returned++;
+      }
     }
   }
-  return { checked: list.length, completed, returned, details };
+
+  // Pass 2: returning → restocked once Econt confirms we received it back. Only
+  // returns the system started tracking (returning_at set) auto-restock; the
+  // legacy 14 (returning_at NULL) are left for Koko's button. Resilient to a
+  // pre-migration schema (missing column → query errors → pass skipped).
+  const ret = await sb
+    .from("orders")
+    .select("id, tracking_number")
+    .eq("status", "returning")
+    .not("returning_at", "is", null)
+    .is("restocked_at", null)
+    .not("tracking_number", "is", null);
+  if (!ret.error && ret.data?.length) {
+    const retList = ret.data as Array<{ id: number; tracking_number: string }>;
+    const retRaw = await getRawStatuses(retList.map((o) => o.tracking_number));
+    for (const o of retList) {
+      const raw = retRaw.get(String(o.tracking_number).replace(/\s+/g, ""));
+      if (!raw) continue;
+      const receivedMs = returnReceivedMs(raw);
+      if (receivedMs == null) continue; // still travelling back
+      if ((await markRestocked(sb, o.id, "cron", new Date(receivedMs).toISOString())) === "done") restocked++;
+    }
+  }
+
+  return { checked: list.length, completed, returned, restocked, details };
 }
 
 // ── Tracking auto-fill (Method 2 — FIND, never create) ───────────────────────

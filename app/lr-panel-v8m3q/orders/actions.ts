@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { reconcileShippedOrders, matchTrackingNumbers, classifyExistingReturns, type MatchResult } from "@/lib/econt";
+import { reconcileShippedOrders, matchTrackingNumbers, classifyExistingReturns, markRestocked as markRestockedTx, type MatchResult } from "@/lib/econt";
 import { sendShipConfirmations } from "@/lib/shipment-notify";
 import { RESERVING_STATUSES, type OrderItem } from "@/lib/orders";
 
@@ -166,19 +166,36 @@ export async function markCompleted(id: number): Promise<string | null> {
   });
 }
 
-// Shipment came back / customer never took it → returns leather stock, flags the customer.
+// Shipment came back / customer never took it → status 'returning'. Leather is
+// NOT restocked here — that happens only on the confirmed 'restocked' transition
+// (the cron's Econt receipt, or the "Взех пратката" button), never in transit.
+// Sets returning_at so the cron may auto-restock it once Econt confirms receipt.
 export async function markReturned(id: number): Promise<string | null> {
   const supabase = await createClient();
-  const { data: before } = await supabase.from("orders").select("status, items").eq("id", id).single();
-  const { error } = await supabase.from("orders").update({ status: "returned" }).eq("id", id);
+  const nowIso = new Date().toISOString();
+  let { error } = await supabase.from("orders").update({ status: "returning", returning_at: nowIso }).eq("id", id);
+  if (error && /returning|returning_at|column|schema cache|enum|invalid input/i.test(error.message)) {
+    ({ error } = await supabase.from("orders").update({ status: "returned" }).eq("id", id)); // pre-migration
+  }
   if (error) { console.error("[orders] return error:", error.message); return error.message; }
-  const b = before as { status: string; items: OrderItem[] } | null;
-  if (b && HOLDS_STOCK(b.status)) await restockLeatherItems(supabase, b.items);
   revalidatePath(ORDERS_PATH);
   return null;
 }
 
-// Returned goods physically inspected and put back on the shelf.
+// "Взех пратката" — Koko confirms the returning parcel is physically in hand →
+// status 'restocked' + leather +1. Idempotent (blocked if already restocked, so
+// a later cron pass can't double-count). Uses the admin's own session so the
+// audit trigger records WHO pressed it (restocked_source also records 'button').
+export async function markRestocked(id: number): Promise<string | null> {
+  const supabase = await createClient();
+  const res = await markRestockedTx(supabase, id, "button", new Date().toISOString());
+  if (res === "already") return "Вече е получена — наличността не се вдига втори път.";
+  revalidatePath(ORDERS_PATH);
+  return null;
+}
+
+// Returned goods physically inspected and put back on the shelf. (Legacy flag —
+// superseded by the 'restocked' status; kept so old data/routes don't break.)
 export async function markReturnReviewed(id: number): Promise<string | null> {
   return patchOrder(id, { return_reviewed: true });
 }
@@ -225,7 +242,7 @@ export async function checkEcontStatuses(): Promise<{ ok: boolean; message: stri
     const r = await reconcileShippedOrders(supabase);
     const backfilled = await classifyExistingReturns(supabase);
     revalidatePath(ORDERS_PATH);
-    return { ok: true, message: `Проверени ${r.checked} · завършени ${r.completed} · върнати ${r.returned}${backfilled ? ` · класифицирани ${backfilled}` : ""}` };
+    return { ok: true, message: `Проверени ${r.checked} · завършени ${r.completed} · върнати ${r.returned}${r.restocked ? ` · получени обратно ${r.restocked}` : ""}${backfilled ? ` · класифицирани ${backfilled}` : ""}` };
   } catch (e) {
     return { ok: false, message: String(e) };
   }
