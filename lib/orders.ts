@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { RESERVING_STATUSES, RETURN_STATUSES, isReturn } from "./order-status";
 
 export type OrderItem = {
   name?: string;
@@ -57,16 +58,11 @@ export type StatusLogRow = {
   change_number: number;
 };
 
-// Statuses that hold stock. A reservation is held INDEFINITELY until the order
-// is processed manually (confirmed / cancelled / returned / marked fake).
-// NOTE: neither `returning` nor `restocked` reserve — a return frees KV stock the
-// same as the legacy `returned` did (KV model left unchanged, by decision).
-export const RESERVING_STATUSES = ["new", "confirmed", "shipped", "completed"] as const;
-
-// Every status that represents a return (the two sub-statuses + the legacy value
-// during the migration window). Use this instead of === "returned" everywhere.
-export const RETURN_STATUSES = ["returning", "restocked", "returned"] as const;
-export const isReturn = (status: string): boolean => (RETURN_STATUSES as readonly string[]).includes(status);
+// Re-exported from the client-safe module so existing server-side importers keep
+// working (`import { RESERVING_STATUSES, isReturn } from "@/lib/orders"`). Client
+// components must import them from "@/lib/order-status" directly (this file pulls
+// in next/headers and can't be bundled client-side).
+export { RESERVING_STATUSES, RETURN_STATUSES, isReturn };
 
 const BASE_COLUMNS =
   "id, order_ref, name, phone, city, post_code, address, shipping_method, courier, items, total, notes, status, call_state, call_notes, call_attempts, tracking_number, excluded_from_stock, created_at";

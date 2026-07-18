@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useTransition } from "react";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
-import { isReturn } from "@/lib/orders";
+import { isReturn } from "@/lib/order-status";
 import {
   confirmOrder,
   cancelOrder,

@@ -6,7 +6,7 @@ import { CreateOrderForm } from "./CreateOrderForm";
 import { MatchPanel } from "./MatchPanel";
 import { checkEcontStatuses } from "./actions";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
-import { isReturn } from "@/lib/orders";
+import { isReturn } from "@/lib/order-status";
 import { activeWindow, nextWindow, callTimer } from "@/lib/callSchedule";
 
 type Tab = "new" | "confirmed" | "shipped" | "completed" | "returned" | "cancelled";
