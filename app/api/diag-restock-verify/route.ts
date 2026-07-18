@@ -72,6 +72,10 @@ export async function GET(req: NextRequest) {
     trace.PASS_plus1_exactly = trace.stockAfterFirst === before + 1;
     trace.PASS_idempotent = second === "already" && trace.stockAfterSecond === before + 1;
     trace.PASS_timestamp_kept = (trace.orderAfterFirst as { restocked_at?: string })?.restocked_at === (trace.orderAfterSecond as { restocked_at?: string })?.restocked_at;
+
+    // Item 5 — audit: the existing status-change trigger auto-logs the transition.
+    const log = await sb.from("order_status_log").select("old_status, new_status, changed_by, change_number").eq("order_id", testId).order("change_number", { ascending: true });
+    trace.auditLog = log.data; // expect one row: returning → restocked (changed_by null = service role; a real button press records Koko's uid)
   } finally {
     // ── 5. CLEANUP — restore stock, delete test order + its audit rows ───────
     await sb.from("wallet_inventory").update({ stock: before }).eq("slug", slug);
