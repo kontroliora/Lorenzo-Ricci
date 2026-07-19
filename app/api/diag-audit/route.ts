@@ -111,7 +111,15 @@ export async function GET(req: NextRequest) {
   const orderEmails = new Set(orders.map((o) => String(o.email ?? "").trim().toLowerCase()).filter(Boolean));
   const convertedNoOrder = carts.filter((c) => c.status === "converted" && !nEmpty(c.email) && !orderEmails.has(String(c.email).trim().toLowerCase())).map((c) => mask(c.email));
 
+  // ── targeted detail on the flagged records ──
+  const det = (o: O) => ({ ref: o.order_ref, status: o.status, tracking: o.tracking_number, email: mask(o.email), manual: !!o.is_manual, created: o.created_at, shipped_at: o.shipped_at, completed_at: o.completed_at, returning_at: o.returning_at });
+  const stuckReturned = orders.filter((o) => o.status === "returned").map(det);
+  const dupRefs = new Set(dupTracking.flatMap((d) => d.refs));
+  const dupDetails = orders.filter((o) => o.order_ref && dupRefs.has(o.order_ref)).map(det);
+  const noEmailDetails = orders.filter((o) => o.order_ref && ["LR-C0RIOZ", "LR-C0VMLV"].includes(o.order_ref)).map(det);
+
   return NextResponse.json({
+    problemDetails: { stuckReturned, dupTrackingOrders: dupDetails, shipFlagNoEmailOrders: noEmailDetails },
     totals: { ordersReal: orders.length, excludedTestFake: excluded, byStatus, statusSumEqualsTotal: statusSum === orders.length },
     section1_tracking: {
       dispatchedWithoutTracking: dispatchedNoTrack,   // ⚠ if non-empty
