@@ -262,20 +262,11 @@ function getResend(): Resend | null {
   return new Resend(key);
 }
 
-// Order-notification recipients. protataotos@gmail.com is an EXTRA recipient
-// added ONLY through the end of 20 July 2026 in Bulgarian time — from 21 July it
-// drops off automatically, no manual edit needed. (Europe/Sofia is UTC+3 in
-// July, so "end of 20 July" = 21 July 00:00:00 +03:00.) The other three
-// recipients are always included. To extend/shorten later, change the date in
-// TEMP_RECIPIENT_UNTIL below (keep the +03:00 offset so it's Bulgarian time).
+// Order-notification recipients. These three, and only these three.
 const ADMIN_RECIPIENTS = ["info@lorenzo-ricci.com", "sodolos3@gmail.com", "pavelserbezov03@gmail.com"];
-const TEMP_RECIPIENT = "protataotos@gmail.com";
-const TEMP_RECIPIENT_UNTIL = Date.parse("2026-07-21T00:00:00+03:00"); // = end of 20 Jul 2026, Sofia
 
 function adminRecipients(): string[] {
-  return Date.now() < TEMP_RECIPIENT_UNTIL
-    ? [...ADMIN_RECIPIENTS, TEMP_RECIPIENT]
-    : ADMIN_RECIPIENTS;
+  return ADMIN_RECIPIENTS;
 }
 
 async function sendAdminEmail(subject: string, html: string): Promise<void> {
