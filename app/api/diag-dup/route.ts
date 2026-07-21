@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   const od = await sb
     .from("orders")
-    .select("order_ref, name, phone, city, address, items, total, currency, status, is_manual, created_at, completed_at, tracking_number, promo_code")
+    .select("order_ref, name, phone, city, address, items, total, status, is_manual, created_at, completed_at, tracking_number, promo_code")
     .in("order_ref", ["LR-CZW81J", "LR-CZLAUP"]);
   if (od.error) return NextResponse.json({ error: od.error.message }, { status: 500 });
 
