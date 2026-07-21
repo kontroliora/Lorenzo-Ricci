@@ -30,7 +30,12 @@ export async function GET(req: NextRequest) {
     ? {
         allKeys: Object.keys(raw),
         shortDeliveryStatus: raw.shortDeliveryStatus ?? null,
-        cdAmount: raw.cdAmount ?? raw.cd ?? null,
+        // THE decisive number: what Econt actually collected from the customer.
+        cdCollectedAmount: raw.cdCollectedAmount ?? null,
+        cdCollectedCurrency: raw.cdCollectedCurrency ?? null,
+        cdPaidAmount: raw.cdPaidAmount ?? null,
+        shipmentDescription: raw.shipmentDescription ?? null,
+        totalPrice: raw.totalPrice ?? null,
         cdPaidTime: toISO(raw.cdPaidTime),
         cdCollectedTime: toISO(raw.cdCollectedTime),
         deliveryTime: toISO(raw.deliveryTime),
