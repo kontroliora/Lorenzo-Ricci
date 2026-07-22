@@ -59,9 +59,22 @@ export async function GET(req: NextRequest) {
   // 4) sender block of the two parcels, straight from tracking
   const raws = await getRawStatuses([A_AWB, B_AWB]);
   const senderOf = (awb: string) => {
-    const r = raws.get(awb) as { senderClient?: Record<string, unknown> | null; senderAgent?: Record<string, unknown> | null; sendTime?: number | null } | undefined;
+    const r = raws.get(awb) as {
+      senderClient?: Record<string, unknown> | null; senderAgent?: Record<string, unknown> | null;
+      senderOfficeCode?: unknown; senderAddress?: Record<string, unknown> | null;
+      senderDeliveryType?: unknown; shipmentType?: unknown; services?: unknown; createdTime?: number | null;
+    } | undefined;
     const s = r?.senderClient ?? null;
-    return s ? { name: s.name ?? null, clientNumber: s.clientNumber ?? null, ein: s.ein ?? null, juridicalEntity: s.juridicalEntity ?? null, id: s.id ?? null } : "(no data)";
+    const ag = r?.senderAgent ?? null;
+    return {
+      client: s ? { name: s.name ?? null, clientNumber: s.clientNumber ?? null, ein: s.ein ?? null, id: s.id ?? null } : null,
+      // who/where actually booked it — the lead for tracing an off-account parcel
+      agent: ag ? { name: ag.name ?? null, id: ag.id ?? null } : null,
+      senderOfficeCode: r?.senderOfficeCode ?? null,
+      senderDeliveryType: r?.senderDeliveryType ?? null,
+      senderCity: (r?.senderAddress as { city?: { name?: string } } | null)?.city?.name ?? null,
+      shipmentType: r?.shipmentType ?? null,
+    };
   };
 
   return NextResponse.json({
