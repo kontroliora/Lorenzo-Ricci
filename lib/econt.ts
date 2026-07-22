@@ -183,7 +183,14 @@ function rawVerdict(raw: RawStatus): EcontVerdict {
   const bg = String(raw.shortDeliveryStatus ?? "").toLowerCase();
   const events = Array.isArray(raw.trackingEvents) ? raw.trackingEvents : [];
   const lastType = events.length ? events[events.length - 1]?.destinationType : null;
-  if (bg.includes("върната") || RETURN_EVENT_TYPES.has(lastType ?? "")) return "returned";
+  // A return counts the moment Econt emits a return event ANYWHERE in the history,
+  // not just as the newest one. While the parcel travels back it keeps emitting
+  // ordinary transit events (courier_direction / in_pickup_office) and the text
+  // reads "Връща се към подател" — which contains no "върната" — so the old
+  // last-event-or-text test missed the entire return journey and froze the order
+  // on 'shipped' (LR-B0L1J7, return started 21.07 18:27). Same broad rule as
+  // analyzeShipment().returning.
+  if (bg.includes("върната") || events.some((e) => RETURN_EVENT_TYPES.has(e?.destinationType ?? ""))) return "returned";
   if (raw.deliveryTime != null || raw.cdCollectedTime != null || bg === "доставена" || lastType === "client") return "delivered";
   if (raw.shortDeliveryStatus) return "in_transit";
   return "unknown";

@@ -104,7 +104,11 @@ export async function sendReminders(sb: SupabaseClient): Promise<{ sent: number;
     const raw = statuses.get(clean(o.tracking_number));
     if (!raw) continue;
     const a = analyzeShipment(raw);
-    if (a.delivered || a.returned || !a.atFinalOffice || !a.arrivedAtFinalOfficeMs) continue;
+    // `returning` (broad), not `returned` (text-only): a parcel that Econt has
+    // already started sending back still reads "Връща се към подател" and still
+    // looks "at the final office", so the narrow flag let a "your parcel is
+    // waiting for you" reminder go out for a parcel travelling back to us.
+    if (a.delivered || a.returning || !a.atFinalOffice || !a.arrivedAtFinalOfficeMs) continue;
     if ((now - a.arrivedAtFinalOfficeMs) / DAY < MIN_DAYS_AT_OFFICE) continue;
     const officeCase = a.deliveryType === "office";
     const doorCase = a.deliveryType === "door" && a.deliveryAttemptCount > 0;
