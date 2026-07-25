@@ -309,7 +309,7 @@ export type ReconcileResult = {
 };
 
 // Reads shipped orders via the given client, asks Econt, and transitions:
-//   delivered → completed (completed_source='econt' — triggers the bonus)
+//   delivered → completed (completed_source='econt' — Econt-confirmed, not manual)
 //   returned  → returned
 // Works with either an authenticated (manual button) or service-role (cron) client.
 export async function reconcileShippedOrders(sb: SupabaseClient): Promise<ReconcileResult> {

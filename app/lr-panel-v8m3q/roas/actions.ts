@@ -1,5 +1,5 @@
 "use server";
-import { isOwner } from "@/lib/bonus";
+import { isOwner } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { computeRoas, type RoasData } from "@/lib/roas";
 

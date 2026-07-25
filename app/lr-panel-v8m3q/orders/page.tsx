@@ -6,7 +6,9 @@ import { OrdersBoard } from "./OrdersBoard";
 export const dynamic = "force-dynamic";
 
 export default async function OrdersPage() {
-  const orders = await getOrders(150);
+  // Was 150 — with >150 orders the oldest (stuck new/confirmed) fell off the
+  // panel entirely. Raised so every order shows; paginate properly when it grows.
+  const orders = await getOrders(1000);
   const histories = await getCustomerHistories(orders.map((o) => o.phone ?? "").filter(Boolean));
   const log = await getStatusLog(orders.map((o) => o.id));
   const nowMs = Date.now();

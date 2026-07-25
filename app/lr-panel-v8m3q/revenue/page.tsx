@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { logout } from "../actions";
-import { isOwner } from "@/lib/bonus";
+import { isOwner } from "@/lib/admin-auth";
 import { getRevenue } from "@/lib/revenue";
 import { RevenueBoard } from "./RevenueBoard";
 

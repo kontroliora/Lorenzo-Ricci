@@ -68,7 +68,7 @@ const BASE_COLUMNS =
   "id, order_ref, name, phone, city, post_code, address, shipping_method, courier, items, total, notes, status, call_state, call_notes, call_attempts, tracking_number, excluded_from_stock, created_at";
 const ORDER_COLUMNS = `${BASE_COLUMNS}, last_attempt_at, call_attempt_times, return_reviewed, is_manual, cancel_category, cancel_reason`;
 
-export async function getOrders(limit = 150): Promise<AdminOrder[]> {
+export async function getOrders(limit = 1000): Promise<AdminOrder[]> {
   const supabase = await createClient();
   // Try the richest column set first, degrade gracefully if a migration hasn't
   // run yet: promo columns → extended columns → base. A missing column must

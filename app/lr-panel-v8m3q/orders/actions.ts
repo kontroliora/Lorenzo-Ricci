@@ -156,8 +156,8 @@ export async function addOrderNote(id: number, text: string): Promise<string | n
 }
 
 // Shipped → completed. Manual fallback until the Econt auto-close is built.
-// Tagged 'manual' so it NEVER counts toward the bonus (only Econt-confirmed
-// deliveries, which set completed_source='econt', earn a bonus).
+// Tagged 'manual' so completions closed by hand stay distinguishable from the
+// ones Econt confirmed (those set completed_source='econt').
 export async function markCompleted(id: number): Promise<string | null> {
   return patchOrder(id, {
     status: "completed",

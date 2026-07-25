@@ -1,5 +1,5 @@
 // Vercel Cron — periodically reconciles shipped orders against Econt:
-//   Econt "Доставена" → order 'completed' (source 'econt' → triggers the bonus)
+//   Econt "Доставена" → order 'completed' (source 'econt' → Econt-confirmed)
 //   Econt "Върната"   → order 'returned'
 // Needs SUPABASE_SERVICE_ROLE_KEY (server-only) to bypass RLS as no user session
 // exists. Vercel injects Authorization: Bearer ${CRON_SECRET}.

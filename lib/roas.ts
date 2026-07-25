@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { isOwner } from "@/lib/bonus";
+import { isOwner } from "@/lib/admin-auth";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // What the shop eats when a parcel is never collected: it pays BOTH delivery

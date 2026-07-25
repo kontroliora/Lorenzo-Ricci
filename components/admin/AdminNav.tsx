@@ -9,10 +9,9 @@ const TABS = [
   { href: "/lr-panel-v8m3q/orders",    label: "Поръчки" },
 ];
 
-// Owner-only tab (bonus). Hidden from the employee — the page itself also
-// re-checks server-side, so hiding the tab is UX, not the security boundary.
+// Owner-only tabs. Hidden from the employee — each page also re-checks
+// server-side, so hiding the tab is UX, not the security boundary.
 const OWNER_TABS = [
-  { href: "/lr-panel-v8m3q/bonus", label: "Бонус" },
   { href: "/lr-panel-v8m3q/revenue", label: "Оборот" },
   { href: "/lr-panel-v8m3q/roas", label: "ROAS" },
 ];

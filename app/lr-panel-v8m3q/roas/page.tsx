@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { logout } from "../actions";
-import { isOwner } from "@/lib/bonus";
+import { isOwner } from "@/lib/admin-auth";
 import { computeRoas } from "@/lib/roas";
 import { RoasBoard } from "./RoasBoard";
 
