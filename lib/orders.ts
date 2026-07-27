@@ -23,6 +23,8 @@ export type AdminOrder = {
   courier: string | null;
   items: OrderItem[];
   total: number | null;
+  subtotal: number | null;      // goods portion (after discounts) — null on legacy rows
+  shipping_cost: number | null; // delivery portion of the COD total — null on legacy rows
   notes: string | null;
   status: string;
   call_state: string;
@@ -65,7 +67,7 @@ export type StatusLogRow = {
 export { RESERVING_STATUSES, RETURN_STATUSES, isReturn };
 
 const BASE_COLUMNS =
-  "id, order_ref, name, phone, city, post_code, address, shipping_method, courier, items, total, notes, status, call_state, call_notes, call_attempts, tracking_number, excluded_from_stock, created_at";
+  "id, order_ref, name, phone, city, post_code, address, shipping_method, courier, items, total, subtotal, shipping_cost, notes, status, call_state, call_notes, call_attempts, tracking_number, excluded_from_stock, created_at";
 const ORDER_COLUMNS = `${BASE_COLUMNS}, last_attempt_at, call_attempt_times, return_reviewed, is_manual, cancel_category, cancel_reason`;
 
 export async function getOrders(limit = 1000): Promise<AdminOrder[]> {

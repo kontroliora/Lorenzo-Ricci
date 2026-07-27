@@ -117,6 +117,15 @@ export function OrderCard({
   const excluded = order.excluded_from_stock;
   const digits = (order.phone ?? "").replace(/[^\d+]/g, "");
 
+  // COD breakdown (стока / доставка / общо). Legacy rows have no subtotal → show
+  // only the total, exactly as before, so a mixed list (old + new) stays clean.
+  // Guard on reconciliation (sub + shipping === total) so a half-filled row never
+  // renders a breakdown that doesn't add up.
+  const cod = Number(order.total ?? 0);
+  const codSub = order.subtotal != null ? Number(order.subtotal) : null;
+  const codShip = Number(order.shipping_cost ?? 0);
+  const showBreakdown = codSub != null && codSub > 0 && Math.abs(codSub + codShip - cod) < 0.01;
+
   // Notes shown on every card, every status, to owner AND employee. Two sources:
   // the note from "Създай поръчка" (order.notes) + appended call comments
   // (order.call_notes, newline-separated history). Nothing is ever hidden.
@@ -180,7 +189,13 @@ export function OrderCard({
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
         <OrderItemsList items={order.items ?? []} />
         <div style={{ color: "#fff" }}>{order.shipping_method || (order.courier === "home" ? "Еконт до адрес" : "Еконт до офис")} — {order.address || "—"}{order.city ? `, ${order.city}` : ""}</div>
-        <div style={{ color: "#fff", fontWeight: 500 }}>€{Number(order.total ?? 0).toFixed(2)}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · наложен платеж</span></div>
+        {showBreakdown && (
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2, display: "flex", gap: 14, flexWrap: "wrap" }}>
+            <span>Стока: <span style={{ color: "rgba(255,255,255,0.8)" }}>€{codSub!.toFixed(2)}</span></span>
+            <span>Доставка: <span style={{ color: "rgba(255,255,255,0.8)" }}>{codShip > 0 ? `€${codShip.toFixed(2)}` : "безплатна"}</span></span>
+          </div>
+        )}
+        <div style={{ color: "#fff", fontWeight: 500 }}>€{cod.toFixed(2)}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · наложен платеж</span></div>
         {order.promo_code && (
           <div style={{ marginTop: 4, fontSize: 12, color: "#C0DD97" }}>
             ◈ Промо код: <span style={{ fontFamily: "monospace", color: "#fff", letterSpacing: "0.04em" }}>{order.promo_code}</span>

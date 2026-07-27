@@ -51,6 +51,16 @@ export function GroupedOrderCard({
   const promoCodes = Array.from(new Set(sorted.map((o) => o.promo_code).filter(Boolean))) as string[];
   const digits = (last.phone ?? "").replace(/[^\d+]/g, "");
 
+  // Summed стока/доставка — only when EVERY order in the group has a reconciling
+  // split, else a mix of legacy + new rows would under-count. Falls back to the
+  // total-only line (same guard idea as OrderCard).
+  const allHaveBreakdown = sorted.every((o) => {
+    const s = o.subtotal != null ? Number(o.subtotal) : null;
+    return s != null && s > 0 && Math.abs(s + Number(o.shipping_cost ?? 0) - Number(o.total ?? 0)) < 0.01;
+  });
+  const groupSub  = allHaveBreakdown ? sorted.reduce((s, o) => s + Number(o.subtotal ?? 0), 0) : null;
+  const groupShip = allHaveBreakdown ? sorted.reduce((s, o) => s + Number(o.shipping_cost ?? 0), 0) : 0;
+
   const run = (fn: () => Promise<string | null>) =>
     start(async () => {
       setError("");
@@ -96,6 +106,12 @@ export function GroupedOrderCard({
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
         <OrderItemsList items={allItems} />
         <div style={{ color: "#fff" }}>{last.shipping_method || (last.courier === "home" ? "Еконт до адрес" : "Еконт до офис")} — {last.address || "—"}{last.city ? `, ${last.city}` : ""}</div>
+        {groupSub != null && (
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2, display: "flex", gap: 14, flexWrap: "wrap" }}>
+            <span>Стока: <span style={{ color: "rgba(255,255,255,0.8)" }}>€{groupSub.toFixed(2)}</span></span>
+            <span>Доставка: <span style={{ color: "rgba(255,255,255,0.8)" }}>{groupShip > 0 ? `€${groupShip.toFixed(2)}` : "безплатна"}</span></span>
+          </div>
+        )}
         <div style={{ color: "#fff", fontWeight: 500 }}>€{total.toFixed(2)}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · обща сума от {n}-те</span></div>
         {promoCodes.length > 0 && (
           <div style={{ marginTop: 4, fontSize: 12, color: "#C0DD97" }}>
