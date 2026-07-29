@@ -15,6 +15,7 @@ export function CartDrawer() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [promoInput, setPromoInput] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
+  const [promoRate, setPromoRate] = useState(0.10); // fraction from the validated code — 10% newsletter, 5% waitlist apology
   const [promoError, setPromoError] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -24,7 +25,7 @@ export function CartDrawer() {
   const itemSavings = items.reduce((sum, { product, quantity }) =>
     sum + (product.originalPrice && product.originalPrice > product.price
       ? (product.originalPrice - product.price) * quantity : 0), 0);
-  const promoDiscount = promoApplied ? parseFloat((afterBundles * 0.1).toFixed(2)) : 0;
+  const promoDiscount = promoApplied ? parseFloat((afterBundles * promoRate).toFixed(2)) : 0;
   const total = afterBundles - promoDiscount;
   const count = totalItems();
   const freeShippingThreshold = 60;
@@ -43,9 +44,10 @@ export function CartDrawer() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
       });
-      const data = await res.json() as { valid: boolean; error?: string };
+      const data = await res.json() as { valid: boolean; discount?: number; error?: string };
       if (data.valid) {
         setPromoInput(code);
+        setPromoRate(typeof data.discount === "number" ? data.discount : 0.10);
         setPromoApplied(true);
       } else {
         setPromoError(data.error || "Невалиден промо код");
@@ -193,6 +195,7 @@ export function CartDrawer() {
               total={total}
               promoCode={promoApplied ? promoInput : undefined}
               promoDiscount={promoDiscount}
+              promoRate={promoRate}
               onSuccess={() => {
                 closeCart();
                 setShowCheckout(false);
@@ -336,7 +339,7 @@ export function CartDrawer() {
                       <span className="font-sans text-[11px] tracking-wide">Промо код {promoInput} приложен</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="font-sans text-xs text-emerald-400/70 tracking-wide">◈ {promoInput} -10%</span>
+                      <span className="font-sans text-xs text-emerald-400/70 tracking-wide">◈ {promoInput} -{Math.round(promoRate * 100)}%</span>
                       <span className="font-sans text-xs text-emerald-400/70">-€{promoDiscount.toFixed(2)}</span>
                     </div>
                   </>

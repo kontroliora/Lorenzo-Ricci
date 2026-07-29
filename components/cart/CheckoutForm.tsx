@@ -21,10 +21,11 @@ interface CheckoutFormProps {
   total: number; // after bundle + promo discounts
   promoCode?: string;
   promoDiscount?: number;
+  promoRate?: number; // fraction of the applied code — for the "-X%" label (10% / 5%)
   onSuccess: () => void;
 }
 
-export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuccess }: CheckoutFormProps) {
+export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promoRate = 0.10, onSuccess }: CheckoutFormProps) {
   const { clearCart } = useCartStore();
   const { totalDiscount, active: activeBundles } = calcBundleDiscount(items);
 
@@ -313,7 +314,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, onSuc
 
         {promoCode && promoDiscount > 0 && (
           <div className="flex justify-between text-xs">
-            <span className="font-sans text-emerald-400/70 tracking-wide">◈ Промо {promoCode} -10%</span>
+            <span className="font-sans text-emerald-400/70 tracking-wide">◈ Промо {promoCode} -{Math.round(promoRate * 100)}%</span>
             <span className="font-sans text-emerald-400/70">-€{promoDiscount.toFixed(2)}</span>
           </div>
         )}

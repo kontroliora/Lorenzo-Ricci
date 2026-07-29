@@ -129,7 +129,10 @@ export function OrdersBoard({
 
   const ageH = (o: AdminOrder) => (now - new Date(o.created_at).getTime()) / 3_600_000;
 
-  const real = orders.filter((o) => !o.excluded_from_stock);
+  // International "soft decline" waitlist orders never enter the normal queue —
+  // they live in the separate "Международни" panel view. One filter here keeps them
+  // out of every tab, counter and search at once (same pattern as excluded_from_stock).
+  const real = orders.filter((o) => !o.excluded_from_stock && !o.is_international);
   const fake = orders.filter((o) => o.excluded_from_stock);
 
   const count = (t: Tab) => real.filter((o) => inTab(o, t)).length;
