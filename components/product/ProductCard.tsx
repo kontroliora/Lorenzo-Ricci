@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
+import { useCountry } from "@/lib/country";
+import { displayPrice } from "@/lib/price";
 
 interface ProductCardProps {
   product: Product;
@@ -31,7 +33,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
   }, [product.slug]);
 
   const isWatch = product.category === "watches";
-  const hasDiscount = product.originalPrice && product.originalPrice > product.price;
+  const price = displayPrice(product, useCountry());
 
   const productSummary = reviewSummary[product.slug];
   const reviewCount = productSummary?.count ?? 0;
@@ -210,11 +212,11 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
 
         <div className="mt-auto flex items-center gap-3">
           <span className="font-serif text-xl text-navy">
-            {product.currency}{product.price.toFixed(2)}
+            {price.text}
           </span>
-          {hasDiscount && (
+          {price.original && (
             <span className="font-sans text-xs text-ink-faint line-through">
-              {product.currency}{product.originalPrice!.toFixed(2)}
+              {price.original}
             </span>
           )}
         </div>

@@ -21,6 +21,8 @@ export interface Product {
   price: number;
   originalPrice?: number;
   currency: string;
+  priceAED?: number; // optional Dubai price — shown to AE visitors instead of the EUR base
+
   description: string;
   tabDescription?: string[];   // multi-paragraph "ОПИСАНИЕ" tab copy; falls back to `description`
   materialNote?: string;

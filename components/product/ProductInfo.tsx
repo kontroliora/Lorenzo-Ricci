@@ -5,6 +5,8 @@ import { Award, RefreshCw, Truck, Eye } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
+import { useCountry } from "@/lib/country";
+import { displayPrice } from "@/lib/price";
 import { SummerCountdown } from "@/components/product/SummerCountdown";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
@@ -94,10 +96,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
     });
   }, [product.slug]);
 
-  const hasDiscount = product.originalPrice && product.originalPrice > product.price;
-  const discountPct = hasDiscount
-    ? Math.round((1 - product.price / product.originalPrice!) * 100)
-    : 0;
+  const price = displayPrice(product, useCountry());
 
   const handleAdd = () => {
     addItem({ ...product, stock: effectiveStock });
@@ -200,15 +199,15 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       {/* Price */}
       <div className="flex items-baseline gap-4 py-5 border-y border-border">
         <span className="font-serif text-4xl text-navy">
-          {product.currency}{product.price.toFixed(2)}
+          {price.text}
         </span>
-        {hasDiscount && (
+        {price.original && (
           <>
             <span className="font-sans text-lg text-ink-faint line-through">
-              {product.currency}{product.originalPrice!.toFixed(2)}
+              {price.original}
             </span>
             <span className="font-sans text-xs text-navy bg-navy/8 px-2 py-0.5 border border-navy/20">
-              -{discountPct}%
+              -{price.discountPct}%
             </span>
           </>
         )}

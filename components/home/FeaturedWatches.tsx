@@ -5,6 +5,8 @@ import Link from "next/link";
 import { getWatches } from "@/lib/products";
 import { ProductCard } from "@/components/product/ProductCard";
 import { useReveal } from "@/lib/useReveal";
+import { useCountry } from "@/lib/country";
+import { displayPrice } from "@/lib/price";
 
 export function FeaturedWatches() {
   const watches = getWatches();
@@ -50,6 +52,7 @@ export function FeaturedWatches() {
   };
 
   const active = watches[activeIndex];
+  const activePrice = displayPrice(active, useCountry());
 
   return (
     <section className="py-20 sm:py-40 bg-white">
@@ -184,11 +187,11 @@ export function FeaturedWatches() {
             <h3 className="font-serif text-xl text-charcoal mb-1">{active.name}</h3>
             <div className="flex items-baseline justify-center gap-3 mb-5">
               <span className="font-serif text-lg text-navy">
-                {active.currency}{active.price.toFixed(2)}
+                {activePrice.text}
               </span>
-              {active.originalPrice && active.originalPrice > active.price && (
+              {activePrice.original && (
                 <span className="font-sans text-sm text-ink-faint line-through">
-                  {active.currency}{active.originalPrice.toFixed(2)}
+                  {activePrice.original}
                 </span>
               )}
             </div>

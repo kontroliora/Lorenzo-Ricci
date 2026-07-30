@@ -4,6 +4,8 @@ import Image from "next/image";
 import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
+import { useCountry } from "@/lib/country";
+import { displayPrice } from "@/lib/price";
 
 interface Props {
   product: Product;
@@ -15,7 +17,7 @@ export function StickyCartBar({ product, effectiveInStock }: Props) {
   const [added, setAdded]     = useState(false);
   const { addItem } = useCartStore();
 
-  const hasDiscount = product.originalPrice && product.originalPrice > product.price;
+  const price = displayPrice(product, useCountry());
 
   useEffect(() => {
     const el = document.querySelector("[data-main-cta]");
@@ -87,11 +89,11 @@ export function StickyCartBar({ product, effectiveInStock }: Props) {
             </p>
             <div className="flex items-baseline gap-2.5">
               <span className="font-serif text-xl text-navy leading-none">
-                {product.currency}{product.price.toFixed(2)}
+                {price.text}
               </span>
-              {hasDiscount && (
+              {price.original && (
                 <span className="font-sans text-xs text-ink-faint line-through hidden sm:inline">
-                  {product.currency}{product.originalPrice!.toFixed(2)}
+                  {price.original}
                 </span>
               )}
             </div>

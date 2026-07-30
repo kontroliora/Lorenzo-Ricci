@@ -4,6 +4,7 @@ import Image from "next/image";
 import { BUNDLES } from "@/lib/bundles";
 import { getProductBySlug } from "@/lib/products";
 import { useCartStore } from "@/lib/store";
+import { useCountry } from "@/lib/country";
 import type { Product } from "@/lib/types";
 
 interface Props {
@@ -13,6 +14,11 @@ interface Props {
 export function BundleUpsell({ product }: Props) {
   const { addItem } = useCartStore();
   const [addedPartnerId, setAddedPartnerId] = useState<string | null>(null);
+  const country = useCountry();
+
+  // Bundles are EUR-priced; an EUR bundle beside an AED product price confuses.
+  // Hidden for UAE visitors (the AED test market).
+  if (country === "AE") return null;
 
   const bundle = BUNDLES.find((b) =>
     b.slots.some((slot) => slot.includes(product.id))

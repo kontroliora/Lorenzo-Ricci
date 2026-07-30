@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Image from "next/image";
 import { getWatches } from "@/lib/products";
 import { ProductCard } from "@/components/product/ProductCard";
+import { displayPrice } from "@/lib/price";
 
 export const metadata: Metadata = {
   title: "Часовници",
@@ -9,8 +11,9 @@ export const metadata: Metadata = {
     "Lorenzo Ricci колекция часовници - Chrono Black, Golden Eclipse, Polar Frost. Сапфирен кристал, японски механизъм, 5 ATM. Промоционална цена €175.",
 };
 
-export default function WatchesPage() {
+export default async function WatchesPage() {
   const watches = getWatches();
+  const country = (await headers()).get("x-vercel-ip-country");
 
   return (
     <div className="min-h-screen pt-[116px] pb-24">
@@ -124,16 +127,19 @@ export default function WatchesPage() {
                 <td className="py-4 px-6 font-sans text-[10px] tracking-widest uppercase text-ink-faint">
                   Цена
                 </td>
-                {watches.map((w) => (
+                {watches.map((w) => {
+                  const wp = displayPrice(w, country);
+                  return (
                   <td key={w.id} className="py-4 px-6 text-center">
-                    <span className="font-serif text-xl text-navy">€{w.price}</span>
-                    {w.originalPrice && (
+                    <span className="font-serif text-xl text-navy">{wp.text}</span>
+                    {wp.original && (
                       <span className="block font-sans text-xs text-ink-faint line-through">
-                        €{w.originalPrice}
+                        {wp.original}
                       </span>
                     )}
                   </td>
-                ))}
+                  );
+                })}
               </tr>
             </tbody>
           </table>

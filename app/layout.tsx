@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import "./globals.css";
+import { CountryProvider } from "@/lib/country";
 import { Header } from "@/components/layout/Header";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Footer } from "@/components/layout/Footer";
@@ -55,15 +57,19 @@ export const viewport: Viewport = {
   themeColor: "#FAFAF8",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Detected country (Vercel edge header) drives geo display like AED pricing.
+  // Reading it opts the tree into per-request rendering — intended for the geo test.
+  const country = (await headers()).get("x-vercel-ip-country");
   return (
     <html lang="bg" className="scroll-smooth" suppressHydrationWarning>
       <body className="bg-ivory text-charcoal antialiased">
         <MetaPixel />
+        <CountryProvider country={country}>
         <ThemeProvider>
           <HideOnAdmin>
             <AnnouncementBar />
@@ -81,6 +87,7 @@ export default function RootLayout({
             </HideOnTrack>
           </HideOnAdmin>
         </ThemeProvider>
+        </CountryProvider>
       </body>
     </html>
   );
