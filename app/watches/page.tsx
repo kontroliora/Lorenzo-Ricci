@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import Image from "next/image";
 import { getWatches } from "@/lib/products";
 import { ProductCard } from "@/components/product/ProductCard";
 import { displayPrice } from "@/lib/price";
+import { resolveCountry } from "@/lib/geo";
 
 export const metadata: Metadata = {
   title: "Часовници",
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default async function WatchesPage() {
   const watches = getWatches();
-  const country = (await headers()).get("x-vercel-ip-country");
+  const country = await resolveCountry();
 
   return (
     <div className="min-h-screen pt-[116px] pb-24">

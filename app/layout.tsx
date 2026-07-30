@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { headers } from "next/headers";
 import "./globals.css";
 import { CountryProvider } from "@/lib/country";
+import { resolveCountry } from "@/lib/geo";
 import { Header } from "@/components/layout/Header";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Footer } from "@/components/layout/Footer";
@@ -62,9 +62,9 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Detected country (Vercel edge header) drives geo display like AED pricing.
-  // Reading it opts the tree into per-request rendering — intended for the geo test.
-  const country = (await headers()).get("x-vercel-ip-country");
+  // Detected country (Vercel edge header, or the x_geo test cookie) drives geo
+  // display like AED pricing. Reading it opts the tree into per-request rendering.
+  const country = await resolveCountry();
   return (
     <html lang="bg" className="scroll-smooth" suppressHydrationWarning>
       <body className="bg-ivory text-charcoal antialiased">
