@@ -1,8 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { NewsletterStrip } from "./NewsletterStrip";
+import { resolveLocale } from "@/lib/i18n/locale";
+import { translate } from "@/lib/i18n/dict";
 
-export function Footer() {
+// Server component — translate() instead of the useT() hook, so the footer stays
+// out of the client bundle.
+export async function Footer() {
+  const locale = await resolveLocale();
+  const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
   return (
     <footer className="bg-white border-t border-border">
       <NewsletterStrip />
@@ -27,23 +33,23 @@ export function Footer() {
 
           {/* Collections */}
           <div>
-            <FooterHeading>Колекции</FooterHeading>
+            <FooterHeading>{t("footer.collections")}</FooterHeading>
             <div className="flex flex-col gap-3">
-              <FooterLink href="/watches">Часовници</FooterLink>
-              <FooterLink href="/jewellery">Бижута</FooterLink>
-              <FooterLink href="/jewellery#bracelets">Гривни</FooterLink>
-              <FooterLink href="/jewellery#necklaces">Колиета</FooterLink>
-              <FooterLink href="/leather-goods">Кожени Изделия</FooterLink>
+              <FooterLink href="/watches">{t("nav.watches")}</FooterLink>
+              <FooterLink href="/jewellery">{t("nav.jewellery")}</FooterLink>
+              <FooterLink href="/jewellery#bracelets">{t("footer.bracelets")}</FooterLink>
+              <FooterLink href="/jewellery#necklaces">{t("footer.necklaces")}</FooterLink>
+              <FooterLink href="/leather-goods">{t("nav.leather")}</FooterLink>
             </div>
           </div>
 
           {/* Customer Care */}
           <div>
-            <FooterHeading>Обслужване на клиенти</FooterHeading>
+            <FooterHeading>{t("footer.care")}</FooterHeading>
             <div className="flex flex-col gap-3">
-              <FooterLink href="/faq">Често задавани въпроси</FooterLink>
-              <FooterLink href="/policies/shipping">Доставка и връщане</FooterLink>
-              <FooterLink href="/warranty/jewelry">Гаранция и поддръжка</FooterLink>
+              <FooterLink href="/faq">{t("footer.faqLong")}</FooterLink>
+              <FooterLink href="/policies/shipping">{t("footer.shippingRet")}</FooterLink>
+              <FooterLink href="/warranty/jewelry">{t("footer.warrantyCare")}</FooterLink>
             </div>
           </div>
 
@@ -51,31 +57,31 @@ export function Footer() {
           <div>
             <FooterHeading>Lorenzo Ricci</FooterHeading>
             <div className="flex flex-col gap-3">
-              <FooterLink href="/story">История</FooterLink>
-              <FooterLink href="/policies/privacy">Политика за поверителност</FooterLink>
+              <FooterLink href="/story">{t("nav.story")}</FooterLink>
+              <FooterLink href="/policies/privacy">{t("footer.privacy")}</FooterLink>
             </div>
           </div>
 
           {/* Contact */}
           <div>
-            <FooterHeading>Контакт</FooterHeading>
+            <FooterHeading>{t("footer.contact")}</FooterHeading>
             <div className="flex flex-col gap-3">
               <a href="mailto:info@lorenzo-ricci.com" className="font-sans text-xs font-light text-ink-muted hover:text-navy transition-colors duration-300 tracking-wide">
                 info@lorenzo-ricci.com
               </a>
-              <p className="font-sans text-xs font-light text-ink-faint tracking-wide leading-relaxed">Пон-Пет, 10:00-18:00</p>
+              <p className="font-sans text-xs font-light text-ink-faint tracking-wide leading-relaxed">{t("footer.hours")}</p>
             </div>
           </div>
         </div>
 
         {/* Trust badges */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 py-10 border-y border-border mb-8">
-          {[
-            { title: "2г Гаранция", sub: "на часовниците" },
-            { title: "Доживотна гаранция", sub: "на бижутата" },
-            { title: "До 2 работни дни", sub: "Еконт" },
-            { title: "Преглед преди плащане", sub: "Наложен платеж" },
-          ].map(({ title, sub }) => (
+          {([
+            { title: t("trust.warranty2y"),   sub: t("trust.onWatches") },
+            { title: t("trust.warrantyLife"), sub: t("trust.onJewellery") },
+            { title: t("trust.days2"),        sub: t("trust.courier") },
+            { title: t("trust.inspect"),      sub: t("trust.cod") },
+          ]).map(({ title, sub }) => (
             <div key={title} className="flex flex-col gap-1.5">
               <div className="w-4 h-px bg-navy/30 mb-1" />
               <p className="font-sans text-[11px] font-medium text-charcoal tracking-[0.12em] uppercase">{title}</p>

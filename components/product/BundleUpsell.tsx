@@ -16,9 +16,9 @@ export function BundleUpsell({ product }: Props) {
   const [addedPartnerId, setAddedPartnerId] = useState<string | null>(null);
   const country = useCountry();
 
-  // Bundles are EUR-priced; an EUR bundle beside an AED product price confuses.
-  // Hidden for UAE visitors (the AED test market).
-  if (country === "AE") return null;
+  // Bundles are EUR-priced; an EUR bundle beside a local (AED/RON) product price
+  // confuses. Hidden in every geo-price market.
+  if (country === "AE" || country === "RO") return null;
 
   const bundle = BUNDLES.find((b) =>
     b.slots.some((slot) => slot.includes(product.id))

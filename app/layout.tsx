@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { CountryProvider } from "@/lib/country";
 import { resolveCountry } from "@/lib/geo";
+import { resolveLocale, HTML_LANG } from "@/lib/i18n/locale";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import { Header } from "@/components/layout/Header";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Footer } from "@/components/layout/Footer";
@@ -64,12 +66,17 @@ export default async function RootLayout({
 }) {
   // Detected country (Vercel edge header, or the x_geo test cookie) drives geo
   // display like AED pricing. Reading it opts the tree into per-request rendering.
+  // Country drives geo display (AED/RON pricing, newsletter popup); locale drives
+  // language. Deliberately independent — a Bulgarian reading in English is still a
+  // BG customer.
   const country = await resolveCountry();
+  const locale = await resolveLocale();
   return (
-    <html lang="bg" className="scroll-smooth" suppressHydrationWarning>
+    <html lang={HTML_LANG[locale]} className="scroll-smooth" suppressHydrationWarning>
       <body className="bg-ivory text-charcoal antialiased">
         <MetaPixel />
         <CountryProvider country={country}>
+        <LocaleProvider locale={locale}>
         <ThemeProvider>
           <HideOnAdmin>
             <AnnouncementBar />
@@ -82,11 +89,18 @@ export default async function RootLayout({
             <HideOnTrack>
               <HideOnCart>
                 <SalesNotification />
-                <NewsletterPopup />
+                {/* 10% newsletter popup is a BG-market offer. Gated on the DETECTED
+                    country, not the chosen language: a Bulgarian browsing in English
+                    still sees it; a genuine foreign visitor never does, so they can't
+                    hit a 10% code that clashes with the 5% waitlist gesture. Unknown
+                    country (local dev / missing edge header) is treated as BG so the
+                    existing experience never silently disappears at home. */}
+                {(country === "BG" || !country) && <NewsletterPopup />}
               </HideOnCart>
             </HideOnTrack>
           </HideOnAdmin>
         </ThemeProvider>
+        </LocaleProvider>
         </CountryProvider>
       </body>
     </html>
