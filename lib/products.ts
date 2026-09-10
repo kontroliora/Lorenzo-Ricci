@@ -223,7 +223,7 @@ export const products: Product[] = [
     category: "jewellery",
     subcategory: "bracelet",
     price: 32,
-    originalPrice: 49,
+    originalPriceArchived: 49, // paused — rename to originalPrice for Black Friday
     currency: "€",
     inStock: true,
     warranty: "Доживотна гаранция",
@@ -265,7 +265,7 @@ export const products: Product[] = [
     category: "jewellery",
     subcategory: "bracelet",
     price: 32,
-    originalPrice: 44,
+    originalPriceArchived: 44, // paused — rename to originalPrice for Black Friday
     currency: "€",
     inStock: true,
     warranty: "Доживотна гаранция",
@@ -307,7 +307,7 @@ export const products: Product[] = [
     category: "jewellery",
     subcategory: "bracelet",
     price: 37,
-    originalPrice: 55,
+    originalPriceArchived: 55, // paused — rename to originalPrice for Black Friday
     currency: "€",
     inStock: true,
     warranty: "Доживотна гаранция",
@@ -393,7 +393,7 @@ export const products: Product[] = [
     category: "jewellery",
     subcategory: "necklace",
     price: 39,
-    originalPrice: 62,
+    originalPriceArchived: 62, // paused — rename to originalPrice for Black Friday
     currency: "€",
     badge: "Ограничена наличност",
     inStock: true,
@@ -436,7 +436,7 @@ export const products: Product[] = [
     category: "jewellery",
     subcategory: "necklace",
     price: 37,
-    originalPrice: 55,
+    originalPriceArchived: 55, // paused — rename to originalPrice for Black Friday
     currency: "€",
     inStock: true,
     warranty: "Доживотна гаранция",
@@ -477,7 +477,7 @@ export const products: Product[] = [
     category: "jewellery",
     subcategory: "necklace",
     price: 37,
-    originalPrice: 51,
+    originalPriceArchived: 51, // paused — rename to originalPrice for Black Friday
     currency: "€",
     inStock: true,
     warranty: "Доживотна гаранция",
