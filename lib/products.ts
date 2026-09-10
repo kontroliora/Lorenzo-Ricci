@@ -10,7 +10,7 @@ export const products: Product[] = [
     name: "Chrono Black",
     category: "watches",
     price: 175,
-    originalPrice: 279,
+    originalPriceArchived: 279, // paused — rename to originalPrice to restore
     currency: "€",
     inStock: true,
     warranty: "2 години гаранция",
@@ -66,7 +66,7 @@ export const products: Product[] = [
     badge: "Последни бройки",
     category: "watches",
     price: 195,
-    originalPrice: 279,
+    originalPriceArchived: 279, // paused — rename to originalPrice to restore
     currency: "€",
     inStock: true,
     warranty: "2 години гаранция",
@@ -123,7 +123,7 @@ export const products: Product[] = [
     name: "Polar Frost",
     category: "watches",
     price: 175,
-    originalPrice: 279,
+    originalPriceArchived: 279, // paused — rename to originalPrice to restore
     currency: "€",
     inStock: true,
     warranty: "2 години гаранция",
