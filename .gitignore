@@ -6,3 +6,9 @@ node_modules/
 *.tsbuildinfo
 .DS_Store
 Content for tik tok/
+
+# Image processing backups/duplicates — never belong in git (large binary dumps,
+# same class of problem that broke the push before). The active working folder
+# (Products/Leather Bags/) stays trackable.
+Products/Leather Bags - ORIGINALS BACKUP*/
+Products/Leather Bags copy/
