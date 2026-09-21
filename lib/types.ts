@@ -19,8 +19,6 @@ export interface Product {
   category: ProductCategory;
   subcategory?: JewellerySubcategory;
   price: number;
-  originalPrice?: number;
-  originalPriceArchived?: number; // paused strike-through price (e.g. off-season) — not read by displayPrice; rename back to originalPrice to restore
   currency: string;
   priceAED?: number; // optional Dubai price — shown to AE visitors instead of the EUR base
   priceRON?: number; // optional Romania price — shown to RO visitors instead of the EUR base

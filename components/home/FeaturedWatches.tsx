@@ -189,11 +189,6 @@ export function FeaturedWatches() {
               <span className="font-serif text-lg text-navy">
                 {activePrice.text}
               </span>
-              {activePrice.original && (
-                <span className="font-sans text-sm text-ink-faint line-through">
-                  {activePrice.original}
-                </span>
-              )}
             </div>
             <Link href={`/products/${active.slug}`} className="btn-primary">
               Виж Детайли

@@ -91,11 +91,6 @@ export function StickyCartBar({ product, effectiveInStock }: Props) {
               <span className="font-serif text-xl text-navy leading-none">
                 {price.text}
               </span>
-              {price.original && (
-                <span className="font-sans text-xs text-ink-faint line-through hidden sm:inline">
-                  {price.original}
-                </span>
-              )}
             </div>
           </div>
 

@@ -7,7 +7,6 @@ import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
-import { SummerCountdown } from "@/components/product/SummerCountdown";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 
@@ -201,20 +200,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         <span className="font-serif text-4xl text-navy">
           {price.text}
         </span>
-        {price.original && (
-          <>
-            <span className="font-sans text-lg text-ink-faint line-through">
-              {price.original}
-            </span>
-            <span className="font-sans text-xs text-navy bg-navy/8 px-2 py-0.5 border border-navy/20">
-              -{price.discountPct}%
-            </span>
-          </>
-        )}
       </div>
-
-      {/* Summer promo banner - watches only, no timer */}
-      {product.category === "watches" && <SummerCountdown />}
 
       {/* Stock indicator — the number AVAILABLE (free to order), matching the
           admin panel's "Налични". Shown only below the low-stock threshold; above

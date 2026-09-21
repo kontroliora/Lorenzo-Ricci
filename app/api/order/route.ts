@@ -4,6 +4,8 @@ import { supabase } from "@/lib/supabase";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStock } from "@/lib/inventory";
 import { createHash } from "crypto";
+import { getProductBySlug } from "@/lib/products";
+import { validateOrderPricing } from "@/lib/order-pricing";
 
 // Order line item shape.
 type ItemPayload = { sku?: string; qty?: number; quantity?: number; slug?: string; name?: string; price?: number; currency?: string };
@@ -414,6 +416,18 @@ export async function POST(req: NextRequest) {
     const customerAddress = String(customer.email ?? "").trim();
     const customerName    = String(customer.name  ?? "");
 
+    // ── PRICE GUARD — the browser reports unit prices and totals; check them against
+    //    the catalog first, before anything with a side effect (no stock reserved, no
+    //    emails, no DB row). A stale tab or a tampered request gets a 409 and reloads.
+    const pricing = validateOrderPricing(order, getProductBySlug);
+    if (!pricing.ok) {
+      console.warn("[Order] price check failed:", pricing.reason);
+      return NextResponse.json(
+        { success: false, code: "price_mismatch", error: "Цените са обновени, моля презаредете страницата" },
+        { status: 409 },
+      );
+    }
+
     // ── STOCK GUARD — final defence against overselling. Runs BEFORE emails and
     //    the DB insert, so an impossible order is never created. Watches/jewellery
     //    use the reservation model (KV − active orders, a read-only check); leather
@@ -482,7 +496,8 @@ export async function POST(req: NextRequest) {
       ...(customerAddress
         ? [sendCustomerEmail(customerAddress, buildCustomerEmail(order))]
         : []),
-      sendCapiPurchase(order, String(order.orderRef ?? ""), Number(order.total ?? 0), capiCtx),
+      // Meta's Purchase value is the server-validated amount, not the browser's number.
+      sendCapiPurchase(order, String(order.orderRef ?? ""), pricing.total, capiCtx),
     ]);
 
     // 3. Save to Supabase. If this fails the order is NOT in the admin panel —

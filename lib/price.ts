@@ -13,18 +13,15 @@ import type { Product } from "./types";
 //   AE + priceAED → "AED 4,500"  (no symbol, no decimals)
 //   RO + priceRON → "1.200 lei"  (RO thousands separator, no decimals)
 //   everyone else — including a geo with no price set → the EUR base price.
-// Geo prices hide the strike-through: originalPrice is EUR and would mislead.
 
-type PriceInput = Pick<Product, "price" | "originalPrice" | "currency" | "priceAED" | "priceRON">;
+type PriceInput = Pick<Product, "price" | "currency" | "priceAED" | "priceRON">;
 
 export type PriceDisplay = {
-  text: string;               // formatted current price, e.g. "AED 4,500" / "1.200 lei" / "€175.00"
-  original: string | null;    // formatted strike-through, or null (geo price / no discount)
-  discountPct: number | null; // for the "-X%" badge, or null (geo price / no discount)
-  isGeoPrice: boolean;        // true when showing a manually-set local price instead of EUR
+  text: string;        // formatted current price, e.g. "AED 4,500" / "1.200 lei" / "€279.00"
+  isGeoPrice: boolean; // true when showing a manually-set local price instead of EUR
 };
 
-const geoPrice = (text: string): PriceDisplay => ({ text, original: null, discountPct: null, isGeoPrice: true });
+const geoPrice = (text: string): PriceDisplay => ({ text, isGeoPrice: true });
 
 export function displayPrice(p: PriceInput, country?: string | null): PriceDisplay {
   if (country === "AE" && typeof p.priceAED === "number") {
@@ -35,11 +32,5 @@ export function displayPrice(p: PriceInput, country?: string | null): PriceDispl
   }
 
   const cur = p.currency || "€";
-  const showOriginal = typeof p.originalPrice === "number" && p.originalPrice > p.price;
-  return {
-    text:        `${cur}${p.price.toFixed(2)}`,
-    original:    showOriginal ? `${cur}${p.originalPrice!.toFixed(2)}` : null,
-    discountPct: showOriginal ? Math.round((1 - p.price / p.originalPrice!) * 100) : null,
-    isGeoPrice:  false,
-  };
+  return { text: `${cur}${p.price.toFixed(2)}`, isGeoPrice: false };
 }

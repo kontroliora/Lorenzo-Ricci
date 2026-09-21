@@ -5,10 +5,17 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { displayPrice } from "@/lib/price";
 import { resolveCountry } from "@/lib/geo";
 
+// Price wording comes from the catalog so it can never drift from the real prices.
+const watchPrices = getWatches().map((w) => w.price);
+const lowestWatchPrice = Math.min(...watchPrices);
+const priceNote =
+  lowestWatchPrice === Math.max(...watchPrices)
+    ? `Цена €${lowestWatchPrice}.`
+    : `Цена от €${lowestWatchPrice}.`;
+
 export const metadata: Metadata = {
   title: "Часовници",
-  description:
-    "Lorenzo Ricci колекция часовници - Chrono Black, Golden Eclipse, Polar Frost. Сапфирен кристал, японски механизъм, 5 ATM. Промоционална цена €175.",
+  description: `Lorenzo Ricci колекция часовници - Chrono Black, Golden Eclipse, Polar Frost. Сапфирен кристал, японски механизъм, 5 ATM. ${priceNote}`,
 };
 
 export default async function WatchesPage() {
@@ -132,11 +139,6 @@ export default async function WatchesPage() {
                   return (
                   <td key={w.id} className="py-4 px-6 text-center">
                     <span className="font-serif text-xl text-navy">{wp.text}</span>
-                    {wp.original && (
-                      <span className="block font-sans text-xs text-ink-faint line-through">
-                        {wp.original}
-                      </span>
-                    )}
                   </td>
                   );
                 })}

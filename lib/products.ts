@@ -9,8 +9,7 @@ export const products: Product[] = [
     sku: "LR-CHRONO-BLK",
     name: "Chrono Black",
     category: "watches",
-    price: 175,
-    originalPriceArchived: 279, // paused — rename to originalPrice to restore
+    price: 279,
     currency: "€",
     inStock: true,
     warranty: "2 години гаранция",
@@ -65,8 +64,7 @@ export const products: Product[] = [
     name: "Golden Eclipse",
     badge: "Последни бройки",
     category: "watches",
-    price: 195,
-    originalPriceArchived: 279, // paused — rename to originalPrice to restore
+    price: 299,
     currency: "€",
     inStock: true,
     warranty: "2 години гаранция",
@@ -122,8 +120,7 @@ export const products: Product[] = [
     sku: "LR-POLAR-FROST",
     name: "Polar Frost",
     category: "watches",
-    price: 175,
-    originalPriceArchived: 279, // paused — rename to originalPrice to restore
+    price: 279,
     currency: "€",
     inStock: true,
     warranty: "2 години гаранция",
@@ -222,8 +219,7 @@ export const products: Product[] = [
     name: "Гривна Milano Forte",
     category: "jewellery",
     subcategory: "bracelet",
-    price: 32,
-    originalPriceArchived: 49, // paused — rename to originalPrice for Black Friday
+    price: 49,
     currency: "€",
     inStock: true,
     warranty: "Доживотна гаранция",
@@ -264,8 +260,7 @@ export const products: Product[] = [
     name: "Гривна Milano Twist",
     category: "jewellery",
     subcategory: "bracelet",
-    price: 32,
-    originalPriceArchived: 44, // paused — rename to originalPrice for Black Friday
+    price: 44,
     currency: "€",
     inStock: true,
     warranty: "Доживотна гаранция",
@@ -306,8 +301,7 @@ export const products: Product[] = [
     name: "Гривна Signature",
     category: "jewellery",
     subcategory: "bracelet",
-    price: 37,
-    originalPriceArchived: 55, // paused — rename to originalPrice for Black Friday
+    price: 55,
     currency: "€",
     inStock: true,
     warranty: "Доживотна гаранция",
@@ -392,8 +386,7 @@ export const products: Product[] = [
     name: "Колие Grande Imperiale",
     category: "jewellery",
     subcategory: "necklace",
-    price: 39,
-    originalPriceArchived: 62, // paused — rename to originalPrice for Black Friday
+    price: 62,
     currency: "€",
     badge: "Ограничена наличност",
     inStock: true,
@@ -435,8 +428,7 @@ export const products: Product[] = [
     name: "Колие Milano Forte",
     category: "jewellery",
     subcategory: "necklace",
-    price: 37,
-    originalPriceArchived: 55, // paused — rename to originalPrice for Black Friday
+    price: 55,
     currency: "€",
     inStock: true,
     warranty: "Доживотна гаранция",
@@ -476,8 +468,7 @@ export const products: Product[] = [
     name: "Колие Milano Twist",
     category: "jewellery",
     subcategory: "necklace",
-    price: 37,
-    originalPriceArchived: 51, // paused — rename to originalPrice for Black Friday
+    price: 51,
     currency: "€",
     inStock: true,
     warranty: "Доживотна гаранция",

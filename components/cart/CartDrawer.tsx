@@ -22,9 +22,6 @@ export function CartDrawer() {
   const subtotal = totalPrice();
   const { totalDiscount, active: activeBundles } = bundleDiscount();
   const afterBundles = subtotal - totalDiscount;
-  const itemSavings = items.reduce((sum, { product, quantity }) =>
-    sum + (product.originalPrice && product.originalPrice > product.price
-      ? (product.originalPrice - product.price) * quantity : 0), 0);
   const promoDiscount = promoApplied ? parseFloat((afterBundles * promoRate).toFixed(2)) : 0;
   const total = afterBundles - promoDiscount;
   const count = totalItems();
@@ -266,11 +263,6 @@ export function CartDrawer() {
                           <span className="font-serif text-base text-white block">
                             {product.currency}{(product.price * quantity).toFixed(2)}
                           </span>
-                          {product.originalPrice && product.originalPrice > product.price && (
-                            <span className="font-sans text-[11px] text-white/30 line-through block">
-                              {product.currency}{(product.originalPrice * quantity).toFixed(2)}
-                            </span>
-                          )}
                         </div>
                         <button
                           onClick={() => removeItem(product.id)}
@@ -362,13 +354,6 @@ export function CartDrawer() {
                 <div className="flex items-center justify-between mb-4 pt-2 border-t border-white/8">
                   <span className="font-sans text-xs font-medium text-white tracking-wide">Общо</span>
                   <span className="font-serif text-lg text-white">€{total.toFixed(2)}</span>
-                </div>
-              )}
-
-              {itemSavings > 0 && (
-                <div className="flex items-center justify-between mb-4 px-3 py-2.5 bg-emerald-500/10 border border-emerald-500/25 rounded-sm">
-                  <span className="font-sans text-[11px] text-emerald-400 tracking-wide">Спестявате от редовни цени</span>
-                  <span className="font-sans text-sm text-emerald-400 font-semibold">€{itemSavings.toFixed(2)}</span>
                 </div>
               )}
 

@@ -216,11 +216,6 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
           <span className="font-serif text-xl text-navy">
             {price.text}
           </span>
-          {price.original && (
-            <span className="font-sans text-xs text-ink-faint line-through">
-              {price.original}
-            </span>
-          )}
         </div>
 
       </div>
