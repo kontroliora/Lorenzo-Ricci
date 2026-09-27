@@ -162,7 +162,8 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
             const pos        = getPos(i);
             const isActive   = pos === 0;
             const isTeleport = teleporting === i;
-            const nightImg   = watch.images[1] ?? watch.coverImage;
+            // The lume shot by name, not by position — galleries differ per model.
+            const nightImg   = watch.images.find((im) => /lume|noshten/i.test(im.src)) ?? watch.images[1] ?? watch.coverImage;
 
             const xShift = pos === 0 ? "0vw" : pos === -1 ? "-35vw" : "35vw";
             const scale  = isActive ? 1.1 : 0.55;

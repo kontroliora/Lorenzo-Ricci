@@ -95,7 +95,7 @@ export const products: Product[] = [
     images: [
       { src: `/Products/watches/Yachting Blue/yachting-blue-hronograf-preden-izgled-v2.webp`, alt: "Lorenzo Ricci Yachting Blue - преден изглед, компасна роза и градусова скала" },
       { src: `/Products/watches/Yachting Blue/yachting-blue-stranicen-izgled-v2.webp`,         alt: "Lorenzo Ricci Yachting Blue - страничен изглед, корона и каучукова верижка" },
-      { src: `/Products/watches/Yachting Blue/yachting-blue-lume-noshten-rejim.webp`,       alt: "Lorenzo Ricci Yachting Blue нощен режим - светещи индекси и стрелки" },
+      { src: `/Products/watches/Yachting Blue/yachting-blue-lume-noshten-rejim-v2.webp`,       alt: "Lorenzo Ricci Yachting Blue нощен режим - светещи индекси и стрелки" },
       { src: `/Products/watches/Yachting Blue/yachting-blue-zadna-strana-v2.webp`,             alt: "Lorenzo Ricci Yachting Blue - задна страна на корпуса, гравиран компас YACHTING" },
       { src: `/Products/watches/Yachting Blue/yachting-blue-kutiya-otvorena.webp`,          alt: "Lorenzo Ricci Yachting Blue в луксозна кутия за пътуване" },
       { src: `/Products/watches/Yachting Blue/yachting-blue-kaishka-kopchalka.webp`,        alt: "Lorenzo Ricci Yachting Blue - закопчалка, детайл на каучуковата верижка" },
@@ -139,7 +139,7 @@ export const products: Product[] = [
       { src: `/Products/watches/Yachting White/yachting-white-hronograf-preden-izgled-v2.webp`, alt: "Lorenzo Ricci Yachting White - преден изглед, компасна роза и градусова скала" },
       { src: `/Products/watches/Yachting White/yachting-white-stranicen-izgled-v2.webp`,         alt: "Lorenzo Ricci Yachting White - страничен изглед, корона и каучукова верижка" },
       { src: `/Products/watches/Yachting White/yachting-white-na-ruka.webp`,                  alt: "Lorenzo Ricci Yachting White на ръка - лайфстайл изглед" },
-      { src: `/Products/watches/Yachting White/yachting-white-lume-noshten-rejim.webp`,       alt: "Lorenzo Ricci Yachting White нощен режим - светещи индекси и стрелки" },
+      { src: `/Products/watches/Yachting White/yachting-white-lume-noshten-rejim-v2.webp`,       alt: "Lorenzo Ricci Yachting White нощен режим - светещи индекси и стрелки" },
       { src: `/Products/watches/Yachting White/yachting-white-zadna-strana-v2.webp`,             alt: "Lorenzo Ricci Yachting White - задна страна на корпуса, гравиран компас YACHTING" },
       { src: `/Products/watches/Yachting White/yachting-white-kutiya-otvorena.webp`,          alt: "Lorenzo Ricci Yachting White в луксозна кутия за пътуване" },
       { src: `/Products/watches/Yachting White/yachting-white-kaishka-kopchalka.webp`,        alt: "Lorenzo Ricci Yachting White - закопчалка, детайл на каучуковата верижка" },
