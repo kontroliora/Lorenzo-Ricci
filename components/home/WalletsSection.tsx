@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useReveal } from "@/lib/useReveal";
 import { getProductBySlug } from "@/lib/products";
+import { useCountry } from "@/lib/country";
+import { displayPrice } from "@/lib/price";
 
 type LeatherItem = { id: string; slug: string; name: string; sub: string; src: string; soldOut?: boolean };
 
@@ -35,9 +37,17 @@ const CLUTCHES: LeatherItem[] = [
 ];
 
 function LeatherCard({ item, sold, sizes }: { item: LeatherItem; sold: boolean; sizes: string }) {
+  const country = useCountry();
+  const product = getProductBySlug(item.slug);
+  const price = product ? displayPrice(product, country) : null;
   return (
     <Link href={`/products/${item.slug}`} className="group flex flex-col">
       <div className="relative aspect-square bg-ivory-warm border border-border overflow-hidden">
+        {product?.badge && !sold && (
+          <span className="absolute top-2 left-2 z-10 bg-white/90 text-navy border border-navy/20 font-sans text-[8px] sm:text-[9px] font-medium tracking-[0.16em] uppercase px-2 py-0.5">
+            {product.badge}
+          </span>
+        )}
         <Image
           src={item.src}
           alt={`${item.name} - ${item.sub}, Crocodylus Siamensis, CITES сертифициран, ръчна изработка`}
@@ -61,6 +71,12 @@ function LeatherCard({ item, sold, sizes }: { item: LeatherItem; sold: boolean; 
         <p className="font-sans text-[10px] text-ink-muted mt-0.5 tracking-wide">
           {sold ? "Изчерпан" : item.sub}
         </p>
+        {price && (
+          <p className={`font-serif text-sm sm:text-base mt-1 ${sold ? "text-ink-faint" : "text-navy"}`}>
+            {price.text}
+            {price.original && <span className="font-sans text-[10px] text-ink-faint line-through ml-2">{price.original}</span>}
+          </p>
+        )}
       </div>
     </Link>
   );
@@ -87,7 +103,7 @@ export function WalletsSection() {
   }, []);
 
   // Sold out = static flag, live stock at 0, or switched off in lib/products.ts
-  // (inStock: false — the owner's single on/off switch).
+  // (inStock: false - the owner's single on/off switch).
   const isSold = (item: LeatherItem) =>
     Boolean(item.soldOut || outOfStock[item.slug] || getProductBySlug(item.slug)?.inStock === false);
 
@@ -146,7 +162,7 @@ export function WalletsSection() {
 
         {/* Certificate feature strip */}
         {/* Section-wide strip: it sits under products that don't all share one species
-            or one CITES permit, so it states neither — each product's own specs carry
+            or one CITES permit, so it states neither - each product's own specs carry
             its species. No gift box either: not every leather item ships in one. */}
         <div ref={featuresRef} className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
           {[
