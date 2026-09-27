@@ -212,18 +212,29 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
 
                   {/* Discount controls */}
                   <div className="flex items-center gap-1.5 border-l border-white/10 pl-3 flex-shrink-0">
-                    <input
-                      type="number"
-                      min={10}
-                      max={70}
-                      step={5}
-                      placeholder="%"
-                      value={discountPct[row.slug] ?? ""}
-                      onChange={(e) =>
-                        setDiscountPct((d) => ({ ...d, [row.slug]: e.target.value }))
-                      }
-                      className="w-12 bg-white/5 border border-white/15 px-2 py-2 text-white text-sm text-center focus:outline-none focus:border-white/40 transition-colors font-sans"
-                    />
+                    <div className="flex flex-col items-center gap-0.5">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="%"
+                        value={discountPct[row.slug] ?? ""}
+                        onChange={(e) =>
+                          setDiscountPct((d) => ({ ...d, [row.slug]: e.target.value }))
+                        }
+                        className="w-12 bg-white/5 border border-white/15 px-2 py-2 text-white text-sm text-center focus:outline-none focus:border-white/40 transition-colors font-sans"
+                      />
+                      {(() => {
+                        const pct = parseInt(discountPct[row.slug] ?? "");
+                        const currentPrice = rowPrice?.price;
+                        if (!VALID_DISCOUNTS.has(pct) || currentPrice == null) return null;
+                        const preview = parseFloat((currentPrice * (1 - pct / 100)).toFixed(2));
+                        return (
+                          <p className="font-sans text-[9px] text-white/40 whitespace-nowrap">
+                            €{currentPrice} → €{preview}
+                          </p>
+                        );
+                      })()}
+                    </div>
                     <button
                       onClick={() => handleDiscount(row.slug)}
                       disabled={discounting[row.slug]}
