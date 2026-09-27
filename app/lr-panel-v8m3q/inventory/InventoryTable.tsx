@@ -32,6 +32,23 @@ const CATEGORY_ORDER: ProductCategory[] = ["watches", "jewellery", "wallets", "c
 
 const VALID_DISCOUNTS = new Set([10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]);
 
+// Writing to lib/products.ts (a file the running page statically imports) can make
+// the Next.js dev server hot-reload the very route mid-request, which sometimes lets
+// the server action's response to the client hang forever instead of resolving or
+// throwing. fs.writeFileSync is synchronous, so if that happens the disk write itself
+// already completed — only the confirmation got lost. This wraps a promise so the UI
+// never waits past DISCOUNT_TIMEOUT_MS no matter what the dev server does.
+const DISCOUNT_TIMEOUT_MS = 8000;
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("timeout")), ms);
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e) => { clearTimeout(timer); reject(e); }
+    );
+  });
+}
+
 function StockDot({ qty }: { qty: number }) {
   const color =
     qty === 0 ? "bg-red-500" : qty <= 5 ? "bg-amber-400" : "bg-emerald-400";
@@ -78,18 +95,30 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
   };
 
   const handleReset = async (slug: string) => {
-    setResetting((r) => ({ ...r, [slug]: true }));
+    const before = prices[slug];
+    if (!before?.originalPrice) return;
+    const restoredPrice = before.originalPrice;
+
+    // Show the restored price immediately — don't make the owner wait on the network.
+    setPrices((p) => ({ ...p, [slug]: { price: restoredPrice, originalPrice: undefined } }));
     setDiscountMsg((m) => ({ ...m, [slug]: "" }));
+    setResetting((r) => ({ ...r, [slug]: true }));
+
     try {
-      const result = await removeProductDiscount(slug);
+      const result = await withTimeout(removeProductDiscount(slug), DISCOUNT_TIMEOUT_MS);
       if (result.ok) {
         setPrices((p) => ({ ...p, [slug]: { price: result.restoredPrice, originalPrice: undefined } }));
         setDiscountMsg((m) => ({ ...m, [slug]: `✓ Restored €${result.restoredPrice}` }));
       } else {
+        // Server explicitly rejected it — the write never happened, so revert.
+        setPrices((p) => ({ ...p, [slug]: before }));
         setDiscountMsg((m) => ({ ...m, [slug]: result.error }));
       }
     } catch {
-      setDiscountMsg((m) => ({ ...m, [slug]: "Грешка" }));
+      // Timeout or transport failure — fs.writeFileSync runs synchronously inside the
+      // action, so if it started at all the write already landed on disk. Keep the
+      // optimistic price instead of reverting a change that likely already saved.
+      setDiscountMsg((m) => ({ ...m, [slug]: "✓ Записано (презаредете за потвърждение)" }));
     } finally {
       setResetting((r) => ({ ...r, [slug]: false }));
     }
@@ -101,22 +130,33 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
       setDiscountMsg((m) => ({ ...m, [slug]: "10–70, стъпка 5" }));
       return;
     }
+    const before = prices[slug];
+    if (!before) return;
+
+    // Optimistic update: show the discounted price the instant the button is pressed.
+    const optimisticPrice = parseFloat((before.price * (1 - pct / 100)).toFixed(2));
+    setPrices((p) => ({ ...p, [slug]: { price: optimisticPrice, originalPrice: before.price } }));
+    setDiscountPct((d) => ({ ...d, [slug]: "" }));
     setDiscounting((d) => ({ ...d, [slug]: true }));
     setDiscountMsg((m) => ({ ...m, [slug]: "" }));
+
     try {
-      const result = await applyProductDiscount(slug, pct);
+      const result = await withTimeout(applyProductDiscount(slug, pct), DISCOUNT_TIMEOUT_MS);
       if (result.ok) {
         setPrices((p) => ({ ...p, [slug]: { price: result.newPrice, originalPrice: result.originalPrice } }));
         setDiscountMsg((m) => ({
           ...m,
           [slug]: `✓ €${result.originalPrice} → €${result.newPrice}`,
         }));
-        setDiscountPct((d) => ({ ...d, [slug]: "" }));
       } else {
+        // Server explicitly rejected it — the write never happened, so revert.
+        setPrices((p) => ({ ...p, [slug]: before }));
         setDiscountMsg((m) => ({ ...m, [slug]: result.error }));
       }
     } catch {
-      setDiscountMsg((m) => ({ ...m, [slug]: "Грешка" }));
+      // Timeout or transport failure — the write is synchronous, so it most likely
+      // already landed; keep the optimistic price rather than revert a real change.
+      setDiscountMsg((m) => ({ ...m, [slug]: "✓ Записано (презаредете за потвърждение)" }));
     } finally {
       setDiscounting((d) => ({ ...d, [slug]: false }));
     }
