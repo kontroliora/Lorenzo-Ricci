@@ -1,4 +1,4 @@
-export type ProductCategory = "watches" | "jewellery" | "wallets" | "cardholders";
+export type ProductCategory = "watches" | "jewellery" | "wallets" | "cardholders" | "bags";
 export type JewellerySubcategory = "bracelet" | "necklace";
 
 export interface ProductImage {
@@ -25,7 +25,18 @@ export interface Product {
 
   description: string;
   tabDescription?: string[];   // multi-paragraph "ОПИСАНИЕ" tab copy; falls back to `description`
+  descriptionSections?: { heading: string; body: string }[]; // quiet-heading prose sections for
+  // the "ОПИСАНИЕ" tab — takes precedence over tabDescription, which takes precedence over
+  // `description`. See ProductInfo.tsx.
   materialNote?: string;
+  crocodileSpecies?: string; // e.g. "нилски крокодил (Crocodylus niloticus)" — set ONLY once confirmed
+  // from that product's own CITES permit. Leave unset otherwise; components must
+  // never fall back to a default/assumed species (LeatherDescription renders
+  // neutral "крокодилска кожа" wording when this is unset).
+  citesPermitNumber?: string; // TODO: fill in from each product's own CITES export/re-export
+  // permit once available. Left empty on every product for now — not yet rendered anywhere.
+  descriptionImage?: ProductImage; // per-product macro shot for the shared LeatherDescription
+  // ("Автентичност и Структура") block — no fallback: when unset, the media column is omitted.
   shortDescription: string;
   specs: ProductSpec[];
   features: string[];
@@ -35,6 +46,7 @@ export interface Product {
   inStock: boolean;
   stock?: number;
   warranty: string;
+  commercial_warranty_text?: string; // optional voluntary/commercial warranty copy, beyond the 2-year statutory minimum — empty until provided
   descriptionImages?: ProductImage[];
   descriptionVideo?: string;
   quoteVideo?: string;

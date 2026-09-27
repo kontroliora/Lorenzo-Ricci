@@ -4,6 +4,7 @@ import type { CartItem } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { calcBundleDiscount } from "@/lib/bundles";
 import { trackFbEvent } from "@/lib/fbq";
+import { requiresPrepayment, PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 
 // ─── Shipping options ────────────────────────────────────────────────────────
 const SHIPPING_OPTIONS = [
@@ -12,6 +13,11 @@ const SHIPPING_OPTIONS = [
 ] as const;
 
 const FREE_SHIPPING_THRESHOLD = 60;
+
+// Same contact as the product-page Viber fallback (ProductInfo.tsx) — kept as a
+// local literal here since prepayment orders are an interim, manual-only path.
+const PREPAYMENT_VIBER_LINK = "viber://chat?number=%2B359888081811";
+const PREPAYMENT_PHONE = "+359 888 081 811";
 
 type ShippingId = (typeof SHIPPING_OPTIONS)[number]["id"];
 
@@ -28,6 +34,12 @@ interface CheckoutFormProps {
 export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promoRate = 0.10, onSuccess }: CheckoutFormProps) {
   const { clearCart } = useCartStore();
   const { totalDiscount, active: activeBundles } = calcBundleDiscount(items);
+
+  // €1500+ items: cash-on-delivery is not offered — no card/PSP integration exists
+  // yet, so the honest interim behaviour is to block normal checkout and route the
+  // customer to arrange payment directly, rather than show a non-functional
+  // "pay by card" control. Replace this block once a real prepayment flow exists.
+  const needsPrepayment = items.some((i) => requiresPrepayment(i.product));
 
   // Seed contact fields from a recovered session (abandoned-cart link) so the
   // customer doesn't retype anything. Read once at mount from the store.
@@ -157,6 +169,10 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   // ── Helpers ─────────────────────────────────────────────────────────────────
   const clearError = (key: string) =>
     setErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
+
+  const handleViberContactClick = () => {
+    trackFbEvent("Contact", { content_category: "prepayment_required" });
+  };
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
@@ -391,7 +407,8 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
             style={errors.city ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
         </Field>
 
-        {/* ── Shipping method radio cards ──────────────────────────────── */}
+        {/* ── Shipping method radio cards (hidden for prepayment-required orders) ── */}
+        {!needsPrepayment && (
         <div className="flex flex-col gap-1.5">
           <span className="font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-white/40">
             Начин на доставка
@@ -451,6 +468,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
             })}
           </div>
         </div>
+        )}
 
         {/* ── Address field (dynamic label) ────────────────────────────── */}
         <Field id="field-officeAddress" label={addressLabel} error={errors.officeAddress}>
@@ -491,6 +509,24 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         </p>
       )}
 
+      {needsPrepayment ? (
+        <div className="flex flex-col gap-3 border border-white/15 bg-white/[0.03] px-5 py-5 text-center">
+          <p className="font-sans text-xs text-white/70 leading-relaxed">
+            Продукти на цена от €{PREPAYMENT_THRESHOLD_EUR} нагоре се поръчват с предплащане и се уреждат директно с нас —
+            наложен платеж не е наличен за тази поръчка.
+          </p>
+          <a
+            href={PREPAYMENT_VIBER_LINK}
+            onClick={handleViberContactClick}
+            className="btn-primary w-full justify-center"
+          >
+            Свържете се по Viber
+          </a>
+          <p className="font-sans text-[11px] text-white/40">
+            или на телефон <span className="text-white/60">{PREPAYMENT_PHONE}</span>
+          </p>
+        </div>
+      ) : (
       <button type="submit" disabled={submitting} className="btn-primary w-full justify-center mt-2">
         {submitting ? (
           <span className="flex items-center gap-2">
@@ -501,6 +537,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
           `Потвърди поръчката - €${grandTotal.toFixed(2)}`
         )}
       </button>
+      )}
 
       <p className="font-sans text-[10px] text-center text-white/25 tracking-wide leading-relaxed">
         Плащате при получаване. Имате право на преглед и тест преди да заплатите.

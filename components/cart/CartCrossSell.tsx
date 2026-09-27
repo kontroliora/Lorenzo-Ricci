@@ -10,6 +10,11 @@ const WALLET_FOR_CARDHOLDER: Record<string, string> = {
   "cardholder-valentina":  "wallet-rubino",
   "cardholder-ambra":      "wallet-rubino",
   "cardholder-zaffiro":    "wallet-alabastro",
+  "cardholder-onice":      "wallet-alabastro",
+  "cardholder-giada":      "wallet-alabastro",
+  "cardholder-cremisi":    "wallet-rubino",
+  "cardholder-perla":      "wallet-alabastro",
+  "cardholder-topazio":    "wallet-alabastro",
 };
 
 const BUNDLE_PARTNER: Record<string, string> = {

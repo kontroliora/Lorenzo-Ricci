@@ -26,7 +26,10 @@ export function MetaPixel() {
       id="meta-pixel"
       strategy="afterInteractive"
       dangerouslySetInnerHTML={{
+        // Production only: on localhost / preview hosts the pixel never loads, so dev
+        // browsing can't pollute the ad account (trackFbEvent already no-ops without fbq).
         __html: `
+          if (/(^|\\.)lorenzo-ricci\\.com$/.test(location.hostname)) {
           !function(f,b,e,v,n,t,s)
           {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
           n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -37,6 +40,7 @@ export function MetaPixel() {
           'https://connect.facebook.net/en_US/fbevents.js');
           fbq('init', '${PIXEL_ID}');
           fbq('track', 'PageView');
+          }
         `,
       }}
     />

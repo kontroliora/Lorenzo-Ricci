@@ -1,18 +1,28 @@
 import { AdminNav } from "@/components/admin/AdminNav";
 import { products } from "@/lib/products";
-import { readInventory } from "@/lib/inventory";
 import { getReservedMap } from "@/lib/orders";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { InventoryTable, type InventoryRow } from "./InventoryTable";
 import { logout } from "../actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminInventoryPage() {
-  const [inventory, reserved] = await Promise.all([readInventory(), getReservedMap()]);
+  // Unified inventory: wallet_inventory.stock is the FREE-TO-SELL count for every
+  // product — decremented at order time, put back on cancel / restocked return. It
+  // is the number checkout reserves against and the storefront shows, so it is what
+  // this page shows and edits. "Reserved" (units in open orders) is information
+  // only: it is already out of the count and must not be subtracted again. A product
+  // with no row is sold WITHOUT a cap (reserve_wallet_stock skips it) — the table
+  // flags it; saving a number creates the row.
+  const [{ data }, reserved] = await Promise.all([
+    supabaseAdmin().from("wallet_inventory").select("slug, stock"),
+    getReservedMap(),
+  ]);
+  const dbStock = new Map((data ?? []).map((r) => [r.slug as string, Number(r.stock)]));
 
   const rows: InventoryRow[] = products.map((p) => {
-    const stock = inventory[p.slug] ?? 0;
-    const res   = reserved[p.slug] ?? 0;
+    const stock = dbStock.get(p.slug) ?? 0;
     return {
       slug:      p.slug,
       name:      p.name,
@@ -21,8 +31,10 @@ export default async function AdminInventoryPage() {
       coverSrc:  p.coverImage.src,
       coverAlt:  p.coverImage.alt,
       stock,
-      reserved:  res,
-      available: Math.max(0, stock - res),
+      reserved:  reserved[p.slug] ?? 0,
+      available: stock,
+      tracked:   dbStock.has(p.slug),
+      forSale:   p.inStock,
     };
   });
 

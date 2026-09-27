@@ -19,21 +19,20 @@ async function patchOrder(id: number, patch: Record<string, unknown>): Promise<s
   return null;
 }
 
-// Leather goods (wallet_inventory) are decremented at order time, so a cancel or
-// return must put the units back — otherwise the counter only ever drifts down.
-// Watches/jewellery need nothing here: their availability is computed live
-// (KV − active orders), so leaving the reserving statuses frees them by itself.
-// Only restock when the order was actually holding stock (prevents double-restock
-// on a re-cancel of an already-cancelled order).
-async function restockLeatherItems(
+// Unified model: EVERY item is decremented from wallet_inventory at order time,
+// so a cancel/return must put the units back — else the counter only drifts down.
+// Called only when the order was actually holding stock (HOLDS_STOCK guard →
+// prevents a double-restock on re-cancel). restock_wallet_stock skips any slug
+// not present in wallet_inventory.
+async function restockOrderItems(
   supabase: Awaited<ReturnType<typeof createClient>>,
   items: OrderItem[] | null | undefined,
 ): Promise<void> {
-  const leather = (items ?? [])
+  const restock = (items ?? [])
     .map((it) => ({ slug: String(it.slug ?? ""), qty: Math.max(1, Number(it.quantity ?? it.qty ?? 1)) }))
-    .filter((x) => x.slug.startsWith("wallet-") || x.slug.startsWith("cardholder-"));
-  if (!leather.length) return;
-  const { error } = await supabase.rpc("restock_wallet_stock", { p_items: leather });
+    .filter((x) => x.slug);
+  if (!restock.length) return;
+  const { error } = await supabase.rpc("restock_wallet_stock", { p_items: restock });
   if (error) console.error("[orders] restock_wallet_stock error:", error.message);
 }
 
@@ -60,7 +59,7 @@ export async function cancelOrder(id: number, category: string, reason: string):
   const { error } = await supabase.from("orders").update(patch).eq("id", id);
   if (error) { console.error("[orders] cancel error:", error.message); return error.message; }
   const b = before as { status: string; items: OrderItem[] } | null;
-  if (b && HOLDS_STOCK(b.status)) await restockLeatherItems(supabase, b.items);
+  if (b && HOLDS_STOCK(b.status)) await restockOrderItems(supabase, b.items);
   revalidatePath(ORDERS_PATH);
   return null;
 }
@@ -106,7 +105,7 @@ export async function cancelOrders(ids: number[], category: string, reason: stri
   const { error } = await supabase.from("orders").update(patch).in("id", ids);
   if (error) { console.error("[orders] bulk cancel error:", error.message); return error.message; }
   for (const o of (before ?? []) as { status: string; items: OrderItem[] }[]) {
-    if (HOLDS_STOCK(o.status)) await restockLeatherItems(supabase, o.items);
+    if (HOLDS_STOCK(o.status)) await restockOrderItems(supabase, o.items);
   }
   revalidatePath(ORDERS_PATH);
   return null;
@@ -281,6 +280,22 @@ export async function createManualOrder(input: ManualOrderInput): Promise<{ ok: 
   const goods = input.items.reduce((s, i) => s + i.price * i.quantity, 0);
   const shippingMethod = input.courier === "home" ? "Доставка чрез Еконт до адрес" : "Доставка чрез Еконт до офис";
 
+  // Unified model: a manual order decrements stock too. Reserve atomically BEFORE
+  // insert (fail-closed — no overselling); if the insert then fails, restock to
+  // undo, so a retry doesn't double-decrement.
+  const reserveItems = input.items
+    .filter((i) => i.slug)
+    .map((i) => ({ slug: String(i.slug), qty: Math.max(1, Number(i.quantity ?? 1)) }));
+  if (reserveItems.length) {
+    const { data: res, error: resErr } = await supabase.rpc("reserve_wallet_stock", { p_items: reserveItems });
+    if (resErr) { console.error("[orders] manual reserve error:", resErr.message); return { ok: false, message: "Проблем с проверката на наличността, опитай пак." }; }
+    if (res && (res as { ok?: boolean }).ok === false) {
+      const sf = (res as { shortfall?: { slug: string; available: number }[] }).shortfall ?? [];
+      const names = sf.map((s) => `${input.items.find((i) => i.slug === s.slug)?.name ?? s.slug} (налични ${s.available})`).join(", ");
+      return { ok: false, message: `Няма достатъчно наличност: ${names}` };
+    }
+  }
+
   const { error } = await supabase.from("orders").insert({
     order_ref:       ref,
     name,
@@ -300,6 +315,7 @@ export async function createManualOrder(input: ManualOrderInput): Promise<{ ok: 
   });
   if (error) {
     console.error("[orders] manual create error:", error.message);
+    if (reserveItems.length) await restockOrderItems(supabase, input.items); // undo the reserve
     return { ok: false, message: error.message };
   }
   revalidatePath(ORDERS_PATH);

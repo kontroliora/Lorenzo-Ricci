@@ -32,6 +32,8 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
       .catch(() => {});
     return () => { cancelled = true; };
   }, [product.slug]);
+  // inStock: false in lib/products.ts is the owner's off switch — sold out regardless of count.
+  const isSoldOut = soldOut || !product.inStock;
 
   const isWatch = product.category === "watches";
   const price = displayPrice(product, useCountry());
@@ -66,7 +68,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
       onMouseLeave={() => setHovered(false)}
     >
       {/* Image container */}
-      <Link href={`/products/${product.slug}`} className={`block relative overflow-hidden bg-white aspect-square ${soldOut ? "grayscale" : ""}`}>
+      <Link href={`/products/${product.slug}`} className={`block relative overflow-hidden bg-white aspect-square ${isSoldOut ? "grayscale" : ""}`}>
 
         {isWatch ? (
           <>
@@ -147,7 +149,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
-          {product.badge && !soldOut && (
+          {product.badge && !isSoldOut && (
             <span className="bg-white/95 text-navy border border-navy/20 font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
               {product.badge}
             </span>
@@ -155,19 +157,20 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
         </div>
 
         {/* Quick-add / learn-more overlay */}
-        {product.inStock && !soldOut && (
+        {!isSoldOut && (
           <div
             className={`absolute inset-x-0 bottom-0 bg-navy/90 backdrop-blur-sm py-3.5 px-4 transition-all duration-400 ${
               hovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full"
             }`}
           >
             {learnMore ? (
-              <Link
-                href={`/products/${product.slug}`}
-                className="block w-full text-center font-sans text-xs font-medium tracking-[0.22em] uppercase text-white/80 hover:text-white transition-colors duration-200"
-              >
+              // Not a <Link>: this sits inside the outer image <Link> above, and an
+              // <a> can't nest inside another <a> (invalid HTML — was breaking
+              // hydration on every page that renders this card). Same destination,
+              // so the outer Link already handles the click.
+              <span className="block w-full text-center font-sans text-xs font-medium tracking-[0.22em] uppercase text-white/80 hover:text-white transition-colors duration-200">
                 НАУЧИ ПОВЕЧЕ
-              </Link>
+              </span>
             ) : (
               <button
                 onClick={handleAdd}
@@ -181,8 +184,8 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
           </div>
         )}
 
-        {/* Sold-out overlay — automatic when live available === 0 */}
-        {soldOut && (
+        {/* Sold-out overlay — live available === 0, or switched off in lib/products.ts */}
+        {isSoldOut && (
           <div className="absolute inset-0 z-[15] flex items-center justify-center bg-ivory/25">
             <span className="font-sans text-[10px] tracking-[0.22em] uppercase bg-charcoal/90 text-white px-3 py-1.5">
               Изчерпана наличност

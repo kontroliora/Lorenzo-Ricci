@@ -9,11 +9,28 @@ import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
+import { getProductBySlug } from "@/lib/products";
 
-const WATCH_VARIANTS = [
-  { slug: "chrono-black",   label: "Black", color: "#111111",  inStock: true },
-  { slug: "golden-eclipse", label: "Gold",  color: "#C9A84C",  inStock: true },
-  { slug: "polar-frost",    label: "Blue",  color: "#5B8DB8",  inStock: true },
+// A colour swatch reads as sold out when its product is switched off in
+// lib/products.ts (inStock: false — the owner's single on/off switch); the
+// hand-written inStock flags in the variant lists below are only a fallback.
+const variantOff = (v: { slug: string; inStock: boolean }) => !(getProductBySlug(v.slug)?.inStock ?? v.inStock);
+
+// Grouped, not one flat list: a product's swatch row is whichever group its own
+// slug belongs to, so the Yachting trio switches only among itself and the
+// original three do the same — adding a collection here never bleeds into the
+// others' product pages. Same swatch UI/Link pattern either way (see below).
+const WATCH_VARIANT_GROUPS = [
+  [
+    { slug: "chrono-black",   label: "Black", color: "#111111", inStock: true },
+    { slug: "golden-eclipse", label: "Gold",  color: "#C9A84C", inStock: true },
+    { slug: "polar-frost",    label: "Blue",  color: "#5B8DB8", inStock: true },
+  ],
+  [
+    { slug: "yachting-black", label: "Black", color: "#111111", inStock: true },
+    { slug: "yachting-blue",  label: "Blue",  color: "#1C3450", inStock: true },
+    { slug: "yachting-white", label: "White", color: "#FFFFFF", inStock: true },
+  ],
 ];
 
 const WALLET_VARIANTS = [
@@ -27,6 +44,12 @@ const CARDHOLDER_VARIANTS = [
   { slug: "cardholder-bianco",    label: "Bianco - Бял",       color: "#E8E4DC", inStock: true },
   { slug: "cardholder-valentina", label: "Valentina - Розов",  color: "#C44B8A", inStock: true },
   { slug: "cardholder-zaffiro",   label: "Zaffiro - Тъмносин", color: "#1A2B4A", inStock: true },
+  // 2026-09-27 batch — swatches sampled from each product's own front photo.
+  { slug: "cardholder-onice",     label: "Onice - Черен",      color: "#1B1818", inStock: true },
+  { slug: "cardholder-giada",     label: "Giada - Тъмнозелен", color: "#1F362B", inStock: true },
+  { slug: "cardholder-cremisi",   label: "Cremisi - Червен",   color: "#BD0F1A", inStock: true },
+  { slug: "cardholder-perla",     label: "Perla - Сив",        color: "#A99B8F", inStock: true },
+  { slug: "cardholder-topazio",   label: "Topazio - Жълт",     color: "#E4AB05", inStock: true },
 ];
 
 // Viber quick-order deep link — opens a 1:1 chat with the store number.
@@ -50,7 +73,16 @@ interface ProductInfoProps {
 export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
   const { addItem } = useCartStore();
   const [added, setAdded] = useState(false);
-  const [activeTab, setActiveTab] = useState<"description" | "specs" | "delivery">("description");
+  // A product with no description content (e.g. the Yachting watches until they're
+  // measured) gets no Описание tab and opens on the specs instead of an empty tab.
+  const hasDescription = Boolean(
+    product.descriptionSections?.length || product.tabDescription?.length ||
+    product.description.trim(),
+  );
+  const tabs: readonly ("description" | "specs" | "delivery")[] = hasDescription
+    ? ["description", "specs", "delivery"]
+    : ["specs", "delivery"];
+  const [activeTab, setActiveTab] = useState<"description" | "specs" | "delivery">(hasDescription ? "description" : "specs");
   const [walletStock, setWalletStock] = useState<number | null>(null);
   const [stockLoaded, setStockLoaded] = useState(false);
 
@@ -62,7 +94,17 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
     product.category === "watches" ||
     product.category === "jewellery" ||
     product.category === "wallets" ||
-    product.category === "cardholders";
+    product.category === "cardholders" ||
+    product.category === "bags";
+
+  // Leather goods get one extra bullet (5 vs 4) — their copy needs room for both
+  // the hide/relief description and the construction/format lines. Watches and
+  // jewellery stay at 4.
+  const isLeatherGoods =
+    product.category === "wallets" ||
+    product.category === "cardholders" ||
+    product.category === "bags";
+  const featuresLimit = isLeatherGoods ? 5 : 4;
 
   useEffect(() => {
     if (!hasInventory) return;
@@ -75,10 +117,13 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       .catch(() => setStockLoaded(true));
   }, [product.slug, hasInventory]);
 
-  const effectiveInStock =
-    hasInventory && stockLoaded && walletStock !== null
-      ? walletStock > 0
-      : product.inStock;
+  // inStock: false in lib/products.ts is the owner's hard off switch ("not for
+  // sale"), whatever the count says; otherwise the live count decides (0 = sold
+  // out), and with no live number the product counts as available.
+  const liveCount = hasInventory && stockLoaded && walletStock !== null ? walletStock : null;
+  const effectiveInStock = product.inStock && (liveCount === null || liveCount > 0);
+  // What the stock hint shows: a switched-off product reads as 0 ("Изчерпан").
+  const shownCount = product.inStock ? liveCount : 0;
 
   // Cap the cart quantity at the LIVE stock (not the static products.ts value)
   // for leather goods, so the +/− stepper and re-adds can't exceed what we hold.
@@ -126,6 +171,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         {product.category === "watches" ? "Часовници"
           : product.category === "wallets" ? "Портфейли"
           : product.category === "cardholders" ? "Кардхолдъри"
+          : product.category === "bags" ? "Чанти"
           : "Бижута"} / {product.name}
       </p>
 
@@ -145,7 +191,8 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       {/* Color variant selector - watches, wallets, cardholders */}
       {(product.category === "watches" || product.category === "wallets" || product.category === "cardholders") && (() => {
         const variants =
-          product.category === "watches" ? WATCH_VARIANTS :
+          product.category === "watches"
+            ? (WATCH_VARIANT_GROUPS.find((g) => g.some((v) => v.slug === product.slug)) ?? WATCH_VARIANT_GROUPS[0]) :
           product.category === "wallets" ? WALLET_VARIANTS :
           CARDHOLDER_VARIANTS;
         return (
@@ -161,11 +208,11 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
                     product.slug === v.slug
                       ? "border-navy scale-110 shadow-[0_0_0_2px_rgba(15,40,80,0.15)]"
                       : "border-border hover:border-navy/40"
-                  } ${!v.inStock ? "opacity-50" : ""}`}
+                  } ${variantOff(v) ? "opacity-50" : ""}`}
                   style={{ backgroundColor: v.color }}
                 >
                   {/* Diagonal strikethrough for out-of-stock */}
-                  {!v.inStock && (
+                  {variantOff(v) && (
                     <span
                       className="absolute inset-0 rounded-full overflow-hidden pointer-events-none"
                       aria-label="Изчерпан"
@@ -206,9 +253,9 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           admin panel's "Налични". Shown only below the low-stock threshold; above
           it nothing is revealed (we don't disclose how much we hold). Premium and
           restrained — a quiet nudge, never a loud "HURRY". */}
-      {hasInventory && stockLoaded && walletStock !== null && walletStock < LOW_STOCK_THRESHOLD && (
+      {shownCount !== null && shownCount < LOW_STOCK_THRESHOLD && (
         <div className="flex items-center gap-2">
-          {walletStock === 0 ? (
+          {shownCount === 0 ? (
             <>
               <span className="text-ink-faint text-xs">◈</span>
               <span className="font-sans text-[11px] text-ink-faint tracking-wide">Изчерпан</span>
@@ -217,7 +264,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
             <>
               <span className="text-amber-600/80 text-xs">◈</span>
               <span className="font-sans text-[11px] text-amber-700/90 tracking-wide font-medium">
-                {walletStock === 1 ? "Остава последен 1 брой" : `Остават ${walletStock} бройки`}
+                {shownCount === 1 ? "Остава последен 1 брой" : `Остават ${shownCount} бройки`}
               </span>
             </>
           )}
@@ -226,13 +273,21 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
 
       {/* Features */}
       <ul className="flex flex-col gap-2.5">
-        {product.features.slice(0, 4).map((f) => (
+        {product.features.slice(0, featuresLimit).map((f) => (
           <li key={f} className="flex items-start gap-3 text-sm">
             <span className="text-navy mt-0.5 flex-shrink-0 text-xs">◈</span>
             <span className="font-sans font-light text-ink-soft leading-relaxed tracking-wide">{f}</span>
           </li>
         ))}
       </ul>
+
+      {/* Natural-variation note — right above the CTA, not inside the Описание tab, so
+          the customer reads it before ordering (each hide differs; see materialNote). */}
+      {product.materialNote && (
+        <p className="font-sans text-xs font-light text-ink-soft leading-relaxed tracking-wide border-l-2 border-navy/20 pl-3">
+          {product.materialNote}
+        </p>
+      )}
 
       {/* CTA */}
       <button
@@ -318,7 +373,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       {/* Tabs */}
       <div>
         <div className="flex border-b border-border">
-          {(["description", "specs", "delivery"] as const).map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -336,7 +391,18 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         <div className="pt-5">
           {activeTab === "description" && (
             <div className="flex flex-col gap-4">
-              {product.tabDescription ? (
+              {product.descriptionSections ? (
+                product.descriptionSections.map((section, i) => (
+                  <div key={i}>
+                    <p className="font-sans text-sm font-medium text-charcoal tracking-wide mb-0.5">
+                      {section.heading}
+                    </p>
+                    <p className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide">
+                      {section.body}
+                    </p>
+                  </div>
+                ))
+              ) : product.tabDescription ? (
                 product.tabDescription.map((para, i) => (
                   <p key={i} className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide">
                     {para}
@@ -347,16 +413,13 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
                   {product.description}
                 </p>
               )}
-              {product.materialNote && (
-                <p className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide">
-                  {product.materialNote}
-                </p>
-              )}
             </div>
           )}
           {activeTab === "specs" && (
             <div className="flex flex-col gap-3">
-              {product.specs.map(({ label, value }) => (
+              {/* An empty value (e.g. clutch dimensions not measured yet) hides the whole
+                  row — customers never see a placeholder like "TBD". */}
+              {product.specs.filter(({ value }) => value.trim() !== "").map(({ label, value }) => (
                 <div key={label} className="flex justify-between py-2 border-b border-border">
                   <span className="font-sans text-[11px] text-ink-faint tracking-wide uppercase">{label}</span>
                   <span className="font-sans text-sm font-light text-charcoal text-right max-w-[60%]">{value}</span>

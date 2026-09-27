@@ -2,15 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { supabase } from "@/lib/supabase";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { getStock } from "@/lib/inventory";
 import { createHash } from "crypto";
 import { getProductBySlug } from "@/lib/products";
 import { validateOrderPricing } from "@/lib/order-pricing";
+import { checkOrderable } from "@/lib/order-availability";
 
 // Order line item shape.
 type ItemPayload = { sku?: string; qty?: number; quantity?: number; slug?: string; name?: string; price?: number; currency?: string };
 
-const isLeather = (slug: string) => slug.startsWith("wallet-") || slug.startsWith("cardholder-");
 const qtyOf = (i: ItemPayload) => Math.max(1, Number(i.quantity ?? i.qty ?? 1));
 
 // Customer-facing message when an order can't be fully stocked.
@@ -428,53 +427,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ── CATALOG GATES — a product switched off in lib/products.ts (inStock: false)
+    //    is never orderable, and a prepayment item can't use this cash-on-delivery
+    //    checkout. Same position as the price guard: before any side effect.
+    const gate = checkOrderable((order.items ?? []) as { slug?: unknown }[], getProductBySlug);
+    if (!gate.ok) {
+      const error = gate.code === "not_for_sale"
+        ? stockErrorMessage(gate.names.map((name) => ({ name, available: 0 })))
+        : `${gate.names.join(", ")} се поръчва с предплащане — наложен платеж не е наличен. Свържете се с нас, за да уредим поръчката.`;
+      return NextResponse.json({ success: false, code: gate.code, error }, { status: 409 });
+    }
+
     // ── STOCK GUARD — final defence against overselling. Runs BEFORE emails and
-    //    the DB insert, so an impossible order is never created. Watches/jewellery
-    //    use the reservation model (KV − active orders, a read-only check); leather
-    //    uses an ATOMIC check-and-decrement (reserve_wallet_stock) that decrements
-    //    only when every item fits. Order matters: check watches first (read-only,
-    //    nothing to undo), then reserve leather (which decrements).
+    //    the DB insert, so an impossible order is never created. UNIFIED model:
+    //    EVERY tracked item (watches, jewellery, leather) goes through the atomic
+    //    reserve_wallet_stock — it row-locks each slug, and if ANY item is short it
+    //    decrements nothing and returns the shortfall. Fail-CLOSED: block on
+    //    shortfall OR error, so we never oversell. Slugs absent from wallet_inventory
+    //    are skipped by the RPC. (Was: watches on a fail-open KV read-check; unified
+    //    onto the stricter leather model so watches can no longer oversell either.)
     {
       const lines = (order.items ?? []) as ItemPayload[];
-
-      // 1) Watches + jewellery — read-only availability (fail-open on error; they
-      //    rarely oversell and blocking a valid sale on a query blip is worse).
-      const nonLeather = lines.filter((i) => i.slug && !isLeather(String(i.slug)));
-      if (nonLeather.length) {
-        try {
-          const admin = supabaseAdmin();
-          const { data: active } = await admin
-            .from("orders").select("items, excluded_from_stock")
-            .in("status", ["new", "confirmed", "shipped", "completed"]);
-          const reserved: Record<string, number> = {};
-          for (const o of (active ?? []) as { items: ItemPayload[]; excluded_from_stock: boolean }[]) {
-            if (o.excluded_from_stock) continue;
-            for (const it of o.items ?? []) {
-              const s = String(it.slug ?? ""); if (!s) continue;
-              reserved[s] = (reserved[s] ?? 0) + qtyOf(it);
-            }
-          }
-          const short: { name: string; available: number }[] = [];
-          for (const it of nonLeather) {
-            const slug = String(it.slug);
-            const available = Math.max(0, (await getStock(slug)) - (reserved[slug] ?? 0));
-            if (qtyOf(it) > available) short.push({ name: String(it.name ?? slug), available });
-          }
-          if (short.length) {
-            return NextResponse.json({ success: false, error: stockErrorMessage(short) }, { status: 409 });
-          }
-        } catch (e) {
-          console.error("[Order] watch stock check failed (allowing):", e);
-        }
-      }
-
-      // 2) Leather — atomic reserve (fail-closed: block on shortfall OR error, so
-      //    we never oversell the low-stock cardholders/wallets).
-      const leather = lines.filter((i) => isLeather(String(i.slug ?? "")))
+      const reserveItems = lines
+        .filter((i) => i.slug)
         .map((i) => ({ slug: String(i.slug), qty: qtyOf(i), name: String(i.name ?? i.slug) }));
-      if (leather.length) {
-        const { data: res, error: resErr } = await supabase.rpc("reserve_wallet_stock", {
-          p_items: leather.map(({ slug, qty }) => ({ slug, qty })),
+      if (reserveItems.length) {
+        // Server key, not the public one: once supabase/close_public_functions.sql
+        // runs, the public key can no longer call the stock functions.
+        const { data: res, error: resErr } = await supabaseAdmin().rpc("reserve_wallet_stock", {
+          p_items: reserveItems.map(({ slug, qty }) => ({ slug, qty })),
         });
         if (resErr) {
           console.error("[Order] reserve_wallet_stock error:", resErr.message);
@@ -482,7 +463,7 @@ export async function POST(req: NextRequest) {
         }
         if (res && (res as { ok?: boolean }).ok === false) {
           const sf = ((res as { shortfall?: { slug: string; available: number }[] }).shortfall ?? []);
-          const named = sf.map((s) => ({ name: leather.find((l) => l.slug === s.slug)?.name ?? s.slug, available: s.available }));
+          const named = sf.map((s) => ({ name: reserveItems.find((l) => l.slug === s.slug)?.name ?? s.slug, available: s.available }));
           return NextResponse.json({ success: false, error: stockErrorMessage(named) }, { status: 409 });
         }
       }

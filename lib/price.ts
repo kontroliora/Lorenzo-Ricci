@@ -23,6 +23,14 @@ export type PriceDisplay = {
 
 const geoPrice = (text: string): PriceDisplay => ({ text, isGeoPrice: true });
 
+// Prepayment threshold: EUR base price only (the geo-display prices are cosmetic,
+// never the collected amount) — computed from price, not a per-product flag, so it
+// can't drift out of sync if a price changes. Cash-on-delivery is hidden at or above
+// this; checkout must direct the customer to arrange payment manually (no card/PSP
+// integration exists yet — see CheckoutForm's prepayment block).
+export const PREPAYMENT_THRESHOLD_EUR = 1500;
+export const requiresPrepayment = (p: Pick<Product, "price">): boolean => p.price >= PREPAYMENT_THRESHOLD_EUR;
+
 export function displayPrice(p: PriceInput, country?: string | null): PriceDisplay {
   if (country === "AE" && typeof p.priceAED === "number") {
     return geoPrice(`AED ${Math.round(p.priceAED).toLocaleString("en-US")}`); // 4500 → "AED 4,500"

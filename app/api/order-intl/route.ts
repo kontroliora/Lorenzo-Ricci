@@ -86,7 +86,15 @@ async function sendCapiLead(
   console.log("[order-intl] Lead sent");
 }
 
+// CLOSED 2026-09-27 — owner: Bulgaria only, no Dubai market. The code below stays
+// (dormant), but the endpoint refuses everything, so nobody can create leads, mint
+// 5% codes or trigger emails through it. To reopen: set this to true AND switch the
+// waitlist_issue_code call below to supabaseAdmin() — the public key loses access
+// to that function in supabase/close_public_functions.sql.
+const INTL_ORDERS_OPEN: boolean = false;
+
 export async function POST(req: NextRequest) {
+  if (!INTL_ORDERS_OPEN) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   try {
     const body = (await req.json()) as Record<string, unknown>;
     const customer = (body.customer ?? {}) as Record<string, unknown>;

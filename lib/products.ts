@@ -1,8 +1,150 @@
 import type { Product } from "./types";
 
+// Confirmed crocodile species (per CITES permit) — single source for both the
+// specs "Вид" row and the LeatherDescription.tsx CITES bullet everywhere they're
+// used below. citesPermitNumber (the per-product permit reference) is still
+// pending — see Product.citesPermitNumber in lib/types.ts.
+const SIAMESE_CROCODILE = "сиамски крокодил (Crocodylus siamensis)";
+const NILE_CROCODILE = "нилски крокодил (Crocodylus niloticus)";
 
 export const products: Product[] = [
   // ─── WATCHES ────────────────────────────────────────────────────────────────
+  // Yachting collection — 3 dial colours of one design, placed first so they lead
+  // the homepage watches section (FeaturedWatches renders getWatches() in array
+  // order) and the /watches page. The original 3 watches are unchanged, just moved
+  // below. Case size is the owner's measurement (2026-09-27); weight is pending (empty,
+  // hidden row). Case material and dial construction aren't in `specs` — no confirmed
+  // figures were given for those, and this file doesn't invent them.
+  {
+    id: "yachting-black",
+    slug: "yachting-black",
+    sku: "LR-YACHT-BLK",
+    name: "Yachting Black",
+    category: "watches",
+    price: 140,
+    currency: "€",
+    inStock: true,
+    warranty: "Законова гаранция за съответствие: 2 години",
+    shortDescription: "Италиански дизайн. Японска точност.",
+    // No description until the owner has measured the watches (size on the wrist,
+    // weight, strap, travel case) — a wrong description is worse than none. With
+    // this empty, ProductInfo drops the Описание tab and shows the specs only.
+    description: "",
+    features: [
+      "Сапфирено кристално стъкло",
+      "Високопрецизен японски кварцов механизъм",
+      "Каучукова верижка с релефна структура",
+      "Светещи индекси и стрелки",
+      "Водоустойчивост до 50 метра",
+    ],
+    specs: [
+      { label: "Размери", value: "44 мм × 53.7 мм × 12.8 мм" }, // owner, 2026-09-27: width × lug-to-lug × thickness
+      { label: "Тегло", value: "" }, // empty → row hidden until the owner gives the weight
+      { label: "Стъкло", value: "Сапфирено кристално стъкло" },
+      { label: "Механизъм", value: "Японски кварцов механизъм" },
+      { label: "Каишка", value: "Каучук с релефна структура" },
+      { label: "Водоустойчивост", value: "До 50 метра" },
+    ],
+    coverImage: {
+      src: `/Products/watches/Yachting Black/yachting-black-hronograf-preden-izgled.webp`,
+      alt: "Lorenzo Ricci Yachting Black луксозен часовник - компасен циферблат, сапфирено стъкло",
+    },
+    images: [
+      { src: `/Products/watches/Yachting Black/yachting-black-hronograf-preden-izgled.webp`, alt: "Lorenzo Ricci Yachting Black - преден изглед, компасна роза и градусова скала" },
+      { src: `/Products/watches/Yachting Black/yachting-black-lume-noshten-rejim.webp`,        alt: "Lorenzo Ricci Yachting Black нощен режим - светещи индекси и стрелки" },
+      { src: `/Products/watches/Yachting Black/yachting-black-stranicen-izgled.webp`,          alt: "Lorenzo Ricci Yachting Black - страничен изглед, корона и каучукова верижка" },
+      { src: `/Products/watches/Yachting Black/yachting-black-zadna-strana.webp`,              alt: "Lorenzo Ricci Yachting Black - задна страна на корпуса, гравиран компас YACHTING" },
+      { src: `/Products/watches/Yachting Black/yachting-black-kutiya-otvorena.webp`,           alt: "Lorenzo Ricci Yachting Black в луксозна кутия за пътуване" },
+      { src: `/Products/watches/Yachting Black/yachting-black-kutiya-otvorena-detail.webp`,    alt: "Lorenzo Ricci Yachting Black - луксозна кутия за пътуване, друг ъгъл" },
+    ],
+  },
+  {
+    id: "yachting-blue",
+    slug: "yachting-blue",
+    sku: "LR-YACHT-BLU",
+    name: "Yachting Blue",
+    category: "watches",
+    price: 140,
+    currency: "€",
+    inStock: true,
+    warranty: "Законова гаранция за съответствие: 2 години",
+    shortDescription: "Италиански дизайн. Японска точност.",
+    // No description until the owner has measured the watches (size on the wrist,
+    // weight, strap, travel case) — a wrong description is worse than none. With
+    // this empty, ProductInfo drops the Описание tab and shows the specs only.
+    description: "",
+    features: [
+      "Сапфирено кристално стъкло",
+      "Високопрецизен японски кварцов механизъм",
+      "Каучукова верижка с релефна структура",
+      "Светещи индекси и стрелки",
+      "Водоустойчивост до 50 метра",
+    ],
+    specs: [
+      { label: "Размери", value: "44 мм × 53.7 мм × 12.8 мм" }, // owner, 2026-09-27: width × lug-to-lug × thickness
+      { label: "Тегло", value: "" }, // empty → row hidden until the owner gives the weight
+      { label: "Стъкло", value: "Сапфирено кристално стъкло" },
+      { label: "Механизъм", value: "Японски кварцов механизъм" },
+      { label: "Каишка", value: "Каучук с релефна структура" },
+      { label: "Водоустойчивост", value: "До 50 метра" },
+    ],
+    coverImage: {
+      src: `/Products/watches/Yachting Blue/yachting-blue-hronograf-preden-izgled.webp`,
+      alt: "Lorenzo Ricci Yachting Blue луксозен часовник - синьо, компасен циферблат, сапфирено стъкло",
+    },
+    images: [
+      { src: `/Products/watches/Yachting Blue/yachting-blue-hronograf-preden-izgled.webp`, alt: "Lorenzo Ricci Yachting Blue - преден изглед, компасна роза и градусова скала" },
+      { src: `/Products/watches/Yachting Blue/yachting-blue-stranicen-izgled.webp`,         alt: "Lorenzo Ricci Yachting Blue - страничен изглед, корона и каучукова верижка" },
+      { src: `/Products/watches/Yachting Blue/yachting-blue-lume-noshten-rejim.webp`,       alt: "Lorenzo Ricci Yachting Blue нощен режим - светещи индекси и стрелки" },
+      { src: `/Products/watches/Yachting Blue/yachting-blue-zadna-strana.webp`,             alt: "Lorenzo Ricci Yachting Blue - задна страна на корпуса, гравиран компас YACHTING" },
+      { src: `/Products/watches/Yachting Blue/yachting-blue-kutiya-otvorena.webp`,          alt: "Lorenzo Ricci Yachting Blue в луксозна кутия за пътуване" },
+      { src: `/Products/watches/Yachting Blue/yachting-blue-kaishka-kopchalka.webp`,        alt: "Lorenzo Ricci Yachting Blue - закопчалка, детайл на каучуковата верижка" },
+    ],
+  },
+  {
+    id: "yachting-white",
+    slug: "yachting-white",
+    sku: "LR-YACHT-WHT",
+    name: "Yachting White",
+    category: "watches",
+    price: 140,
+    currency: "€",
+    inStock: true,
+    warranty: "Законова гаранция за съответствие: 2 години",
+    shortDescription: "Италиански дизайн. Японска точност.",
+    // No description until the owner has measured the watches (size on the wrist,
+    // weight, strap, travel case) — a wrong description is worse than none. With
+    // this empty, ProductInfo drops the Описание tab and shows the specs only.
+    description: "",
+    features: [
+      "Сапфирено кристално стъкло",
+      "Високопрецизен японски кварцов механизъм",
+      "Каучукова верижка с релефна структура",
+      "Светещи индекси и стрелки",
+      "Водоустойчивост до 50 метра",
+    ],
+    specs: [
+      { label: "Размери", value: "44 мм × 53.7 мм × 12.8 мм" }, // owner, 2026-09-27: width × lug-to-lug × thickness
+      { label: "Тегло", value: "" }, // empty → row hidden until the owner gives the weight
+      { label: "Стъкло", value: "Сапфирено кристално стъкло" },
+      { label: "Механизъм", value: "Японски кварцов механизъм" },
+      { label: "Каишка", value: "Каучук с релефна структура" },
+      { label: "Водоустойчивост", value: "До 50 метра" },
+    ],
+    coverImage: {
+      src: `/Products/watches/Yachting White/yachting-white-hronograf-preden-izgled.webp`,
+      alt: "Lorenzo Ricci Yachting White луксозен часовник - бял корпус, компасен циферблат, сапфирено стъкло",
+    },
+    images: [
+      { src: `/Products/watches/Yachting White/yachting-white-hronograf-preden-izgled.webp`, alt: "Lorenzo Ricci Yachting White - преден изглед, компасна роза и градусова скала" },
+      { src: `/Products/watches/Yachting White/yachting-white-stranicen-izgled.webp`,         alt: "Lorenzo Ricci Yachting White - страничен изглед, корона и каучукова верижка" },
+      { src: `/Products/watches/Yachting White/yachting-white-na-ruka.webp`,                  alt: "Lorenzo Ricci Yachting White на ръка - лайфстайл изглед" },
+      { src: `/Products/watches/Yachting White/yachting-white-lume-noshten-rejim.webp`,       alt: "Lorenzo Ricci Yachting White нощен режим - светещи индекси и стрелки" },
+      { src: `/Products/watches/Yachting White/yachting-white-zadna-strana.webp`,             alt: "Lorenzo Ricci Yachting White - задна страна на корпуса, гравиран компас YACHTING" },
+      { src: `/Products/watches/Yachting White/yachting-white-kutiya-otvorena.webp`,          alt: "Lorenzo Ricci Yachting White в луксозна кутия за пътуване" },
+      { src: `/Products/watches/Yachting White/yachting-white-kaishka-kopchalka.webp`,        alt: "Lorenzo Ricci Yachting White - закопчалка, детайл на каучуковата верижка" },
+    ],
+  },
   {
     id: "chrono-black",
     slug: "chrono-black",
@@ -12,7 +154,7 @@ export const products: Product[] = [
     price: 279,
     currency: "€",
     inStock: true,
-    warranty: "2 години гаранция",
+    warranty: "Законова гаранция за съответствие: 2 години",
     shortDescription: "Италиански дизайн. Японска точност.",
     description:
       "Chrono Black въплъщава мощта на нощта в изчистен хронограф. Корпусът от премиум неръждаема стомана 316L, частично скелетизираният многослоен циферблат и сапфиреното кристално стъкло създават часовник, който изразява характер без усилие. Хипоалергенната силиконова каишка осигурява комфорт при продължително носене.",
@@ -67,7 +209,7 @@ export const products: Product[] = [
     price: 299,
     currency: "€",
     inStock: true,
-    warranty: "2 години гаранция",
+    warranty: "Законова гаранция за съответствие: 2 години",
     shortDescription: "Италиански дизайн. Японска точност.",
     description:
       "Golden Eclipse е ода към слънцето - великолепен хронограф, създаден за тези, които носят успеха си на китката. Позлатеният корпус от стомана 316L, скелетизираният циферблат и сапфиреното стъкло съставят силует с незаменимо присъствие. Изтънчен италиански дизайн и майсторска изработка, в която всеки детайл има значение.",
@@ -123,7 +265,7 @@ export const products: Product[] = [
     price: 279,
     currency: "€",
     inStock: true,
-    warranty: "2 години гаранция",
+    warranty: "Законова гаранция за съответствие: 2 години",
     shortDescription: "Италиански дизайн. Японска точност.",
     description:
       "Polar Frost носи хладната увереност на арктическата синева. Прецизно изработеният корпус от стомана 316L, сапфиреното кристално стъкло и хронографът с многослоен циферблат правят от Polar Frost часовник за хора с ясен вкус. Водоустойчивост 5 ATM - спокойствие за всяко приключение.",
@@ -221,7 +363,7 @@ export const products: Product[] = [
     subcategory: "bracelet",
     price: 49,
     currency: "€",
-    inStock: true,
+    inStock: false, // owner 2026-09-27: out of stock until further notice — stays listed as "Изчерпан"
     warranty: "Доживотна гаранция",
     shortDescription: "Осем милиметра присъствие",
     description:
@@ -430,7 +572,7 @@ export const products: Product[] = [
     subcategory: "necklace",
     price: 55,
     currency: "€",
-    inStock: true,
+    inStock: false, // owner 2026-09-27: out of stock until further notice — stays listed as "Изчерпан"
     warranty: "Доживотна гаранция",
     shortDescription: "Тежестта на Милано",
     description:
@@ -515,27 +657,27 @@ export const products: Product[] = [
     currency: "€",
     inStock: true,
     stock: 5,
-    warranty: "2 години гаранция",
+    warranty: "Законова гаранция за съответствие: 2 години",
     shortDescription: "Бял портфейл от крокодилска кожа",
     description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
     materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
     features: [
-      "100% естествена крокодилска кожа - Crocodylus Siamensis",
+      "100% естествена крокодилска кожа",
       "CITES сертифициран произход №: 25VN4174/S",
       "Ръчна изработка - всяко изделие е уникално",
-      "Луксозна подаръчна кутия с Сертификат за автентичност",
     ],
     specs: [
       { label: "Материал", value: "100% Крокодилска кожа" },
-      { label: "Вид", value: "Crocodylus Siamensis" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
       { label: "CITES №", value: "25VN4174/S" },
       { label: "Изработка", value: "Ръчна" },
       { label: "Цвят", value: "Бял (Alabastro)" },
     ],
-    coverImage: { src: `/Products/wallets/Alabastro/portfeil-alabastro-byal-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Alabastro бял портфейл крокодилска кожа Crocodylus Siamensis - преден изглед' },
+    coverImage: { src: `/Products/wallets/Alabastro/portfeil-alabastro-byal-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Alabastro бял портфейл крокодилска кожа - преден изглед' },
     images: [
       { src: `/Products/wallets/Alabastro/portfeil-alabastro-byal-krokodiilska-kozha.webp`,         alt: 'Lorenzo Ricci Alabastro бял портфейл крокодилска кожа - продуктова снимка' },
-      { src: `/Products/wallets/Alabastro/portfeil-alabastro-detal-krokodiilska-tekstura.webp`,      alt: 'Lorenzo Ricci Alabastro - детайл на крокодилската текстура, Crocodylus Siamensis' },
+      { src: `/Products/wallets/Alabastro/portfeil-alabastro-detal-krokodiilska-tekstura.webp`,      alt: 'Lorenzo Ricci Alabastro - детайл на крокодилската текстура' },
       { src: `/Products/wallets/Alabastro/portfeil-alabastro-otvoren-vatreshnost.webp`,              alt: 'Lorenzo Ricci Alabastro - отворен портфейл, вътрешност с джобове за карти' },
       { src: `/Products/wallets/Alabastro/portfeil-alabastro-rachna-izrabotka.webp`,                 alt: 'Lorenzo Ricci Alabastro - детайл на ръчната изработка, прецизни шевове' },
       { src: `/Products/wallets/Alabastro/portfeil-alabastro-kutiya-sertifikat.webp`,                alt: 'Lorenzo Ricci Alabastro в луксозна кутия с Сертификат за автентичност CITES' },
@@ -552,24 +694,24 @@ export const products: Product[] = [
     currency: "€",
     inStock: true,
     stock: 5,
-    warranty: "2 години гаранция",
+    warranty: "Законова гаранция за съответствие: 2 години",
     shortDescription: "Червен портфейл от крокодилска кожа",
     description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
     materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
     features: [
-      "100% естествена крокодилска кожа - Crocodylus Siamensis",
+      "100% естествена крокодилска кожа",
       "CITES сертифициран произход №: 25VN4174/S",
       "Ръчна изработка - всяко изделие е уникално",
-      "Луксозна подаръчна кутия с Сертификат за автентичност",
     ],
     specs: [
       { label: "Материал", value: "100% Крокодилска кожа" },
-      { label: "Вид", value: "Crocodylus Siamensis" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
       { label: "CITES №", value: "25VN4174/S" },
       { label: "Изработка", value: "Ръчна" },
       { label: "Цвят", value: "Рубинено червен (Rubino)" },
     ],
-    coverImage: { src: `/Products/wallets/Rubino/portfeil-rubino-cherven-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Rubino червен портфейл крокодилска кожа Crocodylus Siamensis - преден изглед' },
+    coverImage: { src: `/Products/wallets/Rubino/portfeil-rubino-cherven-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Rubino червен портфейл крокодилска кожа - преден изглед' },
     images: [
       { src: `/Products/wallets/Rubino/portfeil-rubino-cherven-krokodiilska-kozha.webp`,        alt: 'Lorenzo Ricci Rubino червен портфейл крокодилска кожа - продуктова снимка' },
       { src: `/Products/wallets/Rubino/portfeil-rubino-detal-krokodiilska-tekstura.webp`,        alt: 'Lorenzo Ricci Rubino - детайл на крокодилската текстура, рубинено червено' },
@@ -590,24 +732,24 @@ export const products: Product[] = [
     badge: "Изчерпан",
     inStock: false,
     stock: 0,
-    warranty: "2 години гаранция",
+    warranty: "Законова гаранция за съответствие: 2 години",
     shortDescription: "Зелен портфейл от крокодилска кожа",
     description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
     materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
     features: [
-      "100% естествена крокодилска кожа - Crocodylus Siamensis",
+      "100% естествена крокодилска кожа",
       "CITES сертифициран произход №: 25VN4174/S",
       "Ръчна изработка - всяко изделие е уникално",
-      "Луксозна подаръчна кутия с Сертификат за автентичност",
     ],
     specs: [
       { label: "Материал", value: "100% Крокодилска кожа" },
-      { label: "Вид", value: "Crocodylus Siamensis" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
       { label: "CITES №", value: "25VN4174/S" },
       { label: "Изработка", value: "Ръчна" },
       { label: "Цвят", value: "Изумруденозелен (Smeraldo)" },
     ],
-    coverImage: { src: `/Products/wallets/Smeraldo/portfeil-smeraldo-zelen-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Smeraldo зелен портфейл крокодилска кожа Crocodylus Siamensis - преден изглед' },
+    coverImage: { src: `/Products/wallets/Smeraldo/portfeil-smeraldo-zelen-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Smeraldo зелен портфейл крокодилска кожа - преден изглед' },
     images: [
       { src: `/Products/wallets/Smeraldo/portfeil-smeraldo-zelen-krokodiilska-kozha.webp`,        alt: 'Lorenzo Ricci Smeraldo зелен портфейл крокодилска кожа - продуктова снимка' },
       { src: `/Products/wallets/Smeraldo/portfeil-smeraldo-detal-krokodiilska-tekstura.webp`,      alt: 'Lorenzo Ricci Smeraldo - детайл на крокодилската текстура, изумруденозелено' },
@@ -628,25 +770,25 @@ export const products: Product[] = [
     priceAED: 500,
     currency: "€",
     inStock: true,
-    stock: 15,
-    warranty: "2 години гаранция",
+    stock: 10,
+    warranty: "Законова гаранция за съответствие: 2 години",
     shortDescription: "Оранжев кардхолдър от крокодилска кожа",
     description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
     materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
     features: [
-      "100% естествена крокодилска кожа - Crocodylus Siamensis",
+      "100% естествена крокодилска кожа",
       "CITES сертифициран произход №: 25VN4174/S",
       "Ръчна изработка - всяко изделие е уникално",
-      "Луксозна подаръчна кутия с Сертификат за автентичност",
     ],
     specs: [
       { label: "Материал", value: "100% Крокодилска кожа" },
-      { label: "Вид", value: "Crocodylus Siamensis" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
       { label: "CITES №", value: "25VN4174/S" },
       { label: "Изработка", value: "Ръчна" },
       { label: "Цвят", value: "Кехлибарено оранжев (Ambra)" },
     ],
-    coverImage: { src: `/Products/wallets/Ambra/kardholder-ambra-oranjev-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Ambra оранжев кардхолдър крокодилска кожа Crocodylus Siamensis - преден изглед' },
+    coverImage: { src: `/Products/wallets/Ambra/kardholder-ambra-oranjev-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Ambra оранжев кардхолдър крокодилска кожа - преден изглед' },
     images: [
       { src: `/Products/wallets/Ambra/kardholder-ambra-oranjev-krokodiilska-kozha.webp`,      alt: 'Lorenzo Ricci Ambra оранжев кардхолдър крокодилска кожа - продуктова снимка' },
       { src: `/Products/wallets/Ambra/kardholder-ambra-detal-krokodiilska-tekstura.webp`,     alt: 'Lorenzo Ricci Ambra - детайл на крокодилската текстура, кехлибарено оранжево' },
@@ -665,25 +807,25 @@ export const products: Product[] = [
     priceAED: 500,
     currency: "€",
     inStock: true,
-    stock: 15,
-    warranty: "2 години гаранция",
+    stock: 88,
+    warranty: "Законова гаранция за съответствие: 2 години",
     shortDescription: "Бял кожен кардхолдър",
     description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
-    materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    materialNote: 'Всеки кардхолдър Bianco е от различна кожа. Всички са бели, но големината и шарката на люспите се различават видимо, така че вашият екземпляр може да не изглежда точно като на снимките.',
+    crocodileSpecies: SIAMESE_CROCODILE,
     features: [
-      "100% естествена крокодилска кожа - Crocodylus Siamensis",
+      "100% естествена крокодилска кожа",
       "CITES сертифициран произход №: 25VN4174/S",
       "Ръчна изработка - всяко изделие е уникално",
-      "Луксозна подаръчна кутия с Сертификат за автентичност",
     ],
     specs: [
       { label: "Материал", value: "100% Крокодилска кожа" },
-      { label: "Вид", value: "Crocodylus Siamensis" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
       { label: "CITES №", value: "25VN4174/S" },
       { label: "Изработка", value: "Ръчна" },
       { label: "Цвят", value: "Бял (Bianco)" },
     ],
-    coverImage: { src: `/Products/wallets/Bianco/kardholder-bianco-byal-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Bianco бял кардхолдър крокодилска кожа Crocodylus Siamensis - преден изглед' },
+    coverImage: { src: `/Products/wallets/Bianco/kardholder-bianco-byal-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Bianco бял кардхолдър крокодилска кожа - преден изглед' },
     images: [
       { src: `/Products/wallets/Bianco/kardholder-bianco-byal-krokodiilska-kozha.webp`,       alt: 'Lorenzo Ricci Bianco бял кардхолдър крокодилска кожа - продуктова снимка' },
       { src: `/Products/wallets/Bianco/kardholder-bianco-lifestyle-marble.webp`,               alt: 'Lorenzo Ricci Bianco бял кардхолдър крокодилска кожа - мраморна повърхност' },
@@ -701,25 +843,25 @@ export const products: Product[] = [
     priceAED: 500,
     currency: "€",
     inStock: true,
-    stock: 15,
-    warranty: "2 години гаранция",
+    stock: 19,
+    warranty: "Законова гаранция за съответствие: 2 години",
     shortDescription: "Розов кардхолдър от крокодилска кожа",
     description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
     materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
     features: [
-      "100% естествена крокодилска кожа - Crocodylus Siamensis",
+      "100% естествена крокодилска кожа",
       "CITES сертифициран произход №: 25VN4174/S",
       "Ръчна изработка - всяко изделие е уникално",
-      "Луксозна подаръчна кутия с Сертификат за автентичност",
     ],
     specs: [
       { label: "Материал", value: "100% Крокодилска кожа" },
-      { label: "Вид", value: "Crocodylus Siamensis" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
       { label: "CITES №", value: "25VN4174/S" },
       { label: "Изработка", value: "Ръчна" },
       { label: "Цвят", value: "Розов (Valentina)" },
     ],
-    coverImage: { src: `/Products/wallets/Valentina/kardholder-valentina-rozov-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Valentina розов кардхолдър крокодилска кожа Crocodylus Siamensis - преден изглед' },
+    coverImage: { src: `/Products/wallets/Valentina/kardholder-valentina-rozov-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Valentina розов кардхолдър крокодилска кожа - преден изглед' },
     images: [
       { src: `/Products/wallets/Valentina/kardholder-valentina-rozov-krokodiilska-kozha.webp`,      alt: 'Lorenzo Ricci Valentina розов кардхолдър крокодилска кожа - продуктова снимка' },
       { src: `/Products/wallets/Valentina/kardholder-valentina-detal-krokodiilska-tekstura.webp`,    alt: 'Lorenzo Ricci Valentina - детайл на крокодилската текстура, розов цвят' },
@@ -738,29 +880,494 @@ export const products: Product[] = [
     currency: "€",
     inStock: true,
     stock: 15,
-    warranty: "2 години гаранция",
+    warranty: "Законова гаранция за съответствие: 2 години",
     shortDescription: "Тъмносин кардхолдър от крокодилска кожа",
     description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
     materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
     features: [
-      "100% естествена крокодилска кожа - Crocodylus Siamensis",
+      "100% естествена крокодилска кожа",
       "CITES сертифициран произход №: 25VN4174/S",
       "Ръчна изработка - всяко изделие е уникално",
-      "Луксозна подаръчна кутия с Сертификат за автентичност",
     ],
     specs: [
       { label: "Материал", value: "100% Крокодилска кожа" },
-      { label: "Вид", value: "Crocodylus Siamensis" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
       { label: "CITES №", value: "25VN4174/S" },
       { label: "Изработка", value: "Ръчна" },
       { label: "Цвят", value: "Сапфирено син (Zaffiro)" },
     ],
-    coverImage: { src: `/Products/wallets/Zaffiro/kardholder-zaffiro-sinen-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Zaffiro тъмносин кардхолдър крокодилска кожа Crocodylus Siamensis - преден изглед' },
+    coverImage: { src: `/Products/wallets/Zaffiro/kardholder-zaffiro-sinen-krokodiilska-kozha.webp`, alt: 'Lorenzo Ricci Zaffiro тъмносин кардхолдър крокодилска кожа - преден изглед' },
     images: [
       { src: `/Products/wallets/Zaffiro/kardholder-zaffiro-sinen-krokodiilska-kozha.webp`,       alt: 'Lorenzo Ricci Zaffiro тъмносин кардхолдър крокодилска кожа - продуктова снимка' },
       { src: `/Products/wallets/Zaffiro/kardholder-zaffiro-detal-krokodiilska-tekstura.webp`,     alt: 'Lorenzo Ricci Zaffiro - детайл на крокодилската текстура, сапфирено синьо' },
       { src: `/Products/wallets/Zaffiro/kardholder-zaffiro-lifestyle.webp`,                       alt: 'Lorenzo Ricci Zaffiro кардхолдър - лайфстайл снимка, ежедневна употреба' },
       { src: `/Products/wallets/Zaffiro/kardholder-zaffiro-kutiya-sertifikat.webp`,               alt: 'Lorenzo Ricci Zaffiro в луксозна кутия с Сертификат за автентичност CITES' },
+    ],
+  },
+
+  // New cardholder batch (added 2026-09-27). Owner's decisions: gallery = front then back;
+  // NO CITES permit number (25VN4174/S is not claimed for this batch); no AED price
+  // (Bulgaria only); €65 like the others; no description video (the "Автентичност и
+  // Структура" block renders text-only). Counts from the owner 2026-09-27: Onice 46,
+  // Giada 27, Cremisi 38, Perla 3, Topazio 23 (rows in wallet_inventory_restock_2026-09-27.sql).
+  {
+    id: "cardholder-onice",
+    slug: "cardholder-onice",
+    sku: "CRD-ONI",
+    name: 'Lorenzo Ricci "Onice"',
+    category: "cardholders",
+    price: 65,
+    currency: "€",
+    inStock: true,
+    stock: 46,
+    warranty: "Законова гаранция за съответствие: 2 години",
+    shortDescription: "Черен кардхолдър от крокодилска кожа",
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
+    materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
+    features: [
+      "100% естествена крокодилска кожа",
+      "Ръчна изработка - всяко изделие е уникално",
+    ],
+    specs: [
+      { label: "Материал", value: "100% Крокодилска кожа" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
+      { label: "Изработка", value: "Ръчна" },
+      { label: "Цвят", value: "Черен (Onice)" },
+      { label: "Размери", value: "" }, // empty → row hidden until the owner gives real measurements
+    ],
+    coverImage: { src: `/Products/wallets/Onice/kardholder-onice-cheren-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Onice черен кардхолдър крокодилска кожа - преден изглед' },
+    images: [
+      { src: `/Products/wallets/Onice/kardholder-onice-cheren-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Onice черен кардхолдър крокодилска кожа - преден изглед' },
+      { src: `/Products/wallets/Onice/kardholder-onice-zaden-izgled.webp`, alt: 'Lorenzo Ricci Onice - заден изглед, отделения за карти' },
+    ],
+  },
+  {
+    id: "cardholder-giada",
+    slug: "cardholder-giada",
+    sku: "CRD-GIA",
+    name: 'Lorenzo Ricci "Giada"',
+    category: "cardholders",
+    price: 65,
+    currency: "€",
+    inStock: true,
+    stock: 27,
+    warranty: "Законова гаранция за съответствие: 2 години",
+    shortDescription: "Тъмнозелен кардхолдър от крокодилска кожа",
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
+    materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
+    features: [
+      "100% естествена крокодилска кожа",
+      "Ръчна изработка - всяко изделие е уникално",
+    ],
+    specs: [
+      { label: "Материал", value: "100% Крокодилска кожа" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
+      { label: "Изработка", value: "Ръчна" },
+      { label: "Цвят", value: "Тъмнозелен (Giada)" },
+      { label: "Размери", value: "" }, // empty → row hidden until the owner gives real measurements
+    ],
+    coverImage: { src: `/Products/wallets/Giada/kardholder-giada-zelen-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Giada тъмнозелен кардхолдър крокодилска кожа - преден изглед' },
+    images: [
+      { src: `/Products/wallets/Giada/kardholder-giada-zelen-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Giada тъмнозелен кардхолдър крокодилска кожа - преден изглед' },
+      { src: `/Products/wallets/Giada/kardholder-giada-zaden-izgled.webp`, alt: 'Lorenzo Ricci Giada - заден изглед, отделения за карти' },
+    ],
+  },
+  {
+    id: "cardholder-cremisi",
+    slug: "cardholder-cremisi",
+    sku: "CRD-CRE",
+    name: 'Lorenzo Ricci "Cremisi"',
+    category: "cardholders",
+    price: 65,
+    currency: "€",
+    inStock: true,
+    stock: 38,
+    warranty: "Законова гаранция за съответствие: 2 години",
+    shortDescription: "Червен кардхолдър от крокодилска кожа",
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
+    materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
+    features: [
+      "100% естествена крокодилска кожа",
+      "Ръчна изработка - всяко изделие е уникално",
+    ],
+    specs: [
+      { label: "Материал", value: "100% Крокодилска кожа" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
+      { label: "Изработка", value: "Ръчна" },
+      { label: "Цвят", value: "Червен (Cremisi)" },
+      { label: "Размери", value: "" }, // empty → row hidden until the owner gives real measurements
+    ],
+    coverImage: { src: `/Products/wallets/Cremisi/kardholder-cremisi-cherven-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Cremisi червен кардхолдър крокодилска кожа - преден изглед' },
+    images: [
+      { src: `/Products/wallets/Cremisi/kardholder-cremisi-cherven-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Cremisi червен кардхолдър крокодилска кожа - преден изглед' },
+      { src: `/Products/wallets/Cremisi/kardholder-cremisi-zaden-izgled.webp`, alt: 'Lorenzo Ricci Cremisi - заден изглед, отделения за карти' },
+    ],
+  },
+  {
+    id: "cardholder-perla",
+    slug: "cardholder-perla",
+    sku: "CRD-PER",
+    name: 'Lorenzo Ricci "Perla"',
+    category: "cardholders",
+    price: 65,
+    currency: "€",
+    inStock: true,
+    stock: 3,
+    warranty: "Законова гаранция за съответствие: 2 години",
+    shortDescription: "Сив кардхолдър от крокодилска кожа",
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
+    materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
+    features: [
+      "100% естествена крокодилска кожа",
+      "Ръчна изработка - всяко изделие е уникално",
+    ],
+    specs: [
+      { label: "Материал", value: "100% Крокодилска кожа" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
+      { label: "Изработка", value: "Ръчна" },
+      { label: "Цвят", value: "Сив (Perla)" },
+      { label: "Размери", value: "" }, // empty → row hidden until the owner gives real measurements
+    ],
+    coverImage: { src: `/Products/wallets/Perla/kardholder-perla-siv-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Perla сив кардхолдър крокодилска кожа - преден изглед' },
+    images: [
+      { src: `/Products/wallets/Perla/kardholder-perla-siv-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Perla сив кардхолдър крокодилска кожа - преден изглед' },
+      { src: `/Products/wallets/Perla/kardholder-perla-zaden-izgled.webp`, alt: 'Lorenzo Ricci Perla - заден изглед, отделения за карти' },
+    ],
+  },
+  {
+    id: "cardholder-topazio",
+    slug: "cardholder-topazio",
+    sku: "CRD-TOP",
+    name: 'Lorenzo Ricci "Topazio"',
+    category: "cardholders",
+    price: 65,
+    currency: "€",
+    inStock: true,
+    stock: 23,
+    warranty: "Законова гаранция за съответствие: 2 години",
+    shortDescription: "Жълт кардхолдър от крокодилска кожа",
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
+    materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
+    features: [
+      "100% естествена крокодилска кожа",
+      "Ръчна изработка - всяко изделие е уникално",
+    ],
+    specs: [
+      { label: "Материал", value: "100% Крокодилска кожа" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
+      { label: "Изработка", value: "Ръчна" },
+      { label: "Цвят", value: "Жълт (Topazio)" },
+      { label: "Размери", value: "" }, // empty → row hidden until the owner gives real measurements
+    ],
+    coverImage: { src: `/Products/wallets/Topazio/kardholder-topazio-zhalt-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Topazio жълт кардхолдър крокодилска кожа - преден изглед' },
+    images: [
+      { src: `/Products/wallets/Topazio/kardholder-topazio-zhalt-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Topazio жълт кардхолдър крокодилска кожа - преден изглед' },
+      { src: `/Products/wallets/Topazio/kardholder-topazio-zaden-izgled.webp`, alt: 'Lorenzo Ricci Topazio - заден изглед, отделения за карти' },
+    ],
+  },
+  // ─── BAGS ───────────────────────────────────────────────────────────────────
+  // TODO (owed by owner before this section is publish-ready):
+  //   - Milano Avorio: lining material (still dropped from specs entirely until confirmed —
+  //     not shown as a placeholder). Dimensions confirmed 2026-09-14, now in specs.
+  //   - Milano Avorio gallery (2026-09-13): 10 of 11 numbered source files are in, in the
+  //     owner's numeric order (3, 4, 5, 8, 10 centre-cropped to square, off by only 1.9–5.4%
+  //     pre-crop). File 11 is still missing from the source folder entirely — never
+  //     re-supplied after the original (raw, unprocessed) version was flagged two rounds ago.
+  //   - Milano Avorio descriptionImage: unset (see comment on the product entry) — none
+  //     of the 10 current gallery photos is a genuine macro shot of the leather itself.
+  //     No generic fallback — its media column is simply omitted until the owner shoots one.
+  //   - Clutch stock counts: confirmed by the owner 2026-09-27 (Torino 5, Verona 5,
+  //     Toscana 2, Portofino 5, Capri 3; Milano Avorio 1) — the rows are in
+  //     supabase/wallet_inventory_bags.sql, which the owner runs in the SQL editor.
+  //   - Clutch dimensions (all five): not measured yet. The "Размери" value stays ""
+  //     and ProductInfo hides empty spec values, so customers never see a placeholder
+  //     row. Fill it in only with the owner's real measurements.
+  //   - Toscana: owner to provide a replacement for gallery slot 5 (see note on its
+  //     images array below) — the supplied file wasn't square and was skipped
+  //   - descriptionImage (macro texture shot for "Автентичност и Структура"): Torino,
+  //     Verona, Toscana, and Portofino each have their own now (2026-09-24, from the
+  //     owner's "under product" photos), and so does Capri (added 2026-09-25). Milano Avorio's stays unset — no genuine
+  //     macro shot exists yet (see above) — and LeatherDescription no longer falls
+  //     back to a generic image, so its media column is simply omitted.
+  {
+    id: "bag-milano-avorio",
+    slug: "bag-milano-avorio",
+    sku: "BAG-MILANO-AVORIO",
+    name: 'Lorenzo Ricci "Milano Avorio"',
+    category: "bags",
+    price: 4000,
+    currency: "€",
+    badge: "Единствен екземпляр",
+    crocodileSpecies: NILE_CROCODILE,
+    inStock: true,
+    stock: 1,
+    warranty: "Законова гаранция за съответствие: 2 години",
+    shortDescription: "Голям сак от нилски крокодил с индивидуален рисунък на люспите",
+    // Short `description` feeds the meta/OG tag only (sliced to 160 chars) — the tab copy
+    // customers actually read is `descriptionSections` below. Kept deliberately plain: no
+    // occasion language, no durability claim beyond what's confirmed.
+    description: 'Milano Avorio е изработен от кожа на нилски крокодил (Crocodylus niloticus) с финиш Himalaya. Всяка кожа има собствен рисунък на люспите.',
+    descriptionSections: [
+      {
+        heading: "Единствен екземпляр — 1 от 1",
+        body: "Настоящият сак е произведен в един-единствен екземпляр и е ограничен до 1 бройка. Това е единствената създадена бройка от тази конкретна комбинация между дизайн, нилска крокодилска кожа (Crocodylus niloticus), естествен рисунък на люспите и Himalaya финиш. Втори екземпляр няма да бъде произведен. Неповторимостта на изделието не се определя единствено от лимита до една бройка, а и от самата кожа: естественият релеф, разположението на люспите и характерният цветови градиент са присъщи единствено на този конкретен материал и не могат да бъдат възпроизведени идентично. Към екземпляра се предоставя поименен сертификат за автентичност, който придружава изделието като документ за неговата идентичност и произход.",
+      },
+      {
+        heading: "Финишът",
+        body: "Финишът Himalaya изсветлява горната част на всяка люспа, докато вдлъбнатините между тях остават с естествения тон на кожата. Получава се градиент между слонова кост и патина, който следва индивидуалния релеф на конкретната кожа.",
+      },
+      {
+        heading: "Отвътре",
+        body: "Сакът е структуриран в едно основно отделение, вътрешен джоб за по-малки предмети и отделен джоб за телефон. Подредбата разделя съдържанието, без излишни прегради.",
+      },
+      {
+        heading: "Кожата",
+        body: "Изработен е от кожа на нилски крокодил (Crocodylus niloticus). Рисунъкът на люспите е специфичен за тази кожа — оттук и означението Единствен екземпляр, а не сериен номер от ограничена серия.",
+      },
+    ],
+    features: [
+      "100% естествена крокодилска кожа",
+      "Himalaya finish - контраст между слонова кост и естествена патина",
+      "Индивидуален рисунък на люспите за всяка кожа",
+      "Сериен номер LR-CR-9403",
+      "Ръчна изработка от майстор кожар",
+    ],
+    // Rewritten 2026-09-13 per owner: Подплата omitted entirely (no verified lining material
+    // yet) rather than shown as an UNVERIFIED placeholder. Размери added 2026-09-14, owner-
+    // confirmed exact measurements. Вид/Сериен №/Изработка dropped from this table (folded
+    // into Материал, or still visible via `features` above) to keep the list short. Finish +
+    // zip + handles given directly by the owner as final spec content — not pending verification.
+    specs: [
+      { label: "Материал", value: `${NILE_CROCODILE}, Himalaya финиш` },
+      { label: "Размери", value: "45 см (Дължина) × 22 см (Широчина) × 27 см (Височина)" },
+      { label: "Цвят", value: "Слонова кост (Avorio)" },
+      { label: "Вътрешност", value: "Основно отделение, вътрешен джоб, джоб за телефон" },
+      { label: "Закопчаване", value: "Цип YKK" },
+      { label: "Дръжки", value: "Две горни дръжки и подвижна раменна дръжка" },
+    ],
+    // descriptionImage intentionally unset — none of the 10 gallery photos is a genuine
+    // macro shot of the leather itself (closest is the certificate/tag close-up, which is about
+    // the fabric label, not the hornback texture). LeatherDescription no longer falls back to a
+    // generic image when this is unset — its media column is simply omitted until a real texture
+    // macro is supplied. See BAGS-section TODO above.
+    coverImage: { src: `/Products/bags/Milano Avorio/sak-milano-avorio-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Milano Avorio сак от крокодилска кожа - преден изглед' },
+    images: [
+      { src: `/Products/bags/Milano Avorio/sak-milano-avorio-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Milano Avorio сак - продуктова снимка, преден изглед' },
+      { src: `/Products/bags/Milano Avorio/sak-milano-avorio-lifestyle-nosene-na-ramo.webp`,         alt: 'Lorenzo Ricci Milano Avorio - лайфстайл снимка, носене на рамо' },
+      { src: `/Products/bags/Milano Avorio/sak-milano-avorio-detal-etiket-i-emblema.webp`,           alt: 'Lorenzo Ricci Milano Avorio - детайл на щампования надпис LORENZO RICCI и закачения етикет' },
+      { src: `/Products/bags/Milano Avorio/sak-milano-avorio-tristranichen-izgled.webp`,             alt: 'Lorenzo Ricci Milano Avorio - триизмерен изглед под ъгъл' },
+      { src: `/Products/bags/Milano Avorio/sak-milano-avorio-strani-profil.webp`,                    alt: 'Lorenzo Ricci Milano Avorio - страничен профил, халка за раменната дръжка' },
+      { src: `/Products/bags/Milano Avorio/sak-milano-avorio-detal-drazhki.webp`,                    alt: 'Lorenzo Ricci Milano Avorio - детайл на дръжките' },
+      { src: `/Products/bags/Milano Avorio/sak-milano-avorio-dolna-chast-krachenca.webp`,            alt: 'Lorenzo Ricci Milano Avorio - долна част с предпазни краченца' },
+      { src: `/Products/bags/Milano Avorio/sak-milano-avorio-vatreshnost-etiket.webp`,               alt: 'Lorenzo Ricci Milano Avorio - вътрешност с етикет LORENZO RICCI' },
+      { src: `/Products/bags/Milano Avorio/sak-milano-avorio-sertifikat-nilski-krokodil.webp`,       alt: 'Lorenzo Ricci Milano Avorio - етикет за автентичност, Genuine Crocodile Leather, Himalaya Finish' },
+      { src: `/Products/bags/Milano Avorio/sak-milano-avorio-vatreshen-djob-detal.webp`,             alt: 'Lorenzo Ricci Milano Avorio - детайл на вътрешен джоб' },
+    ],
+  },
+  {
+    id: "clutch-torino",
+    slug: "clutch-torino",
+    sku: "CLU-TORINO",
+    name: 'Lorenzo Ricci "Torino"',
+    category: "bags",
+    price: 550,
+    currency: "€",
+    inStock: true,
+    stock: 5,
+    warranty: "Законова гаранция за съответствие: 2 години",
+    shortDescription: "Черен вечерен клъч от крокодилска кожа",
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа — аксесоар за вечер, който не се нуждае от повече от себе си.',
+    materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
+    features: [
+      "100% естествена крокодилска кожа",
+      "Релефна ивица от естествени костни плочки, характерна за гръбната част на кожата",
+      "Плавно движещ се метален цип, вграден дискретно в силуета на клъча",
+      "Основно отделение и вътрешен джоб, подредени да поберат най-необходимото",
+      "Компактен формат за вечер",
+    ],
+    specs: [
+      { label: "Материал", value: "100% Крокодилска кожа" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
+      { label: "Изработка", value: "Ръчна" },
+      { label: "Цвят", value: "Нощно черен (Torino)" },
+      { label: "Размери", value: "" }, // empty → row hidden until the owner gives real measurements
+    ],
+    descriptionImage: { src: `/Products/bags/Torino/klych-torino-varhu-kozhata.webp`, alt: 'Lorenzo Ricci Torino - детайл на крокодилската текстура' },
+    coverImage: { src: `/Products/bags/Torino/klych-torino-cherna-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Torino черен клъч крокодилска кожа - преден изглед' },
+    images: [
+      { src: `/Products/bags/Torino/klych-torino-cherna-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Torino клъч - продуктова снимка, преден изглед' },
+      { src: `/Products/bags/Torino/klych-torino-strancen-izgled.webp`,                          alt: 'Lorenzo Ricci Torino - страничен изглед' },
+      { src: `/Products/bags/Torino/klych-torino-otvoren-vatreshnost-etiket.webp`,                alt: 'Lorenzo Ricci Torino - отворен клъч, вътрешност с марков етикет' },
+      { src: `/Products/bags/Torino/klych-torino-vatreshnost-zakopchalka.webp`,                   alt: 'Lorenzo Ricci Torino - вътрешност, детайл на закопчалката' },
+      { src: `/Products/bags/Torino/klych-torino-detal-tekstura.webp`,                            alt: 'Lorenzo Ricci Torino - детайл на крокодилската текстура' },
+    ],
+  },
+  {
+    id: "clutch-verona",
+    slug: "clutch-verona",
+    sku: "CLU-VERONA",
+    name: 'Lorenzo Ricci "Verona"',
+    category: "bags",
+    price: 550,
+    currency: "€",
+    inStock: true,
+    stock: 5,
+    warranty: "Законова гаранция за съответствие: 2 години",
+    shortDescription: "Бордо вечерен клъч от крокодилска кожа",
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа — аксесоар за вечер, който не се нуждае от повече от себе си.',
+    materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
+    features: [
+      "100% естествена крокодилска кожа",
+      "Релефна ивица от естествени костни плочки, характерна за гръбната част на кожата",
+      "Плавно движещ се метален цип, вграден дискретно в силуета на клъча",
+      "Основно отделение и вътрешен джоб, подредени да поберат най-необходимото",
+      "Компактен формат за вечер",
+    ],
+    specs: [
+      { label: "Материал", value: "100% Крокодилска кожа" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
+      { label: "Изработка", value: "Ръчна" },
+      { label: "Цвят", value: "Бордо червен (Verona)" },
+      { label: "Размери", value: "" }, // empty → row hidden until the owner gives real measurements
+    ],
+    descriptionImage: { src: `/Products/bags/Verona/klych-verona-detal-tekstura.webp`, alt: 'Lorenzo Ricci Verona - детайл на крокодилската текстура' },
+    coverImage: { src: `/Products/bags/Verona/klych-verona-cherven-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Verona бордо клъч крокодилска кожа - преден изглед' },
+    images: [
+      { src: `/Products/bags/Verona/klych-verona-cherven-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Verona клъч - продуктова снимка, преден изглед' },
+      { src: `/Products/bags/Verona/klych-verona-strancen-izgled.webp`,                            alt: 'Lorenzo Ricci Verona - страничен изглед' },
+      { src: `/Products/bags/Verona/klych-verona-otvoren-vatreshnost-etiket.webp`,                 alt: 'Lorenzo Ricci Verona - отворен клъч, вътрешност с марков етикет' },
+      { src: `/Products/bags/Verona/klych-verona-vatreshnost-detal.webp`,                          alt: 'Lorenzo Ricci Verona - детайл на вътрешността' },
+      { src: `/Products/bags/Verona/klych-verona-detal-logo.webp`,                                 alt: 'Lorenzo Ricci Verona - детайл на логото' },
+    ],
+  },
+  {
+    id: "clutch-toscana",
+    slug: "clutch-toscana",
+    sku: "CLU-TOSCANA",
+    name: 'Lorenzo Ricci "Toscana"',
+    category: "bags",
+    price: 550,
+    currency: "€",
+    inStock: true,
+    stock: 2,
+    warranty: "Законова гаранция за съответствие: 2 години",
+    shortDescription: "Тъмнозелен вечерен клъч от крокодилска кожа",
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа — аксесоар за вечер, който не се нуждае от повече от себе си.',
+    materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
+    features: [
+      "100% естествена крокодилска кожа",
+      "Релефна ивица от естествени костни плочки, характерна за гръбната част на кожата",
+      "Плавно движещ се метален цип, вграден дискретно в силуета на клъча",
+      "Основно отделение и вътрешен джоб, подредени да поберат най-необходимото",
+      "Компактен формат за вечер",
+    ],
+    specs: [
+      { label: "Материал", value: "100% Крокодилска кожа" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
+      { label: "Изработка", value: "Ръчна" },
+      { label: "Цвят", value: "Тъмнозелен (Toscana)" },
+      { label: "Размери", value: "" }, // empty → row hidden until the owner gives real measurements
+    ],
+    descriptionImage: { src: `/Products/bags/Toscana/klych-toscana-detal-tekstura.webp`, alt: 'Lorenzo Ricci Toscana - детайл на крокодилската текстура' },
+    coverImage: { src: `/Products/bags/Toscana/klych-toscana-zelen-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Toscana тъмнозелен клъч крокодилска кожа - преден изглед' },
+    // Slot 5 from the owner's numbered set was excluded (not square, still a raw
+    // uncropped camera photo — see chat) — gallery currently skips straight from
+    // detail #4 to #6, five images total. TODO: owner to provide a replacement.
+    images: [
+      { src: `/Products/bags/Toscana/klych-toscana-zelen-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Toscana клъч - продуктова снимка, преден изглед' },
+      { src: `/Products/bags/Toscana/klych-toscana-strancen-izgled.webp`,                          alt: 'Lorenzo Ricci Toscana - страничен изглед' },
+      { src: `/Products/bags/Toscana/klych-toscana-detal-predna-strana.webp`,                      alt: 'Lorenzo Ricci Toscana - детайл на лицевата част' },
+      { src: `/Products/bags/Toscana/klych-toscana-zakopchalka-detal.webp`,                        alt: 'Lorenzo Ricci Toscana - детайл на закопчалката' },
+      { src: `/Products/bags/Toscana/klych-toscana-otvoren-vatreshnost-etiket.webp`,               alt: 'Lorenzo Ricci Toscana - отворен клъч, вътрешност с марков етикет' },
+    ],
+  },
+  {
+    id: "clutch-portofino",
+    slug: "clutch-portofino",
+    sku: "CLU-PORTOFINO",
+    name: 'Lorenzo Ricci "Portofino"',
+    category: "bags",
+    price: 550,
+    currency: "€",
+    inStock: true,
+    stock: 5,
+    warranty: "Законова гаранция за съответствие: 2 години",
+    shortDescription: "Кремав вечерен клъч от крокодилска кожа",
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа — аксесоар за вечер, който не се нуждае от повече от себе си.',
+    materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
+    features: [
+      "100% естествена крокодилска кожа",
+      "Релефна ивица от естествени костни плочки, характерна за гръбната част на кожата",
+      "Плавно движещ се метален цип, вграден дискретно в силуета на клъча",
+      "Основно отделение и вътрешен джоб, подредени да поберат най-необходимото",
+      "Компактен формат за вечер",
+    ],
+    specs: [
+      { label: "Материал", value: "100% Крокодилска кожа" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
+      { label: "Изработка", value: "Ръчна" },
+      { label: "Цвят", value: "Кремав (Portofino)" },
+      { label: "Размери", value: "" }, // empty → row hidden until the owner gives real measurements
+    ],
+    descriptionImage: { src: `/Products/bags/Portofino/klych-portofino-detal-tekstura.webp`, alt: 'Lorenzo Ricci Portofino - детайл на крокодилската текстура' },
+    coverImage: { src: `/Products/bags/Portofino/klych-portofino-krem-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Portofino кремав клъч крокодилска кожа - преден изглед' },
+    // "zakopchalka-detal" slide pulled — the bag occupies too small a band of the
+    // square frame (lying-flat side-on shot, ~21% frame height). File is still on
+    // disk (klych-portofino-zakopchalka-detal.webp), just not referenced here.
+    images: [
+      { src: `/Products/bags/Portofino/klych-portofino-krem-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Portofino клъч - продуктова снимка, преден изглед' },
+      { src: `/Products/bags/Portofino/klych-portofino-strancen-izgled.webp`,                         alt: 'Lorenzo Ricci Portofino - страничен изглед' },
+      { src: `/Products/bags/Portofino/klych-portofino-drazhka-detal.webp`,                           alt: 'Lorenzo Ricci Portofino - детайл на дръжката' },
+      { src: `/Products/bags/Portofino/klych-portofino-otvoren-vatreshnost.webp`,                     alt: 'Lorenzo Ricci Portofino - отворен клъч, вътрешност' },
+      { src: `/Products/bags/Portofino/klych-portofino-otvoren-vatreshnost-etiket.webp`,              alt: 'Lorenzo Ricci Portofino - вътрешност с марков етикет' },
+    ],
+  },
+  {
+    id: "clutch-capri",
+    slug: "clutch-capri",
+    sku: "CLU-CAPRI",
+    name: 'Lorenzo Ricci "Capri"',
+    category: "bags",
+    price: 550,
+    currency: "€",
+    inStock: true,
+    stock: 3,
+    warranty: "Законова гаранция за съответствие: 2 години",
+    shortDescription: "Тъмносин вечерен клъч от крокодилска кожа",
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа — аксесоар за вечер, който не се нуждае от повече от себе си.',
+    materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
+    features: [
+      "100% естествена крокодилска кожа",
+      "Релефна ивица от естествени костни плочки, характерна за гръбната част на кожата",
+      "Плавно движещ се метален цип, вграден дискретно в силуета на клъча",
+      "Основно отделение и вътрешен джоб, подредени да поберат най-необходимото",
+      "Компактен формат за вечер",
+    ],
+    specs: [
+      { label: "Материал", value: "100% Крокодилска кожа" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
+      { label: "Изработка", value: "Ръчна" },
+      { label: "Цвят", value: "Тъмносин (Capri)" },
+      { label: "Размери", value: "" }, // empty → row hidden until the owner gives real measurements
+    ],
+    descriptionImage: { src: `/Products/bags/Capri/klych-capri-varhu-kozhata.webp`, alt: 'Lorenzo Ricci Capri - клъчът върху тъмносиня крокодилска кожа' },
+    coverImage: { src: `/Products/bags/Capri/klych-capri-sin-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Capri тъмносин клъч крокодилска кожа - преден изглед' },
+    images: [
+      { src: `/Products/bags/Capri/klych-capri-sin-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Capri клъч - продуктова снимка, преден изглед' },
+      { src: `/Products/bags/Capri/klych-capri-zaden-izgled.webp`,                        alt: 'Lorenzo Ricci Capri - заден изглед, релефни костни плочки' },
+      { src: `/Products/bags/Capri/klych-capri-otvoren-vatreshnost-etiket.webp`,          alt: 'Lorenzo Ricci Capri - отворен клъч, вътрешност с марков етикет' },
+      { src: `/Products/bags/Capri/klych-capri-etiket-siamski-krokodil.webp`,             alt: 'Lorenzo Ricci Capri - етикет Genuine Crocodile Leather, Crocodylus siamensis' },
     ],
   },
 ];

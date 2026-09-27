@@ -11,6 +11,7 @@ import { ProductEditorial } from "@/components/product/ProductEditorial";
 import { BundleUpsell } from "@/components/product/BundleUpsell";
 import { JewelleryDescription } from "@/components/product/JewelleryDescription";
 import { LeatherDescription } from "@/components/product/LeatherDescription";
+import { requiresPrepayment } from "@/lib/price";
 
 const CARDHOLDER_VIDEOS: Record<string, string> = {
   "cardholder-bianco":    "/cardholder-bianco-leather.mp4",
@@ -31,9 +32,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const product = getProductBySlug(slug);
   if (!product) return {};
+  // Matches the checkout: prepayment items are arranged directly with us (no specific method promised).
+  const paymentNote = requiresPrepayment(product) ? "Поръчка с предплащане." : "Наложен платеж.";
   return {
     title: product.name,
-    description: `${product.name} - ${product.shortDescription}. ${product.currency}${product.price}. ${product.warranty}. Безплатна доставка над €60. Наложен платеж.`,
+    description: `${product.name} - ${product.shortDescription}. ${product.currency}${product.price}. ${product.warranty}. Безплатна доставка над €60. ${paymentNote}`,
     openGraph: {
       title: `${product.name} | Lorenzo Ricci`,
       description: product.description.slice(0, 160),
@@ -68,7 +71,7 @@ export default async function ProductPage({ params }: Props) {
           <Link
             href={
               product.category === "watches" ? "/watches" :
-              product.category === "wallets" || product.category === "cardholders" ? "/leather-goods" :
+              product.category === "wallets" || product.category === "cardholders" || product.category === "bags" ? "/leather-goods" :
               "/jewellery"
             }
             className="hover:text-navy transition-colors duration-200"
@@ -76,6 +79,7 @@ export default async function ProductPage({ params }: Props) {
             {product.category === "watches" ? "Часовници" :
              product.category === "wallets" ? "Портфейли" :
              product.category === "cardholders" ? "Кардхолдъри" :
+             product.category === "bags" ? "Чанти" :
              "Бижута"}
           </Link>
           <span className="text-border-strong">/</span>
@@ -100,8 +104,8 @@ export default async function ProductPage({ params }: Props) {
         {product.category === "jewellery" && <JewelleryDescription />}
 
         {/* Leather description - material & craft Q&A */}
-        {(product.category === "wallets" || product.category === "cardholders") && (
-          <LeatherDescription videoSrc={CARDHOLDER_VIDEOS[product.slug]} />
+        {(product.category === "wallets" || product.category === "cardholders" || product.category === "bags") && (
+          <LeatherDescription videoSrc={CARDHOLDER_VIDEOS[product.slug]} crocodileSpecies={product.crocodileSpecies} isBag={product.category === "bags"} image={product.descriptionImage} />
         )}
 
         {/* Reviews */}

@@ -7,8 +7,13 @@ node_modules/
 .DS_Store
 Content for tik tok/
 
-# Image processing backups/duplicates — never belong in git (large binary dumps,
-# same class of problem that broke the push before). The active working folder
-# (Products/Leather Bags/) stays trackable.
-Products/Leather Bags - ORIGINALS BACKUP*/
-Products/Leather Bags copy/
+# Private business documents — customer data must never enter the repo.
+# (Invoices live outside the project: ../Lorenzo Ricci private/)
+/*invoices*/
+
+# Raw and backup photo sources — only the processed images in public/ are
+# committed. Everything the site serves is under public/Products/, so the raw
+# root Products/ folder (originals, "copy"/"backup" folders, unedited shoots)
+# and any other root-level photo dump stay out of git.
+/Products/
+/Novi modeli chasovnici unedited/

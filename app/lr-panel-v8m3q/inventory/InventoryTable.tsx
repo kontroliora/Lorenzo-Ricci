@@ -10,9 +10,11 @@ export type InventoryRow = {
   category: ProductCategory;
   coverSrc: string;
   coverAlt: string;
-  stock: number;
-  reserved: number;
-  available: number;
+  stock: number;      // free-to-sell count (wallet_inventory.stock)
+  reserved: number;   // units in open orders — information only, already out of `stock`
+  available: number;  // = stock (unified decrement model)
+  tracked: boolean;   // false → no wallet_inventory row → checkout sells it with no cap
+  forSale: boolean;   // lib/products.ts inStock — false = owner's off switch
 };
 
 const CATEGORY_LABELS: Record<ProductCategory, string> = {
@@ -20,9 +22,10 @@ const CATEGORY_LABELS: Record<ProductCategory, string> = {
   jewellery: "Бижута",
   wallets: "Портфейли",
   cardholders: "Кардхолдъри",
+  bags: "Чанти",
 };
 
-const CATEGORY_ORDER: ProductCategory[] = ["watches", "jewellery", "wallets", "cardholders"];
+const CATEGORY_ORDER: ProductCategory[] = ["watches", "jewellery", "wallets", "cardholders", "bags"];
 
 function StockDot({ qty }: { qty: number }) {
   const color =
@@ -37,6 +40,9 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
   const [saving, setSaving]   = useState<Record<string, boolean>>({});
   const [saved,  setSaved]    = useState<Record<string, boolean>>({});
   const [errors, setErrors]   = useState<Record<string, string>>({});
+  const [tracked, setTracked] = useState<Record<string, boolean>>(
+    Object.fromEntries(rows.map((r) => [r.slug, r.tracked]))
+  );
 
   const handleSave = async (slug: string) => {
     setSaving((s) => ({ ...s, [slug]: true }));
@@ -49,6 +55,7 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
       });
       if (!res.ok) throw new Error("Failed");
       setSaved((s) => ({ ...s, [slug]: true }));
+      setTracked((t) => ({ ...t, [slug]: true })); // saving creates the row (upsert)
       setTimeout(() => setSaved((s) => ({ ...s, [slug]: false })), 2500);
     } catch {
       setErrors((e) => ({ ...e, [slug]: "Грешка при запис" }));
@@ -82,7 +89,9 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
             {items.map((row) => {
               const qty = stocks[row.slug] ?? 0;
               const reserved = row.reserved ?? 0;
-              const available = Math.max(0, qty - reserved);
+              // Unified model: the saved number IS what's free to sell — open orders
+              // are already out of it, so they're shown but not subtracted again.
+              const available = qty;
               return (
                 <div
                   key={row.slug}
@@ -105,9 +114,19 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                       {row.name}
                     </p>
                     <p className="font-mono text-[10px] text-white/30 mt-0.5">{row.sku}</p>
+                    {!tracked[row.slug] && (
+                      <p className="font-sans text-[10px] text-red-400 mt-0.5">
+                        Без запис в базата — продава се без ограничение. Запазете число.
+                      </p>
+                    )}
+                    {!row.forSale && (
+                      <p className="font-sans text-[10px] text-amber-400/90 mt-0.5">
+                        Спрян от продажба (lib/products.ts) — сайтът показва „Изчерпан“
+                      </p>
+                    )}
                   </div>
 
-                  {/* Reserved + Available (computed from active orders) */}
+                  {/* Reserved (info — already out of the count) + Available (= the saved count) */}
                   <div className="flex flex-col items-end flex-shrink-0 leading-tight w-16">
                     <span className="font-sans text-[10px] text-white/30">Резерв. <span className="text-amber-300/80">{reserved}</span></span>
                     <span className="font-sans text-[10px] text-white/30">Нал. <span className={available === 0 ? "text-red-400" : available <= 5 ? "text-amber-400" : "text-emerald-400"}>{available}</span></span>
@@ -116,7 +135,7 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                   {/* Stock dot (by available) */}
                   <StockDot qty={available} />
 
-                  {/* Total stock input (base — KV) */}
+                  {/* Free-to-sell count (wallet_inventory) — what checkout reserves against */}
                   <input
                     type="number"
                     min={0}
@@ -128,7 +147,7 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                         [row.slug]: Math.max(0, parseInt(e.target.value) || 0),
                       }))
                     }
-                    title="Обща наличност"
+                    title="Налични за продажба (свободни, без бройките в отворени поръчки)"
                     className="w-16 sm:w-20 bg-white/5 border border-white/15 px-2 py-2 text-white text-sm text-center focus:outline-none focus:border-white/40 transition-colors font-sans"
                   />
 

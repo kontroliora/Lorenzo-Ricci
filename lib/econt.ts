@@ -210,19 +210,18 @@ async function markReturnedWithKind(sb: SupabaseClient, id: number, kind: Return
   if (error) console.error("[econt] mark returning error:", error.message);
 }
 
-// Leather (wallet_inventory) is decremented at order time, so a physically-
-// received return must add it back. KV items (watches/jewellery) are handled by
-// the reservation model and need no write.
-const IS_LEATHER = (slug: string) => slug.startsWith("wallet-") || slug.startsWith("cardholder-");
-async function restockOrderLeather(sb: SupabaseClient, items: unknown): Promise<void> {
-  const leather = (Array.isArray(items) ? items : [])
+// Unified model: EVERY item is decremented from wallet_inventory at order time,
+// so a physically-received return adds it back. restock_wallet_stock skips any
+// slug not present in wallet_inventory.
+async function restockReceivedItems(sb: SupabaseClient, items: unknown): Promise<void> {
+  const restock = (Array.isArray(items) ? items : [])
     .map((it) => {
       const o = (it ?? {}) as { slug?: unknown; quantity?: unknown; qty?: unknown };
       return { slug: String(o.slug ?? ""), qty: Math.max(1, Number(o.quantity ?? o.qty ?? 1)) };
     })
-    .filter((x) => IS_LEATHER(x.slug));
-  if (!leather.length) return;
-  const { error } = await sb.rpc("restock_wallet_stock", { p_items: leather });
+    .filter((x) => x.slug);
+  if (!restock.length) return;
+  const { error } = await sb.rpc("restock_wallet_stock", { p_items: restock });
   if (error) console.error("[econt] restock_wallet_stock error:", error.message);
 }
 
@@ -251,7 +250,7 @@ export async function markRestocked(
     .select("id, items");
   if (error) { console.error("[econt] restock claim error:", error.message); return "already"; }
   if (!data?.length) return "already"; // already restocked, or no longer returning
-  await restockOrderLeather(sb, (data[0] as { items?: unknown }).items);
+  await restockReceivedItems(sb, (data[0] as { items?: unknown }).items);
   return "done";
 }
 

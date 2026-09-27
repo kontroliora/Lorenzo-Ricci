@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useReveal } from "@/lib/useReveal";
+import { getProductBySlug } from "@/lib/products";
 
 type LeatherItem = { id: string; slug: string; name: string; sub: string; src: string; soldOut?: boolean };
 
@@ -17,6 +18,20 @@ const CARDHOLDERS: LeatherItem[] = [
   { id: "bianco",    slug: "cardholder-bianco",    name: 'Lorenzo Ricci "Bianco"',    sub: "Бял кожен кардхолдър",                   src: `/Products/wallets/Bianco/kardholder-bianco-byal-krokodiilska-kozha.webp` },
   { id: "valentina", slug: "cardholder-valentina", name: 'Lorenzo Ricci "Valentina"', sub: "Розов кардхолдър от крокодилска кожа",   src: `/Products/wallets/Valentina/kardholder-valentina-rozov-krokodiilska-kozha.webp` },
   { id: "zaffiro",   slug: "cardholder-zaffiro",   name: 'Lorenzo Ricci "Zaffiro"',   sub: "Тъмносин кардхолдър от крокодилска кожа",src: `/Products/wallets/Zaffiro/kardholder-zaffiro-sinen-krokodiilska-kozha.webp` },
+  // 2026-09-27 batch (counts in wallet_inventory_restock_2026-09-27.sql).
+  { id: "onice",     slug: "cardholder-onice",     name: 'Lorenzo Ricci "Onice"',     sub: "Черен кардхолдър от крокодилска кожа",      src: `/Products/wallets/Onice/kardholder-onice-cheren-krokodilska-kozha.webp` },
+  { id: "giada",     slug: "cardholder-giada",     name: 'Lorenzo Ricci "Giada"',     sub: "Тъмнозелен кардхолдър от крокодилска кожа", src: `/Products/wallets/Giada/kardholder-giada-zelen-krokodilska-kozha.webp` },
+  { id: "cremisi",   slug: "cardholder-cremisi",   name: 'Lorenzo Ricci "Cremisi"',   sub: "Червен кардхолдър от крокодилска кожа",     src: `/Products/wallets/Cremisi/kardholder-cremisi-cherven-krokodilska-kozha.webp` },
+  { id: "perla",     slug: "cardholder-perla",     name: 'Lorenzo Ricci "Perla"',     sub: "Сив кардхолдър от крокодилска кожа",        src: `/Products/wallets/Perla/kardholder-perla-siv-krokodilska-kozha.webp` },
+  { id: "topazio",   slug: "cardholder-topazio",   name: 'Lorenzo Ricci "Topazio"',   sub: "Жълт кардхолдър от крокодилска кожа",       src: `/Products/wallets/Topazio/kardholder-topazio-zhalt-krokodilska-kozha.webp` },
+];
+
+const CLUTCHES: LeatherItem[] = [
+  { id: "torino",    slug: "clutch-torino",    name: 'Lorenzo Ricci "Torino"',    sub: "Черен вечерен клъч от крокодилска кожа",     src: `/Products/bags/Torino/klych-torino-cherna-krokodilska-kozha-preden-izgled.webp` },
+  { id: "verona",    slug: "clutch-verona",    name: 'Lorenzo Ricci "Verona"',    sub: "Бордо вечерен клъч от крокодилска кожа",     src: `/Products/bags/Verona/klych-verona-cherven-krokodilska-kozha-preden-izgled.webp` },
+  { id: "toscana",   slug: "clutch-toscana",   name: 'Lorenzo Ricci "Toscana"',   sub: "Тъмнозелен вечерен клъч от крокодилска кожа", src: `/Products/bags/Toscana/klych-toscana-zelen-krokodilska-kozha-preden-izgled.webp` },
+  { id: "portofino", slug: "clutch-portofino", name: 'Lorenzo Ricci "Portofino"', sub: "Кремав вечерен клъч от крокодилска кожа",     src: `/Products/bags/Portofino/klych-portofino-krem-krokodilska-kozha-preden-izgled.webp` },
+  { id: "capri",     slug: "clutch-capri",     name: 'Lorenzo Ricci "Capri"',     sub: "Тъмносин вечерен клъч от крокодилска кожа",   src: `/Products/bags/Capri/klych-capri-sin-krokodilska-kozha-preden-izgled.webp` },
 ];
 
 function LeatherCard({ item, sold, sizes }: { item: LeatherItem; sold: boolean; sizes: string }) {
@@ -71,7 +86,10 @@ export function WalletsSection() {
     return () => { cancelled = true; };
   }, []);
 
-  const isSold = (item: LeatherItem) => Boolean(item.soldOut || outOfStock[item.slug]);
+  // Sold out = static flag, live stock at 0, or switched off in lib/products.ts
+  // (inStock: false — the owner's single on/off switch).
+  const isSold = (item: LeatherItem) =>
+    Boolean(item.soldOut || outOfStock[item.slug] || getProductBySlug(item.slug)?.inStock === false);
 
   return (
     <section className="py-28 sm:py-40 bg-white border-y border-border">
@@ -106,31 +124,43 @@ export function WalletsSection() {
             <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Кардхолдъри</p>
             <div className="flex-1 h-px bg-border" />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
             {CARDHOLDERS.map((c) => (
-              <LeatherCard key={c.id} item={c} sold={isSold(c)} sizes="(max-width: 640px) 50vw, 25vw" />
+              <LeatherCard key={c.id} item={c} sold={isSold(c)} sizes="(max-width: 640px) 50vw, 33vw" />
+            ))}
+          </div>
+        </div>
+
+        {/* Clutches row */}
+        <div className="mb-8 sm:mb-16">
+          <div className="flex items-center gap-4 mb-3 sm:mb-5">
+            <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Клъчове</p>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+            {CLUTCHES.map((c) => (
+              <LeatherCard key={c.id} item={c} sold={isSold(c)} sizes="(max-width: 640px) 50vw, 20vw" />
             ))}
           </div>
         </div>
 
         {/* Certificate feature strip */}
-        <div ref={featuresRef} className="grid grid-cols-1 sm:grid-cols-4 gap-8 text-center">
+        {/* Section-wide strip: it sits under products that don't all share one species
+            or one CITES permit, so it states neither — each product's own specs carry
+            its species. No gift box either: not every leather item ships in one. */}
+        <div ref={featuresRef} className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
           {[
             {
               title: "100% Крокодилска Кожа",
-              desc: "Вид Crocodylus Siamensis - най-рядката и ценна кожа в света",
+              desc: "Органична текстура, характерна за автентичната кожа",
             },
             {
               title: "CITES Сертифициран",
-              desc: "Произход №: 25VN4174/S - документиран и легален произход",
+              desc: "Документиран и легален произход",
             },
             {
               title: "Ръчна Изработка",
               desc: "Всяко изделие е уникално, ръчно изработено от майстор",
-            },
-            {
-              title: "Луксозна Опаковка",
-              desc: "Идва в подаръчна кутия със Сертификат за автентичност",
             },
           ].map(({ title, desc }, i) => (
             <div
