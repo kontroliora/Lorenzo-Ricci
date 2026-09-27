@@ -16,6 +16,28 @@ import { getProductBySlug } from "@/lib/products";
 // hand-written inStock flags in the variant lists below are only a fallback.
 const variantOff = (v: { slug: string; inStock: boolean }) => !(getProductBySlug(v.slug)?.inStock ?? v.inStock);
 
+// Colour switching must feel instant on phones. Two things make it slow by
+// default: the product route is dynamic (the root layout reads geo headers), so a
+// tap normally waits for a server render; and the new colour's big photo is
+// fetched only after that. <Link prefetch> handles the route; this fetches the
+// other colour's main photo at the exact size this device already loaded, so it
+// paints from cache after the tap. Deduped per slug for the page's lifetime.
+const prefetchedSlugs = new Set<string>();
+function prefetchMainImage(slug: string) {
+  if (prefetchedSlugs.has(slug)) return;
+  const p = getProductBySlug(slug);
+  if (!p) return;
+  const src = p.images[0]?.src ?? p.coverImage.src;
+  // The gallery's main <img>: its currentSrc carries the w= and q= the browser chose.
+  const gallery = document.querySelector<HTMLImageElement>('img[sizes="(max-width: 640px) 100vw, 60vw"]');
+  const current = gallery?.currentSrc || gallery?.src;
+  if (!current || !current.includes("/_next/image?")) return;
+  prefetchedSlugs.add(slug);
+  const img = new Image();
+  img.setAttribute("fetchpriority", "low");
+  img.src = current.replace(/([?&]url=)[^&]*/, `$1${encodeURIComponent(src)}`);
+}
+
 // Grouped, not one flat list: a product's swatch row is whichever group its own
 // slug belongs to, so the Yachting trio switches only among itself and the
 // original three do the same — adding a collection here never bleeds into the
@@ -85,6 +107,23 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
   const [activeTab, setActiveTab] = useState<"description" | "specs" | "delivery">(hasDescription ? "description" : "specs");
   const [walletStock, setWalletStock] = useState<number | null>(null);
   const [stockLoaded, setStockLoaded] = useState(false);
+
+  const variants =
+    product.category === "watches"
+      ? (WATCH_VARIANT_GROUPS.find((g) => g.some((v) => v.slug === product.slug)) ?? WATCH_VARIANT_GROUPS[0])
+      : product.category === "wallets" ? WALLET_VARIANTS
+      : product.category === "cardholders" ? CARDHOLDER_VARIANTS
+      : null;
+
+  // Small colour groups (watches, wallets: 3): warm the other colours' main photo
+  // once the page has settled. Big groups (cardholders: 9) only on touch/hover,
+  // so a phone doesn't download eight large photos it may never look at.
+  useEffect(() => {
+    if (!variants || variants.length > 4) return;
+    const others = variants.filter((v) => v.slug !== product.slug);
+    const id = window.setTimeout(() => others.forEach((v) => prefetchMainImage(v.slug)), 1500);
+    return () => window.clearTimeout(id);
+  }, [variants, product.slug]);
 
   // ALL sellable categories read the live available number (/api/stock =
   // KV − reserved for watches/jewellery, wallet_inventory for leather) — same as
@@ -189,13 +228,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       </div>
 
       {/* Color variant selector - watches, wallets, cardholders */}
-      {(product.category === "watches" || product.category === "wallets" || product.category === "cardholders") && (() => {
-        const variants =
-          product.category === "watches"
-            ? (WATCH_VARIANT_GROUPS.find((g) => g.some((v) => v.slug === product.slug)) ?? WATCH_VARIANT_GROUPS[0]) :
-          product.category === "wallets" ? WALLET_VARIANTS :
-          CARDHOLDER_VARIANTS;
-        return (
+      {variants && (
           <div className="flex items-center gap-3">
             <span className="font-sans text-[10px] text-ink-faint tracking-widest uppercase">Цвят:</span>
             <div className="flex items-center gap-2">
@@ -204,6 +237,9 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
                   key={v.slug}
                   href={`/products/${v.slug}`}
                   title={v.label}
+                  prefetch={true}
+                  onTouchStart={() => prefetchMainImage(v.slug)}
+                  onMouseEnter={() => prefetchMainImage(v.slug)}
                   className={`relative w-6 h-6 rounded-full border-2 transition-all duration-200 ${
                     product.slug === v.slug
                       ? "border-navy scale-110 shadow-[0_0_0_2px_rgba(15,40,80,0.15)]"
@@ -226,8 +262,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
               ))}
             </div>
           </div>
-        );
-      })()}
+      )}
 
       {/* Rating */}
       {reviewCount > 0 && (

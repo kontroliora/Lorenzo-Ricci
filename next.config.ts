@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: ["zustand"],
+    // Client router cache: a dynamic page (every page here — the layout reads geo
+    // headers) is reused for 30s when navigating back to it, so switching a colour
+    // back and forth is instant. Stock counts are fetched client-side anyway.
+    staleTimes: { dynamic: 30, static: 300 },
   },
 };
 
