@@ -7,7 +7,6 @@ import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
-import { useT } from "@/lib/i18n/LocaleProvider";
 
 interface ProductCardProps {
   product: Product;
@@ -37,7 +36,6 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
 
   const isWatch = product.category === "watches";
   const price = displayPrice(product, useCountry());
-  const t = useT();
 
   const productSummary = reviewSummary[product.slug];
   const reviewCount = productSummary?.count ?? 0;
@@ -96,7 +94,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
             {/* Moon / Sun toggle button */}
             <button
               onClick={handleNightToggle}
-              aria-label={isNight ? t("product.dayView") : t("product.nightView")}
+              aria-label={isNight ? "Нощна снимка" : "Дневна снимка"}
               className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-white/85 backdrop-blur-sm border border-border flex items-center justify-center hover:bg-white transition-colors duration-200 shadow-sm"
             >
               {isNight ? (
@@ -178,7 +176,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
                   added ? "text-white" : "text-white/80 hover:text-white"
                 }`}
               >
-                {added ? t("product.added") : t("product.addToCart")}
+                {added ? "✓ ДОБАВЕНО" : "ДОБАВИ В КОЛИЧКАТА"}
               </button>
             )}
           </div>
@@ -210,7 +208,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
               ))}
             </div>
             <span className="font-sans text-[10px] text-ink-faint">
-              {avgRating.toFixed(1)} · {reviewCount} {reviewCount === 1 ? t("product.review") : t("product.reviews")}
+              {avgRating.toFixed(1)} · {reviewCount} {reviewCount === 1 ? "ревю" : "ревюта"}
             </span>
           </div>
         )}

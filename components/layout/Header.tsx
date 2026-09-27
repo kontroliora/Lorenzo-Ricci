@@ -3,8 +3,6 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCartStore } from "@/lib/store";
-import { useT } from "@/lib/i18n/LocaleProvider";
-import { LanguageToggle } from "@/components/ui/LanguageToggle";
 
 export function Header() {
   const [scrolled, setScrolled]       = useState(false);
@@ -12,7 +10,6 @@ export function Header() {
   const [jewelleryOpen, setJewelleryOpen] = useState(false);
   const { totalItems, openCart } = useCartStore();
   const count = totalItems();
-  const t = useT();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
@@ -42,12 +39,12 @@ export function Header() {
           {/* Left nav - flex-1 keeps logo centred */}
           <div className="flex-1 flex items-center gap-10">
             <div className="hidden lg:flex items-center gap-10">
-              <NavLink href="/watches">{t("nav.watches")}</NavLink>
+              <NavLink href="/watches">Часовници</NavLink>
 
               {/* Бижута dropdown */}
               <div className="relative group">
                 <button className="flex items-center gap-1 font-sans text-xs font-light tracking-[0.18em] uppercase text-ink-muted hover:text-navy transition-colors duration-300 relative">
-                  {t("nav.jewellery")}
+                  Бижута
                   <svg
                     width="10" height="10" viewBox="0 0 24 24"
                     fill="none" stroke="currentColor" strokeWidth="2"
@@ -75,7 +72,7 @@ export function Header() {
                 </div>
               </div>
 
-              <NavLink href="/leather-goods">{t("nav.leather")}</NavLink>
+              <NavLink href="/leather-goods">Кожени Изделия</NavLink>
             </div>
           </div>
 
@@ -95,18 +92,13 @@ export function Header() {
           {/* Right nav */}
           <div className="flex-1 flex items-center justify-end gap-5">
             <div className="hidden lg:flex items-center gap-10">
-              <NavLink href="/story">{t("nav.story")}</NavLink>
-              <NavLink href="/faq">{t("nav.faq")}</NavLink>
-            </div>
-
-            {/* Phones: in the menu instead - here it pushed the logo off-centre */}
-            <div className="hidden sm:block">
-              <LanguageToggle className="text-ink-muted" />
+              <NavLink href="/story">История</NavLink>
+              <NavLink href="/faq">FAQ</NavLink>
             </div>
 
             <button
               onClick={openCart}
-              aria-label={`${t("cart.title")} (${count})`}
+              aria-label={`Количка (${count})`}
               className="relative text-ink-soft hover:text-navy transition-colors duration-300"
             >
               <CartIcon />
@@ -119,7 +111,7 @@ export function Header() {
 
             <button
               onClick={() => setMenuOpen(true)}
-              aria-label={t("nav.menu")}
+              aria-label="Меню"
               className="lg:hidden text-ink-soft hover:text-navy transition-colors duration-300"
             >
               <HamburgerIcon />
@@ -145,12 +137,12 @@ export function Header() {
             <nav className="flex flex-col gap-8">
               {/* Static links */}
               {([
-                { href: "/",        key: "nav.home" },
-                { href: "/watches", key: "nav.watches" },
-              ] as const).map(({ href, key }) => (
+                { href: "/",        label: "Начало" },
+                { href: "/watches", label: "Часовници" },
+              ] as const).map(({ href, label }) => (
                 <Link key={href} href={href} onClick={closeMobile}
                   className="font-serif text-4xl text-white/80 hover:text-white transition-colors duration-300">
-                  {t(key)}
+                  {label}
                 </Link>
               ))}
 
@@ -160,7 +152,7 @@ export function Header() {
                   onClick={() => setJewelleryOpen((v) => !v)}
                   className="flex items-center gap-3 font-serif text-4xl text-white/80 hover:text-white transition-colors duration-300 w-full text-left"
                 >
-                  {t("nav.jewellery")}
+                  Бижута
                   <svg
                     width="18" height="18" viewBox="0 0 24 24"
                     fill="none" stroke="currentColor" strokeWidth="1.5"
@@ -187,20 +179,19 @@ export function Header() {
 
               {/* Rest */}
               {([
-                { href: "/leather-goods", key: "nav.leather" },
-                { href: "/story",         key: "nav.story" },
-                { href: "/faq",           key: "nav.faq" },
-              ] as const).map(({ href, key }) => (
+                { href: "/leather-goods", label: "Кожени Изделия" },
+                { href: "/story",         label: "История" },
+                { href: "/faq",           label: "FAQ" },
+              ] as const).map(({ href, label }) => (
                 <Link key={href} href={href} onClick={closeMobile}
                   className="font-serif text-4xl text-white/80 hover:text-white transition-colors duration-300">
-                  {t(key)}
+                  {label}
                 </Link>
               ))}
             </nav>
 
-            <div className="mt-auto pt-10">
+            <div className="mt-auto">
               <div className="h-px bg-white/10 mb-8" />
-              <LanguageToggle size="lg" className="sm:hidden text-white -mt-2 mb-4" />
               <p className="font-sans text-xs text-white/40 tracking-widest uppercase">info@lorenzo-ricci.com</p>
             </div>
           </div>

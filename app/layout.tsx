@@ -2,8 +2,6 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { CountryProvider } from "@/lib/country";
 import { resolveCountry } from "@/lib/geo";
-import { resolveLocale, HTML_LANG } from "@/lib/i18n/locale";
-import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import { Header } from "@/components/layout/Header";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Footer } from "@/components/layout/Footer";
@@ -66,17 +64,14 @@ export default async function RootLayout({
 }) {
   // Detected country (Vercel edge header, or the x_geo test cookie) drives geo
   // display like AED pricing. Reading it opts the tree into per-request rendering.
-  // Country drives geo display (AED/RON pricing, newsletter popup); locale drives
-  // language. Deliberately independent — a Bulgarian reading in English is still a
-  // BG customer.
+  // Site is Bulgarian-only (EN/RO removed 2026-09-27) — the language switcher and
+  // lib/i18n/* are dormant, kept only in case multi-language comes back.
   const country = await resolveCountry();
-  const locale = await resolveLocale();
   return (
-    <html lang={HTML_LANG[locale]} className="scroll-smooth" suppressHydrationWarning>
+    <html lang="bg" className="scroll-smooth" suppressHydrationWarning>
       <body className="bg-ivory text-charcoal antialiased">
         <MetaPixel />
         <CountryProvider country={country}>
-        <LocaleProvider locale={locale}>
         <ThemeProvider>
           <HideOnAdmin>
             <AnnouncementBar />
@@ -100,7 +95,6 @@ export default async function RootLayout({
             </HideOnTrack>
           </HideOnAdmin>
         </ThemeProvider>
-        </LocaleProvider>
         </CountryProvider>
       </body>
     </html>
