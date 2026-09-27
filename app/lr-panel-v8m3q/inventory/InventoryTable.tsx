@@ -1,8 +1,7 @@
 "use client";
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ProductCategory } from "@/lib/types";
-import { applyProductDiscount, removeProductDiscount } from "./actions";
 
 export type InventoryRow = {
   slug: string;
@@ -32,21 +31,24 @@ const CATEGORY_ORDER: ProductCategory[] = ["watches", "jewellery", "wallets", "c
 
 const VALID_DISCOUNTS = new Set([10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]);
 
-// Writing to lib/products.ts (a file the running page statically imports) can make
-// the Next.js dev server hot-reload the very route mid-request, which sometimes lets
-// the server action's response to the client hang forever instead of resolving or
-// throwing. fs.writeFileSync is synchronous, so if that happens the disk write itself
-// already completed — only the confirmation got lost. This wraps a promise so the UI
-// never waits past DISCOUNT_TIMEOUT_MS no matter what the dev server does.
-const DISCOUNT_TIMEOUT_MS = 8000;
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("timeout")), ms);
-    promise.then(
-      (v) => { clearTimeout(timer); resolve(v); },
-      (e) => { clearTimeout(timer); reject(e); }
-    );
-  });
+const DISCOUNT_TIMEOUT_MS = 10000;
+
+async function postDiscount(body: { slug: string; action: "apply" | "remove"; pct?: number }) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), DISCOUNT_TIMEOUT_MS);
+  try {
+    const res = await fetch("/api/admin/products/discount", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false as const, error: data.error ?? "Грешка при запис" };
+    return data as { ok: true; newPrice?: number; originalPrice?: number; restoredPrice?: number };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function StockDot({ qty }: { qty: number }) {
@@ -66,14 +68,16 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
     Object.fromEntries(rows.map((r) => [r.slug, r.tracked]))
   );
 
-  // Discount state
+  // Discount state — one shared `busy` flag per slug so the −% and ↺ buttons lock
+  // each other out (they mutate the same product's price and can't safely overlap),
+  // and a request sequence number so a slow/stale response can never clobber a newer one.
   const [discountPct, setDiscountPct] = useState<Record<string, string>>({});
-  const [discounting, setDiscounting] = useState<Record<string, boolean>>({});
-  const [resetting, setResetting]     = useState<Record<string, boolean>>({});
+  const [busy, setBusy]               = useState<Record<string, boolean>>({});
   const [discountMsg, setDiscountMsg] = useState<Record<string, string>>({});
   const [prices, setPrices] = useState<Record<string, { price: number; originalPrice?: number }>>(
     Object.fromEntries(rows.map((r) => [r.slug, { price: r.price, originalPrice: r.originalPrice }]))
   );
+  const reqSeq = useRef<Record<string, number>>({});
 
   const handleSave = async (slug: string) => {
     setSaving((s) => ({ ...s, [slug]: true }));
@@ -96,31 +100,33 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
 
   const handleReset = async (slug: string) => {
     const before = prices[slug];
-    if (!before?.originalPrice) return;
+    if (!before?.originalPrice || busy[slug]) return;
     const restoredPrice = before.originalPrice;
+    const seq = (reqSeq.current[slug] ?? 0) + 1;
+    reqSeq.current[slug] = seq;
 
     // Show the restored price immediately — don't make the owner wait on the network.
     setPrices((p) => ({ ...p, [slug]: { price: restoredPrice, originalPrice: undefined } }));
     setDiscountMsg((m) => ({ ...m, [slug]: "" }));
-    setResetting((r) => ({ ...r, [slug]: true }));
+    setBusy((b) => ({ ...b, [slug]: true }));
 
     try {
-      const result = await withTimeout(removeProductDiscount(slug), DISCOUNT_TIMEOUT_MS);
-      if (result.ok) {
-        setPrices((p) => ({ ...p, [slug]: { price: result.restoredPrice, originalPrice: undefined } }));
+      const result = await postDiscount({ slug, action: "remove" });
+      if (reqSeq.current[slug] !== seq) return; // a newer request already superseded this one
+      if (result.ok && result.restoredPrice != null) {
+        setPrices((p) => ({ ...p, [slug]: { price: result.restoredPrice!, originalPrice: undefined } }));
         setDiscountMsg((m) => ({ ...m, [slug]: `✓ Restored €${result.restoredPrice}` }));
       } else {
-        // Server explicitly rejected it — the write never happened, so revert.
+        // Unconfirmed (error or timeout/abort) — never claim success. Revert.
         setPrices((p) => ({ ...p, [slug]: before }));
-        setDiscountMsg((m) => ({ ...m, [slug]: result.error }));
+        setDiscountMsg((m) => ({ ...m, [slug]: "error" in result ? result.error : "Не се записа — опитайте пак" }));
       }
     } catch {
-      // Timeout or transport failure — fs.writeFileSync runs synchronously inside the
-      // action, so if it started at all the write already landed on disk. Keep the
-      // optimistic price instead of reverting a change that likely already saved.
-      setDiscountMsg((m) => ({ ...m, [slug]: "✓ Записано (презаредете за потвърждение)" }));
+      if (reqSeq.current[slug] !== seq) return;
+      setPrices((p) => ({ ...p, [slug]: before }));
+      setDiscountMsg((m) => ({ ...m, [slug]: "Не се записа — опитайте пак" }));
     } finally {
-      setResetting((r) => ({ ...r, [slug]: false }));
+      if (reqSeq.current[slug] === seq) setBusy((b) => ({ ...b, [slug]: false }));
     }
   };
 
@@ -131,34 +137,37 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
       return;
     }
     const before = prices[slug];
-    if (!before) return;
+    if (!before || busy[slug]) return;
+    const seq = (reqSeq.current[slug] ?? 0) + 1;
+    reqSeq.current[slug] = seq;
 
     // Optimistic update: show the discounted price the instant the button is pressed.
     const optimisticPrice = parseFloat((before.price * (1 - pct / 100)).toFixed(2));
     setPrices((p) => ({ ...p, [slug]: { price: optimisticPrice, originalPrice: before.price } }));
     setDiscountPct((d) => ({ ...d, [slug]: "" }));
-    setDiscounting((d) => ({ ...d, [slug]: true }));
+    setBusy((b) => ({ ...b, [slug]: true }));
     setDiscountMsg((m) => ({ ...m, [slug]: "" }));
 
     try {
-      const result = await withTimeout(applyProductDiscount(slug, pct), DISCOUNT_TIMEOUT_MS);
-      if (result.ok) {
-        setPrices((p) => ({ ...p, [slug]: { price: result.newPrice, originalPrice: result.originalPrice } }));
+      const result = await postDiscount({ slug, action: "apply", pct });
+      if (reqSeq.current[slug] !== seq) return; // a newer request already superseded this one
+      if (result.ok && result.newPrice != null && result.originalPrice != null) {
+        setPrices((p) => ({ ...p, [slug]: { price: result.newPrice!, originalPrice: result.originalPrice } }));
         setDiscountMsg((m) => ({
           ...m,
           [slug]: `✓ €${result.originalPrice} → €${result.newPrice}`,
         }));
       } else {
-        // Server explicitly rejected it — the write never happened, so revert.
+        // Unconfirmed (error or timeout/abort) — never claim success. Revert.
         setPrices((p) => ({ ...p, [slug]: before }));
-        setDiscountMsg((m) => ({ ...m, [slug]: result.error }));
+        setDiscountMsg((m) => ({ ...m, [slug]: "error" in result ? result.error : "Не се записа — опитайте пак" }));
       }
     } catch {
-      // Timeout or transport failure — the write is synchronous, so it most likely
-      // already landed; keep the optimistic price rather than revert a real change.
-      setDiscountMsg((m) => ({ ...m, [slug]: "✓ Записано (презаредете за потвърждение)" }));
+      if (reqSeq.current[slug] !== seq) return;
+      setPrices((p) => ({ ...p, [slug]: before }));
+      setDiscountMsg((m) => ({ ...m, [slug]: "Не се записа — опитайте пак" }));
     } finally {
-      setDiscounting((d) => ({ ...d, [slug]: false }));
+      if (reqSeq.current[slug] === seq) setBusy((b) => ({ ...b, [slug]: false }));
     }
   };
 
@@ -300,19 +309,19 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                     </div>
                     <button
                       onClick={() => handleDiscount(row.slug)}
-                      disabled={discounting[row.slug]}
+                      disabled={busy[row.slug]}
                       className="flex-shrink-0 px-3 py-2 text-[10px] font-sans tracking-[0.15em] uppercase bg-white/8 text-white/60 hover:bg-white/15 hover:text-white border border-white/12 transition-colors disabled:opacity-40"
                     >
-                      {discounting[row.slug] ? "..." : "−%"}
+                      {busy[row.slug] ? "..." : "−%"}
                     </button>
                     {rowPrice?.originalPrice && (
                       <button
                         onClick={() => handleReset(row.slug)}
-                        disabled={resetting[row.slug]}
+                        disabled={busy[row.slug]}
                         title="Restore original price"
                         className="flex-shrink-0 px-2 py-2 text-[12px] bg-white/5 text-white/40 hover:bg-white/12 hover:text-white/80 border border-white/10 transition-colors disabled:opacity-40"
                       >
-                        {resetting[row.slug] ? "..." : "↺"}
+                        {busy[row.slug] ? "..." : "↺"}
                       </button>
                     )}
                   </div>
