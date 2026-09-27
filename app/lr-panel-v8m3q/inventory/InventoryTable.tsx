@@ -215,6 +215,9 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                     </p>
                   )}
 
+                  {/* DEBUG — remove after fixing */}
+                  <p className="text-[9px] text-yellow-400">{JSON.stringify({slug: row.slug, rowPrice, pct: discountPct[row.slug]})}</p>
+
                   {/* Discount controls */}
                   <div className="flex items-center gap-1.5 border-l border-white/10 pl-3 flex-shrink-0">
                     <div className="flex flex-col items-center gap-0.5">
