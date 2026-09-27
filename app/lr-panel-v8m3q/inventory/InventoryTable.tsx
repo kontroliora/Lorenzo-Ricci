@@ -126,6 +126,11 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
               const reserved = row.reserved ?? 0;
               const available = qty;
               const rowPrice = prices[row.slug];
+              const pct = parseInt(discountPct[row.slug] ?? "");
+              const VALID = [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
+              const previewPrice = VALID.includes(pct) && rowPrice?.price
+                ? (rowPrice.price * (1 - pct / 100)).toFixed(2)
+                : null;
               return (
                 <div
                   key={row.slug}
@@ -223,9 +228,9 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                         }
                         className="w-12 bg-white/5 border border-white/15 px-2 py-2 text-white text-sm text-center focus:outline-none focus:border-white/40 transition-colors font-sans"
                       />
-                      {VALID_DISCOUNTS.has(parseInt(discountPct[row.slug] ?? "")) && rowPrice != null && (
-                        <p className="font-sans text-[9px] text-white/55 whitespace-nowrap">
-                          €{rowPrice.price} → €{parseFloat((rowPrice.price * (1 - parseInt(discountPct[row.slug]) / 100)).toFixed(2))}
+                      {previewPrice && (
+                        <p className="text-[10px] text-white/55 font-sans mt-0.5">
+                          €{rowPrice!.price} → €{previewPrice}
                         </p>
                       )}
                     </div>
