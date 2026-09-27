@@ -238,9 +238,11 @@ export function CartDrawer() {
                   <div className="flex-1 flex flex-col justify-between">
                     <div>
                       <h4 className="font-serif text-base text-white leading-tight">{product.name}</h4>
-                      <p className="font-sans text-[11px] text-white/40 mt-0.5 tracking-wide">
-                        {product.warranty}
-                      </p>
+                      {product.warranty && (
+                        <p className="font-sans text-[11px] text-white/40 mt-0.5 tracking-wide">
+                          {product.warranty}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between">

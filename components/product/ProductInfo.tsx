@@ -341,12 +341,15 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       <div className="grid grid-cols-2 gap-0 border border-border">
         {[
           {
-            // 5-year commercial guarantee (watches, leather); jewellery stays lifetime.
-            label: product.category === "jewellery"
+            // Watches: 5-year commercial guarantee. Jewellery: lifetime. Leather: no
+            // warranty is offered (owner, 2026-09-27), so the tile stays craftsmanship.
+            label: product.category === "watches"
+              ? "5 години търговска гаранция"
+              : product.category === "jewellery"
               ? "Доживотна гаранция"
-              : "5 години търговска гаранция",
+              : "Майсторска изработка",
             Icon: Award,
-            href: "/warranty/jewelry",
+            href: product.category === "watches" || product.category === "jewellery" ? "/warranty/jewelry" : undefined,
           },
           { label: "30 дни замяна",              Icon: RefreshCw, href: undefined },
           { label: "Доставка до 2 работни дни",  Icon: Truck,     href: undefined },

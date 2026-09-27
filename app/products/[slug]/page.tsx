@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const paymentNote = requiresPrepayment(product) ? "Поръчка с предплащане." : "Наложен платеж.";
   return {
     title: product.name,
-    description: `${product.name} - ${product.shortDescription}. ${product.currency}${product.price}. ${product.warranty}. Безплатна доставка над €60. ${paymentNote}`,
+    description: `${product.name} - ${product.shortDescription}. ${product.currency}${product.price}. ${product.warranty ? `${product.warranty}. ` : ""}Безплатна доставка над €60. ${paymentNote}`,
     openGraph: {
       title: `${product.name} | Lorenzo Ricci`,
       description: product.description.slice(0, 160),

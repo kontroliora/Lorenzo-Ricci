@@ -42,7 +42,7 @@ export default function ReturnsPage() {
             Ако продукт е дефектен или не отговаря на описанието, имате право на замяна или възстановяване съгласно законовата гаранция за съответствие — <strong className="text-charcoal font-normal">независимо дали е закупен на редовна или намалена цена</strong> и независимо от горните срокове.
           </p>
           <p>
-            Отделно от законовите Ви права Lorenzo Ricci предоставя и <strong className="text-charcoal font-normal">търговска гаранция</strong>: 5 години за часовници и кожени изделия и доживотна за бижута. Условията са описани в{" "}
+            Отделно от законовите Ви права Lorenzo Ricci предоставя и <strong className="text-charcoal font-normal">търговска гаранция</strong>: 5 години за часовници и доживотна за бижута. Условията са описани в{" "}
             <a href="/warranty/jewelry" className="text-navy hover:underline">Гаранционни условия</a>.
           </p>
         </PolicySection>
