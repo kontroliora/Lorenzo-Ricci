@@ -68,3 +68,46 @@ export async function applyProductDiscount(
   fs.writeFileSync(filePath, prefix + segment + suffix, "utf8");
   return { ok: true, newPrice, originalPrice: currentPrice };
 }
+
+export async function removeProductDiscount(
+  slug: string
+): Promise<{ ok: true; restoredPrice: number } | { ok: false; error: string }> {
+  const filePath = path.join(process.cwd(), "lib", "products.ts");
+  const src = fs.readFileSync(filePath, "utf8");
+
+  const slugRx = /slug:\s*["']([^"']+)["']/g;
+  let thisStart = -1;
+  let nextStart = src.length;
+  let m: RegExpExecArray | null;
+
+  while ((m = slugRx.exec(src)) !== null) {
+    if (m[1] === slug) {
+      thisStart = m.index;
+    } else if (thisStart !== -1) {
+      nextStart = m.index;
+      break;
+    }
+  }
+
+  if (thisStart === -1) return { ok: false, error: "Product not found" };
+
+  const prefix = src.slice(0, thisStart);
+  let segment = src.slice(thisStart, nextStart);
+  const suffix = src.slice(nextStart);
+
+  const origMatch = /^\s*originalPrice:\s*(\d+(?:\.\d+)?),/m.exec(segment);
+  if (!origMatch) return { ok: false, error: "No originalPrice on this product" };
+  const restoredPrice = parseFloat(origMatch[1]);
+
+  // Restore price to originalPrice value
+  segment = segment.replace(
+    /^(\s*price:\s*)(\d+(?:\.\d+)?)(,)/m,
+    `$1${restoredPrice}$3`
+  );
+
+  // Remove the originalPrice line entirely
+  segment = segment.replace(/^\s*originalPrice:\s*\d+(?:\.\d+)?,\r?\n/m, "");
+
+  fs.writeFileSync(filePath, prefix + segment + suffix, "utf8");
+  return { ok: true, restoredPrice };
+}

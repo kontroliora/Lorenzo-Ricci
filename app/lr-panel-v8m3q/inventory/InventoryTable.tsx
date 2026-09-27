@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import type { ProductCategory } from "@/lib/types";
-import { applyProductDiscount } from "./actions";
+import { applyProductDiscount, removeProductDiscount } from "./actions";
 
 export type InventoryRow = {
   slug: string;
@@ -52,6 +52,7 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
   // Discount state
   const [discountPct, setDiscountPct] = useState<Record<string, string>>({});
   const [discounting, setDiscounting] = useState<Record<string, boolean>>({});
+  const [resetting, setResetting]     = useState<Record<string, boolean>>({});
   const [discountMsg, setDiscountMsg] = useState<Record<string, string>>({});
   const [prices, setPrices] = useState<Record<string, { price: number; originalPrice?: number }>>(
     Object.fromEntries(rows.map((r) => [r.slug, { price: r.price, originalPrice: r.originalPrice }]))
@@ -74,6 +75,19 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
       setErrors((e) => ({ ...e, [slug]: "Грешка при запис" }));
     }
     setSaving((s) => ({ ...s, [slug]: false }));
+  };
+
+  const handleReset = async (slug: string) => {
+    setResetting((r) => ({ ...r, [slug]: true }));
+    setDiscountMsg((m) => ({ ...m, [slug]: "" }));
+    const result = await removeProductDiscount(slug);
+    if (result.ok) {
+      setPrices((p) => ({ ...p, [slug]: { price: result.restoredPrice, originalPrice: undefined } }));
+      setDiscountMsg((m) => ({ ...m, [slug]: `✓ Restored €${result.restoredPrice}` }));
+    } else {
+      setDiscountMsg((m) => ({ ...m, [slug]: result.error }));
+    }
+    setResetting((r) => ({ ...r, [slug]: false }));
   };
 
   const handleDiscount = async (slug: string) => {
@@ -215,9 +229,6 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                     </p>
                   )}
 
-                  {/* DEBUG — remove after fixing */}
-                  <p className="text-[9px] text-yellow-400">{JSON.stringify({slug: row.slug, rowPrice, pct: discountPct[row.slug]})}</p>
-
                   {/* Discount controls */}
                   <div className="flex items-center gap-1.5 border-l border-white/10 pl-3 flex-shrink-0">
                     <div className="flex flex-col items-center gap-0.5">
@@ -244,6 +255,16 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                     >
                       {discounting[row.slug] ? "..." : "−%"}
                     </button>
+                    {rowPrice?.originalPrice && (
+                      <button
+                        onClick={() => handleReset(row.slug)}
+                        disabled={resetting[row.slug]}
+                        title="Restore original price"
+                        className="flex-shrink-0 px-2 py-2 text-[12px] bg-white/5 text-white/40 hover:bg-white/12 hover:text-white/80 border border-white/10 transition-colors disabled:opacity-40"
+                      >
+                        {resetting[row.slug] ? "..." : "↺"}
+                      </button>
+                    )}
                   </div>
 
                   {discountMsg[row.slug] && (
