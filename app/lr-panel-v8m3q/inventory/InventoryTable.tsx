@@ -80,14 +80,19 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
   const handleReset = async (slug: string) => {
     setResetting((r) => ({ ...r, [slug]: true }));
     setDiscountMsg((m) => ({ ...m, [slug]: "" }));
-    const result = await removeProductDiscount(slug);
-    if (result.ok) {
-      setPrices((p) => ({ ...p, [slug]: { price: result.restoredPrice, originalPrice: undefined } }));
-      setDiscountMsg((m) => ({ ...m, [slug]: `✓ Restored €${result.restoredPrice}` }));
-    } else {
-      setDiscountMsg((m) => ({ ...m, [slug]: result.error }));
+    try {
+      const result = await removeProductDiscount(slug);
+      if (result.ok) {
+        setPrices((p) => ({ ...p, [slug]: { price: result.restoredPrice, originalPrice: undefined } }));
+        setDiscountMsg((m) => ({ ...m, [slug]: `✓ Restored €${result.restoredPrice}` }));
+      } else {
+        setDiscountMsg((m) => ({ ...m, [slug]: result.error }));
+      }
+    } catch {
+      setDiscountMsg((m) => ({ ...m, [slug]: "Грешка" }));
+    } finally {
+      setResetting((r) => ({ ...r, [slug]: false }));
     }
-    setResetting((r) => ({ ...r, [slug]: false }));
   };
 
   const handleDiscount = async (slug: string) => {
@@ -98,18 +103,23 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
     }
     setDiscounting((d) => ({ ...d, [slug]: true }));
     setDiscountMsg((m) => ({ ...m, [slug]: "" }));
-    const result = await applyProductDiscount(slug, pct);
-    if (result.ok) {
-      setPrices((p) => ({ ...p, [slug]: { price: result.newPrice, originalPrice: result.originalPrice } }));
-      setDiscountMsg((m) => ({
-        ...m,
-        [slug]: `✓ €${result.originalPrice} → €${result.newPrice}`,
-      }));
-      setDiscountPct((d) => ({ ...d, [slug]: "" }));
-    } else {
-      setDiscountMsg((m) => ({ ...m, [slug]: result.error }));
+    try {
+      const result = await applyProductDiscount(slug, pct);
+      if (result.ok) {
+        setPrices((p) => ({ ...p, [slug]: { price: result.newPrice, originalPrice: result.originalPrice } }));
+        setDiscountMsg((m) => ({
+          ...m,
+          [slug]: `✓ €${result.originalPrice} → €${result.newPrice}`,
+        }));
+        setDiscountPct((d) => ({ ...d, [slug]: "" }));
+      } else {
+        setDiscountMsg((m) => ({ ...m, [slug]: result.error }));
+      }
+    } catch {
+      setDiscountMsg((m) => ({ ...m, [slug]: "Грешка" }));
+    } finally {
+      setDiscounting((d) => ({ ...d, [slug]: false }));
     }
-    setDiscounting((d) => ({ ...d, [slug]: false }));
   };
 
   const groupedRows = CATEGORY_ORDER.map((cat) => ({
