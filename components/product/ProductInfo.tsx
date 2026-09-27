@@ -247,6 +247,12 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         <span className="font-serif text-4xl text-navy">
           {price.text}
         </span>
+        {/* Sale: the prior price (lowest of the last 30 days — lib/price.ts isOnSale) */}
+        {price.original && (
+          <span className="font-sans text-lg text-ink-faint line-through">
+            {price.original}
+          </span>
+        )}
       </div>
 
       {/* Stock indicator — the number AVAILABLE (free to order), matching the

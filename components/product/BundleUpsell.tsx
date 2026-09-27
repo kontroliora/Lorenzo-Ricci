@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
-import { BUNDLES } from "@/lib/bundles";
+import { BUNDLES, bundleHasSaleItem } from "@/lib/bundles";
 import { getProductBySlug } from "@/lib/products";
 import { useCartStore } from "@/lib/store";
 import { useCountry } from "@/lib/country";
@@ -34,7 +34,9 @@ export function BundleUpsell({ product }: Props) {
 
   if (partners.length === 0) return null;
 
-  const hasDiscount = bundle.discountPct > 0;
+  // No stacking: while either piece is on sale the set earns no discount, so the
+  // pairing is shown without one.
+  const hasDiscount = bundle.discountPct > 0 && !bundleHasSaleItem(bundle, getProductBySlug);
 
   const handleAdd = (partner: Product) => {
     addItem(product);

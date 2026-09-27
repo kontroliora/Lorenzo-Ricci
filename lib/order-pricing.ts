@@ -1,4 +1,5 @@
-import type { Product } from "./types";
+import type { CartItem, Product } from "./types";
+import { calcBundleDiscount, promoBase } from "./bundles";
 
 // Server-side price check for /api/order.
 //
@@ -7,15 +8,20 @@ import type { Product } from "./types";
 // claimed. This re-checks what the catalog knows: each line's unit price must equal the
 // catalog price for its slug, and the goods subtotal is recomputed from the catalog.
 //
-// Bundle, promo and shipping RULES are deliberately not re-derived here. The client also
-// reports their AMOUNTS (`discount` = bundles, `promoDiscount`, `shipping.cost`); those are
-// taken as reported, but they must be non-negative, must not exceed the catalog subtotal,
-// and must add up exactly:
+// Discounts are re-derived too, never taken as reported (since the 2026-09-27 sale):
+//   • `discount` (sets / bundles) must equal calcBundleDiscount over the catalog
+//     products — a set with a sale item earns nothing (no stacking);
+//   • `promoDiscount` must equal the code's rate × the full-price items after their set
+//     discounts (promoBase) — sale items never get a promo discount (no stacking). The
+//     caller looks the rate up in the database (lib/promo.ts) and passes it in; a promo
+//     discount without a valid rate fails.
+// Shipping is only checked for being non-negative. Everything must add up exactly:
 //   catalogSubtotal − discount − promoDiscount = subtotal
 //   subtotal + shipping.cost                   = total
 // Anything else fails, and the caller answers 409 so the customer reloads.
 
 const EPS = 0.01; // one cent — the client's own amounts are 2-decimal, float noise is ~1e-14
+const ROUNDING = 0.015; // re-derived amounts: the client rounds with toFixed(2), we with Math.round
 
 export type OrderPricing =
   | {
@@ -35,12 +41,14 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export function validateOrderPricing(
   order: Record<string, unknown>,
-  findProduct: (slug: string) => Pick<Product, "price"> | undefined,
+  findProduct: (slug: string) => Product | undefined,
+  opts: { promoRate?: number | null } = {},
 ): OrderPricing {
   const items = order.items;
   if (!Array.isArray(items) || items.length === 0) return { ok: false, reason: "no items" };
 
   let catalogSubtotal = 0;
+  const lines: CartItem[] = []; // catalog products, for re-deriving the discounts
   for (const raw of items) {
     const it = (raw ?? {}) as Record<string, unknown>;
     const slug = typeof it.slug === "string" ? it.slug : "";
@@ -59,6 +67,7 @@ export function validateOrderPricing(
       return { ok: false, reason: `price mismatch for ${slug}: client ${String(it.price)}, catalog ${product.price}` };
     }
     catalogSubtotal += product.price * q;
+    lines.push({ product, quantity: q });
   }
 
   const bundleDiscount = order.discount == null ? 0 : num(order.discount);
@@ -68,6 +77,20 @@ export function validateOrderPricing(
   }
   if (bundleDiscount + promoDiscount > catalogSubtotal + EPS) {
     return { ok: false, reason: "discounts exceed the catalog subtotal" };
+  }
+
+  // Set discount — re-derived from the catalog; sets with a sale item earn nothing.
+  const expectedSet = calcBundleDiscount(lines).totalDiscount;
+  if (Math.abs(bundleDiscount - expectedSet) > ROUNDING) {
+    return { ok: false, reason: `set discount mismatch: client ${bundleDiscount}, expected ${round2(expectedSet)}` };
+  }
+  // Promo discount — the code's real rate on full-price items only.
+  if (promoDiscount > 0) {
+    if (typeof opts.promoRate !== "number") return { ok: false, reason: "promo discount without a valid code" };
+    const expectedPromo = round2(promoBase(lines, expectedSet) * opts.promoRate);
+    if (Math.abs(promoDiscount - expectedPromo) > ROUNDING) {
+      return { ok: false, reason: `promo discount mismatch: client ${promoDiscount}, expected ${expectedPromo}` };
+    }
   }
 
   const subtotal = num(order.subtotal);

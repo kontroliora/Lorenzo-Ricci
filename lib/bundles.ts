@@ -1,4 +1,5 @@
-import type { CartItem } from "./types";
+import type { CartItem, Product } from "./types";
+import { isOnSale } from "./price";
 
 interface Bundle {
   id: string;
@@ -66,6 +67,10 @@ export function calcBundleDiscount(items: CartItem[]): BundleResult {
     );
     if (!allSlotsMatched) continue;
 
+    // No stacking: a set with a sale item in it earns no set discount.
+    const matchedItems = bundle.slots.map((slot) => items.find((i) => i.product.id === slot.find((id) => inCart.has(id))));
+    if (matchedItems.some((i) => i && isOnSale(i.product))) continue;
+
     // Sum the price of the matched item in each slot
     const bundleSubtotal = bundle.slots.reduce((sum, slot) => {
       const matchedId = slot.find((id) => inCart.has(id))!;
@@ -79,4 +84,19 @@ export function calcBundleDiscount(items: CartItem[]): BundleResult {
   }
 
   return { totalDiscount, active };
+}
+
+// True when any product that can fill one of the set's slots is on sale — such a
+// set earns no set discount, so pages mustn't advertise one for it.
+export function bundleHasSaleItem(bundle: Bundle, findProduct: (id: string) => Product | undefined): boolean {
+  return bundle.slots.some((slot) => slot.some((id) => { const p = findProduct(id); return !!p && isOnSale(p); }));
+}
+
+// What a promo code (newsletter / waitlist) applies to: full-price items only, after
+// their set discounts (sale items can't earn one). No stacking on sale items.
+export function promoBase(items: CartItem[], setDiscount: number): number {
+  const fullPrice = items
+    .filter((i) => !isOnSale(i.product))
+    .reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+  return Math.max(0, Math.round((fullPrice - setDiscount) * 100) / 100);
 }

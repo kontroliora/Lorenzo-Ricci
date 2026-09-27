@@ -5,6 +5,8 @@ import { useCartStore } from "@/lib/store";
 import { CheckoutForm } from "./CheckoutForm";
 import { CartCrossSell } from "./CartCrossSell";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
+import { promoBase } from "@/lib/bundles";
+import { isOnSale } from "@/lib/price";
 
 const CART_TIMEOUT = 15 * 60; // 900 seconds
 
@@ -22,7 +24,10 @@ export function CartDrawer() {
   const subtotal = totalPrice();
   const { totalDiscount, active: activeBundles } = bundleDiscount();
   const afterBundles = subtotal - totalDiscount;
-  const promoDiscount = promoApplied ? parseFloat((afterBundles * promoRate).toFixed(2)) : 0;
+  // No stacking: the promo code applies to full-price items only (after their set
+  // discounts) — sale items are excluded. The server re-derives the same number.
+  const promoDiscount = promoApplied ? parseFloat((promoBase(items, totalDiscount) * promoRate).toFixed(2)) : 0;
+  const hasSaleItems = items.some((i) => isOnSale(i.product));
   const total = afterBundles - promoDiscount;
   const count = totalItems();
   const freeShippingThreshold = 60;
@@ -260,6 +265,11 @@ export function CartDrawer() {
 
                       <div className="flex items-center gap-3">
                         <div className="text-right">
+                          {isOnSale(product) && (
+                            <span className="font-sans text-[11px] text-white/30 line-through block">
+                              {product.currency}{(product.originalPrice! * quantity).toFixed(2)}
+                            </span>
+                          )}
                           <span className="font-serif text-base text-white block">
                             {product.currency}{(product.price * quantity).toFixed(2)}
                           </span>
@@ -334,6 +344,11 @@ export function CartDrawer() {
                       <span className="font-sans text-xs text-emerald-400/70 tracking-wide">◈ {promoInput} -{Math.round(promoRate * 100)}%</span>
                       <span className="font-sans text-xs text-emerald-400/70">-€{promoDiscount.toFixed(2)}</span>
                     </div>
+                    {hasSaleItems && (
+                      <p className="font-sans text-[10px] text-white/40 tracking-wide mt-1">
+                        Не важи за продуктите с намалена цена.
+                      </p>
+                    )}
                   </>
                 )}
               </div>

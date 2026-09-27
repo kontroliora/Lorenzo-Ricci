@@ -6,6 +6,7 @@ import { createHash } from "crypto";
 import { getProductBySlug } from "@/lib/products";
 import { validateOrderPricing } from "@/lib/order-pricing";
 import { checkOrderable } from "@/lib/order-availability";
+import { checkPromoCode } from "@/lib/promo";
 
 // Order line item shape.
 type ItemPayload = { sku?: string; qty?: number; quantity?: number; slug?: string; name?: string; price?: number; currency?: string };
@@ -418,7 +419,21 @@ export async function POST(req: NextRequest) {
     // ── PRICE GUARD — the browser reports unit prices and totals; check them against
     //    the catalog first, before anything with a side effect (no stock reserved, no
     //    emails, no DB row). A stale tab or a tampered request gets a 409 and reloads.
-    const pricing = validateOrderPricing(order, getProductBySlug);
+    //    The promo rate comes from the database, not the browser (read-only lookup), so
+    //    the guard can re-derive the promo discount: full-price items only, no stacking.
+    //    A failed lookup caps at the highest rate in use (10%) instead of blocking a
+    //    paying customer; an invalid / used / expired code gets no discount at all.
+    let promoRate: number | null = null;
+    if (Number(order.promoDiscount ?? 0) > 0) {
+      try {
+        const promo = await checkPromoCode(order.promoCode);
+        promoRate = promo.valid ? promo.discount : null;
+      } catch (e) {
+        console.error("[Order] promo lookup failed — capping at 10%:", e);
+        promoRate = 0.10;
+      }
+    }
+    const pricing = validateOrderPricing(order, getProductBySlug, { promoRate });
     if (!pricing.ok) {
       console.warn("[Order] price check failed:", pricing.reason);
       return NextResponse.json(

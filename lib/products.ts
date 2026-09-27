@@ -320,7 +320,10 @@ export const products: Product[] = [
     name: "Гривна Diamante Cross",
     category: "jewellery",
     subcategory: "bracelet",
-    price: 39,
+    // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
+    // days (EU Omnibus) — €39, unchanged in the git history since at least 28.08.2026.
+    price: 31.2,
+    originalPrice: 39,
     currency: "€",
     badge: "Ограничена наличност",
     inStock: true,
@@ -484,7 +487,10 @@ export const products: Product[] = [
     name: "Колие Aurelius Cross",
     category: "jewellery",
     subcategory: "necklace",
-    price: 42,
+    // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
+    // days (EU Omnibus) — €42, unchanged in the git history since at least 28.08.2026.
+    price: 33.6,
+    originalPrice: 42,
     currency: "€",
     badge: "Ограничена наличност",
     inStock: true,
@@ -766,7 +772,10 @@ export const products: Product[] = [
     sku: "CRD-AMB",
     name: 'Lorenzo Ricci "Ambra"',
     category: "cardholders",
-    price: 65,
+    // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
+    // days (EU Omnibus) — €65, unchanged in the git history since at least 28.08.2026.
+    price: 52,
+    originalPrice: 65,
     priceAED: 500,
     currency: "€",
     inStock: true,
@@ -839,7 +848,10 @@ export const products: Product[] = [
     sku: "CRD-VAL",
     name: 'Lorenzo Ricci "Valentina"',
     category: "cardholders",
-    price: 65,
+    // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
+    // days (EU Omnibus) — €65, unchanged in the git history since at least 28.08.2026.
+    price: 52,
+    originalPrice: 65,
     priceAED: 500,
     currency: "€",
     inStock: true,
@@ -875,7 +887,10 @@ export const products: Product[] = [
     sku: "CRD-ZAF",
     name: 'Lorenzo Ricci "Zaffiro"',
     category: "cardholders",
-    price: 65,
+    // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
+    // days (EU Omnibus) — €65, unchanged in the git history since at least 28.08.2026.
+    price: 52,
+    originalPrice: 65,
     priceAED: 500,
     currency: "€",
     inStock: true,

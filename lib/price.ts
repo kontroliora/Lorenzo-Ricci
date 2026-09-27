@@ -14,14 +14,25 @@ import type { Product } from "./types";
 //   RO + priceRON → "1.200 lei"  (RO thousands separator, no decimals)
 //   everyone else — including a geo with no price set → the EUR base price.
 
-type PriceInput = Pick<Product, "price" | "currency" | "priceAED" | "priceRON">;
+type PriceInput = Pick<Product, "price" | "originalPrice" | "currency" | "priceAED" | "priceRON">;
 
 export type PriceDisplay = {
-  text: string;        // formatted current price, e.g. "AED 4,500" / "1.200 lei" / "€279.00"
-  isGeoPrice: boolean; // true when showing a manually-set local price instead of EUR
+  text: string;            // formatted current price, e.g. "AED 4,500" / "1.200 lei" / "€279.00"
+  original: string | null; // crossed-out prior price during a sale, or null (geo price / not on sale)
+  isGeoPrice: boolean;     // true when showing a manually-set local price instead of EUR
 };
 
-const geoPrice = (text: string): PriceDisplay => ({ text, isGeoPrice: true });
+// A product is ON SALE when it carries an originalPrice above its price. That
+// originalPrice is the crossed-out "old" price and MUST be the lowest price the
+// product had in the previous 30 days (EU Omnibus rule) — check the git history of
+// lib/products.ts before setting one. No stacking: a sale item never gets a set
+// (bundle) or promo-code discount on top — lib/bundles.ts, the cart drawer and the
+// server check in lib/order-pricing.ts all use this.
+export const isOnSale = (p: Pick<Product, "price" | "originalPrice">): boolean =>
+  typeof p.originalPrice === "number" && p.originalPrice > p.price;
+
+// Geo prices hide the strike-through: originalPrice is EUR and would mislead.
+const geoPrice = (text: string): PriceDisplay => ({ text, original: null, isGeoPrice: true });
 
 // Prepayment threshold: EUR base price only (the geo-display prices are cosmetic,
 // never the collected amount) — computed from price, not a per-product flag, so it
@@ -40,5 +51,9 @@ export function displayPrice(p: PriceInput, country?: string | null): PriceDispl
   }
 
   const cur = p.currency || "€";
-  return { text: `${cur}${p.price.toFixed(2)}`, isGeoPrice: false };
+  return {
+    text: `${cur}${p.price.toFixed(2)}`,
+    original: isOnSale(p) ? `${cur}${p.originalPrice!.toFixed(2)}` : null,
+    isGeoPrice: false,
+  };
 }

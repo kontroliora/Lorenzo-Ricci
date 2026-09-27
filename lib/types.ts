@@ -19,6 +19,9 @@ export interface Product {
   category: ProductCategory;
   subcategory?: JewellerySubcategory;
   price: number;
+  originalPrice?: number; // crossed-out prior price during a sale — MUST be the lowest price of the
+  // previous 30 days (EU Omnibus rule). Setting it puts the product "on sale" (lib/price.ts
+  // isOnSale): no set (bundle) or promo-code discount applies on top of it.
   currency: string;
   priceAED?: number; // optional Dubai price — shown to AE visitors instead of the EUR base
   priceRON?: number; // optional Romania price — shown to RO visitors instead of the EUR base
