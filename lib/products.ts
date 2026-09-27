@@ -1,19 +1,19 @@
 import type { Product } from "./types";
 
-// Confirmed crocodile species (per CITES permit) — single source for both the
+// Confirmed crocodile species (per CITES permit) - single source for both the
 // specs "Вид" row and the LeatherDescription.tsx CITES bullet everywhere they're
 // used below. citesPermitNumber (the per-product permit reference) is still
-// pending — see Product.citesPermitNumber in lib/types.ts.
+// pending - see Product.citesPermitNumber in lib/types.ts.
 const SIAMESE_CROCODILE = "сиамски крокодил (Crocodylus siamensis)";
 const NILE_CROCODILE = "нилски крокодил (Crocodylus niloticus)";
 
 export const products: Product[] = [
   // ─── WATCHES ────────────────────────────────────────────────────────────────
-  // Yachting collection — 3 dial colours of one design, placed first so they lead
+  // Yachting collection - 3 dial colours of one design, placed first so they lead
   // the homepage watches section (FeaturedWatches renders getWatches() in array
   // order) and the /watches page. The original 3 watches are unchanged, just moved
   // below. Case size is the owner's measurement (2026-09-27); weight is pending (empty,
-  // hidden row). Case material and dial construction aren't in `specs` — no confirmed
+  // hidden row). Case material and dial construction aren't in `specs` - no confirmed
   // figures were given for those, and this file doesn't invent them.
   {
     id: "yachting-black",
@@ -26,11 +26,14 @@ export const products: Product[] = [
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",
-    // No description until the owner has measured the watches (size on the wrist,
-    // weight, strap, travel case) — a wrong description is worse than none. With
-    // this empty, ProductInfo drops the Описание tab and shows the specs only.
-    description: "",
+    description:
+      "Yachting Black: часовник с компасен циферблат в черно, корпус 44 мм, сапфирено стъкло и японски кварцов механизъм. Водоустойчив до 50 метра, с каучукова верижка и светещи индекси и стрелки.",
+    tabDescription: [
+      "Корпус 44 мм на ширина, 53.7 мм от ухо до ухо и 12.8 мм дебелина: едър часовник с присъствие на китката, в черно от корпуса до верижката. Каучуковата верижка с релефна структура е мека и ляга плътно.",
+      "Индексите и стрелките светят на тъмно, както се вижда на втората снимка. Пристига в кутия за пътуване с капак, показана в галерията.",
+    ],
     features: [
+      "Лимитирана серия - след изчерпване няма да бъде произвеждана отново",
       "Сапфирено кристално стъкло",
       "Високопрецизен японски кварцов механизъм",
       "Каучукова верижка с релефна структура",
@@ -51,7 +54,7 @@ export const products: Product[] = [
     },
     images: [
       { src: `/Products/watches/Yachting Black/yachting-black-hronograf-preden-izgled-v2.webp`, alt: "Lorenzo Ricci Yachting Black - преден изглед, компасна роза и градусова скала" },
-      { src: `/Products/watches/Yachting Black/yachting-black-lume-noshten-rejim.webp`,        alt: "Lorenzo Ricci Yachting Black нощен режим - светещи индекси и стрелки" },
+      { src: `/Products/watches/Yachting Black/yachting-black-lume-noshten-rejim-v2.webp`,        alt: "Lorenzo Ricci Yachting Black нощен режим - светещи индекси и стрелки" },
       { src: `/Products/watches/Yachting Black/yachting-black-stranicen-izgled-v2.webp`,          alt: "Lorenzo Ricci Yachting Black - страничен изглед, корона и каучукова верижка" },
       { src: `/Products/watches/Yachting Black/yachting-black-zadna-strana-v2.webp`,              alt: "Lorenzo Ricci Yachting Black - задна страна на корпуса, гравиран компас YACHTING" },
       { src: `/Products/watches/Yachting Black/yachting-black-kutiya-otvorena.webp`,           alt: "Lorenzo Ricci Yachting Black в луксозна кутия за пътуване" },
@@ -69,11 +72,14 @@ export const products: Product[] = [
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",
-    // No description until the owner has measured the watches (size on the wrist,
-    // weight, strap, travel case) — a wrong description is worse than none. With
-    // this empty, ProductInfo drops the Описание tab and shows the specs only.
-    description: "",
+    description:
+      "Yachting Blue: часовник с компасен циферблат в синьо, корпус 44 мм, сапфирено стъкло и японски кварцов механизъм. Водоустойчив до 50 метра, с каучукова верижка и светещи индекси и стрелки.",
+    tabDescription: [
+      "Корпус 44 мм на ширина, 53.7 мм от ухо до ухо и 12.8 мм дебелина: едър часовник с присъствие на китката, със син циферблат и синя верижка към черния корпус. Каучуковата верижка с релефна структура е мека и ляга плътно.",
+      "Индексите и стрелките светят на тъмно, както се вижда на втората снимка. Пристига в кутия за пътуване с капак, показана в галерията.",
+    ],
     features: [
+      "Лимитирана серия - след изчерпване няма да бъде произвеждана отново",
       "Сапфирено кристално стъкло",
       "Високопрецизен японски кварцов механизъм",
       "Каучукова верижка с релефна структура",
@@ -94,9 +100,9 @@ export const products: Product[] = [
     },
     images: [
       { src: `/Products/watches/Yachting Blue/yachting-blue-hronograf-preden-izgled-v2.webp`, alt: "Lorenzo Ricci Yachting Blue - преден изглед, компасна роза и градусова скала" },
+{ src: `/Products/watches/Yachting Blue/yachting-blue-lume-noshten-rejim-v3.webp`,       alt: "Lorenzo Ricci Yachting Blue нощен режим - светещи индекси и стрелки" },
       { src: `/Products/watches/Yachting Blue/yachting-blue-stranicen-izgled-v2.webp`,         alt: "Lorenzo Ricci Yachting Blue - страничен изглед, корона и каучукова верижка" },
-      { src: `/Products/watches/Yachting Blue/yachting-blue-lume-noshten-rejim-v2.webp`,       alt: "Lorenzo Ricci Yachting Blue нощен режим - светещи индекси и стрелки" },
-      { src: `/Products/watches/Yachting Blue/yachting-blue-zadna-strana-v2.webp`,             alt: "Lorenzo Ricci Yachting Blue - задна страна на корпуса, гравиран компас YACHTING" },
+            { src: `/Products/watches/Yachting Blue/yachting-blue-zadna-strana-v2.webp`,             alt: "Lorenzo Ricci Yachting Blue - задна страна на корпуса, гравиран компас YACHTING" },
       { src: `/Products/watches/Yachting Blue/yachting-blue-kutiya-otvorena.webp`,          alt: "Lorenzo Ricci Yachting Blue в луксозна кутия за пътуване" },
       { src: `/Products/watches/Yachting Blue/yachting-blue-kaishka-kopchalka.webp`,        alt: "Lorenzo Ricci Yachting Blue - закопчалка, детайл на каучуковата верижка" },
     ],
@@ -112,11 +118,14 @@ export const products: Product[] = [
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",
-    // No description until the owner has measured the watches (size on the wrist,
-    // weight, strap, travel case) — a wrong description is worse than none. With
-    // this empty, ProductInfo drops the Описание tab and shows the specs only.
-    description: "",
+    description:
+      "Yachting White: часовник с компасен циферблат в бяло, корпус 44 мм, сапфирено стъкло и японски кварцов механизъм. Водоустойчив до 50 метра, с каучукова верижка и светещи индекси и стрелки.",
+    tabDescription: [
+      "Корпус 44 мм на ширина, 53.7 мм от ухо до ухо и 12.8 мм дебелина: едър часовник с присъствие на китката, целият в бяло с черен кант на верижката. Каучуковата верижка с релефна структура е мека и ляга плътно.",
+      "Индексите и стрелките светят на тъмно, както се вижда на втората снимка. Пристига в кутия за пътуване с капак, показана в галерията.",
+    ],
     features: [
+      "Лимитирана серия - след изчерпване няма да бъде произвеждана отново",
       "Сапфирено кристално стъкло",
       "Високопрецизен японски кварцов механизъм",
       "Каучукова верижка с релефна структура",
@@ -137,10 +146,10 @@ export const products: Product[] = [
     },
     images: [
       { src: `/Products/watches/Yachting White/yachting-white-hronograf-preden-izgled-v2.webp`, alt: "Lorenzo Ricci Yachting White - преден изглед, компасна роза и градусова скала" },
+{ src: `/Products/watches/Yachting White/yachting-white-lume-noshten-rejim-v3.webp`,       alt: "Lorenzo Ricci Yachting White нощен режим - светещи индекси и стрелки" },
       { src: `/Products/watches/Yachting White/yachting-white-stranicen-izgled-v2.webp`,         alt: "Lorenzo Ricci Yachting White - страничен изглед, корона и каучукова верижка" },
       { src: `/Products/watches/Yachting White/yachting-white-na-ruka.webp`,                  alt: "Lorenzo Ricci Yachting White на ръка - лайфстайл изглед" },
-      { src: `/Products/watches/Yachting White/yachting-white-lume-noshten-rejim-v2.webp`,       alt: "Lorenzo Ricci Yachting White нощен режим - светещи индекси и стрелки" },
-      { src: `/Products/watches/Yachting White/yachting-white-zadna-strana-v2.webp`,             alt: "Lorenzo Ricci Yachting White - задна страна на корпуса, гравиран компас YACHTING" },
+            { src: `/Products/watches/Yachting White/yachting-white-zadna-strana-v2.webp`,             alt: "Lorenzo Ricci Yachting White - задна страна на корпуса, гравиран компас YACHTING" },
       { src: `/Products/watches/Yachting White/yachting-white-kutiya-otvorena.webp`,          alt: "Lorenzo Ricci Yachting White в луксозна кутия за пътуване" },
       { src: `/Products/watches/Yachting White/yachting-white-kaishka-kopchalka.webp`,        alt: "Lorenzo Ricci Yachting White - закопчалка, детайл на каучуковата верижка" },
     ],
@@ -204,7 +213,6 @@ export const products: Product[] = [
     slug: "golden-eclipse",
     sku: "LR-MIDNIGHT-ECL",
     name: "Golden Eclipse",
-    badge: "Последни бройки",
     category: "watches",
     price: 299,
     currency: "€",
@@ -321,7 +329,7 @@ export const products: Product[] = [
     category: "jewellery",
     subcategory: "bracelet",
     // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
-    // days (EU Omnibus) — €39, unchanged in the git history since at least 28.08.2026.
+    // days (EU Omnibus) - €39, unchanged in the git history since at least 28.08.2026.
     price: 31.2,
     originalPrice: 39,
     currency: "€",
@@ -366,7 +374,7 @@ export const products: Product[] = [
     subcategory: "bracelet",
     price: 49,
     currency: "€",
-    inStock: false, // owner 2026-09-27: out of stock until further notice — stays listed as "Изчерпан"
+    inStock: false, // owner 2026-09-27: out of stock until further notice - stays listed as "Изчерпан"
     warranty: "Доживотна гаранция",
     shortDescription: "Осем милиметра присъствие",
     description:
@@ -488,7 +496,7 @@ export const products: Product[] = [
     category: "jewellery",
     subcategory: "necklace",
     // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
-    // days (EU Omnibus) — €42, unchanged in the git history since at least 28.08.2026.
+    // days (EU Omnibus) - €42, unchanged in the git history since at least 28.08.2026.
     price: 33.6,
     originalPrice: 42,
     currency: "€",
@@ -578,7 +586,7 @@ export const products: Product[] = [
     subcategory: "necklace",
     price: 55,
     currency: "€",
-    inStock: false, // owner 2026-09-27: out of stock until further notice — stays listed as "Изчерпан"
+    inStock: false, // owner 2026-09-27: out of stock until further notice - stays listed as "Изчерпан"
     warranty: "Доживотна гаранция",
     shortDescription: "Тежестта на Милано",
     description:
@@ -773,7 +781,7 @@ export const products: Product[] = [
     name: 'Lorenzo Ricci "Ambra"',
     category: "cardholders",
     // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
-    // days (EU Omnibus) — €65, unchanged in the git history since at least 28.08.2026.
+    // days (EU Omnibus) - €65, unchanged in the git history since at least 28.08.2026.
     price: 52,
     originalPrice: 65,
     priceAED: 500,
@@ -810,7 +818,6 @@ export const products: Product[] = [
     slug: "cardholder-bianco",
     sku: "CRD-BIA",
     name: 'Lorenzo Ricci "Bianco"',
-    badge: "Последни бройки",
     category: "cardholders",
     price: 65,
     priceAED: 500,
@@ -849,7 +856,7 @@ export const products: Product[] = [
     name: 'Lorenzo Ricci "Valentina"',
     category: "cardholders",
     // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
-    // days (EU Omnibus) — €65, unchanged in the git history since at least 28.08.2026.
+    // days (EU Omnibus) - €65, unchanged in the git history since at least 28.08.2026.
     price: 52,
     originalPrice: 65,
     priceAED: 500,
@@ -888,7 +895,7 @@ export const products: Product[] = [
     name: 'Lorenzo Ricci "Zaffiro"',
     category: "cardholders",
     // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
-    // days (EU Omnibus) — €65, unchanged in the git history since at least 28.08.2026.
+    // days (EU Omnibus) - €65, unchanged in the git history since at least 28.08.2026.
     price: 52,
     originalPrice: 65,
     priceAED: 500,
@@ -935,6 +942,7 @@ export const products: Product[] = [
     price: 65,
     currency: "€",
     inStock: true,
+    badge: "Нова колекция",
     stock: 46,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Черен кардхолдър от крокодилска кожа",
@@ -967,6 +975,7 @@ export const products: Product[] = [
     price: 65,
     currency: "€",
     inStock: true,
+    badge: "Нова колекция",
     stock: 27,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Тъмнозелен кардхолдър от крокодилска кожа",
@@ -999,6 +1008,7 @@ export const products: Product[] = [
     price: 65,
     currency: "€",
     inStock: true,
+    badge: "Нова колекция",
     stock: 38,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Червен кардхолдър от крокодилска кожа",
@@ -1031,6 +1041,7 @@ export const products: Product[] = [
     price: 65,
     currency: "€",
     inStock: true,
+    badge: "Нова колекция",
     stock: 3,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Сив кардхолдър от крокодилска кожа",
@@ -1063,6 +1074,7 @@ export const products: Product[] = [
     price: 65,
     currency: "€",
     inStock: true,
+    badge: "Нова колекция",
     stock: 23,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Жълт кардхолдър от крокодилска кожа",
@@ -1088,27 +1100,27 @@ export const products: Product[] = [
   },
   // ─── BAGS ───────────────────────────────────────────────────────────────────
   // TODO (owed by owner before this section is publish-ready):
-  //   - Milano Avorio: lining material (still dropped from specs entirely until confirmed —
+  //   - Milano Avorio: lining material (still dropped from specs entirely until confirmed -
   //     not shown as a placeholder). Dimensions confirmed 2026-09-14, now in specs.
   //   - Milano Avorio gallery (2026-09-13): 10 of 11 numbered source files are in, in the
-  //     owner's numeric order (3, 4, 5, 8, 10 centre-cropped to square, off by only 1.9–5.4%
-  //     pre-crop). File 11 is still missing from the source folder entirely — never
+  //     owner's numeric order (3, 4, 5, 8, 10 centre-cropped to square, off by only 1.9-5.4%
+  //     pre-crop). File 11 is still missing from the source folder entirely - never
   //     re-supplied after the original (raw, unprocessed) version was flagged two rounds ago.
-  //   - Milano Avorio descriptionImage: unset (see comment on the product entry) — none
+  //   - Milano Avorio descriptionImage: unset (see comment on the product entry) - none
   //     of the 10 current gallery photos is a genuine macro shot of the leather itself.
-  //     No generic fallback — its media column is simply omitted until the owner shoots one.
+  //     No generic fallback - its media column is simply omitted until the owner shoots one.
   //   - Clutch stock counts: confirmed by the owner 2026-09-27 (Torino 5, Verona 5,
-  //     Toscana 2, Portofino 5, Capri 3; Milano Avorio 1) — the rows are in
+  //     Toscana 2, Portofino 5, Capri 3; Milano Avorio 1) - the rows are in
   //     supabase/wallet_inventory_bags.sql, which the owner runs in the SQL editor.
   //   - Clutch dimensions (all five): not measured yet. The "Размери" value stays ""
   //     and ProductInfo hides empty spec values, so customers never see a placeholder
   //     row. Fill it in only with the owner's real measurements.
   //   - Toscana: owner to provide a replacement for gallery slot 5 (see note on its
-  //     images array below) — the supplied file wasn't square and was skipped
+  //     images array below) - the supplied file wasn't square and was skipped
   //   - descriptionImage (macro texture shot for "Автентичност и Структура"): Torino,
   //     Verona, Toscana, and Portofino each have their own now (2026-09-24, from the
-  //     owner's "under product" photos), and so does Capri (added 2026-09-25). Milano Avorio's stays unset — no genuine
-  //     macro shot exists yet (see above) — and LeatherDescription no longer falls
+  //     owner's "under product" photos), and so does Capri (added 2026-09-25). Milano Avorio's stays unset - no genuine
+  //     macro shot exists yet (see above) - and LeatherDescription no longer falls
   //     back to a generic image, so its media column is simply omitted.
   {
     id: "bag-milano-avorio",
@@ -1124,13 +1136,13 @@ export const products: Product[] = [
     stock: 1,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Голям сак от нилски крокодил с индивидуален рисунък на люспите",
-    // Short `description` feeds the meta/OG tag only (sliced to 160 chars) — the tab copy
+    // Short `description` feeds the meta/OG tag only (sliced to 160 chars) - the tab copy
     // customers actually read is `descriptionSections` below. Kept deliberately plain: no
     // occasion language, no durability claim beyond what's confirmed.
     description: 'Milano Avorio е изработен от кожа на нилски крокодил (Crocodylus niloticus) с финиш Himalaya. Всяка кожа има собствен рисунък на люспите.',
     descriptionSections: [
       {
-        heading: "Единствен екземпляр — 1 от 1",
+        heading: "Единствен екземпляр - 1 от 1",
         body: "Настоящият сак е произведен в един-единствен екземпляр и е ограничен до 1 бройка. Това е единствената създадена бройка от тази конкретна комбинация между дизайн, нилска крокодилска кожа (Crocodylus niloticus), естествен рисунък на люспите и Himalaya финиш. Втори екземпляр няма да бъде произведен. Неповторимостта на изделието не се определя единствено от лимита до една бройка, а и от самата кожа: естественият релеф, разположението на люспите и характерният цветови градиент са присъщи единствено на този конкретен материал и не могат да бъдат възпроизведени идентично. Към екземпляра се предоставя поименен сертификат за автентичност, който придружава изделието като документ за неговата идентичност и произход.",
       },
       {
@@ -1143,7 +1155,7 @@ export const products: Product[] = [
       },
       {
         heading: "Кожата",
-        body: "Изработен е от кожа на нилски крокодил (Crocodylus niloticus). Рисунъкът на люспите е специфичен за тази кожа — оттук и означението Единствен екземпляр, а не сериен номер от ограничена серия.",
+        body: "Изработен е от кожа на нилски крокодил (Crocodylus niloticus). Рисунъкът на люспите е специфичен за тази кожа - оттук и означението Единствен екземпляр, а не сериен номер от ограничена серия.",
       },
     ],
     features: [
@@ -1157,7 +1169,7 @@ export const products: Product[] = [
     // yet) rather than shown as an UNVERIFIED placeholder. Размери added 2026-09-14, owner-
     // confirmed exact measurements. Вид/Сериен №/Изработка dropped from this table (folded
     // into Материал, or still visible via `features` above) to keep the list short. Finish +
-    // zip + handles given directly by the owner as final spec content — not pending verification.
+    // zip + handles given directly by the owner as final spec content - not pending verification.
     specs: [
       { label: "Материал", value: `${NILE_CROCODILE}, Himalaya финиш` },
       { label: "Размери", value: "45 см (Дължина) × 22 см (Широчина) × 27 см (Височина)" },
@@ -1166,10 +1178,10 @@ export const products: Product[] = [
       { label: "Закопчаване", value: "Цип YKK" },
       { label: "Дръжки", value: "Две горни дръжки и подвижна раменна дръжка" },
     ],
-    // descriptionImage intentionally unset — none of the 10 gallery photos is a genuine
+    // descriptionImage intentionally unset - none of the 10 gallery photos is a genuine
     // macro shot of the leather itself (closest is the certificate/tag close-up, which is about
     // the fabric label, not the hornback texture). LeatherDescription no longer falls back to a
-    // generic image when this is unset — its media column is simply omitted until a real texture
+    // generic image when this is unset - its media column is simply omitted until a real texture
     // macro is supplied. See BAGS-section TODO above.
     coverImage: { src: `/Products/bags/Milano Avorio/sak-milano-avorio-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Milano Avorio сак от крокодилска кожа - преден изглед' },
     images: [
@@ -1194,13 +1206,15 @@ export const products: Product[] = [
     price: 550,
     currency: "€",
     inStock: true,
+    badge: "Нова колекция",
     stock: 5,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Черен вечерен клъч от крокодилска кожа",
-    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа — аксесоар за вечер, който не се нуждае от повече от себе си.',
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа - аксесоар за вечер, който не се нуждае от повече от себе си.',
     materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
     crocodileSpecies: SIAMESE_CROCODILE,
     features: [
+      "Лимитирана серия - след изчерпване няма да бъде произвеждана отново",
       "100% естествена крокодилска кожа",
       "Релефна ивица от естествени костни плочки, характерна за гръбната част на кожата",
       "Плавно движещ се метален цип, вграден дискретно в силуета на клъча",
@@ -1233,13 +1247,15 @@ export const products: Product[] = [
     price: 550,
     currency: "€",
     inStock: true,
+    badge: "Нова колекция",
     stock: 5,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Бордо вечерен клъч от крокодилска кожа",
-    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа — аксесоар за вечер, който не се нуждае от повече от себе си.',
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа - аксесоар за вечер, който не се нуждае от повече от себе си.',
     materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
     crocodileSpecies: SIAMESE_CROCODILE,
     features: [
+      "Лимитирана серия - след изчерпване няма да бъде произвеждана отново",
       "100% естествена крокодилска кожа",
       "Релефна ивица от естествени костни плочки, характерна за гръбната част на кожата",
       "Плавно движещ се метален цип, вграден дискретно в силуета на клъча",
@@ -1272,13 +1288,15 @@ export const products: Product[] = [
     price: 550,
     currency: "€",
     inStock: true,
+    badge: "Нова колекция",
     stock: 2,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Тъмнозелен вечерен клъч от крокодилска кожа",
-    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа — аксесоар за вечер, който не се нуждае от повече от себе си.',
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа - аксесоар за вечер, който не се нуждае от повече от себе си.',
     materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
     crocodileSpecies: SIAMESE_CROCODILE,
     features: [
+      "Лимитирана серия - след изчерпване няма да бъде произвеждана отново",
       "100% естествена крокодилска кожа",
       "Релефна ивица от естествени костни плочки, характерна за гръбната част на кожата",
       "Плавно движещ се метален цип, вграден дискретно в силуета на клъча",
@@ -1295,7 +1313,7 @@ export const products: Product[] = [
     descriptionImage: { src: `/Products/bags/Toscana/klych-toscana-detal-tekstura.webp`, alt: 'Lorenzo Ricci Toscana - детайл на крокодилската текстура' },
     coverImage: { src: `/Products/bags/Toscana/klych-toscana-zelen-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Toscana тъмнозелен клъч крокодилска кожа - преден изглед' },
     // Slot 5 from the owner's numbered set was excluded (not square, still a raw
-    // uncropped camera photo — see chat) — gallery currently skips straight from
+    // uncropped camera photo - see chat) - gallery currently skips straight from
     // detail #4 to #6, five images total. TODO: owner to provide a replacement.
     images: [
       { src: `/Products/bags/Toscana/klych-toscana-zelen-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Toscana клъч - продуктова снимка, преден изглед' },
@@ -1314,13 +1332,15 @@ export const products: Product[] = [
     price: 550,
     currency: "€",
     inStock: true,
+    badge: "Нова колекция",
     stock: 5,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Кремав вечерен клъч от крокодилска кожа",
-    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа — аксесоар за вечер, който не се нуждае от повече от себе си.',
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа - аксесоар за вечер, който не се нуждае от повече от себе си.',
     materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
     crocodileSpecies: SIAMESE_CROCODILE,
     features: [
+      "Лимитирана серия - след изчерпване няма да бъде произвеждана отново",
       "100% естествена крокодилска кожа",
       "Релефна ивица от естествени костни плочки, характерна за гръбната част на кожата",
       "Плавно движещ се метален цип, вграден дискретно в силуета на клъча",
@@ -1336,7 +1356,7 @@ export const products: Product[] = [
     ],
     descriptionImage: { src: `/Products/bags/Portofino/klych-portofino-detal-tekstura.webp`, alt: 'Lorenzo Ricci Portofino - детайл на крокодилската текстура' },
     coverImage: { src: `/Products/bags/Portofino/klych-portofino-krem-krokodilska-kozha-preden-izgled.webp`, alt: 'Lorenzo Ricci Portofino кремав клъч крокодилска кожа - преден изглед' },
-    // "zakopchalka-detal" slide pulled — the bag occupies too small a band of the
+    // "zakopchalka-detal" slide pulled - the bag occupies too small a band of the
     // square frame (lying-flat side-on shot, ~21% frame height). File is still on
     // disk (klych-portofino-zakopchalka-detal.webp), just not referenced here.
     images: [
@@ -1356,13 +1376,15 @@ export const products: Product[] = [
     price: 550,
     currency: "€",
     inStock: true,
+    badge: "Нова колекция",
     stock: 3,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Тъмносин вечерен клъч от крокодилска кожа",
-    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа — аксесоар за вечер, който не се нуждае от повече от себе си.',
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Клъчът съчетава компактна градска функционалност с автентичната текстура на крокодилска кожа - аксесоар за вечер, който не се нуждае от повече от себе си.',
     materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
     crocodileSpecies: SIAMESE_CROCODILE,
     features: [
+      "Лимитирана серия - след изчерпване няма да бъде произвеждана отново",
       "100% естествена крокодилска кожа",
       "Релефна ивица от естествени костни плочки, характерна за гръбната част на кожата",
       "Плавно движещ се метален цип, вграден дискретно в силуета на клъча",

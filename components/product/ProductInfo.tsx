@@ -12,7 +12,7 @@ import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { getProductBySlug } from "@/lib/products";
 
 // A colour swatch reads as sold out when its product is switched off in
-// lib/products.ts (inStock: false — the owner's single on/off switch); the
+// lib/products.ts (inStock: false - the owner's single on/off switch); the
 // hand-written inStock flags in the variant lists below are only a fallback.
 const variantOff = (v: { slug: string; inStock: boolean }) => !(getProductBySlug(v.slug)?.inStock ?? v.inStock);
 
@@ -40,7 +40,7 @@ function prefetchMainImage(slug: string) {
 
 // Grouped, not one flat list: a product's swatch row is whichever group its own
 // slug belongs to, so the Yachting trio switches only among itself and the
-// original three do the same — adding a collection here never bleeds into the
+// original three do the same - adding a collection here never bleeds into the
 // others' product pages. Same swatch UI/Link pattern either way (see below).
 const WATCH_VARIANT_GROUPS = [
   [
@@ -66,7 +66,7 @@ const CARDHOLDER_VARIANTS = [
   { slug: "cardholder-bianco",    label: "Bianco - Бял",       color: "#E8E4DC", inStock: true },
   { slug: "cardholder-valentina", label: "Valentina - Розов",  color: "#C44B8A", inStock: true },
   { slug: "cardholder-zaffiro",   label: "Zaffiro - Тъмносин", color: "#1A2B4A", inStock: true },
-  // 2026-09-27 batch — swatches sampled from each product's own front photo.
+  // 2026-09-27 batch - swatches sampled from each product's own front photo.
   { slug: "cardholder-onice",     label: "Onice - Черен",      color: "#1B1818", inStock: true },
   { slug: "cardholder-giada",     label: "Giada - Тъмнозелен", color: "#1F362B", inStock: true },
   { slug: "cardholder-cremisi",   label: "Cremisi - Червен",   color: "#BD0F1A", inStock: true },
@@ -74,18 +74,27 @@ const CARDHOLDER_VARIANTS = [
   { slug: "cardholder-topazio",   label: "Topazio - Жълт",     color: "#E4AB05", inStock: true },
 ];
 
-// Viber quick-order deep link — opens a 1:1 chat with the store number.
+// Evening clutches (the Milano Avorio bag is a one-off and has no siblings).
+const CLUTCH_VARIANTS = [
+  { slug: "clutch-torino",    label: "Torino - Черен",        color: "#1B1818", inStock: true },
+  { slug: "clutch-verona",    label: "Verona - Бордо",        color: "#6B1F2B", inStock: true },
+  { slug: "clutch-toscana",   label: "Toscana - Тъмнозелен",  color: "#1F3A2E", inStock: true },
+  { slug: "clutch-portofino", label: "Portofino - Кремав",    color: "#EFE6D6", inStock: true },
+  { slug: "clutch-capri",     label: "Capri - Тъмносин",      color: "#1F2D4F", inStock: true },
+];
+
+// Viber quick-order deep link - opens a 1:1 chat with the store number.
 // Format verified against the de-facto standard: viber://chat?number=<E.164>,
 // tappable on iOS/Android. %2B is the encoded leading "+".
 const VIBER_LINK = "viber://chat?number=%2B359888081811";
 
-// Product-page Viber quick-order button. Hidden for now — flip to `true` to
+// Product-page Viber quick-order button. Hidden for now - flip to `true` to
 // bring it back (nothing is deleted).
 const SHOW_VIBER = false;
 
-// Show the low-stock badge only when AVAILABLE units drop below this. Easily
-// bumped (e.g. to 10 for the pricier watches).
-const LOW_STOCK_THRESHOLD = 6;
+// Show the low-stock line only when AVAILABLE units drop below this. Bags sit at
+// 5 in stock as a matter of course, so their line only appears under 5 (owner).
+const lowStockThreshold = (category: Product["category"]) => (category === "bags" ? 5 : 6);
 
 interface ProductInfoProps {
   product: Product;
@@ -113,6 +122,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       ? (WATCH_VARIANT_GROUPS.find((g) => g.some((v) => v.slug === product.slug)) ?? WATCH_VARIANT_GROUPS[0])
       : product.category === "wallets" ? WALLET_VARIANTS
       : product.category === "cardholders" ? CARDHOLDER_VARIANTS
+      : product.category === "bags" && product.slug !== "bag-milano-avorio" ? CLUTCH_VARIANTS // the one-off bag has no siblings
       : null;
 
   // Small colour groups (watches, wallets: 3): warm the other colours' main photo
@@ -126,7 +136,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
   }, [variants, product.slug]);
 
   // ALL sellable categories read the live available number (/api/stock =
-  // KV − reserved for watches/jewellery, wallet_inventory for leather) — same as
+  // KV − reserved for watches/jewellery, wallet_inventory for leather) - same as
   // the admin panel. So a product at 0 available shows "Изчерпан" + a locked
   // button automatically, for every category (no manual per-product flag).
   const hasInventory =
@@ -136,7 +146,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
     product.category === "cardholders" ||
     product.category === "bags";
 
-  // Leather goods get one extra bullet (5 vs 4) — their copy needs room for both
+  // Leather goods get one extra bullet (5 vs 4) - their copy needs room for both
   // the hide/relief description and the construction/format lines. Watches and
   // jewellery stay at 4.
   const isLeatherGoods =
@@ -282,7 +292,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         <span className="font-serif text-4xl text-navy">
           {price.text}
         </span>
-        {/* Sale: the prior price (lowest of the last 30 days — lib/price.ts isOnSale) */}
+        {/* Sale: the prior price (lowest of the last 30 days - lib/price.ts isOnSale) */}
         {price.original && (
           <span className="font-sans text-lg text-ink-faint line-through">
             {price.original}
@@ -290,22 +300,28 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         )}
       </div>
 
-      {/* Stock indicator — the number AVAILABLE (free to order), matching the
+      {/* Stock indicator - the number AVAILABLE (free to order), matching the
           admin panel's "Налични". Shown only below the low-stock threshold; above
           it nothing is revealed (we don't disclose how much we hold). Premium and
-          restrained — a quiet nudge, never a loud "HURRY". */}
-      {shownCount !== null && shownCount < LOW_STOCK_THRESHOLD && (
+          restrained - a quiet nudge, never a loud "HURRY". */}
+      {shownCount !== null && shownCount < lowStockThreshold(product.category) && (
         <div className="flex items-center gap-2">
           {shownCount === 0 ? (
             <>
               <span className="text-ink-faint text-xs">◈</span>
               <span className="font-sans text-[11px] text-ink-faint tracking-wide">Изчерпан</span>
             </>
+          ) : product.slug === "bag-milano-avorio" ? (
+            // A one-of-one is limited, not "running out".
+            <>
+              <span className="text-navy/70 text-xs">◈</span>
+              <span className="font-sans text-[11px] text-navy tracking-wide font-medium">Лимитиран до 1 брой</span>
+            </>
           ) : (
             <>
               <span className="text-amber-600/80 text-xs">◈</span>
               <span className="font-sans text-[11px] text-amber-700/90 tracking-wide font-medium">
-                {shownCount === 1 ? "Остава последен 1 брой" : `Остават ${shownCount} бройки`}
+                {shownCount === 1 ? "Остава последният брой" : `Остават само ${shownCount} броя`}
               </span>
             </>
           )}
@@ -322,10 +338,11 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         ))}
       </ul>
 
-      {/* Natural-variation note — right above the CTA, not inside the Описание tab, so
-          the customer reads it before ordering (each hide differs; see materialNote). */}
+      {/* Natural-variation note: above the CTA on desktop so it's read before ordering;
+          on phones it sits right under the button instead (owner: a text block on top
+          of the button reads badly there). Same text, one of the two renders. */}
       {product.materialNote && (
-        <p className="font-sans text-xs font-light text-ink-soft leading-relaxed tracking-wide border-l-2 border-navy/20 pl-3">
+        <p className="hidden sm:block font-sans text-xs font-light text-ink-soft leading-relaxed tracking-wide border-l-2 border-navy/20 pl-3">
           {product.materialNote}
         </p>
       )}
@@ -348,7 +365,14 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           : "ДОБАВИ В КОЛИЧКАТА"}
       </button>
 
-      {/* Viber quick order — hidden via SHOW_VIBER (flip the flag to bring it back) */}
+      {/* Phones: the natural-variation note goes under the button (see above). */}
+      {product.materialNote && (
+        <p className="sm:hidden font-sans text-[11px] font-light text-ink-muted leading-relaxed tracking-wide">
+          {product.materialNote}
+        </p>
+      )}
+
+      {/* Viber quick order - hidden via SHOW_VIBER (flip the flag to bring it back) */}
       {SHOW_VIBER && (
       <div className="flex flex-col gap-3 -mt-2">
         <div className="flex items-center gap-3">
@@ -461,7 +485,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           {activeTab === "specs" && (
             <div className="flex flex-col gap-3">
               {/* An empty value (e.g. clutch dimensions not measured yet) hides the whole
-                  row — customers never see a placeholder like "TBD". */}
+                  row - customers never see a placeholder like "TBD". */}
               {product.specs.filter(({ value }) => value.trim() !== "").map(({ label, value }) => (
                 <div key={label} className="flex justify-between py-2 border-b border-border">
                   <span className="font-sans text-[11px] text-ink-faint tracking-wide uppercase">{label}</span>
