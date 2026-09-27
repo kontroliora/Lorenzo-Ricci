@@ -99,7 +99,10 @@ export function Header() {
               <NavLink href="/faq">{t("nav.faq")}</NavLink>
             </div>
 
-            <LanguageToggle className="text-ink-muted" />
+            {/* Phones: in the menu instead - here it pushed the logo off-centre */}
+            <div className="hidden sm:block">
+              <LanguageToggle className="text-ink-muted" />
+            </div>
 
             <button
               onClick={openCart}
@@ -131,7 +134,7 @@ export function Header() {
           className="fixed inset-0 z-[100] bg-[#0A0A0A] flex flex-col"
           onClick={closeMobile}
         >
-          <div className="flex flex-col h-full px-8 py-10" onClick={(e) => e.stopPropagation()}>
+          <div className="flex flex-col h-full overflow-y-auto px-8 py-10" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-16">
               <Image src="/logo.webp" alt="Lorenzo Ricci" width={140} height={36} className="h-9 w-auto" />
               <button onClick={closeMobile} className="text-white/60 hover:text-white text-3xl leading-none transition-colors">
@@ -195,8 +198,9 @@ export function Header() {
               ))}
             </nav>
 
-            <div className="mt-auto">
+            <div className="mt-auto pt-10">
               <div className="h-px bg-white/10 mb-8" />
+              <LanguageToggle size="lg" className="sm:hidden text-white -mt-2 mb-4" />
               <p className="font-sans text-xs text-white/40 tracking-widest uppercase">info@lorenzo-ricci.com</p>
             </div>
           </div>

@@ -6,6 +6,12 @@
       "runtimeExecutable": "/opt/homebrew/bin/npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "BEZOV logo",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8420", "--directory", "/Users/davidserbezov/Documents/claude code/BEZOV logo"],
+      "port": 8420
     }
   ]
 }

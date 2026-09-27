@@ -15,6 +15,7 @@ const OWNER_TABS = [
   { href: "/lr-panel-v8m3q/revenue", label: "Оборот" },
   { href: "/lr-panel-v8m3q/roas", label: "ROAS" },
   { href: "/lr-panel-v8m3q/waitlist", label: "Международни" },
+  { href: "/lr-panel-v8m3q/discounts", label: "Отстъпки" },
 ];
 
 /**
