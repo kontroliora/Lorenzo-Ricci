@@ -41,13 +41,13 @@ export function ProductReviews({ reviews, productSlug }: ProductReviewsProps) {
     );
   }
 
-  // Stats from hardcoded summary — always reflects full dataset, not just displayed 20
+  // Stats from hardcoded summary - always reflects full dataset, not just displayed 20
   const summary = reviewSummary[productSlug];
   const totalCount = summary?.count ?? reviews.length;
   const avgRating = summary?.avg ?? (reviews.length > 0 ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : 5);
 
   // Sort logic:
-  // 1. Reviews with photo — always shown, newest first
+  // 1. Reviews with photo - always shown, newest first
   // 2. Fill remaining slots (up to 20 total) with text-only, newest first
   const MAX_REVIEWS = 20;
   const byDateDesc = (a: Review, b: Review) =>

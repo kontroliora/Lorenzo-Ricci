@@ -17,7 +17,7 @@ export function CartDrawer() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [promoInput, setPromoInput] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
-  const [promoRate, setPromoRate] = useState(0.10); // fraction from the validated code — 10% newsletter, 5% waitlist apology
+  const [promoRate, setPromoRate] = useState(0.10); // fraction from the validated code - 10% newsletter, 5% waitlist apology
   const [promoError, setPromoError] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -25,7 +25,7 @@ export function CartDrawer() {
   const { totalDiscount, active: activeBundles } = bundleDiscount();
   const afterBundles = subtotal - totalDiscount;
   // No stacking: the promo code applies to full-price items only (after their set
-  // discounts) — sale items are excluded. The server re-derives the same number.
+  // discounts) - sale items are excluded. The server re-derives the same number.
   const promoDiscount = promoApplied ? parseFloat((promoBase(items, totalDiscount) * promoRate).toFixed(2)) : 0;
   const hasSaleItems = items.some((i) => isOnSale(i.product));
   const total = afterBundles - promoDiscount;

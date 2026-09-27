@@ -1,10 +1,10 @@
 // Soft-decline ("temporarily out of stock") email for the international test
-// market. Restrained luxury tone — a warm, brief acknowledgement, an honest
+// market. Restrained luxury tone - a warm, brief acknowledgement, an honest
 // out-of-stock note, and a private code offered as a quiet gesture (not a loud
 // apology, not a marketing push). Matches the confirmation email's HTML shell
 // (navy header, cream ground, Georgia serif, #e8dfc8 dividers). English copy.
 //
-// DRAFT copy — pending owner polish of the luxury tone.
+// DRAFT copy - pending owner polish of the luxury tone.
 
 export const waitlistSubject = "A note on your Lorenzo Ricci order";
 

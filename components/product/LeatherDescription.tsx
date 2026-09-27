@@ -2,14 +2,14 @@ import Image from "next/image";
 
 interface Props {
   videoSrc?: string;
-  crocodileSpecies?: string; // from Product.crocodileSpecies — never defaulted, see lib/types.ts
+  crocodileSpecies?: string; // from Product.crocodileSpecies - never defaulted, see lib/types.ts
   isBag?: boolean; // bags (clutches, Milano Avorio) get their own "Функционален ред" /
-  // "Ръчно завършване" copy — a wallet's "quick access to cards and cash" line doesn't
+  // "Ръчно завършване" copy - a wallet's "quick access to cards and cash" line doesn't
   // describe a clutch. Wallets/cardholders keep the original wording.
-  image?: { src: string; alt: string }; // from Product.descriptionImage — a real macro shot of
+  image?: { src: string; alt: string }; // from Product.descriptionImage - a real macro shot of
   // THIS product's own leather. Per-product, not per-category: only set once a genuine texture
   // close-up exists for that product (see lib/products.ts BAGS-section TODO for who's missing
-  // one). No generic fallback when unset — a stand-in photo of leather that isn't this product's
+  // one). No generic fallback when unset - a stand-in photo of leather that isn't this product's
   // own was worse than showing nothing (see chat, 2026-09-24). The media column is simply
   // omitted, and the bullets take the full width instead.
 }
@@ -60,7 +60,7 @@ export function LeatherDescription({ videoSrc, crocodileSpecies, isBag, image }:
       <div className={`mx-auto px-6 py-14 md:py-20 ${hasMedia ? "max-w-4xl" : "max-w-xl"}`}>
         <div className={hasMedia ? "grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14 items-center" : undefined}>
 
-          {/* Left: video (cardholders) or static image (wallets/bags) — omitted entirely
+          {/* Left: video (cardholders) or static image (wallets/bags) - omitted entirely
               when neither is set, rather than standing in a generic photo */}
           {hasMedia && (
             <div className="relative aspect-square overflow-hidden">
@@ -88,7 +88,7 @@ export function LeatherDescription({ videoSrc, crocodileSpecies, isBag, image }:
             </div>
           )}
 
-          {/* Bullets — right of the media on desktop when media exists (below it on
+          {/* Bullets - right of the media on desktop when media exists (below it on
               mobile), full width alone otherwise */}
           <div>
             <h3 className="font-serif text-xl text-charcoal mb-7 leading-snug">

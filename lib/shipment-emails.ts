@@ -1,5 +1,5 @@
 // Transactional shipment / uncollected-parcel emails (Resend). Plain, personal,
-// premium — designed to land in the inbox, not read as marketing. No caps for
+// premium - designed to land in the inbox, not read as marketing. No caps for
 // emphasis, no exclamation, no "buy". One CTA (own /track page), one logo.
 
 export interface ShipmentItem {
@@ -17,7 +17,7 @@ export interface ShipmentEmailData {
   currency: string;
   tracking: string;   // AWB
   trackUrl: string;   // own branded /track/{awb} page
-  officeName?: string; // Econt storageOfficeName — WHICH office holds the parcel (reminders)
+  officeName?: string; // Econt storageOfficeName - WHICH office holds the parcel (reminders)
 }
 
 export const shipmentSubjects = {
@@ -78,7 +78,7 @@ function refBlock(d: ShipmentEmailData, withTracking: boolean): string {
   </table>`;
 }
 
-// ── EMAIL 1 — shipped (trigger: Econt accepted, sendTime != null) ────────────
+// ── EMAIL 1 - shipped (trigger: Econt accepted, sendTime != null) ────────────
 export function buildShippedEmail(d: ShipmentEmailData): string {
   const itemRows = d.items
     .map(
@@ -111,24 +111,24 @@ export function buildShippedEmail(d: ShipmentEmailData): string {
   <p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7">Очаквано време на доставка: <strong style="color:#1a1a1a">1-2 работни дни</strong>.</p>`);
 }
 
-// ── EMAIL 2, CASE A — office delivery, waiting at final office ───────────────
+// ── EMAIL 2, CASE A - office delivery, waiting at final office ───────────────
 export function buildReminderOfficeEmail(d: ShipmentEmailData): string {
   const office = d.officeName ? ` ${d.officeName}` : "";
   return shell(d, "Пратката Ви очаква в офис на Еконт.", `
   <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Здравейте, ${d.firstName},</p>
   <p style="margin:0 0 16px;color:#666;font-size:14px;line-height:1.7">Вашата пратка от Lorenzo Ricci Ви очаква в офис на Еконт${office}. Съгласно условията на куриера, тя се съхранява до 7 дни от пристигането, след което се връща обратно към нас.</p>
-  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">Ако не успеете да я вземете в оставащите дни, пратката ще бъде върната и поръчката — анулирана.</p>
+  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">Ако не успеете да я вземете в оставащите дни, пратката ще бъде върната и поръчката - анулирана.</p>
   ${DIV}${refBlock(d, true)}${trackButton(d)}
   <p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7">Оставаме на разположение при въпроси на info@lorenzo-ricci.com. Ако вече сте получили пратката, моля не обръщайте внимание на това съобщение.</p>`);
 }
 
-// ── EMAIL 2, CASE B — door delivery, failed attempt → parked at office ───────
+// ── EMAIL 2, CASE B - door delivery, failed attempt → parked at office ───────
 export function buildReminderDoorEmail(d: ShipmentEmailData): string {
   const office = d.officeName ? ` ${d.officeName}` : "";
   return shell(d, "Пратката Ви вече очаква в офис на Еконт.", `
   <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Здравейте, ${d.firstName},</p>
   <p style="margin:0 0 16px;color:#666;font-size:14px;line-height:1.7">Опитахме да доставим Вашата пратка от Lorenzo Ricci на посочения адрес, но не успяхме да Ви открием. Пратката вече Ви очаква в офис на Еконт${office} и се съхранява до 7 дни, след което се връща обратно към нас.</p>
-  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">Ако не успеете да я вземете в оставащите дни, пратката ще бъде върната и поръчката — анулирана.</p>
+  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">Ако не успеете да я вземете в оставащите дни, пратката ще бъде върната и поръчката - анулирана.</p>
   ${DIV}${refBlock(d, true)}${trackButton(d)}
   <p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7">Оставаме на разположение при въпроси на info@lorenzo-ricci.com.</p>`);
 }

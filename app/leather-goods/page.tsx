@@ -91,7 +91,7 @@ export default function LeatherGoodsPage() {
 
         {/* ── Certificate strip ────────────────────────────────── */}
         {/* Page-wide strip under products of different species (Milano Avorio is a Nile
-            crocodile): no species, no permit number — each product's specs carry its
+            crocodile): no species, no permit number - each product's specs carry its
             own. No "Луксозна Опаковка" column: not every item ships in a gift box. */}
         <div className="mt-24 grid grid-cols-1 sm:grid-cols-3 gap-0 border border-border">
           {[
@@ -101,7 +101,7 @@ export default function LeatherGoodsPage() {
           ].map(({ title, sub }, i, all) => (
             <div
               key={title}
-              // Dividers between items only — the outer border already frames the last one.
+              // Dividers between items only - the outer border already frames the last one.
               className={`px-8 py-8 flex flex-col gap-2 border-border ${i < all.length - 1 ? "border-b sm:border-b-0 sm:border-r" : ""}`}
             >
               <div className="w-4 h-px bg-navy/40 mb-1" />
@@ -126,7 +126,7 @@ export default function LeatherGoodsPage() {
               {
                 q: "От каква кожа са изработени продуктите?",
                 // Page-wide answer: products here are of different species, so no species
-                // or permit number — both are in each product's own specs.
+                // or permit number - both are in each product's own specs.
                 a: "100% естествена крокодилска кожа. Видът е посочен в спецификациите на всеки продукт, а произходът е документиран със CITES сертификат.",
               },
               {

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { RecoverClient } from "./RecoverClient";
 
 export const metadata: Metadata = {
-  title: "Възстановяване на количка — Lorenzo Ricci",
+  title: "Възстановяване на количка - Lorenzo Ricci",
   robots: { index: false, follow: false },
 };
 

@@ -15,21 +15,21 @@ export default function ReturnsPage() {
       </div>
 
       <div className="max-w-3xl mx-auto px-5 sm:px-8 mt-12">
-        <PolicySection title="Законно право на отказ — 14 дни">
+        <PolicySection title="Законно право на отказ - 14 дни">
           <p>
             Съгласно европейското законодателство (Директива 2011/83/ЕС) имате право да се откажете от поръчката си{" "}
             <strong className="text-charcoal font-normal">в рамките на 14 дни</strong> от получаването, без да посочвате причина.
           </p>
           <p className="mt-3">
-            Това право важи за <strong className="text-charcoal font-normal">всички продукти</strong> — включително закупените на намаление или промоция. Достатъчно е да ни уведомите на{" "}
+            Това право важи за <strong className="text-charcoal font-normal">всички продукти</strong> - включително закупените на намаление или промоция. Достатъчно е да ни уведомите на{" "}
             <a href="mailto:info@lorenzo-ricci.com" className="text-navy hover:underline">info@lorenzo-ricci.com</a>. Възстановяваме заплатената сума, включително стандартната доставка, до 14 дни след като получим върнатия продукт.
           </p>
         </PolicySection>
 
-        <PolicySection title="Удължена замяна — 30 дни (за продукти на редовна цена)">
+        <PolicySection title="Удължена замяна - 30 дни (за продукти на редовна цена)">
           <p>
             Освен законното ви право, предлагаме доброволна{" "}
-            <strong className="text-charcoal font-normal">удължена 30-дневна политика за замяна</strong> на продукти, закупени на редовна цена — за да имате повече време за спокоен избор.
+            <strong className="text-charcoal font-normal">удължена 30-дневна политика за замяна</strong> на продукти, закупени на редовна цена - за да имате повече време за спокоен избор.
           </p>
           <p className="mt-3">
             За продукти на намаление или промоция се прилага стандартното{" "}
@@ -39,7 +39,7 @@ export default function ReturnsPage() {
 
         <PolicySection title="Дефектни продукти">
           <p>
-            Ако продукт е дефектен или не отговаря на описанието, имате право на замяна или възстановяване съгласно законовата гаранция за съответствие — <strong className="text-charcoal font-normal">независимо дали е закупен на редовна или намалена цена</strong> и независимо от горните срокове.
+            Ако продукт е дефектен или не отговаря на описанието, имате право на замяна или възстановяване съгласно законовата гаранция за съответствие - <strong className="text-charcoal font-normal">независимо дали е закупен на редовна или намалена цена</strong> и независимо от горните срокове.
           </p>
           <p>
             Отделно от законовите Ви права Lorenzo Ricci предоставя и <strong className="text-charcoal font-normal">търговска гаранция</strong>: 5 години за часовници и доживотна за бижута. Условията са описани в{" "}
@@ -52,7 +52,7 @@ export default function ReturnsPage() {
           <ul className="list-disc list-inside flex flex-col gap-2">
             <li>Продуктът трябва да е неносен и неизползван</li>
             <li>С оригиналните етикети и опаковка</li>
-            <li>При бижута и часовници — без следи от носене</li>
+            <li>При бижута и часовници - без следи от носене</li>
           </ul>
         </PolicySection>
 
@@ -68,7 +68,7 @@ export default function ReturnsPage() {
           <ol className="list-decimal list-inside flex flex-col gap-3">
             <li>Пишете на info@lorenzo-ricci.com с номера на поръчката</li>
             <li>Ще ви изпратим инструкции за връщане</li>
-            <li>След получаване и проверка — възстановяваме сумата или изпращаме замяна</li>
+            <li>След получаване и проверка - възстановяваме сумата или изпращаме замяна</li>
           </ol>
         </PolicySection>
 
@@ -86,7 +86,7 @@ export default function ReturnsPage() {
               info@lorenzo-ricci.com
             </a>
             <br />
-            Понеделник–Петък, 10:00–18:00 ч.
+            Понеделник-Петък, 10:00-18:00 ч.
           </p>
         </PolicySection>
       </div>

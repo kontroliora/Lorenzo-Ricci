@@ -156,13 +156,13 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Image strip — 64vw tall to hold the 1.1× center card */}
+        {/* Image strip - 64vw tall to hold the 1.1× center card */}
         <div className="relative" style={{ height: "64vw" }}>
           {watches.map((watch, i) => {
             const pos        = getPos(i);
             const isActive   = pos === 0;
             const isTeleport = teleporting === i;
-            // The lume shot by name, not by position — galleries differ per model.
+            // The lume shot by name, not by position - galleries differ per model.
             const nightImg   = watch.images.find((im) => /lume|noshten/i.test(im.src)) ?? watch.images[1] ?? watch.coverImage;
 
             const xShift = pos === 0 ? "0vw" : pos === -1 ? "-35vw" : "35vw";
@@ -215,7 +215,7 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
                       aria-label={`Виж ${watch.name}`}
                     />
                   )}
-                  {/* Day / Night toggle — visible only on active card */}
+                  {/* Day / Night toggle - visible only on active card */}
                   {isActive && (
                     <button
                       onClick={(e) => { e.stopPropagation(); setIsNight((v) => !v); }}
@@ -263,7 +263,7 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
           </Link>
         </div>
 
-        {/* Navigation — arrows + dots (no disabled state — infinite loop) */}
+        {/* Navigation - arrows + dots (no disabled state - infinite loop) */}
         <div className="flex items-center justify-center gap-5 mt-6">
           <button
             onClick={goPrev}

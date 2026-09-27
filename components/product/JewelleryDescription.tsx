@@ -57,7 +57,7 @@ function FeatureBlock({ imageSrc, imageAlt, tag, heading, body, reverse = false 
         />
       </div>
 
-      {/* Text column — full on desktop, body-only on mobile */}
+      {/* Text column - full on desktop, body-only on mobile */}
       <div
         className={`flex flex-col justify-center px-8 md:px-14 lg:px-20 py-8 md:py-20 bg-white ${
           reverse ? "md:order-1" : "md:order-2"
@@ -73,7 +73,7 @@ function FeatureBlock({ imageSrc, imageAlt, tag, heading, body, reverse = false 
           </h2>
           <div className="w-8 h-px bg-navy/20 mb-6" />
         </div>
-        {/* Body — always visible */}
+        {/* Body - always visible */}
         <p className="font-sans text-sm font-light text-ink-soft leading-[1.9] tracking-[0.02em] pb-10 md:pb-0">
           {body}
         </p>

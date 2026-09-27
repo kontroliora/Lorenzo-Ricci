@@ -15,7 +15,7 @@ export function MilanoAvorioFlagship({ product }: Props) {
   // ProductInfo). Sold out → the section STAYS, marked "Изчерпан" (owner's rule,
   // 2026-09-27: out-of-stock products stay listed, just not orderable). inStock:
   // false in lib/products.ts is the owner's off switch and counts as sold out too.
-  // (No early return any more — it also used to skip the useCountry() hook below.)
+  // (No early return any more - it also used to skip the useCountry() hook below.)
   const [soldOut, setSoldOut] = useState(false);
 
   useEffect(() => {

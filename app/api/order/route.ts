@@ -16,7 +16,7 @@ const qtyOf = (i: ItemPayload) => Math.max(1, Number(i.quantity ?? i.qty ?? 1));
 // Customer-facing message when an order can't be fully stocked.
 function stockErrorMessage(items: { name: string; available: number }[]): string {
   // Phrased so the adjective agrees with "брой/броя" (masculine), never the
-  // product name — otherwise gender would be wrong (колие→изчерпанО, гривна→изчерпанА).
+  // product name - otherwise gender would be wrong (колие→изчерпанО, гривна→изчерпанА).
   const parts = items.map((s) =>
     s.available <= 0
       ? `За ${s.name} вече няма наличност`
@@ -35,7 +35,7 @@ function buildAdminEmail(order: Record<string, unknown>, alertMessage?: string |
   // Generic manual-processing alert (e.g. the order failed to save to the DB).
   const alertBlock = alertMessage
     ? `<div style="background:#b91c1c;color:#fff;padding:18px 24px;border-radius:6px;margin-bottom:16px">
-        <p style="margin:0;font-size:18px;font-weight:700">⚠️ ВНИМАНИЕ — РЪЧНА ОБРАБОТКА</p>
+        <p style="margin:0;font-size:18px;font-weight:700">⚠️ ВНИМАНИЕ - РЪЧНА ОБРАБОТКА</p>
         <p style="margin:8px 0 0;font-size:13px;opacity:.9">${alertMessage}</p>
       </div>`
     : "";
@@ -258,7 +258,7 @@ function buildCustomerEmail(order: Record<string, unknown>): string {
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
-    console.warn("[Resend] RESEND_API_KEY not set — skipping email");
+    console.warn("[Resend] RESEND_API_KEY not set - skipping email");
     return null;
   }
   return new Resend(key);
@@ -327,7 +327,7 @@ async function sendCapiPurchase(
 ): Promise<void> {
   const token = process.env.META_CAPI_ACCESS_TOKEN;
   if (!token) {
-    console.warn("[CAPI] META_CAPI_ACCESS_TOKEN not set — skipping");
+    console.warn("[CAPI] META_CAPI_ACCESS_TOKEN not set - skipping");
     return;
   }
 
@@ -416,7 +416,7 @@ export async function POST(req: NextRequest) {
     const customerAddress = String(customer.email ?? "").trim();
     const customerName    = String(customer.name  ?? "");
 
-    // ── PRICE GUARD — the browser reports unit prices and totals; check them against
+    // ── PRICE GUARD - the browser reports unit prices and totals; check them against
     //    the catalog first, before anything with a side effect (no stock reserved, no
     //    emails, no DB row). A stale tab or a tampered request gets a 409 and reloads.
     //    The promo rate comes from the database, not the browser (read-only lookup), so
@@ -429,7 +429,7 @@ export async function POST(req: NextRequest) {
         const promo = await checkPromoCode(order.promoCode);
         promoRate = promo.valid ? promo.discount : null;
       } catch (e) {
-        console.error("[Order] promo lookup failed — capping at 10%:", e);
+        console.error("[Order] promo lookup failed - capping at 10%:", e);
         promoRate = 0.10;
       }
     }
@@ -442,21 +442,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── CATALOG GATES — a product switched off in lib/products.ts (inStock: false)
+    // ── CATALOG GATES - a product switched off in lib/products.ts (inStock: false)
     //    is never orderable, and a prepayment item can't use this cash-on-delivery
     //    checkout. Same position as the price guard: before any side effect.
     const gate = checkOrderable((order.items ?? []) as { slug?: unknown }[], getProductBySlug);
     if (!gate.ok) {
       const error = gate.code === "not_for_sale"
         ? stockErrorMessage(gate.names.map((name) => ({ name, available: 0 })))
-        : `${gate.names.join(", ")} се поръчва с предплащане — наложен платеж не е наличен. Свържете се с нас, за да уредим поръчката.`;
+        : `${gate.names.join(", ")} се поръчва с предплащане - наложен платеж не е наличен. Свържете се с нас, за да уредим поръчката.`;
       return NextResponse.json({ success: false, code: gate.code, error }, { status: 409 });
     }
 
-    // ── STOCK GUARD — final defence against overselling. Runs BEFORE emails and
+    // ── STOCK GUARD - final defence against overselling. Runs BEFORE emails and
     //    the DB insert, so an impossible order is never created. UNIFIED model:
     //    EVERY tracked item (watches, jewellery, leather) goes through the atomic
-    //    reserve_wallet_stock — it row-locks each slug, and if ANY item is short it
+    //    reserve_wallet_stock - it row-locks each slug, and if ANY item is short it
     //    decrements nothing and returns the shortfall. Fail-CLOSED: block on
     //    shortfall OR error, so we never oversell. Slugs absent from wallet_inventory
     //    are skipped by the RPC. (Was: watches on a fail-open KV read-check; unified
@@ -484,7 +484,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Send emails and await them — without await they are killed by Vercel before sending
+    // Send emails and await them - without await they are killed by Vercel before sending
     const subject = `✅ Нова поръчка - ${customerName}`;
 
     await Promise.allSettled([
@@ -496,7 +496,7 @@ export async function POST(req: NextRequest) {
       sendCapiPurchase(order, String(order.orderRef ?? ""), pricing.total, capiCtx),
     ]);
 
-    // 3. Save to Supabase. If this fails the order is NOT in the admin panel —
+    // 3. Save to Supabase. If this fails the order is NOT in the admin panel -
     //    the customer already saw success, so make failure LOUD (alert email)
     //    instead of silently swallowing it.
     try {
@@ -536,14 +536,14 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       console.error("[Supabase] Failed to save order:", reason);
-      // Order won't appear in the panel — send a distinct alert so it isn't lost.
+      // Order won't appear in the panel - send a distinct alert so it isn't lost.
       await sendAdminEmail(
-        `🚨 [НЕ Е ЗАПИСАНА В ПАНЕЛА] ${customerName} — ${String(order.orderRef ?? "")}`,
+        `🚨 [НЕ Е ЗАПИСАНА В ПАНЕЛА] ${customerName} - ${String(order.orderRef ?? "")}`,
         buildAdminEmail(order, `Поръчката НЕ се записа в базата (${reason}). Добави я РЪЧНО в панела.`),
       ).catch((e) => console.error("[Supabase] alert email also failed:", e));
     }
 
-    // 4. Mark cart session as converted (best-effort). Uses the service key —
+    // 4. Mark cart session as converted (best-effort). Uses the service key -
     //    anon can't UPDATE cart_sessions under RLS, so this silently no-op'd
     //    before and recovery emails kept going out after a purchase.
     const sessionId = order.sessionId as string | undefined;
@@ -557,7 +557,7 @@ export async function POST(req: NextRequest) {
       } catch { /* ignore */ }
     }
 
-    // 5. Mark promo code as used — atomic (best-effort)
+    // 5. Mark promo code as used - atomic (best-effort)
     const promoCode = order.promoCode as string | undefined;
     if (promoCode) {
       try {
@@ -571,7 +571,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Leather stock was already decremented atomically by the STOCK GUARD at
-    //    the top (reserve_wallet_stock) — nothing to do here. (Watches/jewellery
+    //    the top (reserve_wallet_stock) - nothing to do here. (Watches/jewellery
     //    follow the reservation model; this new order becomes the reservation.)
 
     return NextResponse.json({ success: true }, { status: 200 });

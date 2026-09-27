@@ -8,7 +8,7 @@ import type { CartItem } from "@/lib/types";
 
 // Recovery landing: reads the token from the abandoned-cart email link, pulls
 // the saved cart, rebuilds it from the live catalog, and drops the customer at
-// the checkout step — nothing to re-add.
+// the checkout step - nothing to re-add.
 export function RecoverClient() {
   const router      = useRouter();
   const params      = useSearchParams();
@@ -63,7 +63,7 @@ export function RecoverClient() {
         <>
           <p className="font-serif text-2xl text-white/90 mb-2">Количката не е налична</p>
           <p className="font-sans text-sm text-white/45 leading-relaxed max-w-xs mb-8">
-            Връзката е изтекла или поръчката вече е направена. Разгледайте отново — с удоволствие ще ви помогнем.
+            Връзката е изтекла или поръчката вече е направена. Разгледайте отново - с удоволствие ще ви помогнем.
           </p>
           <Link href="/" className="btn-outline">Към магазина</Link>
         </>

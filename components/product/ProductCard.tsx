@@ -20,7 +20,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
   const [isNight, setIsNight] = useState(false);
   const { addItem } = useCartStore();
 
-  // Live availability — a product at 0 available is shown sold-out in the grid,
+  // Live availability - a product at 0 available is shown sold-out in the grid,
   // automatically, for every category (matches /api/stock = the panel's "Налични").
   const [soldOut, setSoldOut] = useState(false);
   useEffect(() => {
@@ -31,7 +31,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
       .catch(() => {});
     return () => { cancelled = true; };
   }, [product.slug]);
-  // inStock: false in lib/products.ts is the owner's off switch — sold out regardless of count.
+  // inStock: false in lib/products.ts is the owner's off switch - sold out regardless of count.
   const isSoldOut = soldOut || !product.inStock;
 
   const isWatch = product.category === "watches";
@@ -163,7 +163,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
           >
             {learnMore ? (
               // Not a <Link>: this sits inside the outer image <Link> above, and an
-              // <a> can't nest inside another <a> (invalid HTML — was breaking
+              // <a> can't nest inside another <a> (invalid HTML - was breaking
               // hydration on every page that renders this card). Same destination,
               // so the outer Link already handles the click.
               <span className="block w-full text-center font-sans text-xs font-medium tracking-[0.22em] uppercase text-white/80 hover:text-white transition-colors duration-200">
@@ -182,7 +182,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
           </div>
         )}
 
-        {/* Sold-out overlay — live available === 0, or switched off in lib/products.ts */}
+        {/* Sold-out overlay - live available === 0, or switched off in lib/products.ts */}
         {isSoldOut && (
           <div className="absolute inset-0 z-[15] flex items-center justify-center bg-ivory/25">
             <span className="font-sans text-[10px] tracking-[0.22em] uppercase bg-charcoal/90 text-white px-3 py-1.5">

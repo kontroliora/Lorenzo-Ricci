@@ -14,7 +14,7 @@ const SHIPPING_OPTIONS = [
 
 const FREE_SHIPPING_THRESHOLD = 60;
 
-// Same contact as the product-page Viber fallback (ProductInfo.tsx) — kept as a
+// Same contact as the product-page Viber fallback (ProductInfo.tsx) - kept as a
 // local literal here since prepayment orders are an interim, manual-only path.
 const PREPAYMENT_VIBER_LINK = "viber://chat?number=%2B359888081811";
 const PREPAYMENT_PHONE = "+359 888 081 811";
@@ -27,7 +27,7 @@ interface CheckoutFormProps {
   total: number; // after bundle + promo discounts
   promoCode?: string;
   promoDiscount?: number;
-  promoRate?: number; // fraction of the applied code — for the "-X%" label (10% / 5%)
+  promoRate?: number; // fraction of the applied code - for the "-X%" label (10% / 5%)
   onSuccess: () => void;
 }
 
@@ -35,7 +35,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   const { clearCart } = useCartStore();
   const { totalDiscount, active: activeBundles } = calcBundleDiscount(items);
 
-  // €1500+ items: cash-on-delivery is not offered — no card/PSP integration exists
+  // €1500+ items: cash-on-delivery is not offered - no card/PSP integration exists
   // yet, so the honest interim behaviour is to block normal checkout and route the
   // customer to arrange payment directly, rather than show a non-functional
   // "pay by card" control. Replace this block once a real prepayment flow exists.
@@ -83,7 +83,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   }));
 
   // Phone-first capture: fires as soon as phone has ≥10 digits, even before email.
-  // Captured regardless of consent — the customer's real consent value is sent
+  // Captured regardless of consent - the customer's real consent value is sent
   // along and stored; the send policy is decided server-side.
   useEffect(() => {
     if (form.phone.replace(/\D/g, "").length < 10) return;
@@ -109,7 +109,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.phone, form.emailMarketingConsent, form.name, items, total]);
 
-  // Email capture: fires the moment the email looks valid — even if the customer
+  // Email capture: fires the moment the email looks valid - even if the customer
   // hasn't ticked consent or pressed submit. Adds email (+ phone if known).
   useEffect(() => {
     if (!form.email.includes("@")) return;
@@ -241,7 +241,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     setSubmitted(true);
     clearCart();
 
-    // Fire Purchase event exactly once — eventID=ref deduplicates with CAPI server event
+    // Fire Purchase event exactly once - eventID=ref deduplicates with CAPI server event
     if (!purchaseFired.current) {
       purchaseFired.current = true;
       trackFbEvent("Purchase", {
@@ -512,7 +512,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       {needsPrepayment ? (
         <div className="flex flex-col gap-3 border border-white/15 bg-white/[0.03] px-5 py-5 text-center">
           <p className="font-sans text-xs text-white/70 leading-relaxed">
-            Продукти на цена от €{PREPAYMENT_THRESHOLD_EUR} нагоре се поръчват с предплащане и се уреждат директно с нас —
+            Продукти на цена от €{PREPAYMENT_THRESHOLD_EUR} нагоре се поръчват с предплащане и се уреждат директно с нас -
             наложен платеж не е наличен за тази поръчка.
           </p>
           <a

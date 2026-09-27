@@ -64,7 +64,7 @@ export default async function RootLayout({
 }) {
   // Detected country (Vercel edge header, or the x_geo test cookie) drives geo
   // display like AED pricing. Reading it opts the tree into per-request rendering.
-  // Site is Bulgarian-only (EN/RO removed 2026-09-27) — the language switcher and
+  // Site is Bulgarian-only (EN/RO removed 2026-09-27) - the language switcher and
   // lib/i18n/* are dormant, kept only in case multi-language comes back.
   const country = await resolveCountry();
   return (

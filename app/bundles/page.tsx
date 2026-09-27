@@ -13,7 +13,7 @@ export default function BundlesPage() {
   const bundles = BUNDLES.flatMap((bundle) => {
     const productA = getProductBySlug(bundle.slots[0][0]);
     const productB = getProductBySlug(bundle.slots[1][0]);
-    // A set with a sale item earns no set discount (no stacking) — don't advertise it.
+    // A set with a sale item earns no set discount (no stacking) - don't advertise it.
     if (!productA || !productB || bundleHasSaleItem(bundle, getProductBySlug)) return [];
     return [{ id: bundle.id, label: bundle.label, productA, productB, discountPct: bundle.discountPct }];
   });

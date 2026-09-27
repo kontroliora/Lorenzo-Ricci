@@ -22,7 +22,7 @@ export function buildRecoveryEmail(session: RecoverySession): string {
   const rawName   = session.name?.trim() ?? "";
   const firstName = rawName ? rawName.split(" ")[0] : "";
 
-  // Tokenised restore link — the token IS the (random UUID) session_id. Clicking
+  // Tokenised restore link - the token IS the (random UUID) session_id. Clicking
   // it repopulates the cart and drops the customer straight at checkout.
   const recoverUrl = `https://www.lorenzo-ricci.com/vazstanovi?t=${encodeURIComponent(session.session_id)}`;
 

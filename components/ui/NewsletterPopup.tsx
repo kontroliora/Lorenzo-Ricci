@@ -147,7 +147,7 @@ export function NewsletterPopup() {
               <div className="flex-1 h-px bg-white/8" />
             </div>
 
-            {/* Code box — click to copy */}
+            {/* Code box - click to copy */}
             <button
               onClick={handleCopy}
               className="w-full group"
@@ -163,7 +163,7 @@ export function NewsletterPopup() {
               </div>
             </button>
 
-            {/* Validity / status — directly under the code */}
+            {/* Validity / status - directly under the code */}
             <p className={`font-sans text-[11px] tracking-wide -mt-1 ${
               codeUsed ? "text-amber-400/70" : isExpired ? "text-red-400/70" : "text-emerald-400/80"
             }`}>

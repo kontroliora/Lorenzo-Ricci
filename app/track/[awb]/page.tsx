@@ -15,7 +15,7 @@ function sofia(ms?: number): string {
 const NAVY = "#0a0e1f";
 
 function Shell({ children }: { children: React.ReactNode }) {
-  // No logo header here — the site layout's header already shows the brand.
+  // No logo header here - the site layout's header already shows the brand.
   // Just a clean title + gold rule + content, with breathing room below the
   // real header so nothing jams up.
   return (

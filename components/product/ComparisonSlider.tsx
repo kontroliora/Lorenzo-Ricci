@@ -48,7 +48,7 @@ export function ComparisonSlider() {
       onMouseDown={onMouseDown}
       onTouchStart={(e) => updatePos(e.touches[0].clientX)}
     >
-      {/* Right image — base layer */}
+      {/* Right image - base layer */}
       <Image
         src={RIGHT_IMG}
         alt="Стандартно позлатяване"
@@ -59,7 +59,7 @@ export function ComparisonSlider() {
         className="w-full h-auto block pointer-events-none"
       />
 
-      {/* Left image — clipped overlay */}
+      {/* Left image - clipped overlay */}
       <div
         className="absolute inset-0"
         style={{ clipPath: `polygon(0 0, ${pos}% 0, ${pos}% 100%, 0 100%)` }}
