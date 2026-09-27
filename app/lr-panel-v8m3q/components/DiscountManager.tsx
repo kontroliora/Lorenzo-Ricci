@@ -1,43 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
+import { products as staticProducts } from "@/lib/products";
 
 const VALID_DISCOUNTS = [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
 
-type Product = {
+type ProductRow = {
   id: string;
   name: string;
   price: number;
-  compare_at_price: number | null;
+  originalPrice?: number;
 };
 
 export default function DiscountManager() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductRow[]>(
+    staticProducts.map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      originalPrice: p.originalPrice,
+    }))
+  );
   const [discounts, setDiscounts] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
 
-  const supabase = createClient();
-
-  useEffect(() => {
-    async function fetchProducts() {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, name, price, compare_at_price")
-        .order("name");
-
-      if (error) {
-        console.error(error);
-      } else {
-        setProducts(data || []);
-      }
-      setLoading(false);
-    }
-    fetchProducts();
-  }, []);
-
-  async function applyDiscount(product: Product) {
+  function applyDiscount(product: ProductRow) {
     const pct = parseInt(discounts[product.id] || "");
 
     if (!VALID_DISCOUNTS.includes(pct)) {
@@ -52,32 +39,18 @@ export default function DiscountManager() {
       (product.price * (1 - pct / 100)).toFixed(2)
     );
 
-    const { error } = await supabase
-      .from("products")
-      .update({
-        compare_at_price: product.price,
-        price: newPrice,
-      })
-      .eq("id", product.id);
-
-    if (error) {
-      setStatus((s) => ({ ...s, [product.id]: `Error: ${error.message}` }));
-    } else {
-      setStatus((s) => ({
-        ...s,
-        [product.id]: `✓ ${product.price} → ${newPrice} (${pct}% off)`,
-      }));
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === product.id
-            ? { ...p, compare_at_price: product.price, price: newPrice }
-            : p
-        )
-      );
-    }
+    setStatus((s) => ({
+      ...s,
+      [product.id]: `✓ ${product.price} → ${newPrice} (${pct}% off) — update lib/products.ts to persist`,
+    }));
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === product.id
+          ? { ...p, originalPrice: product.price, price: newPrice }
+          : p
+      )
+    );
   }
-
-  if (loading) return <p className="p-4 text-sm text-gray-500">Loading products...</p>;
 
   return (
     <div className="p-6 space-y-2">
@@ -96,8 +69,8 @@ export default function DiscountManager() {
               <p className="font-medium text-sm truncate">{product.name}</p>
               <p className="text-xs text-gray-500">
                 Current: {product.price}{" "}
-                {product.compare_at_price
-                  ? `| Original: ${product.compare_at_price}`
+                {product.originalPrice
+                  ? `| Original: ${product.originalPrice}`
                   : ""}
               </p>
             </div>
