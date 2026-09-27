@@ -32,7 +32,7 @@ export default async function WatchesPage() {
           <h1 className="font-serif text-display-lg text-white mb-5">Часовници</h1>
           <div className="w-10 h-px bg-white/25 mx-auto my-5" />
           <p className="font-sans text-xs font-light text-white/50 max-w-md mx-auto leading-relaxed tracking-widest uppercase">
-            Сапфирен кристал · Японски механизъм · 5 ATM · 2г Гаранция
+            Сапфирен кристал · Японски механизъм · 5 ATM · 5 г. търговска гаранция
           </p>
         </div>
       </div>
@@ -76,7 +76,7 @@ export default async function WatchesPage() {
               Частично скелетизираните циферблати разкриват прецизността отвътре, докато многофункционалните хронографи позволяват отчитане на времето с точност и стил.
             </p>
             <p className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide">
-              Всеки модел е придружен от 2-годишна гаранция на механизма и е доставен в премиум кутия - готов за подаряване или за вас.
+              Всеки модел е придружен от 5-годишна търговска гаранция на механизма и е доставен в премиум кутия - готов за подаряване или за вас.
             </p>
           </div>
           <div className="flex flex-col gap-6">

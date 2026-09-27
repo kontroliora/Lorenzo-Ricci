@@ -214,7 +214,7 @@ function buildCustomerEmail(order: Record<string, unknown>): string {
                   <td align="center" style="padding:0 8px;font-size:12px;color:#666;line-height:1.5">
                     <p style="margin:0 0 4px;font-size:18px">🛡</p>
                     <strong style="display:block;color:#0a0e1f;font-size:11px;letter-spacing:.1em;text-transform:uppercase">Гаранция</strong>
-                    <span style="font-size:12px">Доживотна за бижута · 2г. за часовници</span>
+                    <span style="font-size:12px">Доживотна за бижута · 5 г. търговска за часовници и кожени изделия</span>
                   </td>
                   <td align="center" style="padding:0 8px;font-size:12px;color:#666;line-height:1.5">
                     <p style="margin:0 0 4px;font-size:18px">📦</p>

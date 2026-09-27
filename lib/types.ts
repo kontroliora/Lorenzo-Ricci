@@ -49,7 +49,7 @@ export interface Product {
   inStock: boolean;
   stock?: number;
   warranty: string;
-  commercial_warranty_text?: string; // optional voluntary/commercial warranty copy, beyond the 2-year statutory minimum — empty until provided
+  commercial_warranty_text?: string; // optional extra commercial-warranty copy per product — unused; the site-wide 5-year commercial guarantee lives in the `warranty` string
   descriptionImages?: ProductImage[];
   descriptionVideo?: string;
   quoteVideo?: string;

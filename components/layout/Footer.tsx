@@ -71,7 +71,7 @@ export function Footer() {
         {/* Trust badges */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 py-10 border-y border-border mb-8">
           {([
-            { title: "2г Гаранция",         sub: "на часовниците" },
+            { title: "5 г. търговска гаранция", sub: "часовници и кожени изделия" },
             { title: "Доживотна гаранция",  sub: "на бижутата" },
             { title: "До 2 работни дни",    sub: "Еконт" },
             { title: "Преглед преди плащане", sub: "Наложен платеж" },

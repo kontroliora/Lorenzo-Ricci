@@ -41,7 +41,7 @@ export function FeaturedWatches() {
           <div className="grid grid-cols-3 gap-0 text-center divide-x divide-border">
             {[
               { label: "Безплатна доставка", sub: "За поръчки над €60" },
-              { label: "2 Години Гаранция",  sub: "На всеки механизъм" },
+              { label: "5 Години Гаранция",  sub: "Търговска · на всеки механизъм" },
               { label: "Преглед преди плащане", sub: "Наложен платеж" },
             ].map(({ label, sub }) => (
               <div key={label} className="px-2 sm:px-6 py-2">

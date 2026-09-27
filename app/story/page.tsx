@@ -144,7 +144,7 @@ export default function StoryPage() {
           <h2 className="font-serif text-display-sm mb-6" style={{color: "#ffffff"}}>Непоколебима Увереност</h2>
           <div className="w-12 h-px mx-auto mb-8" style={{backgroundColor: "rgba(255,255,255,0.3)"}} />
           <p className="font-sans text-sm font-light leading-relaxed max-w-2xl mx-auto mb-6" style={{color: "rgba(255,255,255,0.8)"}}>
-            Ние заставаме зад качеството на нашите часовници и бижута с пълна увереност. Всеки модел е свидетелство за отдадеността ни към съвършенството - 2 години гаранция на механизмите, доживотна гаранция на бижутата.
+            Ние заставаме зад качеството на нашите часовници и бижута с пълна увереност. Всеки модел е свидетелство за отдадеността ни към съвършенството - 5 години търговска гаранция на механизмите, доживотна гаранция на бижутата.
           </p>
           <p className="font-sans text-sm font-light leading-relaxed max-w-xl mx-auto" style={{color: "rgba(255,255,255,0.6)"}}>
             Присъединете се към общността, която празнува елегантните, прецизно изработени часовници.
@@ -153,7 +153,7 @@ export default function StoryPage() {
           {/* Trust badges */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-12 max-w-2xl mx-auto">
             {[
-              { label: "2г. Гаранция", sub: "На механизма" },
+              { label: "5 г. Гаранция", sub: "Търговска, на механизма" },
               { label: "Доживотна", sub: "На бижутата" },
               { label: "4.8 ★", sub: "1000+ ревюта" },
               { label: "30 дни", sub: "Лесна замяна" },

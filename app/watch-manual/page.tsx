@@ -126,7 +126,7 @@ export default function WatchManualPage() {
 
         <Section number="6" title="Гаранция">
           <p className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide mb-4">
-            Всеки часовник Lorenzo Ricci се предлага с <strong className="text-charcoal font-normal">2 години гаранция на механизма</strong>
+            Всеки часовник Lorenzo Ricci се предлага с <strong className="text-charcoal font-normal">5 години търговска гаранция на механизма</strong>
             {" "}от датата на покупката. Гаранцията покрива производствени дефекти и дефекти на механизма.
           </p>
           <p className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide mb-4">
