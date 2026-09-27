@@ -2,6 +2,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import type { ProductCategory } from "@/lib/types";
+import { applyProductDiscount } from "./actions";
 
 export type InventoryRow = {
   slug: string;
@@ -15,6 +16,8 @@ export type InventoryRow = {
   available: number;  // = stock (unified decrement model)
   tracked: boolean;   // false → no wallet_inventory row → checkout sells it with no cap
   forSale: boolean;   // lib/products.ts inStock — false = owner's off switch
+  price: number;
+  originalPrice?: number;
 };
 
 const CATEGORY_LABELS: Record<ProductCategory, string> = {
@@ -26,6 +29,8 @@ const CATEGORY_LABELS: Record<ProductCategory, string> = {
 };
 
 const CATEGORY_ORDER: ProductCategory[] = ["watches", "jewellery", "wallets", "cardholders", "bags"];
+
+const VALID_DISCOUNTS = new Set([10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]);
 
 function StockDot({ qty }: { qty: number }) {
   const color =
@@ -44,6 +49,14 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
     Object.fromEntries(rows.map((r) => [r.slug, r.tracked]))
   );
 
+  // Discount state
+  const [discountPct, setDiscountPct] = useState<Record<string, string>>({});
+  const [discounting, setDiscounting] = useState<Record<string, boolean>>({});
+  const [discountMsg, setDiscountMsg] = useState<Record<string, string>>({});
+  const [prices, setPrices] = useState<Record<string, { price: number; originalPrice?: number }>>(
+    Object.fromEntries(rows.map((r) => [r.slug, { price: r.price, originalPrice: r.originalPrice }]))
+  );
+
   const handleSave = async (slug: string) => {
     setSaving((s) => ({ ...s, [slug]: true }));
     setErrors((e) => ({ ...e, [slug]: "" }));
@@ -55,12 +68,34 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
       });
       if (!res.ok) throw new Error("Failed");
       setSaved((s) => ({ ...s, [slug]: true }));
-      setTracked((t) => ({ ...t, [slug]: true })); // saving creates the row (upsert)
+      setTracked((t) => ({ ...t, [slug]: true }));
       setTimeout(() => setSaved((s) => ({ ...s, [slug]: false })), 2500);
     } catch {
       setErrors((e) => ({ ...e, [slug]: "Грешка при запис" }));
     }
     setSaving((s) => ({ ...s, [slug]: false }));
+  };
+
+  const handleDiscount = async (slug: string) => {
+    const pct = parseInt(discountPct[slug] ?? "");
+    if (!VALID_DISCOUNTS.has(pct)) {
+      setDiscountMsg((m) => ({ ...m, [slug]: "10–70, стъпка 5" }));
+      return;
+    }
+    setDiscounting((d) => ({ ...d, [slug]: true }));
+    setDiscountMsg((m) => ({ ...m, [slug]: "" }));
+    const result = await applyProductDiscount(slug, pct);
+    if (result.ok) {
+      setPrices((p) => ({ ...p, [slug]: { price: result.newPrice, originalPrice: result.originalPrice } }));
+      setDiscountMsg((m) => ({
+        ...m,
+        [slug]: `✓ €${result.originalPrice} → €${result.newPrice}`,
+      }));
+      setDiscountPct((d) => ({ ...d, [slug]: "" }));
+    } else {
+      setDiscountMsg((m) => ({ ...m, [slug]: result.error }));
+    }
+    setDiscounting((d) => ({ ...d, [slug]: false }));
   };
 
   const groupedRows = CATEGORY_ORDER.map((cat) => ({
@@ -89,9 +124,8 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
             {items.map((row) => {
               const qty = stocks[row.slug] ?? 0;
               const reserved = row.reserved ?? 0;
-              // Unified model: the saved number IS what's free to sell — open orders
-              // are already out of it, so they're shown but not subtracted again.
               const available = qty;
+              const rowPrice = prices[row.slug];
               return (
                 <div
                   key={row.slug}
@@ -108,12 +142,18 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                     />
                   </div>
 
-                  {/* Name + SKU */}
+                  {/* Name + SKU + price */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white truncate" style={{ fontFamily: "Georgia, serif" }}>
                       {row.name}
                     </p>
                     <p className="font-mono text-[10px] text-white/30 mt-0.5">{row.sku}</p>
+                    <p className="font-sans text-[10px] text-white/40 mt-0.5">
+                      €{rowPrice?.price}
+                      {rowPrice?.originalPrice ? (
+                        <span className="line-through text-white/20 ml-1">€{rowPrice.originalPrice}</span>
+                      ) : null}
+                    </p>
                     {!tracked[row.slug] && (
                       <p className="font-sans text-[10px] text-red-400 mt-0.5">
                         Без запис в базата — продава се без ограничение. Запазете число.
@@ -121,21 +161,21 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                     )}
                     {!row.forSale && (
                       <p className="font-sans text-[10px] text-amber-400/90 mt-0.5">
-                        Спрян от продажба (lib/products.ts) — сайтът показва „Изчерпан“
+                        Спрян от продажба (lib/products.ts) — сайтът показва „Изчерпан"
                       </p>
                     )}
                   </div>
 
-                  {/* Reserved (info — already out of the count) + Available (= the saved count) */}
+                  {/* Reserved + Available */}
                   <div className="flex flex-col items-end flex-shrink-0 leading-tight w-16">
                     <span className="font-sans text-[10px] text-white/30">Резерв. <span className="text-amber-300/80">{reserved}</span></span>
                     <span className="font-sans text-[10px] text-white/30">Нал. <span className={available === 0 ? "text-red-400" : available <= 5 ? "text-amber-400" : "text-emerald-400"}>{available}</span></span>
                   </div>
 
-                  {/* Stock dot (by available) */}
+                  {/* Stock dot */}
                   <StockDot qty={available} />
 
-                  {/* Free-to-sell count (wallet_inventory) — what checkout reserves against */}
+                  {/* Stock input */}
                   <input
                     type="number"
                     min={0}
@@ -147,7 +187,7 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                         [row.slug]: Math.max(0, parseInt(e.target.value) || 0),
                       }))
                     }
-                    title="Налични за продажба (свободни, без бройките в отворени поръчки)"
+                    title="Налични за продажба"
                     className="w-16 sm:w-20 bg-white/5 border border-white/15 px-2 py-2 text-white text-sm text-center focus:outline-none focus:border-white/40 transition-colors font-sans"
                   />
 
@@ -164,10 +204,38 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                     {saving[row.slug] ? "..." : saved[row.slug] ? "✓ Запазено" : "Запази"}
                   </button>
 
-                  {/* Inline error */}
                   {errors[row.slug] && (
                     <p className="text-red-400 text-[10px] font-sans flex-shrink-0">
                       {errors[row.slug]}
+                    </p>
+                  )}
+
+                  {/* Discount controls */}
+                  <div className="flex items-center gap-1.5 border-l border-white/10 pl-3 flex-shrink-0">
+                    <input
+                      type="number"
+                      min={10}
+                      max={70}
+                      step={5}
+                      placeholder="%"
+                      value={discountPct[row.slug] ?? ""}
+                      onChange={(e) =>
+                        setDiscountPct((d) => ({ ...d, [row.slug]: e.target.value }))
+                      }
+                      className="w-12 bg-white/5 border border-white/15 px-2 py-2 text-white text-sm text-center focus:outline-none focus:border-white/40 transition-colors font-sans"
+                    />
+                    <button
+                      onClick={() => handleDiscount(row.slug)}
+                      disabled={discounting[row.slug]}
+                      className="flex-shrink-0 px-3 py-2 text-[10px] font-sans tracking-[0.15em] uppercase bg-white/8 text-white/60 hover:bg-white/15 hover:text-white border border-white/12 transition-colors disabled:opacity-40"
+                    >
+                      {discounting[row.slug] ? "..." : "−%"}
+                    </button>
+                  </div>
+
+                  {discountMsg[row.slug] && (
+                    <p className={`text-[10px] font-sans flex-shrink-0 ${discountMsg[row.slug].startsWith("✓") ? "text-emerald-400" : "text-red-400"}`}>
+                      {discountMsg[row.slug]}
                     </p>
                   )}
                 </div>

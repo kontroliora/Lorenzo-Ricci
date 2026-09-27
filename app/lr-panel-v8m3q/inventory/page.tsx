@@ -24,17 +24,19 @@ export default async function AdminInventoryPage() {
   const rows: InventoryRow[] = products.map((p) => {
     const stock = dbStock.get(p.slug) ?? 0;
     return {
-      slug:      p.slug,
-      name:      p.name,
-      sku:       p.sku,
-      category:  p.category,
-      coverSrc:  p.coverImage.src,
-      coverAlt:  p.coverImage.alt,
+      slug:          p.slug,
+      name:          p.name,
+      sku:           p.sku,
+      category:      p.category,
+      coverSrc:      p.coverImage.src,
+      coverAlt:      p.coverImage.alt,
       stock,
-      reserved:  reserved[p.slug] ?? 0,
-      available: stock,
-      tracked:   dbStock.has(p.slug),
-      forSale:   p.inStock,
+      reserved:      reserved[p.slug] ?? 0,
+      available:     stock,
+      tracked:       dbStock.has(p.slug),
+      forSale:       p.inStock,
+      price:         p.price,
+      originalPrice: p.originalPrice,
     };
   });
 
