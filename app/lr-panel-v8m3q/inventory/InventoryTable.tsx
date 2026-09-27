@@ -223,17 +223,11 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                         }
                         className="w-12 bg-white/5 border border-white/15 px-2 py-2 text-white text-sm text-center focus:outline-none focus:border-white/40 transition-colors font-sans"
                       />
-                      {(() => {
-                        const pct = parseInt(discountPct[row.slug] ?? "");
-                        const currentPrice = rowPrice?.price;
-                        if (!VALID_DISCOUNTS.has(pct) || currentPrice == null) return null;
-                        const preview = parseFloat((currentPrice * (1 - pct / 100)).toFixed(2));
-                        return (
-                          <p className="font-sans text-[9px] text-white/40 whitespace-nowrap">
-                            €{currentPrice} → €{preview}
-                          </p>
-                        );
-                      })()}
+                      {VALID_DISCOUNTS.has(parseInt(discountPct[row.slug] ?? "")) && rowPrice != null && (
+                        <p className="font-sans text-[9px] text-white/55 whitespace-nowrap">
+                          €{rowPrice.price} → €{parseFloat((rowPrice.price * (1 - parseInt(discountPct[row.slug]) / 100)).toFixed(2))}
+                        </p>
+                      )}
                     </div>
                     <button
                       onClick={() => handleDiscount(row.slug)}
