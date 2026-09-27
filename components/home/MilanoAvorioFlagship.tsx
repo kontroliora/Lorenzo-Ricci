@@ -35,8 +35,13 @@ export function MilanoAvorioFlagship({ product }: Props) {
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
-          {/* Image first on mobile (source order), left on desktop */}
-          <div className={`relative aspect-square lg:aspect-[4/5] bg-white border border-border overflow-hidden ${isSoldOut ? "grayscale" : ""}`}>
+          {/* Image first on mobile (source order), left on desktop. The whole image
+              is a link to the product, not just the text button below. */}
+          <Link
+            href={`/products/${product.slug}`}
+            aria-label={`Виж ${product.name}`}
+            className={`relative block aspect-square lg:aspect-[4/5] bg-white border border-border overflow-hidden ${isSoldOut ? "grayscale" : ""}`}
+          >
             <Image
               src={product.coverImage.src}
               alt={product.coverImage.alt}
@@ -44,9 +49,9 @@ export function MilanoAvorioFlagship({ product }: Props) {
               loading="lazy"
               quality={85}
               sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-contain object-center p-8 lg:p-12"
+              className="object-contain object-center p-8 lg:p-12 transition-transform duration-500 hover:scale-[1.03]"
             />
-          </div>
+          </Link>
 
           {/* Text */}
           <div>
@@ -57,7 +62,9 @@ export function MilanoAvorioFlagship({ product }: Props) {
             )}
             <p className="section-tag mb-4">Lorenzo Ricci</p>
             <h2 className="font-serif text-display-md text-charcoal leading-tight mb-5">
-              {product.name}
+              <Link href={`/products/${product.slug}`} className="hover:text-navy transition-colors duration-300">
+                {product.name}
+              </Link>
             </h2>
             <p className="font-sans text-sm font-light text-ink-muted leading-relaxed tracking-wide mb-8 max-w-sm">
               {product.shortDescription}
