@@ -1,11 +1,12 @@
 "use client";
 import { createContext, useContext, type ReactNode } from "react";
 
-// Detected visitor country (ISO-2, e.g. "AE"/"BG"), sourced server-side from the
-// x-vercel-ip-country header in the root layout and provided to client components.
-// Drives geo display like AED pricing — NOT the same as the chosen display locale.
-// null when unknown (local dev, or the header is absent).
-const CountryContext = createContext<string | null>(null);
+// The store sells to Bulgaria only (Dubai/AED and EN/RO are gone), so the visitor
+// country is a constant. The root layout no longer reads the geo header, which
+// lets every storefront page be rendered once at build time and served from the
+// edge instead of on every request. The provider stays so any later market test
+// can override the value for a subtree without touching the consumers.
+const CountryContext = createContext<string | null>("BG");
 
 export function CountryProvider({ country, children }: { country: string | null; children: ReactNode }) {
   return <CountryContext.Provider value={country}>{children}</CountryContext.Provider>;

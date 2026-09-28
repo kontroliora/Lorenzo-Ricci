@@ -20,8 +20,6 @@ const inter = Inter({
   variable: "--font-jost",
   display: "swap",
 });
-import { CountryProvider } from "@/lib/country";
-import { resolveCountry } from "@/lib/geo";
 import { Header } from "@/components/layout/Header";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Footer } from "@/components/layout/Footer";
@@ -82,16 +80,14 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Detected country (Vercel edge header, or the x_geo test cookie) drives geo
-  // display like AED pricing. Reading it opts the tree into per-request rendering.
-  // Site is Bulgarian-only (EN/RO removed 2026-09-27) - the language switcher and
-  // lib/i18n/* are dormant, kept only in case multi-language comes back.
-  const country = await resolveCountry();
+  // Bulgaria-only store: no geo header or locale is read here any more (Dubai/AED
+  // and EN/RO are gone), so nothing opts the tree into per-request rendering and
+  // the storefront pages are built once and served from the edge. lib/i18n/* and
+  // lib/geo.ts stay dormant in case a market test comes back.
   return (
     <html lang="bg" className={`scroll-smooth ${playfair.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="bg-ivory text-charcoal antialiased">
         <MetaPixel />
-        <CountryProvider country={country}>
         <ThemeProvider>
           <HideOnAdmin>
             <AnnouncementBar />
@@ -104,18 +100,12 @@ export default async function RootLayout({
             <HideOnTrack>
               <HideOnCart>
                 <SalesNotification />
-                {/* 10% newsletter popup is a BG-market offer. Gated on the DETECTED
-                    country, not the chosen language: a Bulgarian browsing in English
-                    still sees it; a genuine foreign visitor never does, so they can't
-                    hit a 10% code that clashes with the 5% waitlist gesture. Unknown
-                    country (local dev / missing edge header) is treated as BG so the
-                    existing experience never silently disappears at home. */}
-                {(country === "BG" || !country) && <NewsletterPopup />}
+                {/* 10% newsletter popup: shown to everyone (Bulgaria-only store). */}
+                <NewsletterPopup />
               </HideOnCart>
             </HideOnTrack>
           </HideOnAdmin>
         </ThemeProvider>
-        </CountryProvider>
       </body>
     </html>
   );

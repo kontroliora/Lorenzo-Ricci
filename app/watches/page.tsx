@@ -3,7 +3,6 @@ import Image from "next/image";
 import { getWatches } from "@/lib/products";
 import { ProductCard } from "@/components/product/ProductCard";
 import { displayPrice } from "@/lib/price";
-import { resolveCountry } from "@/lib/geo";
 
 // Price wording comes from the catalog so it can never drift from the real prices.
 const watchPrices = getWatches().map((w) => w.price);
@@ -20,7 +19,7 @@ export const metadata: Metadata = {
 
 export default async function WatchesPage() {
   const watches = getWatches();
-  const country = await resolveCountry();
+  const country = "BG"; // Bulgaria-only store; no per-request geo lookup (keeps the page static)
 
   return (
     <div className="min-h-screen pt-[116px] pb-24">
