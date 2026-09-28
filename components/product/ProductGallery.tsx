@@ -85,7 +85,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
             // bandwidth on 4G. The rest load normally behind it.
             priority={i === 0}
             fetchPriority={i === 0 ? "high" : undefined}
-            quality={90}
+            quality={80}
             sizes="(max-width: 640px) 100vw, 60vw"
             className={`object-contain object-center transition-opacity duration-150 ${
               i === activeIdx ? "opacity-100" : "opacity-0"
