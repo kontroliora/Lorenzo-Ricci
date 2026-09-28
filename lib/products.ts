@@ -222,9 +222,9 @@ export const products: Product[] = [
     sku: "LR-MIDNIGHT-ECL",
     name: "Golden Eclipse",
     category: "watches",
-    // Autumn sale 2026-09-28 (owner): €299 → €175. originalPrice = €299 (price since 21.09.2026; owner accepts EU Omnibus risk).
+    // Autumn sale 2026-09-28 (owner): €299 → €175; shown reference = €279 (owner's choice, accepts EU Omnibus risk).
     price: 175,
-    originalPrice: 299,
+    originalPrice: 279,
     currency: "€",
     badge: "ЕСЕННО НАМАЛЕНИЕ",
     inStock: true,
