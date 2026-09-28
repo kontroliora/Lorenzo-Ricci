@@ -28,9 +28,10 @@ export interface Product {
 
   description: string;
   tabDescription?: string[];   // multi-paragraph "ОПИСАНИЕ" tab copy; falls back to `description`
-  descriptionSections?: { heading: string; body: string }[]; // quiet-heading prose sections for
-  // the "ОПИСАНИЕ" tab — takes precedence over tabDescription, which takes precedence over
-  // `description`. See ProductInfo.tsx.
+  descriptionSections?: { heading: string; body: string | string[] }[]; // quiet-heading prose
+  // sections for the "ОПИСАНИЕ" tab — takes precedence over tabDescription, which takes
+  // precedence over `description`. `body` as string[] renders one paragraph per entry; each
+  // paragraph supports **bold** spans. See ProductInfo.tsx.
   materialNote?: string;
   crocodileSpecies?: string; // e.g. "нилски крокодил (Crocodylus niloticus)" — set ONLY once confirmed
   // from that product's own CITES permit. Leave unset otherwise; components must
@@ -40,6 +41,9 @@ export interface Product {
   // permit once available. Left empty on every product for now — not yet rendered anywhere.
   descriptionImage?: ProductImage; // per-product macro shot for the shared LeatherDescription
   // ("Автентичност и Структура") block — no fallback: when unset, the media column is omitted.
+  hideLeatherDescription?: boolean; // skip the shared "Автентичност и Структура" block entirely —
+  // for a product whose own descriptionSections already cover CITES/craft/texture in full and
+  // would otherwise repeat it right below.
   shortDescription: string;
   specs: ProductSpec[];
   features: string[];

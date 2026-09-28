@@ -104,7 +104,7 @@ export default async function ProductPage({ params }: Props) {
         {product.category === "jewellery" && <JewelleryDescription />}
 
         {/* Leather description - material & craft Q&A */}
-        {(product.category === "wallets" || product.category === "cardholders" || product.category === "bags") && (
+        {(product.category === "wallets" || product.category === "cardholders" || product.category === "bags") && !product.hideLeatherDescription && (
           <LeatherDescription videoSrc={CARDHOLDER_VIDEOS[product.slug]} crocodileSpecies={product.crocodileSpecies} isBag={product.category === "bags"} image={product.descriptionImage} />
         )}
 
