@@ -308,8 +308,10 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
       <div>
-        <h3 className="font-serif text-xl text-white mb-1">Данни за доставка</h3>
-        <p className="font-sans text-xs text-white/40 tracking-wide">Плащате при получаване - Наложен платеж</p>
+        <h3 className="font-serif text-xl text-white mb-1">{needsPrepayment ? "Поръчка с предплащане" : "Данни за доставка"}</h3>
+        <p className="font-sans text-xs text-white/40 tracking-wide">
+          {needsPrepayment ? "Урежда се директно с нас" : "Плащате при получаване - Наложен платеж"}
+        </p>
       </div>
 
       {/* ── Order summary ─────────────────────────────────────────────────── */}
@@ -355,7 +357,9 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         </div>
       </div>
 
-      {/* ── Form fields ───────────────────────────────────────────────────── */}
+      {/* ── Form fields — none for a prepayment-only cart: those orders are arranged
+             over Viber/phone, so only the note below is shown (owner, 2026-09-28). ── */}
+      {!needsPrepayment && (
       <div className="flex flex-col gap-5">
         <Field id="field-name" label="Две имена *" error={errors.name}>
           <input type="text" placeholder="Иван Иванов" value={form.name}
@@ -502,6 +506,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
           />
         </Field>
       </div>
+      )}
 
       {submitError && (
         <p className="font-sans text-xs text-red-400 text-center leading-relaxed border border-red-400/20 bg-red-400/5 px-4 py-3">
@@ -539,10 +544,12 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       </button>
       )}
 
-      <p className="font-sans text-[10px] text-center text-white/25 tracking-wide leading-relaxed">
-        Плащате при получаване. Имате право на преглед и тест преди да заплатите.
-        <br />30 дни лесна замяна.
-      </p>
+      {!needsPrepayment && (
+        <p className="font-sans text-[10px] text-center text-white/25 tracking-wide leading-relaxed">
+          Плащате при получаване. Имате право на преглед и тест преди да заплатите.
+          <br />30 дни лесна замяна.
+        </p>
+      )}
     </form>
   );
 }
