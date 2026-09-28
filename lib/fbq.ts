@@ -9,13 +9,22 @@ declare global {
   }
 }
 
+// Meta only accepts ISO 4217 currency codes; the catalog's `currency` is the display
+// symbol ("€"). Every event goes through here, so a slip at a call site can't reach
+// Meta as "€" (which makes Meta drop the value).
+function withIsoCurrency(params?: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (!params || !("currency" in params) && !("value" in params)) return params;
+  const c = params.currency;
+  return { ...params, currency: typeof c === "string" && /^[A-Z]{3}$/.test(c) ? c : "EUR" };
+}
+
 export function trackFbEvent(
   event: string,
   params?: Record<string, unknown>,
   eventId?: string
 ): void {
   if (typeof window === "undefined" || !window.fbq) return;
-  window.fbq("track", event, params, eventId ? { eventID: eventId } : undefined);
+  window.fbq("track", event, withIsoCurrency(params), eventId ? { eventID: eventId } : undefined);
 }
 
 /** Generate a unique event ID for deduplication between browser pixel and CAPI. */
@@ -42,7 +51,7 @@ export function trackWithCapi(
       eventName,
       eventId,
       value:      params.value,
-      currency:   params.currency,
+      currency:   withIsoCurrency(params)?.currency ?? "EUR",
       contentIds: params.content_ids,
       numItems:   params.num_items,
     }),

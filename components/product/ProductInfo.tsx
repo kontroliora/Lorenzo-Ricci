@@ -22,6 +22,28 @@ const variantOff = (v: { slug: string; inStock: boolean }) => !(getProductBySlug
 // fetched only after that. <Link prefetch> handles the route; this fetches the
 // other colour's main photo at the exact size this device already loaded, so it
 // paints from cache after the tap. Deduped per slug for the page's lifetime.
+// Renders a description paragraph, turning **text** into <strong> spans and line breaks into
+// <br>. Sections' `body` is plain owner-supplied copy (not full markdown) — this only exists so
+// pasted "**bold**" phrases and line breaks render correctly instead of showing raw asterisks.
+function BoldedText({ text }: { text: string }) {
+  const lines = text.split("\n");
+  return (
+    <>
+      {lines.map((line, li) => {
+        const parts = line.split(/\*\*(.+?)\*\*/g);
+        return (
+          <span key={li}>
+            {li > 0 && <br />}
+            {parts.map((part, i) =>
+              i % 2 === 1 ? <strong key={i} className="font-medium text-charcoal">{part}</strong> : part
+            )}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 const prefetchedSlugs = new Set<string>();
 function prefetchMainImage(slug: string) {
   if (prefetchedSlugs.has(slug)) return;
@@ -185,7 +207,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       content_name: product.name,
       content_type: "product",
       value:        product.price,
-      currency:     product.currency,
+      currency:     "EUR", // Meta needs the ISO code; product.currency is the display symbol
     });
   }, [product.slug]);
 
@@ -200,7 +222,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       content_name: product.name,
       content_type: "product",
       value:        product.price,
-      currency:     product.currency,
+      currency:     "EUR",
       num_items:    1,
     }, genEventId("ATC"));
   };
@@ -459,16 +481,24 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           {activeTab === "description" && (
             <div className="flex flex-col gap-4">
               {product.descriptionSections ? (
-                product.descriptionSections.map((section, i) => (
-                  <div key={i}>
-                    <p className="font-sans text-sm font-medium text-charcoal tracking-wide mb-0.5">
-                      {section.heading}
-                    </p>
-                    <p className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide">
-                      {section.body}
-                    </p>
-                  </div>
-                ))
+                product.descriptionSections.map((section, i) => {
+                  const paragraphs = Array.isArray(section.body) ? section.body : [section.body];
+                  return (
+                    <div key={i}>
+                      <p className="font-sans text-sm font-medium text-charcoal tracking-wide mb-0.5">
+                        {section.heading}
+                      </p>
+                      {paragraphs.map((para, j) => (
+                        <p
+                          key={j}
+                          className={`font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide ${j > 0 ? "mt-2" : ""}`}
+                        >
+                          <BoldedText text={para} />
+                        </p>
+                      ))}
+                    </div>
+                  );
+                })
               ) : product.tabDescription ? (
                 product.tabDescription.map((para, i) => (
                   <p key={i} className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide">

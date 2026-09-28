@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
     if (fbp)       userData.fbp = fbp;
 
     const customData: Record<string, unknown> = {
-      currency: body.currency ?? "EUR",
+      // ISO 4217 only — a display symbol ("€") would make Meta drop the value.
+      currency: typeof body.currency === "string" && /^[A-Z]{3}$/.test(body.currency) ? body.currency : "EUR",
     };
     if (body.contentIds?.length) {
       customData.content_ids  = body.contentIds;

@@ -54,7 +54,7 @@ export function StickyCartBar({ product, effectiveInStock }: Props) {
       content_name: product.name,
       content_type: "product",
       value:        product.price,
-      currency:     product.currency,
+      currency:     "EUR",
       num_items:    1,
     }, genEventId("ATC"));
   };
