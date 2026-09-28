@@ -23,9 +23,7 @@ const inter = Inter({
 import { Header } from "@/components/layout/Header";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Footer } from "@/components/layout/Footer";
-import { CartDrawer } from "@/components/cart/CartDrawer";
-import { SalesNotification } from "@/components/ui/SalesNotification";
-import { NewsletterPopup } from "@/components/ui/NewsletterPopup";
+import { LazyCartDrawer, LazySalesNotification, LazyNewsletterPopup } from "@/components/layout/DeferredChrome";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { HideOnAdmin } from "@/components/layout/HideOnAdmin";
@@ -96,12 +94,12 @@ export default async function RootLayout({
           <main>{children}</main>
           <HideOnAdmin>
             <Footer />
-            <CartDrawer />
+            <LazyCartDrawer />
             <HideOnTrack>
               <HideOnCart>
-                <SalesNotification />
+                <LazySalesNotification />
                 {/* 10% newsletter popup: shown to everyone (Bulgaria-only store). */}
-                <NewsletterPopup />
+                <LazyNewsletterPopup />
               </HideOnCart>
             </HideOnTrack>
           </HideOnAdmin>
