@@ -12,6 +12,13 @@ import { BundleUpsell } from "@/components/product/BundleUpsell";
 import { JewelleryDescription } from "@/components/product/JewelleryDescription";
 import { LeatherDescription } from "@/components/product/LeatherDescription";
 import { requiresPrepayment } from "@/lib/price";
+import { getPriceOverrides, applyOverride, applyOverrides } from "@/lib/price-overrides";
+
+// Durable price overrides (supabase/product_price_overrides.sql, read via
+// lib/price-overrides.ts) — every product page stays statically generated
+// (generateStaticParams below); the admin discount route calls
+// revalidatePath(`/products/${slug}`) on every write so a change shows up
+// within seconds without a fresh deploy.
 
 const CARDHOLDER_VIDEOS: Record<string, string> = {
   "cardholder-bianco":    "/cardholder-bianco-leather.mp4",
@@ -47,11 +54,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
-  if (!product) notFound();
+  const rawProduct = getProductBySlug(slug);
+  if (!rawProduct) notFound();
+  const overrides = await getPriceOverrides();
+  const product = applyOverride(rawProduct, overrides);
 
   const reviews = getReviewsBySlug(slug);
-  const related = getRelatedProducts(product, 4);
+  const related = applyOverrides(getRelatedProducts(product, 4), overrides);
 
   // For watches: hide night images and side-profile images from the gallery
   // (night images stay in product.images[] so the moon button on cards still works)

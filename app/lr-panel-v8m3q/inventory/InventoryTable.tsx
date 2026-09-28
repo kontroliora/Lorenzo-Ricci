@@ -33,7 +33,12 @@ const VALID_DISCOUNTS = new Set([10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65,
 
 const DISCOUNT_TIMEOUT_MS = 10000;
 
-async function postDiscount(body: { slug: string; action: "apply" | "remove"; pct?: number }) {
+type DiscountBody =
+  | { slug: string; action: "apply"; type: "percent"; pct: number }
+  | { slug: string; action: "apply"; type: "fixed"; newPrice: number }
+  | { slug: string; action: "remove" };
+
+async function postDiscount(body: DiscountBody) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), DISCOUNT_TIMEOUT_MS);
   try {
@@ -68,10 +73,12 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
     Object.fromEntries(rows.map((r) => [r.slug, r.tracked]))
   );
 
-  // Discount state — one shared `busy` flag per slug so the −% and ↺ buttons lock
-  // each other out (they mutate the same product's price and can't safely overlap),
-  // and a request sequence number so a slow/stale response can never clobber a newer one.
+  // Discount state — one shared `busy` flag per slug so Приложи/↺ lock each other
+  // out (they mutate the same product's price and can't safely overlap), and a
+  // request sequence number so a slow/stale response can never clobber a newer one.
   const [discountPct, setDiscountPct] = useState<Record<string, string>>({});
+  const [fixedPrice, setFixedPrice]   = useState<Record<string, string>>({});
+  const [discountMode, setDiscountMode] = useState<Record<string, "percent" | "fixed">>({});
   const [busy, setBusy]               = useState<Record<string, boolean>>({});
   const [discountMsg, setDiscountMsg] = useState<Record<string, string>>({});
   const [prices, setPrices] = useState<Record<string, { price: number; originalPrice?: number }>>(
@@ -131,25 +138,43 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
   };
 
   const handleDiscount = async (slug: string) => {
-    const pct = parseInt(discountPct[slug] ?? "");
-    if (!VALID_DISCOUNTS.has(pct)) {
-      setDiscountMsg((m) => ({ ...m, [slug]: "10–70, стъпка 5" }));
-      return;
-    }
     const before = prices[slug];
     if (!before || busy[slug]) return;
+    const mode = discountMode[slug] ?? "percent";
+
+    let body: DiscountBody;
+    let optimisticPrice: number;
+
+    if (mode === "fixed") {
+      const requested = parseFloat(fixedPrice[slug] ?? "");
+      if (!Number.isFinite(requested) || requested <= 0 || requested >= before.price) {
+        setDiscountMsg((m) => ({ ...m, [slug]: `Трябва да е под €${before.price}` }));
+        return;
+      }
+      optimisticPrice = parseFloat(requested.toFixed(2));
+      body = { slug, action: "apply", type: "fixed", newPrice: optimisticPrice };
+    } else {
+      const pct = parseInt(discountPct[slug] ?? "");
+      if (!VALID_DISCOUNTS.has(pct)) {
+        setDiscountMsg((m) => ({ ...m, [slug]: "10–70, стъпка 5" }));
+        return;
+      }
+      optimisticPrice = parseFloat((before.price * (1 - pct / 100)).toFixed(2));
+      body = { slug, action: "apply", type: "percent", pct };
+    }
+
     const seq = (reqSeq.current[slug] ?? 0) + 1;
     reqSeq.current[slug] = seq;
 
     // Optimistic update: show the discounted price the instant the button is pressed.
-    const optimisticPrice = parseFloat((before.price * (1 - pct / 100)).toFixed(2));
     setPrices((p) => ({ ...p, [slug]: { price: optimisticPrice, originalPrice: before.price } }));
     setDiscountPct((d) => ({ ...d, [slug]: "" }));
+    setFixedPrice((f) => ({ ...f, [slug]: "" }));
     setBusy((b) => ({ ...b, [slug]: true }));
     setDiscountMsg((m) => ({ ...m, [slug]: "" }));
 
     try {
-      const result = await postDiscount({ slug, action: "apply", pct });
+      const result = await postDiscount(body);
       if (reqSeq.current[slug] !== seq) return; // a newer request already superseded this one
       if (result.ok && result.newPrice != null && result.originalPrice != null) {
         setPrices((p) => ({ ...p, [slug]: { price: result.newPrice!, originalPrice: result.originalPrice } }));
@@ -199,11 +224,18 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
               const reserved = row.reserved ?? 0;
               const available = qty;
               const rowPrice = prices[row.slug];
+              const mode = discountMode[row.slug] ?? "percent";
               const pct = parseInt(discountPct[row.slug] ?? "");
               const VALID = [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
-              const previewPrice = VALID.includes(pct) && rowPrice?.price
-                ? (rowPrice.price * (1 - pct / 100)).toFixed(2)
-                : null;
+              const fixedVal = parseFloat(fixedPrice[row.slug] ?? "");
+              const previewPrice =
+                mode === "percent"
+                  ? VALID.includes(pct) && rowPrice?.price
+                    ? (rowPrice.price * (1 - pct / 100)).toFixed(2)
+                    : null
+                  : Number.isFinite(fixedVal) && fixedVal > 0 && rowPrice?.price && fixedVal < rowPrice.price
+                    ? fixedVal.toFixed(2)
+                    : null;
               return (
                 <div
                   key={row.slug}
@@ -290,17 +322,52 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
 
                   {/* Discount controls */}
                   <div className="flex items-center gap-1.5 border-l border-white/10 pl-3 flex-shrink-0">
+                    {/* % / € mode toggle */}
+                    <div className="flex flex-col flex-shrink-0 border border-white/12 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setDiscountMode((m) => ({ ...m, [row.slug]: "percent" }))}
+                        className={`px-1.5 py-1 text-[9px] font-sans transition-colors ${
+                          mode === "percent" ? "bg-white text-[#0a0e1f]" : "bg-transparent text-white/40 hover:text-white/70"
+                        }`}
+                      >
+                        %
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDiscountMode((m) => ({ ...m, [row.slug]: "fixed" }))}
+                        className={`px-1.5 py-1 text-[9px] font-sans transition-colors border-t border-white/12 ${
+                          mode === "fixed" ? "bg-white text-[#0a0e1f]" : "bg-transparent text-white/40 hover:text-white/70"
+                        }`}
+                      >
+                        €
+                      </button>
+                    </div>
+
                     <div className="flex flex-col items-center gap-0.5">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="%"
-                        value={discountPct[row.slug] ?? ""}
-                        onChange={(e) =>
-                          setDiscountPct((d) => ({ ...d, [row.slug]: e.target.value }))
-                        }
-                        className="w-12 bg-white/5 border border-white/15 px-2 py-2 text-white text-sm text-center focus:outline-none focus:border-white/40 transition-colors font-sans"
-                      />
+                      {mode === "percent" ? (
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="%"
+                          value={discountPct[row.slug] ?? ""}
+                          onChange={(e) =>
+                            setDiscountPct((d) => ({ ...d, [row.slug]: e.target.value }))
+                          }
+                          className="w-12 bg-white/5 border border-white/15 px-2 py-2 text-white text-sm text-center focus:outline-none focus:border-white/40 transition-colors font-sans"
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="€"
+                          value={fixedPrice[row.slug] ?? ""}
+                          onChange={(e) =>
+                            setFixedPrice((f) => ({ ...f, [row.slug]: e.target.value }))
+                          }
+                          className="w-16 bg-white/5 border border-white/15 px-2 py-2 text-white text-sm text-center focus:outline-none focus:border-white/40 transition-colors font-sans"
+                        />
+                      )}
                       {previewPrice && (
                         <p className="text-[10px] text-white/55 font-sans mt-0.5">
                           €{rowPrice!.price} → €{previewPrice}
@@ -312,7 +379,7 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                       disabled={busy[row.slug]}
                       className="flex-shrink-0 px-3 py-2 text-[10px] font-sans tracking-[0.15em] uppercase bg-white/8 text-white/60 hover:bg-white/15 hover:text-white border border-white/12 transition-colors disabled:opacity-40"
                     >
-                      {busy[row.slug] ? "..." : "−%"}
+                      {busy[row.slug] ? "..." : "Приложи"}
                     </button>
                     {rowPrice?.originalPrice && (
                       <button

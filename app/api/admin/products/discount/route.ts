@@ -1,82 +1,101 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { getProductBySlug } from "@/lib/products";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+import { PRICE_OVERRIDES_TAG } from "@/lib/price-overrides";
 
-// Plain Route Handler instead of a "use server" action: Server Actions are called via
-// a build-specific action ID, which can go stale when the Next.js dev server hot-reloads
-// after this endpoint's own fs.writeFileSync touches lib/products.ts (a file page.tsx
-// statically imports) — the request then never reaches the handler at all, silently.
-// A stable URL route doesn't have that failure mode (same pattern as /api/admin/inventory).
-
-const VALID = new Set([10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]);
-
-function findProductSegment(src: string, slug: string) {
-  const slugRx = /slug:\s*["']([^"']+)["']/g;
-  let thisStart = -1;
-  let nextStart = src.length;
-  let m: RegExpExecArray | null;
-  while ((m = slugRx.exec(src)) !== null) {
-    if (m[1] === slug) {
-      thisStart = m.index;
-    } else if (thisStart !== -1) {
-      nextStart = m.index;
-      break;
-    }
-  }
-  if (thisStart === -1) return null;
-  return { prefix: src.slice(0, thisStart), segment: src.slice(thisStart, nextStart), suffix: src.slice(nextStart) };
+// After every successful write, invalidate the price-overrides Data Cache entry
+// (lib/price-overrides.ts) AND force-regenerate the specific static routes that
+// show a price, so the storefront reflects the change within seconds — no redeploy,
+// no force-dynamic rendering. This route is already gated by middleware.ts (any
+// request under /api/admin/* requires an authenticated admin session), so there is
+// no separate public revalidation endpoint.
+function revalidateStorefront(slug: string) {
+  revalidateTag(PRICE_OVERRIDES_TAG);
+  revalidatePath("/");
+  revalidatePath("/watches");
+  revalidatePath("/leather-goods");
+  revalidatePath("/jewellery");
+  revalidatePath("/bundles");
+  revalidatePath(`/products/${slug}`);
 }
 
+// Plain Route Handler (not a "use server" action) — same reasoning as before this
+// rewrite: a stable URL route doesn't go stale across a hot-reload/deploy boundary
+// the way a Server Action's build-specific action id can.
+//
+// Persistence: writes/deletes a row in product_price_overrides via supabaseAdmin()
+// (service role, bypasses RLS) instead of fs.writeFileSync on lib/products.ts. That
+// file lives in a read-only/ephemeral serverless container on Vercel — the write was
+// silently lost on the next cold start or deploy, which was the "Не се записа" bug.
+// See supabase/product_price_overrides.sql.
+//
+// Request/response contract — InventoryTable.tsx is the only caller:
+//   POST { slug, action: "apply", type: "percent", pct }     → { ok: true, newPrice, originalPrice } | { ok: false, error }
+//   POST { slug, action: "apply", type: "fixed", newPrice }  → { ok: true, newPrice, originalPrice } | { ok: false, error }
+//   POST { slug, action: "remove" }                          → { ok: true, restoredPrice }           | { ok: false, error }
+
+const VALID_PCT = new Set([10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]);
+
+type Body =
+  | { slug: string; action: "apply"; type: "percent"; pct: number }
+  | { slug: string; action: "apply"; type: "fixed"; newPrice: number }
+  | { slug: string; action: "remove" };
+
 export async function POST(req: NextRequest) {
-  const body = (await req.json()) as { slug?: string; action?: "apply" | "remove"; pct?: number };
+  const body = (await req.json()) as Partial<Body>;
   const { slug, action } = body;
   if (!slug || (action !== "apply" && action !== "remove")) {
     return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
   }
 
-  const filePath = path.join(process.cwd(), "lib", "products.ts");
-  const src = fs.readFileSync(filePath, "utf8");
-  const found = findProductSegment(src, slug);
-  if (!found) return NextResponse.json({ ok: false, error: "Product not found" }, { status: 404 });
-  const { prefix, suffix } = found;
-  let { segment } = found;
+  // lib/products.ts is the live catalog price — always the ground truth. When
+  // applying a NEW discount on a product that's already discounted (a row already
+  // exists), it must apply against the current CATALOG price, not the stale
+  // original_price sitting in the override row, or discounts would compound.
+  const product = getProductBySlug(slug);
+  if (!product) return NextResponse.json({ ok: false, error: "Product not found" }, { status: 404 });
+  const catalogPrice = product.price;
 
   if (action === "apply") {
-    const pct = body.pct;
-    if (typeof pct !== "number" || !VALID.has(pct)) {
-      return NextResponse.json({ ok: false, error: `Valid: ${[...VALID].join(", ")}` }, { status: 400 });
-    }
+    let newPrice: number;
 
-    const priceMatch = /^(\s*)(price:\s*)(\d+(?:\.\d+)?)(,)/m.exec(segment);
-    if (!priceMatch) return NextResponse.json({ ok: false, error: "price field not found" }, { status: 500 });
-
-    const indent = priceMatch[1];
-    const currentPrice = parseFloat(priceMatch[3]);
-    const newPrice = parseFloat((currentPrice * (1 - pct / 100)).toFixed(2));
-
-    segment = segment.replace(/^(\s*price:\s*)(\d+(?:\.\d+)?)(,)/m, `$1${newPrice}$3`);
-
-    if (/^\s*originalPrice:/m.test(segment)) {
-      segment = segment.replace(/^(\s*originalPrice:\s*)(\d+(?:\.\d+)?)(,)/m, `$1${currentPrice}$3`);
+    if (body.type === "fixed") {
+      const requested = (body as { newPrice?: number }).newPrice;
+      if (typeof requested !== "number" || !Number.isFinite(requested) || requested <= 0) {
+        return NextResponse.json({ ok: false, error: "Невалидна цена" }, { status: 400 });
+      }
+      if (requested >= catalogPrice) {
+        return NextResponse.json({ ok: false, error: `Трябва да е под €${catalogPrice}` }, { status: 400 });
+      }
+      newPrice = parseFloat(requested.toFixed(2));
     } else {
-      segment = segment.replace(
-        /^(\s*)(price:\s*\d+(?:\.\d+)?,)/m,
-        `$1$2\n${indent}originalPrice: ${currentPrice},`
-      );
+      const pct = (body as { pct?: number }).pct;
+      if (typeof pct !== "number" || !VALID_PCT.has(pct)) {
+        return NextResponse.json({ ok: false, error: `Valid: ${[...VALID_PCT].join(", ")}` }, { status: 400 });
+      }
+      newPrice = parseFloat((catalogPrice * (1 - pct / 100)).toFixed(2));
     }
 
-    fs.writeFileSync(filePath, prefix + segment + suffix, "utf8");
-    return NextResponse.json({ ok: true, newPrice, originalPrice: currentPrice });
+    const { error } = await supabaseAdmin()
+      .from("product_price_overrides")
+      .upsert({ slug, price: newPrice, original_price: catalogPrice, updated_at: new Date().toISOString() });
+    if (error) {
+      console.error("[discount] upsert failed:", error.message);
+      return NextResponse.json({ ok: false, error: "Грешка при запис" }, { status: 500 });
+    }
+
+    revalidateStorefront(slug);
+    return NextResponse.json({ ok: true, newPrice, originalPrice: catalogPrice });
   }
 
-  // action === "remove"
-  const origMatch = /^\s*originalPrice:\s*(\d+(?:\.\d+)?),/m.exec(segment);
-  if (!origMatch) return NextResponse.json({ ok: false, error: "No originalPrice on this product" }, { status: 400 });
-  const restoredPrice = parseFloat(origMatch[1]);
+  // action === "remove" — restore the plain catalog price by deleting the override row.
+  const { error } = await supabaseAdmin().from("product_price_overrides").delete().eq("slug", slug);
+  if (error) {
+    console.error("[discount] delete failed:", error.message);
+    return NextResponse.json({ ok: false, error: "Грешка при запис" }, { status: 500 });
+  }
 
-  segment = segment.replace(/^(\s*price:\s*)(\d+(?:\.\d+)?)(,)/m, `$1${restoredPrice}$3`);
-  segment = segment.replace(/^\s*originalPrice:\s*\d+(?:\.\d+)?,\r?\n/m, "");
-
-  fs.writeFileSync(filePath, prefix + segment + suffix, "utf8");
-  return NextResponse.json({ ok: true, restoredPrice });
+  revalidateStorefront(slug);
+  return NextResponse.json({ ok: true, restoredPrice: catalogPrice });
 }

@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createHash } from "crypto";
 import { getProductBySlug } from "@/lib/products";
+import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
 import { validateOrderPricing } from "@/lib/order-pricing";
 import { checkOrderable } from "@/lib/order-availability";
 import { checkPromoCode } from "@/lib/promo";
@@ -433,7 +434,16 @@ export async function POST(req: NextRequest) {
         promoRate = 0.10;
       }
     }
-    const pricing = validateOrderPricing(order, getProductBySlug, { promoRate });
+    // Never trust a client-submitted override price — re-fetch the durable overrides
+    // (supabase/product_price_overrides.sql) server-side so the price check matches
+    // whatever the storefront just displayed (catalog price, or a discounted price
+    // if the admin has applied one).
+    const overrides = await getPriceOverrides();
+    const findProductWithOverride = (slug: string) => {
+      const product = getProductBySlug(slug);
+      return product ? applyOverride(product, overrides) : undefined;
+    };
+    const pricing = validateOrderPricing(order, findProductWithOverride, { promoRate });
     if (!pricing.ok) {
       console.warn("[Order] price check failed:", pricing.reason);
       return NextResponse.json(
@@ -445,7 +455,7 @@ export async function POST(req: NextRequest) {
     // ── CATALOG GATES - a product switched off in lib/products.ts (inStock: false)
     //    is never orderable, and a prepayment item can't use this cash-on-delivery
     //    checkout. Same position as the price guard: before any side effect.
-    const gate = checkOrderable((order.items ?? []) as { slug?: unknown }[], getProductBySlug);
+    const gate = checkOrderable((order.items ?? []) as { slug?: unknown }[], findProductWithOverride);
     if (!gate.ok) {
       const error = gate.code === "not_for_sale"
         ? stockErrorMessage(gate.names.map((name) => ({ name, available: 0 })))

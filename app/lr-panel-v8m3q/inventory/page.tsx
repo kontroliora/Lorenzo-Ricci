@@ -2,6 +2,7 @@ import { AdminNav } from "@/components/admin/AdminNav";
 import { products } from "@/lib/products";
 import { getReservedMap } from "@/lib/orders";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 import { InventoryTable, type InventoryRow } from "./InventoryTable";
 import { logout } from "../actions";
 
@@ -15,13 +16,15 @@ export default async function AdminInventoryPage() {
   // only: it is already out of the count and must not be subtracted again. A product
   // with no row is sold WITHOUT a cap (reserve_wallet_stock skips it) — the table
   // flags it; saving a number creates the row.
-  const [{ data }, reserved] = await Promise.all([
+  const [{ data }, reserved, overrides] = await Promise.all([
     supabaseAdmin().from("wallet_inventory").select("slug, stock"),
     getReservedMap(),
+    getPriceOverrides(),
   ]);
   const dbStock = new Map((data ?? []).map((r) => [r.slug as string, Number(r.stock)]));
+  const catalog = applyOverrides(products, overrides);
 
-  const rows: InventoryRow[] = products.map((p) => {
+  const rows: InventoryRow[] = catalog.map((p) => {
     const stock = dbStock.get(p.slug) ?? 0;
     return {
       slug:          p.slug,

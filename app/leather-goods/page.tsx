@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { products } from "@/lib/products";
 import { ProductCard } from "@/components/product/ProductCard";
+import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 
 export const metadata: Metadata = {
   title: "Кожени Изделия | Lorenzo Ricci",
@@ -8,10 +9,16 @@ export const metadata: Metadata = {
     "Lorenzo Ricci кожени аксесоари - портфейли и кардхолдъри от 100% крокодилска кожа Crocodylus Siamensis. CITES сертифициран произход. Ръчна изработка.",
 };
 
-export default function LeatherGoodsPage() {
-  const wallets     = products.filter((p) => p.category === "wallets");
-  const cardholders = products.filter((p) => p.category === "cardholders");
-  const bags        = products.filter((p) => p.category === "bags");
+// Durable price overrides (supabase/product_price_overrides.sql, read via
+// lib/price-overrides.ts) — page stays statically generated; the admin discount
+// route calls revalidatePath("/leather-goods") on every write.
+
+export default async function LeatherGoodsPage() {
+  const overrides = await getPriceOverrides();
+  const catalog = applyOverrides(products, overrides);
+  const wallets     = catalog.filter((p) => p.category === "wallets");
+  const cardholders = catalog.filter((p) => p.category === "cardholders");
+  const bags        = catalog.filter((p) => p.category === "bags");
 
   return (
     <div className="min-h-screen pt-[116px] pb-24">

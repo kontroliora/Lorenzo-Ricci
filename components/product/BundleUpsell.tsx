@@ -5,16 +5,26 @@ import { BUNDLES, bundleHasSaleItem } from "@/lib/bundles";
 import { getProductBySlug } from "@/lib/products";
 import { useCartStore } from "@/lib/store";
 import { useCountry } from "@/lib/country";
+import { usePriceOverrides } from "@/lib/use-price-overrides";
 import type { Product } from "@/lib/types";
 
 interface Props {
   product: Product;
 }
 
-export function BundleUpsell({ product }: Props) {
+export function BundleUpsell({ product: rawProduct }: Props) {
   const { addItem } = useCartStore();
   const [addedPartnerId, setAddedPartnerId] = useState<string | null>(null);
   const country = useCountry();
+  const applyOverride = usePriceOverrides();
+  // `product` itself may already be override-applied (passed down from a server
+  // page), but re-applying here is a no-op if so and required if this component is
+  // ever used from a context that didn't already do that merge.
+  const product = applyOverride(rawProduct);
+  const findProduct = (slug: string) => {
+    const p = getProductBySlug(slug);
+    return p ? applyOverride(p) : undefined;
+  };
 
   // Bundles are EUR-priced; an EUR bundle beside a local (AED/RON) product price
   // confuses. Hidden in every geo-price market.
@@ -29,14 +39,14 @@ export function BundleUpsell({ product }: Props) {
   if (!partnerSlot) return null;
 
   const partners = partnerSlot
-    .map((slug) => getProductBySlug(slug))
+    .map((slug) => findProduct(slug))
     .filter((p): p is Product => !!p && p.inStock);
 
   if (partners.length === 0) return null;
 
   // No stacking: while either piece is on sale the set earns no discount, so the
   // pairing is shown without one.
-  const hasDiscount = bundle.discountPct > 0 && !bundleHasSaleItem(bundle, getProductBySlug);
+  const hasDiscount = bundle.discountPct > 0 && !bundleHasSaleItem(bundle, findProduct);
 
   const handleAdd = (partner: Product) => {
     addItem(product);

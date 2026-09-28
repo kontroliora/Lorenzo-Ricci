@@ -3,6 +3,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useCartStore } from "@/lib/store";
 import { getProductBySlug } from "@/lib/products";
+import { usePriceOverrides } from "@/lib/use-price-overrides";
 import type { Product } from "@/lib/types";
 
 const WALLET_FOR_CARDHOLDER: Record<string, string> = {
@@ -68,6 +69,7 @@ function computeSuggestions(cartIds: string[]): string[] {
 export function CartCrossSell() {
   const { items, addItem } = useCartStore();
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+  const applyOverride = usePriceOverrides();
 
   if (items.length === 0) return null;
 
@@ -76,7 +78,8 @@ export function CartCrossSell() {
 
   const suggestions = suggestionIds
     .map((slug) => getProductBySlug(slug))
-    .filter((p): p is Product => !!p && p.inStock);
+    .filter((p): p is Product => !!p && p.inStock)
+    .map(applyOverride);
 
   if (suggestions.length === 0) return null;
 

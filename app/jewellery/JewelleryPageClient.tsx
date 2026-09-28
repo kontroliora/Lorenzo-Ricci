@@ -1,15 +1,17 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { getBracelets, getNecklaces } from "@/lib/products";
+import type { Product } from "@/lib/types";
 import { ProductCard } from "@/components/product/ProductCard";
 
-export function JewelleryPageClient() {
+interface Props {
+  bracelets: Product[];
+  necklaces: Product[];
+}
+
+export function JewelleryPageClient({ bracelets, necklaces }: Props) {
   const params = useSearchParams();
   const category = params.get("category"); // "bracelets" | "necklaces" | null
-
-  const bracelets = getBracelets();
-  const necklaces = getNecklaces();
 
   const showBracelets = !category || category === "bracelets";
   const showNecklaces = !category || category === "necklaces";

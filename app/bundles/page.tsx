@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BUNDLES, bundleHasSaleItem } from "@/lib/bundles";
 import { getProductBySlug } from "@/lib/products";
+import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
 import { BundlesClient } from "./BundlesClient";
 
 export const metadata: Metadata = {
@@ -9,12 +10,24 @@ export const metadata: Metadata = {
     "Завърши визията с подбрани комплекти от бижута Lorenzo Ricci. Съчетай гривна и колие от една колекция и получи 10% отстъпка.",
 };
 
-export default function BundlesPage() {
+// Durable price overrides (supabase/product_price_overrides.sql, read via
+// lib/price-overrides.ts) — page stays statically generated; the admin discount
+// route calls revalidatePath("/bundles") on every write so a change shows up
+// within seconds without a fresh deploy.
+
+export default async function BundlesPage() {
+  const overrides = await getPriceOverrides();
+  // bundleHasSaleItem must see the SAME (overridden) prices used for display below,
+  // so a bundle with a just-discounted item is correctly hidden (no stacking).
+  const findProduct = (slug: string) => {
+    const p = getProductBySlug(slug);
+    return p ? applyOverride(p, overrides) : undefined;
+  };
   const bundles = BUNDLES.flatMap((bundle) => {
-    const productA = getProductBySlug(bundle.slots[0][0]);
-    const productB = getProductBySlug(bundle.slots[1][0]);
+    const productA = findProduct(bundle.slots[0][0]);
+    const productB = findProduct(bundle.slots[1][0]);
     // A set with a sale item earns no set discount (no stacking) - don't advertise it.
-    if (!productA || !productB || bundleHasSaleItem(bundle, getProductBySlug)) return [];
+    if (!productA || !productB || bundleHasSaleItem(bundle, findProduct)) return [];
     return [{ id: bundle.id, label: bundle.label, productA, productB, discountPct: bundle.discountPct }];
   });
 

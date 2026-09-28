@@ -3,6 +3,11 @@ import Image from "next/image";
 import { getWatches } from "@/lib/products";
 import { ProductCard } from "@/components/product/ProductCard";
 import { displayPrice } from "@/lib/price";
+import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
+
+// Durable price overrides (supabase/product_price_overrides.sql, read via
+// lib/price-overrides.ts) — page stays statically generated; the admin discount
+// route calls revalidatePath("/watches") on every write.
 
 // Price wording comes from the catalog so it can never drift from the real prices.
 const watchPrices = getWatches().map((w) => w.price);
@@ -18,7 +23,8 @@ export const metadata: Metadata = {
 };
 
 export default async function WatchesPage() {
-  const watches = getWatches();
+  const overrides = await getPriceOverrides();
+  const watches = applyOverrides(getWatches(), overrides);
   const country = "BG"; // Bulgaria-only store; no per-request geo lookup (keeps the page static)
 
   return (
