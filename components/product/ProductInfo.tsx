@@ -26,18 +26,22 @@ const variantOff = (v: { slug: string; inStock: boolean }) => !(getProductBySlug
 // <br>. Sections' `body` is plain owner-supplied copy (not full markdown) — this only exists so
 // pasted "**bold**" phrases and line breaks render correctly instead of showing raw asterisks.
 function BoldedText({ text }: { text: string }) {
-  const lines = text.split("\n");
+  // [\s\S] instead of the `s` flag: the project targets ES2017, where dotAll fails to compile.
+  const parts = text.split(/\*\*([\s\S]+?)\*\*/g);
   return (
     <>
-      {lines.map((line, li) => {
-        const parts = line.split(/\*\*(.+?)\*\*/g);
-        return (
+      {parts.map((part, i) => {
+        const lines = part.split("\n");
+        const withBreaks = lines.map((line, li) => (
           <span key={li}>
             {li > 0 && <br />}
-            {parts.map((part, i) =>
-              i % 2 === 1 ? <strong key={i} className="font-medium text-charcoal">{part}</strong> : part
-            )}
+            {line}
           </span>
+        ));
+        return i % 2 === 1 ? (
+          <strong key={i} className="font-medium text-charcoal">{withBreaks}</strong>
+        ) : (
+          <span key={i}>{withBreaks}</span>
         );
       })}
     </>
