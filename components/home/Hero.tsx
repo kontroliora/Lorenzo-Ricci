@@ -1,30 +1,58 @@
 "use client";
-import Image from "next/image";
 import Link from "next/link";
+import { getImageProps } from "next/image";
 import { useEffect, useState } from "react";
+
+// Mobile gets a static cover (the page's LCP, fetched at high priority); the
+// looping video is mounted only on screens ≥ 640px, after hydration, so phones
+// never download hero-video.mp4 (owner, 2026-09-28: mobile LCP was 8.5 s).
+const DESKTOP_MIN = "(min-width: 640px)";
 
 export function Hero() {
   const [loaded, setLoaded] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 100);
     return () => clearTimeout(t);
   }, []);
 
+  useEffect(() => {
+    const mq = window.matchMedia(DESKTOP_MIN);
+    const apply = () => setShowVideo(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  // Art direction through next/image's optimizer: one <picture>, two covers.
+  const common = { alt: "", fill: true as const, sizes: "100vw", quality: 80, priority: true };
+  const { props: mobile } = getImageProps({ ...common, src: "/covers/mobile cover.webp" });
+  const { props: desktop } = getImageProps({ ...common, src: "/covers/desktop cover.webp" });
+
   return (
     <section className="relative w-full h-screen min-h-[600px] max-h-[1000px] overflow-hidden">
-      {/* Hero video background */}
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="metadata"
-        className="absolute inset-0 w-full h-full object-cover object-center"
-        poster="/covers/desktop%20cover.webp"
-      >
-        <source src="/hero-video.mp4" type="video/mp4" />
-      </video>
+      {/* Static cover: the only hero asset on phones; the poster under the video on desktop */}
+      <picture>
+        <source media={DESKTOP_MIN} srcSet={desktop.srcSet} sizes={desktop.sizes} />
+        {/* eslint-disable-next-line jsx-a11y/alt-text */}
+        <img {...mobile} fetchPriority="high" decoding="async" className="absolute inset-0 w-full h-full object-cover object-center" />
+      </picture>
+
+      {/* Hero video background - desktop only */}
+      {showVideo && (
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          poster="/covers/desktop%20cover.webp"
+        >
+          <source src="/hero-video.mp4" type="video/mp4" />
+        </video>
+      )}
 
       {/* Base dark overlay - ensures text always readable over video */}
       <div className="absolute inset-0 bg-black/40" />

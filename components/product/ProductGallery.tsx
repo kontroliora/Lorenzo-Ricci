@@ -80,7 +80,11 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
             src={imageError[i] ? "/covers/desktop%20cover.webp" : img.src}
             alt={img.alt}
             fill
-            priority={i < 3}
+            // Only the visible first photo is preloaded and fetched at high priority
+            // (it is the page's LCP); preloading three of them made them share
+            // bandwidth on 4G. The rest load normally behind it.
+            priority={i === 0}
+            fetchPriority={i === 0 ? "high" : undefined}
             quality={90}
             sizes="(max-width: 640px) 100vw, 60vw"
             className={`object-contain object-center transition-opacity duration-150 ${

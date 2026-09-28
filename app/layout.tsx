@@ -1,5 +1,22 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
+
+// Self-hosted through next/font: no render-blocking Google Fonts stylesheet, the
+// files are preloaded, and the CSS variables below feed tailwind's font-serif/sans.
+const playfair = Playfair_Display({
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-cormorant",
+  display: "swap",
+});
+const inter = Inter({
+  subsets: ["latin", "cyrillic"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-jost",
+  display: "swap",
+});
 import { CountryProvider } from "@/lib/country";
 import { resolveCountry } from "@/lib/geo";
 import { Header } from "@/components/layout/Header";
@@ -68,7 +85,7 @@ export default async function RootLayout({
   // lib/i18n/* are dormant, kept only in case multi-language comes back.
   const country = await resolveCountry();
   return (
-    <html lang="bg" className="scroll-smooth" suppressHydrationWarning>
+    <html lang="bg" className={`scroll-smooth ${playfair.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="bg-ivory text-charcoal antialiased">
         <MetaPixel />
         <CountryProvider country={country}>
