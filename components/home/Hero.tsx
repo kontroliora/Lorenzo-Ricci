@@ -26,7 +26,8 @@ export function Hero() {
   }, []);
 
   // Art direction through next/image's optimizer: one <picture>, two covers.
-  const common = { alt: "", fill: true as const, sizes: "100vw", quality: 80, priority: true };
+  // q70 is invisible under the 40% dark overlay and saves ~25 KB on the LCP image.
+  const common = { alt: "", fill: true as const, sizes: "100vw", quality: 70, priority: true };
   const { props: mobile } = getImageProps({ ...common, src: "/covers/mobile cover.webp" });
   const { props: desktop } = getImageProps({ ...common, src: "/covers/desktop cover.webp" });
 

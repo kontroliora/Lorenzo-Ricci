@@ -4,12 +4,15 @@ import "./globals.css";
 
 // Self-hosted through next/font: no render-blocking Google Fonts stylesheet, the
 // files are preloaded, and the CSS variables below feed tailwind's font-serif/sans.
+// Headings only: no italic (unused anywhere) and not preloaded, so its ~90 KB
+// never competes with the LCP image on 4G; text paints in the fallback and swaps.
 const playfair = Playfair_Display({
   subsets: ["latin", "cyrillic"],
   weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
+  style: ["normal"],
   variable: "--font-cormorant",
   display: "swap",
+  preload: false,
 });
 const inter = Inter({
   subsets: ["latin", "cyrillic"],

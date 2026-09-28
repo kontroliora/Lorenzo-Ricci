@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
     // headers) is reused for 30s when navigating back to it, so switching a colour
     // back and forth is instant. Stock counts are fetched client-side anyway.
     staleTimes: { dynamic: 30, static: 300 },
+    // Inline the (14 KB) CSS into the HTML: removes two render-blocking requests
+    // from the critical path on mobile.
+    inlineCss: true,
   },
 };
 
