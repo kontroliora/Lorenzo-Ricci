@@ -954,10 +954,12 @@ export const products: Product[] = [
     sku: "CRD-ONI",
     name: 'Lorenzo Ricci "Onice"',
     category: "cardholders",
-    price: 65,
+    // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
+    price: 52,
+    originalPrice: 65,
     currency: "€",
     inStock: true,
-    badge: "Нова колекция",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     stock: 46,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Черен кардхолдър от крокодилска кожа",
