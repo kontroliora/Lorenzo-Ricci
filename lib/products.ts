@@ -1259,9 +1259,9 @@ export const products: Product[] = [
     sku: "CLU-TORINO",
     name: 'Lorenzo Ricci "Torino"',
     category: "bags",
-    // Autumn sale 2026-09-28 (owner): €550 → €499. originalPrice = €550 (launch price; owner accepts EU Omnibus risk).
+    // Autumn sale 2026-09-28 (owner): €750 → €499. originalPrice = €750 (owner's choice; accepts EU Omnibus risk).
     price: 499,
-    originalPrice: 550,
+    originalPrice: 750,
     currency: "€",
     inStock: true,
     badge: "ЕСЕННО НАМАЛЕНИЕ",
@@ -1302,9 +1302,9 @@ export const products: Product[] = [
     sku: "CLU-VERONA",
     name: 'Lorenzo Ricci "Verona"',
     category: "bags",
-    // Autumn sale 2026-09-28 (owner): €550 → €499. originalPrice = €550 (launch price; owner accepts EU Omnibus risk).
+    // Autumn sale 2026-09-28 (owner): €750 → €499. originalPrice = €750 (owner's choice; accepts EU Omnibus risk).
     price: 499,
-    originalPrice: 550,
+    originalPrice: 750,
     currency: "€",
     inStock: true,
     badge: "ЕСЕННО НАМАЛЕНИЕ",
@@ -1389,9 +1389,9 @@ export const products: Product[] = [
     sku: "CLU-PORTOFINO",
     name: 'Lorenzo Ricci "Portofino"',
     category: "bags",
-    // Autumn sale 2026-09-28 (owner): €550 → €499. originalPrice = €550 (launch price; owner accepts EU Omnibus risk).
+    // Autumn sale 2026-09-28 (owner): €750 → €499. originalPrice = €750 (owner's choice; accepts EU Omnibus risk).
     price: 499,
-    originalPrice: 550,
+    originalPrice: 750,
     currency: "€",
     inStock: true,
     badge: "ЕСЕННО НАМАЛЕНИЕ",
