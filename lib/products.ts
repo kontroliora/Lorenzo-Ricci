@@ -798,10 +798,7 @@ export const products: Product[] = [
     sku: "CRD-AMB",
     name: 'Lorenzo Ricci "Ambra"',
     category: "cardholders",
-    // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
-    // days (EU Omnibus) - €65, unchanged in the git history since at least 28.08.2026.
-    price: 52,
-    originalPrice: 65,
+    price: 65,
     priceAED: 500,
     currency: "€",
     inStock: true,
@@ -876,10 +873,10 @@ export const products: Product[] = [
     sku: "CRD-VAL",
     name: 'Lorenzo Ricci "Valentina"',
     category: "cardholders",
-    // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
-    // days (EU Omnibus) - €65, unchanged in the git history since at least 28.08.2026.
+    // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
     price: 52,
     originalPrice: 65,
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     priceAED: 500,
     currency: "€",
     inStock: true,
@@ -915,10 +912,7 @@ export const products: Product[] = [
     sku: "CRD-ZAF",
     name: 'Lorenzo Ricci "Zaffiro"',
     category: "cardholders",
-    // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
-    // days (EU Omnibus) - €65, unchanged in the git history since at least 28.08.2026.
-    price: 52,
-    originalPrice: 65,
+    price: 65,
     priceAED: 500,
     currency: "€",
     inStock: true,
@@ -993,10 +987,12 @@ export const products: Product[] = [
     sku: "CRD-GIA",
     name: 'Lorenzo Ricci "Giada"',
     category: "cardholders",
-    price: 65,
+    // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
+    price: 52,
+    originalPrice: 65,
     currency: "€",
     inStock: true,
-    badge: "Нова колекция",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     stock: 27,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Тъмнозелен кардхолдър от крокодилска кожа",
@@ -1026,10 +1022,12 @@ export const products: Product[] = [
     sku: "CRD-CRE",
     name: 'Lorenzo Ricci "Cremisi"',
     category: "cardholders",
-    price: 65,
+    // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
+    price: 52,
+    originalPrice: 65,
     currency: "€",
     inStock: true,
-    badge: "Нова колекция",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     stock: 38,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Червен кардхолдър от крокодилска кожа",
@@ -1092,10 +1090,12 @@ export const products: Product[] = [
     sku: "CRD-TOP",
     name: 'Lorenzo Ricci "Topazio"',
     category: "cardholders",
-    price: 65,
+    // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
+    price: 52,
+    originalPrice: 65,
     currency: "€",
     inStock: true,
-    badge: "Нова колекция",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     stock: 23,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Жълт кардхолдър от крокодилска кожа",
