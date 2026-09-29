@@ -157,7 +157,7 @@ export const products: Product[] = [
     images: [
       { src: `/Products/watches/Yachting White/yachting-white-hronograf-preden-izgled-v2.webp`, alt: "Lorenzo Ricci Yachting White - преден изглед, компасна роза и градусова скала" },
 { src: `/Products/watches/Yachting White/yachting-white-lume-noshten-rejim-v3.webp`,       alt: "Lorenzo Ricci Yachting White нощен режим - светещи индекси и стрелки" },
-      { src: `/Products/watches/Yachting White/yachting-white-nova.webp`,                         alt: "Lorenzo Ricci Yachting White на китката - лайфстайл изглед, лимитирана серия" },
+      { src: `/Products/watches/Yachting White/yachting-white-nova-wrist.webp`,                    alt: "Lorenzo Ricci Yachting White на китката - лайфстайл изглед, лимитирана серия" },
             { src: `/Products/watches/Yachting White/yachting-white-zadna-strana-v2.webp`,             alt: "Lorenzo Ricci Yachting White - задна страна на корпуса, гравиран компас YACHTING" },
       { src: `/Products/watches/Yachting White/yachting-white-kutiya-otvorena.webp`,          alt: "Lorenzo Ricci Yachting White в луксозна кутия за пътуване" },
       { src: `/Products/watches/Yachting White/yachting-white-kaishka-kopchalka.webp`,        alt: "Lorenzo Ricci Yachting White - закопчалка, детайл на каучуковата каишка" },
