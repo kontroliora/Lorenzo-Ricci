@@ -58,6 +58,7 @@ export const products: Product[] = [
     images: [
       { src: `/Products/watches/Yachting Black/yachting-black-hronograf-preden-izgled-v2.webp`, alt: "Lorenzo Ricci Yachting Black - преден изглед, компасна роза и градусова скала" },
       { src: `/Products/watches/Yachting Black/yachting-black-lume-noshten-rejim-v2.webp`,        alt: "Lorenzo Ricci Yachting Black нощен режим - светещи индекси и стрелки" },
+      { src: `/Products/watches/Yachting Black/yachting-black-nova.webp`,                         alt: "Lorenzo Ricci Yachting Black - лимитирана серия, детайл на циферблата" },
       { src: `/Products/watches/Yachting Black/yachting-black-stranicen-izgled-v2.webp`,          alt: "Lorenzo Ricci Yachting Black - страничен изглед, корона и каучукова верижка" },
       { src: `/Products/watches/Yachting Black/yachting-black-zadna-strana-v2.webp`,              alt: "Lorenzo Ricci Yachting Black - задна страна на корпуса, гравиран компас YACHTING" },
       { src: `/Products/watches/Yachting Black/yachting-black-kutiya-otvorena.webp`,           alt: "Lorenzo Ricci Yachting Black в луксозна кутия за пътуване" },
@@ -105,7 +106,8 @@ export const products: Product[] = [
     },
     images: [
       { src: `/Products/watches/Yachting Blue/yachting-blue-hronograf-preden-izgled-v2.webp`, alt: "Lorenzo Ricci Yachting Blue - преден изглед, компасна роза и градусова скала" },
-{ src: `/Products/watches/Yachting Blue/yachting-blue-lume-noshten-rejim-v3.webp`,       alt: "Lorenzo Ricci Yachting Blue нощен режим - светещи индекси и стрелки" },
+      { src: `/Products/watches/Yachting Blue/yachting-blue-lume-noshten-rejim-v3.webp`,       alt: "Lorenzo Ricci Yachting Blue нощен режим - светещи индекси и стрелки" },
+      { src: `/Products/watches/Yachting Blue/yachting-blue-nova.webp`,                        alt: "Lorenzo Ricci Yachting Blue - лимитирана серия, детайл на циферблата" },
       { src: `/Products/watches/Yachting Blue/yachting-blue-stranicen-izgled-v2.webp`,         alt: "Lorenzo Ricci Yachting Blue - страничен изглед, корона и каучукова верижка" },
             { src: `/Products/watches/Yachting Blue/yachting-blue-zadna-strana-v2.webp`,             alt: "Lorenzo Ricci Yachting Blue - задна страна на корпуса, гравиран компас YACHTING" },
       { src: `/Products/watches/Yachting Blue/yachting-blue-kutiya-otvorena.webp`,          alt: "Lorenzo Ricci Yachting Blue в луксозна кутия за пътуване" },
