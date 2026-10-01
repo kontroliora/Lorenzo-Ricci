@@ -32,12 +32,18 @@ type OrderRow = {
 
 export function toEmailData(o: OrderRow, awb: string, officeName = ""): ShipmentEmailData {
   const raw = Array.isArray(o.items) ? (o.items as Array<Record<string, unknown>>) : [];
-  const items: ShipmentItem[] = raw.map((i) => ({
-    name: String(i.name ?? "Артикул"),
-    qty: Number(i.qty ?? i.quantity ?? 1) || 1,
-    price: Number(i.price ?? 0) || 0,
-    currency: String(i.currency ?? "€"),
-  }));
+  const items: ShipmentItem[] = raw.map((i) => {
+    const gift = i.gift === true;
+    const name = String(i.name ?? "Артикул");
+    return {
+      // These emails keep a calm tone (no caps for emphasis): "ПОДАРЪК: X" reads "Подарък: X".
+      name: gift ? `Подарък: ${name.replace(/^ПОДАРЪК:\s*/, "")}` : name,
+      qty: Number(i.qty ?? i.quantity ?? 1) || 1,
+      price: Number(i.price ?? 0) || 0,
+      currency: String(i.currency ?? "€"),
+      gift,
+    };
+  });
   return {
     firstName: (o.name ?? "").trim().split(" ")[0] || "клиент",
     ref: o.order_ref ?? String(o.id),

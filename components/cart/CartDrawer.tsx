@@ -1,9 +1,11 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useCartStore } from "@/lib/store";
+import { useGiftLines } from "@/lib/use-gifts";
 import { CheckoutForm } from "./CheckoutForm";
 import { CartCrossSell } from "./CartCrossSell";
+import { CartGiftRow } from "./GiftRow";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 import { promoBase } from "@/lib/bundles";
 import { isOnSale } from "@/lib/price";
@@ -21,6 +23,9 @@ export function CartDrawer() {
   const [promoError, setPromoError] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+  // Free gift cardholders for the clutches in the cart - display only, never cart items, so
+  // they stay out of the subtotal, the free-shipping threshold and every discount.
+  const giftLines = useGiftLines(items);
   const subtotal = totalPrice();
   const { totalDiscount, active: activeBundles } = bundleDiscount();
   const afterBundles = subtotal - totalDiscount;
@@ -219,10 +224,12 @@ export function CartDrawer() {
           <>
             {/* Items + Cross-sell */}
             <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-4">
-              {items.map(({ product, quantity }) => (
+              {items.map(({ product, quantity }) => {
+                const gift = giftLines.find((g) => g.clutchSlug === product.slug);
+                return (
+                <Fragment key={product.id}>
                 <div
-                  key={product.id}
-                  className="flex gap-4 pb-4 border-b border-white/8 last:border-0"
+                  className={`flex gap-4 ${gift ? "" : "pb-4 border-b border-white/8 last:border-0"}`}
                 >
                   <div className="relative w-20 h-24 flex-shrink-0 bg-white/5 overflow-hidden">
                     <Image
@@ -287,7 +294,10 @@ export function CartDrawer() {
                     </div>
                   </div>
                 </div>
-              ))}
+                {gift && <CartGiftRow gift={gift} />}
+                </Fragment>
+                );
+              })}
               <CartCrossSell />
             </div>
 

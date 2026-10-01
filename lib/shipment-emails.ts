@@ -7,6 +7,7 @@ export interface ShipmentItem {
   qty: number;
   price: number;      // unit price
   currency: string;
+  gift?: boolean;     // free gift line (stored at price 0) - shown as "Подарък"
 }
 
 export interface ShipmentEmailData {
@@ -85,7 +86,7 @@ export function buildShippedEmail(d: ShipmentEmailData): string {
       (i) => `<tr>
         <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;font-family:Georgia,serif;color:#1a1a1a;font-size:14px">${i.name}</td>
         <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;text-align:center;color:#555;font-size:14px">×${i.qty}</td>
-        <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;text-align:right;font-family:Georgia,serif;color:#1a1a1a;font-size:14px">${i.currency}${i.price.toFixed(2)}</td>
+        <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;text-align:right;font-family:Georgia,serif;color:#1a1a1a;font-size:14px">${i.gift ? "Подарък" : `${i.currency}${i.price.toFixed(2)}`}</td>
       </tr>`,
     )
     .join("");

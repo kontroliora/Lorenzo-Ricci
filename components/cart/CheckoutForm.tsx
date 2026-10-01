@@ -1,8 +1,10 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { Fragment, useState, useRef, useEffect } from "react";
 import type { CartItem } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { calcBundleDiscount } from "@/lib/bundles";
+import { giftDisplayName } from "@/lib/gifts";
+import { useGiftLines } from "@/lib/use-gifts";
 import { trackFbEvent } from "@/lib/fbq";
 import { requiresPrepayment, PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 
@@ -34,6 +36,9 @@ interface CheckoutFormProps {
 export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promoRate = 0.10, onSuccess }: CheckoutFormProps) {
   const { clearCart } = useCartStore();
   const { totalDiscount, active: activeBundles } = calcBundleDiscount(items);
+  // Free gift cardholders for the clutches - shown only; the order payload below still carries
+  // just the paid lines, and the server adds (and stocks) the gifts itself.
+  const giftLines = useGiftLines(items);
 
   // €1500+ items: cash-on-delivery is not offered - no card/PSP integration exists
   // yet, so the honest interim behaviour is to block normal checkout and route the
@@ -139,6 +144,8 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   const [submitError, setSubmitError]       = useState("");
   const [orderRef, setOrderRef]             = useState("");
   const [submittedTotal, setSubmittedTotal] = useState(0);
+  // What the server actually gave as gifts (it can swap a sold-out cardholder for Bianco, or drop it).
+  const [gifted, setGifted] = useState<{ gifts: { name: string; qty: number; forName: string }[]; notes: string[] }>({ gifts: [], notes: [] });
 
   // ── Derived values ─────────────────────────────────────────────────────────
   // Threshold is checked on the pre-promo amount so a discount code never adds shipping.
@@ -229,6 +236,13 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         setSubmitting(false);
         return;
       }
+      try {
+        const body = await res.json();
+        setGifted({
+          gifts: Array.isArray(body?.gifts) ? body.gifts : [],
+          notes: Array.isArray(body?.giftNotes) ? body.giftNotes : [],
+        });
+      } catch { /* an unreadable body doesn't undo an accepted order */ }
     } catch {
       setSubmitError("Възникна грешка при свързването. Моля, опитайте отново.");
       setSubmitting(false);
@@ -283,7 +297,21 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
             <span className="font-sans text-white/40">Начин на плащане</span>
             <span className="font-sans text-white/60">Наложен платеж</span>
           </div>
+          {gifted.gifts.map((g) => (
+            <div key={`${g.forName}-${g.name}`} className="flex justify-between text-xs">
+              <span className="font-sans text-emerald-400/80">Подарък към {g.forName}</span>
+              <span className="font-sans text-emerald-400/80">{g.name} × {g.qty}</span>
+            </div>
+          ))}
         </div>
+
+        {gifted.notes.length > 0 && (
+          <div className="w-full bg-amber-500/10 border border-amber-500/20 p-3 text-left flex flex-col gap-1.5">
+            {gifted.notes.map((n) => (
+              <p key={n} className="font-sans text-xs text-amber-200/80 leading-relaxed">{n}</p>
+            ))}
+          </div>
+        )}
 
         {form.email ? (
           <p className="font-sans text-xs text-white/45 leading-relaxed">
@@ -316,12 +344,23 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
 
       {/* ── Order summary ─────────────────────────────────────────────────── */}
       <div className="bg-white/5 border border-white/8 p-4 flex flex-col gap-2">
-        {items.map(({ product, quantity }) => (
-          <div key={product.id} className="flex justify-between text-xs">
-            <span className="font-sans text-white/60 tracking-wide">{product.name} × {quantity}</span>
-            <span className="font-serif text-white">{product.currency}{(product.price * quantity).toFixed(2)}</span>
-          </div>
-        ))}
+        {items.map(({ product, quantity }) => {
+          const gift = giftLines.find((g) => g.clutchSlug === product.slug);
+          return (
+            <Fragment key={product.id}>
+              <div className="flex justify-between text-xs">
+                <span className="font-sans text-white/60 tracking-wide">{product.name} × {quantity}</span>
+                <span className="font-serif text-white">{product.currency}{(product.price * quantity).toFixed(2)}</span>
+              </div>
+              {gift && (
+                <div className="flex justify-between text-xs">
+                  <span className="font-sans text-emerald-400/80 tracking-wide">+ Подарък: {giftDisplayName(gift.giftSlug)} × {gift.qty}</span>
+                  <span className="font-sans text-emerald-400/80">Подарък</span>
+                </div>
+              )}
+            </Fragment>
+          );
+        })}
 
         {activeBundles.map(({ label, discount }) => (
           <div key={label} className="flex justify-between text-xs">

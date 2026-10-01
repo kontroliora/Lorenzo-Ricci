@@ -9,6 +9,8 @@ export type OrderItem = {
   qty?: number;
   price?: number;
   currency?: string;
+  gift?: boolean;    // free gift line added by /api/order (lib/gifts.ts), stored at price 0
+  giftFor?: string;  // slug of the clutch it came with
 };
 
 export type AdminOrder = {

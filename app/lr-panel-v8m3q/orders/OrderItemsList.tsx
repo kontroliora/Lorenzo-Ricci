@@ -58,8 +58,8 @@ export function OrderItemsList({ items }: { items: OrderItem[] }) {
         return (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 11 }}>
             <Thumb src={product?.coverImage.src} alt={it.name ?? ""} />
-            <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 13.5, lineHeight: 1.4 }}>
-              {it.name ?? "—"} <span style={{ color: "rgba(255,255,255,0.4)" }}>× {qty}</span>
+            <span style={{ color: it.gift ? "#34d399" : "rgba(255,255,255,0.85)", fontSize: 13.5, lineHeight: 1.4, fontWeight: it.gift ? 600 : undefined }}>
+              {it.gift ? "+ " : ""}{it.name ?? "—"} <span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400 }}>× {qty}</span>
             </span>
           </div>
         );

@@ -7,6 +7,7 @@ import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
+import { useGiftFor } from "@/lib/use-gifts";
 
 interface ProductCardProps {
   product: Product;
@@ -33,6 +34,9 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
   }, [product.slug]);
   // inStock: false in lib/products.ts is the owner's off switch - sold out regardless of count.
   const isSoldOut = soldOut || !product.inStock;
+
+  // Clutches carry a free gift cardholder; the badge goes away if none is left to give.
+  const hasGift = useGiftFor(product.slug, 1) !== null;
 
   const isWatch = product.category === "watches";
   const price = displayPrice(product, useCountry());
@@ -150,6 +154,11 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
           {product.badge && !isSoldOut && (
             <span className="bg-white/95 text-navy border border-navy/20 font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
               {product.badge}
+            </span>
+          )}
+          {hasGift && !isSoldOut && (
+            <span className="bg-navy text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
+              + Подарък кардхолдър
             </span>
           )}
         </div>

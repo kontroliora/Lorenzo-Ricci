@@ -8,6 +8,7 @@ import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
+import { GiftOffer } from "@/components/product/GiftOffer";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { getProductBySlug } from "@/lib/products";
 
@@ -325,6 +326,9 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           </span>
         )}
       </div>
+
+      {/* Clutches: the free gift cardholder (renders nothing for any other product) */}
+      <GiftOffer clutchSlug={product.slug} />
 
       {/* Stock indicator - the number AVAILABLE (free to order), matching the
           admin panel's "Налични". Shown only below the low-stock threshold; above

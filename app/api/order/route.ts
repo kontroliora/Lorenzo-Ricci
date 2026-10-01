@@ -8,9 +8,20 @@ import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
 import { validateOrderPricing } from "@/lib/order-pricing";
 import { checkOrderable } from "@/lib/order-availability";
 import { checkPromoCode } from "@/lib/promo";
+import { reserveWithGifts, giftNotes, giftDisplayName, shortModelName, type GiftLine, type GiftReservation, type MissedGift, type ReserveFn, type Shortfall } from "@/lib/gifts";
 
 // Order line item shape.
 type ItemPayload = { sku?: string; qty?: number; quantity?: number; slug?: string; name?: string; price?: number; currency?: string };
+
+// A gift line shows "Подарък" where a price would be (it is stored at 0).
+const priceCell = (i: { gift?: boolean; currency?: string; price?: number }): string =>
+  i.gift ? "Подарък" : `${i.currency ?? "€"}${Number(i.price ?? 0).toFixed(2)}`;
+
+// Extra lines under the items when the customer's gift changed (swapped / sold out).
+const giftNotesHtml = (order: Record<string, unknown>, style: string): string => {
+  const notes = Array.isArray(order.giftNotes) ? (order.giftNotes as string[]) : [];
+  return notes.length ? `<p style="${style}">${notes.join("<br>")}</p>` : "";
+};
 
 const qtyOf = (i: ItemPayload) => Math.max(1, Number(i.quantity ?? i.qty ?? 1));
 
@@ -42,12 +53,12 @@ function buildAdminEmail(order: Record<string, unknown>, alertMessage?: string |
     : "";
 
   const items = Array.isArray(order.items)
-    ? (order.items as Array<{ name?: string; sku?: string; quantity?: number; qty?: number; price?: number; currency?: string }>)
-        .map((i) => `<tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb">${i.name ?? "-"}</td>
+    ? (order.items as Array<{ name?: string; sku?: string; quantity?: number; qty?: number; price?: number; currency?: string; gift?: boolean }>)
+        .map((i) => `<tr${i.gift ? ' style="background:#ecfdf5"' : ""}>
+          <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb${i.gift ? ";color:#047857;font-weight:600" : ""}">${i.name ?? "-"}</td>
           <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;font-family:monospace;font-size:12px;color:#555">${i.sku ?? "-"}</td>
           <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:center">${i.quantity ?? i.qty ?? 1}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right">${i.currency ?? "€"}${Number(i.price ?? 0).toFixed(2)}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right${i.gift ? ";color:#047857;font-weight:600" : ""}">${priceCell(i)}</td>
         </tr>`)
         .join("")
     : `<tr><td colspan="4" style="padding:10px 12px">-</td></tr>`;
@@ -119,6 +130,8 @@ function buildAdminEmail(order: Record<string, unknown>, alertMessage?: string |
         </tfoot>
       </table>
 
+      ${giftNotesHtml(order, "margin:0 0 20px;padding:12px 14px;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;font-size:13px;color:#92400e")}
+
       <p style="margin:0;font-size:12px;color:#9ca3af">Получено: ${new Date().toLocaleString("bg-BG", { timeZone: "Europe/Sofia" })}</p>
     </div>
   </div>
@@ -135,13 +148,13 @@ function buildCustomerEmail(order: Record<string, unknown>): string {
   const firstName = String(customer.name ?? "").split(" ")[0];
 
   const items = Array.isArray(order.items)
-    ? (order.items as Array<{ name?: string; quantity?: number; price?: number; currency?: string }>)
+    ? (order.items as Array<{ name?: string; quantity?: number; price?: number; currency?: string; gift?: boolean }>)
         .map(
           (i) =>
             `<tr>
-              <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;font-family:'Georgia',serif;color:#1a1a1a;font-size:14px">${i.name ?? "-"}</td>
+              <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;font-family:'Georgia',serif;color:${i.gift ? "#047857" : "#1a1a1a"};font-size:14px">${i.name ?? "-"}</td>
               <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;text-align:center;color:#555;font-size:14px">×${i.quantity ?? 1}</td>
-              <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;text-align:right;font-family:'Georgia',serif;color:#1a1a1a;font-size:14px">${i.currency ?? "€"}${Number(i.price ?? 0).toFixed(2)}</td>
+              <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;text-align:right;font-family:'Georgia',serif;color:${i.gift ? "#047857" : "#1a1a1a"};font-size:14px">${priceCell(i)}</td>
             </tr>`
         )
         .join("")
@@ -189,6 +202,7 @@ function buildCustomerEmail(order: Record<string, unknown>): string {
                   </tr>
                 </tfoot>
               </table>
+              ${giftNotesHtml(order, "margin:18px 0 0;font-size:13px;line-height:1.6;color:#7a5c1e")}
 
               <!-- Divider -->
               <div style="border-top:1px solid #e8dfc8;margin:28px 0"></div>
@@ -471,6 +485,12 @@ export async function POST(req: NextRequest) {
     //    shortfall OR error, so we never oversell. Slugs absent from wallet_inventory
     //    are skipped by the RPC. (Was: watches on a fail-open KV read-check; unified
     //    onto the stricter leather model so watches can no longer oversell either.)
+    //
+    //    Clutch gifts (lib/gifts.ts) ride on the same reservation: each clutch also reserves
+    //    its gift cardholder (swapped for Bianco if the matching one is short, dropped if
+    //    nothing is left). A gift never blocks the paid goods - only a short PAID item does.
+    let gifts: GiftLine[] = [];
+    let missedGifts: MissedGift[] = [];
     {
       const lines = (order.items ?? []) as ItemPayload[];
       const reserveItems = lines
@@ -479,28 +499,73 @@ export async function POST(req: NextRequest) {
       if (reserveItems.length) {
         // Server key, not the public one: once supabase/close_public_functions.sql
         // runs, the public key can no longer call the stock functions.
-        const { data: res, error: resErr } = await supabaseAdmin().rpc("reserve_wallet_stock", {
-          p_items: reserveItems.map(({ slug, qty }) => ({ slug, qty })),
-        });
-        if (resErr) {
-          console.error("[Order] reserve_wallet_stock error:", resErr.message);
+        const reserveStock: ReserveFn = async (items) => {
+          const { data: res, error: resErr } = await supabaseAdmin().rpc("reserve_wallet_stock", { p_items: items });
+          if (resErr) throw new Error(resErr.message);
+          if (res && (res as { ok?: boolean }).ok === false) {
+            return { ok: false, shortfall: (res as { shortfall?: Shortfall[] }).shortfall ?? [] };
+          }
+          return { ok: true };
+        };
+        let reservation: GiftReservation;
+        try {
+          reservation = await reserveWithGifts(
+            reserveItems.map(({ slug, qty }) => ({ slug, qty })),
+            reserveStock,
+            (slug) => findProductWithOverride(slug)?.inStock === true,
+          );
+        } catch (e) {
+          console.error("[Order] reserve_wallet_stock error:", e instanceof Error ? e.message : e);
           return NextResponse.json({ success: false, error: "Възникна проблем с проверката на наличността. Моля, опитайте отново." }, { status: 503 });
         }
-        if (res && (res as { ok?: boolean }).ok === false) {
-          const sf = ((res as { shortfall?: { slug: string; available: number }[] }).shortfall ?? []);
-          const named = sf.map((s) => ({ name: reserveItems.find((l) => l.slug === s.slug)?.name ?? s.slug, available: s.available }));
+        if (!reservation.ok) {
+          const named = reservation.shortfall.map((s) => ({ name: reserveItems.find((l) => l.slug === s.slug)?.name ?? s.slug, available: s.available }));
           return NextResponse.json({ success: false, error: stockErrorMessage(named) }, { status: 409 });
         }
+        gifts = reservation.gifts;
+        missedGifts = reservation.missed;
       }
     }
+
+    // Gifts become real order lines (price 0, gift: true) so the emails, the panel and every
+    // later restock (cancel / return / Econt) see them like any other line. They are added
+    // AFTER the price guard and never reach the Meta events: those keep using the browser's
+    // paid lines, so value and content_ids stay exactly what the customer pays for.
+    const giftItems = gifts.map((g) => {
+      const p = getProductBySlug(g.giftSlug);
+      return {
+        sku: p?.sku ?? g.giftSlug,
+        slug: g.giftSlug,
+        name: `ПОДАРЪК: ${giftDisplayName(g.giftSlug)}`,
+        quantity: g.qty,
+        qty: g.qty,
+        price: 0,
+        currency: p?.currency ?? "€",
+        gift: true,
+        giftFor: g.clutchSlug,
+      };
+    });
+    const notes = giftNotes({ gifts, missed: missedGifts });
+    // Only the server marks gifts: a client-sent gift / giftFor flag on a paid line is dropped.
+    const paidItems = ((order.items ?? []) as Record<string, unknown>[]).map((i) => {
+      const line = { ...i };
+      delete line.gift;
+      delete line.giftFor;
+      return line;
+    });
+    const savedOrder: Record<string, unknown> = {
+      ...order,
+      items: [...paidItems, ...giftItems],
+      ...(notes.length ? { giftNotes: notes } : {}),
+    };
 
     // Send emails and await them - without await they are killed by Vercel before sending
     const subject = `✅ Нова поръчка - ${customerName}`;
 
     await Promise.allSettled([
-      sendAdminEmail(subject, buildAdminEmail(order)),
+      sendAdminEmail(subject, buildAdminEmail(savedOrder)),
       ...(customerAddress
-        ? [sendCustomerEmail(customerAddress, buildCustomerEmail(order))]
+        ? [sendCustomerEmail(customerAddress, buildCustomerEmail(savedOrder))]
         : []),
       // Meta's Purchase value is the server-validated amount, not the browser's number.
       sendCapiPurchase(order, String(order.orderRef ?? ""), pricing.total, capiCtx),
@@ -522,7 +587,7 @@ export async function POST(req: NextRequest) {
         address:                 String(customer.officeAddress ?? ""),
         shipping_method:         String(customer.shippingMethod ?? ""),
         courier:                 String(customer.courier       ?? ""),
-        items:                   order.items ?? [],
+        items:                   savedOrder.items ?? [],
         subtotal:                Number(order.subtotal         ?? 0),
         shipping_cost:           Number(shipping.cost          ?? 0),
         total:                   Number(order.total            ?? 0),
@@ -549,7 +614,7 @@ export async function POST(req: NextRequest) {
       // Order won't appear in the panel - send a distinct alert so it isn't lost.
       await sendAdminEmail(
         `🚨 [НЕ Е ЗАПИСАНА В ПАНЕЛА] ${customerName} - ${String(order.orderRef ?? "")}`,
-        buildAdminEmail(order, `Поръчката НЕ се записа в базата (${reason}). Добави я РЪЧНО в панела.`),
+        buildAdminEmail(savedOrder, `Поръчката НЕ се записа в базата (${reason}). Добави я РЪЧНО в панела.`),
       ).catch((e) => console.error("[Supabase] alert email also failed:", e));
     }
 
@@ -584,7 +649,15 @@ export async function POST(req: NextRequest) {
     //    the top (reserve_wallet_stock) - nothing to do here. (Watches/jewellery
     //    follow the reservation model; this new order becomes the reservation.)
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    // The storefront shows what was really given (and why it changed) on the success screen.
+    return NextResponse.json(
+      {
+        success: true,
+        gifts: gifts.map((g) => ({ name: giftDisplayName(g.giftSlug), qty: g.qty, forName: shortModelName(g.clutchSlug) })),
+        giftNotes: notes,
+      },
+      { status: 200 },
+    );
   } catch (error) {
     console.error("Order error:", error);
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
