@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    // Stopgap while Vercel's image-optimisation quota is exhausted (every /_next/image call
+    // answers 402 OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED and product photos stay blank):
+    // serve the files in /public as they are. Remove once the plan/quota is fixed.
+    unoptimized: true,
     formats: ["image/webp", "image/avif"],
     deviceSizes: [390, 768, 1024, 1280, 1920],
     imageSizes: [64, 128, 256, 384, 512],
