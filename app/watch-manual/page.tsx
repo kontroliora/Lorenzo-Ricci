@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Ръководство за часовник | Lorenzo Ricci",
+  title: "Ръководство за часовник",
   description:
     "Пълно ръководство за употреба на хронограф с кварцов механизъм Lorenzo Ricci - настройка на времето, хронограф функция, грижа и поддръжка.",
 };

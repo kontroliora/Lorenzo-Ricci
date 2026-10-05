@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Нашата История | Lorenzo Ricci",
+  title: "Нашата История",
   description: "Lorenzo Ricci е основана от братя часовникари, водени от стремежа да създават луксозни часовници с характер, прецизност и изискано присъствие.",
 };
 

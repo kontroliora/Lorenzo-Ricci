@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Политика за Поверителност | Lorenzo Ricci",
+  title: "Политика за Поверителност",
   description: "Правила за поверителност на Lorenzo Ricci - как събираме, използваме и защитаваме Вашата лична информация.",
 };
 

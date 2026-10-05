@@ -3,7 +3,7 @@ import Image from "next/image";
 import { CheckCircle, XCircle } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Гаранционни Условия | Lorenzo Ricci",
+  title: "Гаранционни Условия",
   description:
     "Гаранционни условия на Lorenzo Ricci - доживотна гаранция за бижута и 5-годишна търговска гаранция за часовници. Разберете какво покриваме и как да упражните правата си.",
 };

@@ -4,7 +4,7 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 
 export const metadata: Metadata = {
-  title: "Кожени Изделия | Lorenzo Ricci",
+  title: "Кожени Изделия",
   description:
     "Lorenzo Ricci кожени аксесоари - портфейли и кардхолдъри от 100% крокодилска кожа Crocodylus Siamensis. CITES сертифициран произход. Ръчна изработка.",
 };

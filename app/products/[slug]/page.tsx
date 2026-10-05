@@ -13,6 +13,8 @@ import { JewelleryDescription } from "@/components/product/JewelleryDescription"
 import { LeatherDescription } from "@/components/product/LeatherDescription";
 import { requiresPrepayment } from "@/lib/price";
 import { getPriceOverrides, applyOverride, applyOverrides } from "@/lib/price-overrides";
+import { getLiveStock } from "@/lib/live-stock";
+import { productJsonLd, jsonLdString } from "@/lib/product-jsonld";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
 // lib/price-overrides.ts) — every product page stays statically generated
@@ -60,6 +62,12 @@ export default async function ProductPage({ params }: Props) {
   const product = applyOverride(rawProduct, overrides);
 
   const reviews = getReviewsBySlug(slug);
+  const liveStock = await getLiveStock(slug);
+  const summary = reviewSummary[slug];
+  const jsonLd = productJsonLd(product, {
+    liveStock,
+    reviews: reviews.length > 0 && summary ? summary : null,
+  });
   const related = applyOverrides(getRelatedProducts(product, 4), overrides);
 
   // For watches: hide night images and side-profile images from the gallery
@@ -72,6 +80,7 @@ export default async function ProductPage({ params }: Props) {
 
   return (
     <div className="min-h-screen pt-[116px] pb-24">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }} />
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-[10px] font-sans tracking-widest uppercase text-ink-faint mb-10">
