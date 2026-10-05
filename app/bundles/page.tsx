@@ -5,7 +5,7 @@ import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
 import { BundlesClient } from "./BundlesClient";
 
 export const metadata: Metadata = {
-  title: "Комплекти | Lorenzo Ricci",
+  title: "Комплекти",
   description:
     "Завърши визията с подбрани комплекти от бижута Lorenzo Ricci. Съчетай гривна и колие от една колекция и получи 10% отстъпка.",
 };
@@ -28,7 +28,7 @@ export default async function BundlesPage() {
     const productB = findProduct(bundle.slots[1][0]);
     // A set with a sale item earns no set discount (no stacking) - don't advertise it.
     if (!productA || !productB || bundleHasSaleItem(bundle, findProduct)) return [];
-    return [{ id: bundle.id, label: bundle.label, productA, productB, discountPct: bundle.discountPct }];
+    return [{ id: bundle.id, label: bundle.label, productA, productB, discountPct: bundle.discountPct, slots: bundle.slots }];
   });
 
   return (

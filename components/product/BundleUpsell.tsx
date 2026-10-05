@@ -6,6 +6,7 @@ import { getProductBySlug } from "@/lib/products";
 import { useCartStore } from "@/lib/store";
 import { useCountry } from "@/lib/country";
 import { usePriceOverrides } from "@/lib/use-price-overrides";
+import { useLeatherStock } from "@/lib/use-gifts";
 import type { Product } from "@/lib/types";
 
 interface Props {
@@ -17,6 +18,7 @@ export function BundleUpsell({ product: rawProduct }: Props) {
   const [addedPartnerId, setAddedPartnerId] = useState<string | null>(null);
   const country = useCountry();
   const applyOverride = usePriceOverrides();
+  const stock = useLeatherStock(true);
   // `product` itself may already be override-applied (passed down from a server
   // page), but re-applying here is a no-op if so and required if this component is
   // ever used from a context that didn't already do that merge.
@@ -38,11 +40,14 @@ export function BundleUpsell({ product: rawProduct }: Props) {
   const partnerSlot = bundle.slots.find((slot) => !slot.includes(product.id));
   if (!partnerSlot) return null;
 
+  // A set mirrors the stock of its pieces: a partner with nothing left isn't offered, and
+  // neither is the set when this product itself is gone (stock not loaded yet = available).
+  const soldOutNow = (slug: string) => (stock?.[slug] ?? 1) <= 0;
   const partners = partnerSlot
     .map((slug) => findProduct(slug))
-    .filter((p): p is Product => !!p && p.inStock);
+    .filter((p): p is Product => !!p && p.inStock && !soldOutNow(p.slug));
 
-  if (partners.length === 0) return null;
+  if (partners.length === 0 || soldOutNow(product.slug)) return null;
 
   // No stacking: while either piece is on sale the set earns no discount, so the
   // pairing is shown without one.

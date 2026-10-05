@@ -1,7 +1,7 @@
 import type { CartItem, Product } from "./types";
 import { isOnSale } from "./price";
 
-interface Bundle {
+export interface Bundle {
   id: string;
   label: string;
   // Each slot is a list of product IDs — any one of them satisfies the slot
@@ -90,6 +90,21 @@ export function calcBundleDiscount(items: CartItem[]): BundleResult {
 // set earns no set discount, so pages mustn't advertise one for it.
 export function bundleHasSaleItem(bundle: Bundle, findProduct: (id: string) => Product | undefined): boolean {
   return bundle.slots.some((slot) => slot.some((id) => { const p = findProduct(id); return !!p && isOnSale(p); }));
+}
+
+// A set is sold out as soon as ANY of its slots can't be filled: a slot is filled by any
+// one of its products that is switched on in the catalog and has free stock. Stock the
+// storefront doesn't know yet (undefined) counts as available - the browser shows the
+// optimistic state first, and /api/order stays the real judge (reserve_wallet_stock is
+// all-or-nothing across every line, so a set is never half-sold).
+export function bundleSoldOut(
+  bundle: Pick<Bundle, "slots">,
+  stockOf: (slug: string) => number | undefined,
+  isOn: (slug: string) => boolean,
+): boolean {
+  return bundle.slots.some((slot) =>
+    slot.every((slug) => !isOn(slug) || (stockOf(slug) ?? 1) <= 0),
+  );
 }
 
 // What a promo code (newsletter / waitlist) applies to: full-price items only, after

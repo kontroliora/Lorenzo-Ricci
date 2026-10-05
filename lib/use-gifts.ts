@@ -27,7 +27,8 @@ function loadStock(): Promise<StockMap | null> {
   return inflight;
 }
 
-function useLeatherStock(enabled: boolean): StockMap | null {
+// Also used by the set (bundle) cards, so a set mirrors the stock of its pieces.
+export function useLeatherStock(enabled: boolean): StockMap | null {
   const [map, setMap] = useState<StockMap | null>(cached?.map ?? null);
   useEffect(() => {
     if (!enabled) return;
