@@ -6,6 +6,9 @@ declare global {
       params?: Record<string, unknown>,
       eventData?: { eventID?: string }
     ) => void;
+    // Installed by components/analytics/MetaPixel.tsx: runs fn now if a person has shown up on
+    // the page, else once one does (bots that open a page and leave never trigger it).
+    lrWhenHuman?: (fn: () => void) => void;
   }
 }
 
@@ -24,7 +27,11 @@ export function trackFbEvent(
   eventId?: string
 ): void {
   if (typeof window === "undefined" || !window.fbq) return;
-  window.fbq("track", event, withIsoCurrency(params), eventId ? { eventID: eventId } : undefined);
+  const send = () => window.fbq("track", event, withIsoCurrency(params), eventId ? { eventID: eventId } : undefined);
+  // ViewContent is a landing-page signal like PageView, and ad landing pages are product pages:
+  // hold it back until a person shows up (the other events need a real action anyway).
+  if (event === "ViewContent" && window.lrWhenHuman) window.lrWhenHuman(send);
+  else send();
 }
 
 /** Generate a unique event ID for deduplication between browser pixel and CAPI. */
