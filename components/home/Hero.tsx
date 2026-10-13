@@ -1,16 +1,24 @@
 "use client";
 import Link from "next/link";
 import { getImageProps } from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-// Mobile gets a static cover (the page's LCP, fetched at high priority); the
-// looping video is mounted only on screens ≥ 640px, after hydration, so phones
-// never download hero-video.mp4 (owner, 2026-09-28: mobile LCP was 8.5 s).
+// The static cover is the page's LCP (fetched at high priority) and the poster under the video. The
+// looping video is mounted only after the page has loaded and the browser is idle, so it never competes
+// with the LCP (owner, 2026-09-28: with the video fetched up front, mobile LCP was 8.5 s).
+// Two encodes, both H.264 / yuv420p / no audio / moov atom first (so playback starts before the file
+// is down): a vertical 720p crop for phones (~1.5 MB) and 1080p for larger screens (~3.3 MB).
+// The video fades in only once it is really playing: if autoplay is refused (iOS Low Power Mode, data
+// saver) or the file fails, the cover simply stays. Phone/desktop split = the cover's own 640px breakpoint.
 const DESKTOP_MIN = "(min-width: 640px)";
+const VIDEO = { mobile: "/hero-video-mobile.mp4", desktop: "/hero-video-desktop.mp4" } as const;
+const POSTER = { mobile: "/covers/mobile%20cover.webp", desktop: "/covers/desktop%20cover.webp" } as const;
 
 export function Hero() {
   const [loaded, setLoaded] = useState(false);
-  const [showVideo, setShowVideo] = useState(false);
+  const [variant, setVariant] = useState<"mobile" | "desktop" | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 100);
@@ -18,11 +26,37 @@ export function Hero() {
   }, []);
 
   useEffect(() => {
+    // No video for people who asked for less motion or less data.
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || conn?.saveData) return;
+
     const mq = window.matchMedia(DESKTOP_MIN);
-    const apply = () => setShowVideo(mq.matches);
-    apply();
+    let ready = false;
+    const apply = () => {
+      if (!ready) return;
+      setPlaying(false);
+      setVariant(mq.matches ? "desktop" : "mobile");
+    };
+    const start = () => { ready = true; apply(); };
+    const idle = () => ("requestIdleCallback" in window ? window.requestIdleCallback(start, { timeout: 2500 }) : setTimeout(start, 1500));
+    if (document.readyState === "complete") idle();
+    else window.addEventListener("load", idle, { once: true });
     mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
+    return () => {
+      window.removeEventListener("load", idle);
+      mq.removeEventListener("change", apply);
+    };
+  }, []);
+
+  // React sets `muted` as a property, never as the attribute, and iOS Safari decides on autoplay from
+  // the attribute: set both ourselves, then ask to play. A refusal is fine - the cover stays visible.
+  const videoRef = useCallback((v: HTMLVideoElement | null) => {
+    if (!v) return;
+    v.muted = true;
+    v.defaultMuted = true;
+    v.setAttribute("muted", "");
+    v.setAttribute("playsinline", "");
+    v.play().catch(() => {});
   }, []);
 
   // Art direction through next/image's optimizer: one <picture>, two covers.
@@ -33,25 +67,29 @@ export function Hero() {
 
   return (
     <section className="relative w-full h-screen min-h-[600px] max-h-[1000px] overflow-hidden">
-      {/* Static cover: the only hero asset on phones; the poster under the video on desktop */}
+      {/* Static cover: shown at once, stays under the video, and stays if the video never starts */}
       <picture>
         <source media={DESKTOP_MIN} srcSet={desktop.srcSet} sizes={desktop.sizes} />
         {/* eslint-disable-next-line jsx-a11y/alt-text */}
         <img {...mobile} fetchPriority="high" decoding="async" className="absolute inset-0 w-full h-full object-cover object-center" />
       </picture>
 
-      {/* Hero video background - desktop only */}
-      {showVideo && (
+      {/* Hero video background: mounted after load, fades in once it is playing */}
+      {variant && !failed && (
         <video
+          key={variant}
+          ref={videoRef}
           autoPlay
           muted
           loop
           playsInline
           preload="metadata"
-          className="absolute inset-0 w-full h-full object-cover object-center"
-          poster="/covers/desktop%20cover.webp"
+          poster={POSTER[variant]}
+          onPlaying={() => setPlaying(true)}
+          onError={() => setFailed(true)}
+          className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-700 ${playing ? "opacity-100" : "opacity-0"}`}
         >
-          <source src="/hero-video.mp4" type="video/mp4" />
+          <source src={VIDEO[variant]} type="video/mp4" onError={() => setFailed(true)} />
         </video>
       )}
 

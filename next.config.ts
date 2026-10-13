@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 86400,
     dangerouslyAllowSVG: false,
   },
+  // The hero videos never change under the same name (versioned filenames: bump the name when replacing).
+  async headers() {
+    return [{ source: "/hero-video-:v.mp4", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] }];
+  },
   experimental: {
     optimizePackageImports: ["zustand"],
     // Client router cache: a dynamic page (every page here — the layout reads geo
