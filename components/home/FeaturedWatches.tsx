@@ -17,7 +17,7 @@ export function FeaturedWatches() {
   const watches = getWatches();
 
   return (
-    <section className="py-20 sm:py-40 bg-white">
+    <section id="yachting" className="py-20 sm:py-40 bg-white">
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         <WatchGroup
           tag="Нова Колекция"
