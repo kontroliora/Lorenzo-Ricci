@@ -31,7 +31,9 @@ export async function POST(req: NextRequest) {
     const fbc       = req.cookies.get("_fbc")?.value ?? undefined;
     const fbp       = req.cookies.get("_fbp")?.value ?? undefined;
 
-    const userData: Record<string, unknown> = { country: ["bg"] };
+    // Romanian market test: its events are sent in RON (see components/ro/*) and must say so to Meta.
+    const isRo = body.currency === "RON";
+    const userData: Record<string, unknown> = { country: [isRo ? "ro" : "bg"] };
     if (ip)        userData.client_ip_address = ip;
     if (userAgent) userData.client_user_agent = userAgent;
     if (fbc)       userData.fbc = fbc;
@@ -45,6 +47,7 @@ export async function POST(req: NextRequest) {
       customData.content_ids  = body.contentIds;
       customData.content_type = "product";
     }
+    if (isRo) customData.content_category = "RO";
     if (body.value    != null) customData.value     = body.value;
     if (body.numItems != null) customData.num_items = body.numItems;
 
@@ -53,7 +56,7 @@ export async function POST(req: NextRequest) {
         event_name:       body.eventName,
         event_time:       Math.floor(Date.now() / 1000),
         event_id:         body.eventId,
-        event_source_url: "https://lorenzo-ricci.com",
+        event_source_url: isRo ? "https://lorenzo-ricci.com/ro" : "https://lorenzo-ricci.com",
         action_source:    "website",
         user_data:        userData,
         custom_data:      customData,

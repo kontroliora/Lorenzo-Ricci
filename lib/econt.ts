@@ -316,6 +316,7 @@ export async function reconcileShippedOrders(sb: SupabaseClient): Promise<Reconc
     .from("orders")
     .select("id, tracking_number")
     .eq("status", "shipped")
+    .eq("is_international", false) // Romanian orders ship with another courier: never look them up at Econt
     .not("tracking_number", "is", null);
   if (error) throw new Error(error.message);
 
@@ -352,6 +353,7 @@ export async function reconcileShippedOrders(sb: SupabaseClient): Promise<Reconc
     .from("orders")
     .select("id, tracking_number")
     .eq("status", "returning")
+    .eq("is_international", false)
     .not("returning_at", "is", null)
     .is("restocked_at", null)
     .not("tracking_number", "is", null);
@@ -421,6 +423,7 @@ export async function matchTrackingNumbers(sb: SupabaseClient): Promise<MatchRes
     .from("orders")
     .select("id, order_ref, name, phone, total, subtotal, created_at")
     .eq("status", "confirmed")
+    .eq("is_international", false)
     .is("tracking_number", null);
   if (error) throw new Error(error.message);
   const orders = (ordersData ?? []) as Array<{ id: number; order_ref: string | null; name: string | null; phone: string | null; total: number | null; subtotal: number | null; created_at: string }>;

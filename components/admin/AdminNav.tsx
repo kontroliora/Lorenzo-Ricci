@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 const TABS = [
   { href: "/lr-panel-v8m3q/inventory", label: "Инвентар" },
   { href: "/lr-panel-v8m3q/orders",    label: "Поръчки" },
+  { href: "/lr-panel-v8m3q/romania",   label: "Румъния" },
 ];
 
 // Owner-only tabs. Hidden from the employee — each page also re-checks

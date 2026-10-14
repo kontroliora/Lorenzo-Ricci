@@ -18,6 +18,11 @@ function revalidateStorefront(slug: string) {
   revalidatePath("/jewellery");
   revalidatePath("/bundles");
   revalidatePath(`/products/${slug}`);
+  // Romanian market test (/ro): same prices (EUR x 5.25), same cache
+  revalidatePath("/ro");
+  revalidatePath("/ro/ceasuri");
+  revalidatePath("/ro/piele-de-crocodil");
+  revalidatePath(`/ro/produse/${slug}`);
 }
 
 // Plain Route Handler (not a "use server" action) — same reasoning as before this
