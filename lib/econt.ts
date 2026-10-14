@@ -261,6 +261,7 @@ export async function classifyExistingReturns(sb: SupabaseClient): Promise<numbe
     .from("orders")
     .select("id, tracking_number, return_kind")
     .in("status", ["returning", "returned"])
+    .eq("is_international", false) // a Romanian AWB is never looked up at Econt
     .not("tracking_number", "is", null);
   const rows = ((data ?? []) as { id: number; tracking_number: string; return_kind: string | null }[])
     .filter((o) => !o.return_kind);

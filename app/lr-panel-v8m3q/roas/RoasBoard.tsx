@@ -103,26 +103,47 @@ export function RoasBoard({ initial }: { initial: RoasData }) {
         </div>
       </section>
 
-      {/* ── Romania, in lei (never mixed into the euro numbers above) ──── */}
+      {/* ── Market split: the euro numbers above cover both markets (Romania = lei / rate); Romania also has its own row in lei ──── */}
       {data.ro && (
         <section className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-5">
-          <h3 className="text-[11px] tracking-[0.2em] uppercase text-white/40">Румъния · в леи (не влиза в сумите в € и в ROAS)</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-[12px]">
-            {([
-              ["Всички поръчки", { count: data.ro.count, total: data.ro.gross }, "text-white"],
-              ["Доставени", data.ro.delivered, "text-emerald-400"],
-              ["В движение", data.ro.inMotion, "text-sky-300"],
-              ["Изчакват", data.ro.pending, "text-white/70"],
-              ["Отказани / върнати", { count: data.ro.cancelled.count + data.ro.returned.count, total: data.ro.cancelled.total + data.ro.returned.total }, "text-rose-300"],
-            ] as const).map(([label, b, tone]) => (
-              <div key={label}>
-                <p className="text-white/40">{label}</p>
-                <p className={`mt-1 text-lg font-semibold tabular-nums ${tone}`}>{lei(b.total)}</p>
-                <p className="text-white/35">{b.count} {b.count === 1 ? "поръчка" : "поръчки"} · ≈ €{(b.total / data.ro!.rate).toFixed(2)}</p>
-              </div>
-            ))}
+          <h3 className="text-[11px] tracking-[0.2em] uppercase text-white/40">Разбивка по пазар · общото в € = България + Румъния (лей ÷ {data.ro.rate})</h3>
+          <div>
+            <p className="text-[11px] tracking-[0.18em] uppercase text-white/40 mb-3">🇧🇬 България · в евро</p>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-[12px]">
+              {([
+                ["Всички поръчки", data.bg.all, "text-white"],
+                ["Доставени", data.bg.delivered, "text-emerald-400"],
+                ["В движение", data.bg.inMotion, "text-sky-300"],
+                ["Изчакват", data.bg.pending, "text-white/70"],
+                ["Отказани / върнати", data.bg.lost, "text-rose-300"],
+              ] as const).map(([label, b, tone]) => (
+                <div key={label}>
+                  <p className="text-white/40">{label}</p>
+                  <p className={`mt-1 text-lg font-semibold tabular-nums ${tone}`}>{eur(b.total)}</p>
+                  <p className="text-white/35">{b.count} {b.count === 1 ? "поръчка" : "поръчки"}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <p className="text-[11px] text-white/35">≈ € е само за ориентир, по курс {data.ro.rate} лея за €1. Рекламният разход по-горе е за България, затова румънските поръчки нямат ROAS.</p>
+          <div className="pt-3 border-t border-white/8">
+            <p className="text-[11px] tracking-[0.18em] uppercase text-white/40 mb-3">🇷🇴 Румъния · в леи (≈ € по курс {data.ro.rate})</p>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-[12px]">
+              {([
+                ["Всички поръчки", { count: data.ro.count, total: data.ro.gross }, "text-white"],
+                ["Доставени", data.ro.delivered, "text-emerald-400"],
+                ["В движение", data.ro.inMotion, "text-sky-300"],
+                ["Изчакват", data.ro.pending, "text-white/70"],
+                ["Отказани / върнати", { count: data.ro.cancelled.count + data.ro.returned.count, total: data.ro.cancelled.total + data.ro.returned.total }, "text-rose-300"],
+              ] as const).map(([label, b, tone]) => (
+                <div key={label}>
+                  <p className="text-white/40">{label}</p>
+                  <p className={`mt-1 text-lg font-semibold tabular-nums ${tone}`}>{lei(b.total)}</p>
+                  <p className="text-white/35">{b.count} {b.count === 1 ? "поръчка" : "поръчки"} · ≈ €{(b.total / data.ro!.rate).toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="text-[11px] text-white/35">ROAS е на общия оборот (България + Румъния, лей по курс {data.ro.rate}) спрямо въведения рекламен разход - въведи в списъка долу и румънския разход, ако има такъв. „Загуба от непотърсени" е само за България (класификацията е по Еконт).</p>
         </section>
       )}
 

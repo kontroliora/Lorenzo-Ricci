@@ -7,6 +7,7 @@ import { MatchPanel } from "./MatchPanel";
 import { checkEcontStatuses } from "./actions";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
 import { isReturn } from "@/lib/order-status";
+import { isRoOrder, marketOf, type Market } from "@/lib/market";
 import { activeWindow, nextWindow, callTimer } from "@/lib/callSchedule";
 
 type Tab = "new" | "confirmed" | "shipped" | "completed" | "returned" | "cancelled";
@@ -34,6 +35,7 @@ function inTab(o: AdminOrder, tab: Tab): boolean {
 function phoneCore(p: string): string {
   let d = (p || "").replace(/\D/g, "");
   if (d.startsWith("359")) d = d.slice(3);
+  else if (d.startsWith("40") && d.length >= 11) d = d.slice(2); // +40 7xx xxx xxx (Romania)
   return d.replace(/^0+/, "");
 }
 // Latin letters + digits only, lowercased — for order ref / tracking, so a dash
@@ -73,7 +75,8 @@ function groupByCustomer(orders: AdminOrder[]): AdminOrder[][] {
   const buckets = new Map<string, AdminOrder[]>();
   const noPhone: AdminOrder[][] = [];
   for (const o of orders) {
-    const key = phoneCore(o.phone ?? "");
+    const core = phoneCore(o.phone ?? "");
+    const key = core ? `${marketOf(o)}:${core}` : ""; // a Bulgarian and a Romanian order are never merged into one card
     if (!key) { noPhone.push([o]); continue; }
     const b = buckets.get(key);
     if (b) b.push(o); else buckets.set(key, [o]);
@@ -103,15 +106,25 @@ function sameAddress(g: AdminOrder[]): boolean {
   return g.every((o) => addressKey(o) === k);
 }
 
+type MarketFilter = "all" | Market;
+const MARKETS: { key: MarketFilter; label: string }[] = [
+  { key: "all", label: "Всички" },
+  { key: "bg",  label: "България" },
+  { key: "ro",  label: "🇷🇴 Румъния" },
+];
+
 export function OrdersBoard({
-  orders, histories, log, nowMs,
+  orders, histories, log, nowMs, initialMarket = "all",
 }: {
   orders: AdminOrder[];
   histories: Record<string, CustomerHistory>;
   log: Record<number, StatusLogRow[]>;
   nowMs: number;
+  initialMarket?: MarketFilter;
 }) {
   const [tab, setTab] = useState<Tab>("new");
+  const [market, setMarket] = useState<MarketFilter>(initialMarket);
+  const [notice, setNotice] = useState(""); // an action's warning (e.g. the Romanian e-mail did not go out) must outlive the card that raised it
   const [showFake, setShowFake] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [query, setQuery] = useState("");
@@ -132,8 +145,12 @@ export function OrdersBoard({
   // International "soft decline" waitlist orders never enter the normal queue —
   // they live in the separate "Международни" panel view. One filter here keeps them
   // out of every tab, counter and search at once (same pattern as excluded_from_stock).
-  const real = orders.filter((o) => !o.excluded_from_stock && !o.is_international);
-  const fake = orders.filter((o) => o.excluded_from_stock);
+  // Romanian orders are also stored with is_international (so no Bulgarian automation touches them) but they DO belong in this list.
+  const notLead = (o: AdminOrder) => !o.is_international || isRoOrder(o);
+  const inMarket = (o: AdminOrder) => market === "all" || marketOf(o) === market;
+  const real = orders.filter((o) => !o.excluded_from_stock && notLead(o) && inMarket(o));
+  const fake = orders.filter((o) => o.excluded_from_stock && inMarket(o));
+  const marketCount = (m: MarketFilter) => orders.filter((o) => !o.excluded_from_stock && notLead(o) && (m === "all" || marketOf(o) === m)).length;
 
   const count = (t: Tab) => real.filter((o) => inTab(o, t)).length;
   const stuckCount = real.filter((o) => o.status === "new" && ageH(o) > 24).length;
@@ -154,7 +171,7 @@ export function OrdersBoard({
   const matches = searching ? real.filter((o) => orderMatches(o, query)) : [];
 
   const card = (o: AdminOrder) => (
-    <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} now={now} />
+    <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} now={now} onNotice={setNotice} />
   );
 
   // Render a same-customer cluster: single → normal card; 2+ identical address →
@@ -185,6 +202,7 @@ export function OrdersBoard({
         key={key}
         orders={g}
         history={last.phone ? histories[last.phone] : undefined}
+        onNotice={setNotice}
         onSplit={() => setSplitGroups((s) => { const next = new Set(s); next.add(key); return next; })}
       />
     );
@@ -195,6 +213,41 @@ export function OrdersBoard({
       {/* Call-window timer — always visible; guidance only, no penalty */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
         <CallWindowBanner now={now} dueCount={dueCount} />
+      </div>
+
+      {notice && (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-3" style={{ position: "sticky", top: 56, zIndex: 20 }}>
+          <div role="alert" style={{ display: "flex", alignItems: "flex-start", gap: 10, background: "#3a2a08", border: "0.5px solid rgba(250,199,117,0.6)", borderRadius: 10, padding: "10px 14px" }}>
+            <span style={{ color: "#FAC775", fontSize: 13 }} aria-hidden>⚠</span>
+            <span style={{ flex: 1, color: "#FAC775", fontSize: 12, lineHeight: 1.5 }}>{notice}</span>
+            <button onClick={() => setNotice("")} aria-label="Затвори" style={{ background: "none", border: "none", color: "rgba(250,199,117,0.7)", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>
+          </div>
+        </div>
+      )}
+
+      {/* Market filter — Всички / България / Румъния; every counter, tab and search below follows it */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4 flex gap-2 flex-wrap items-center" role="group" aria-label="Пазар">
+        {MARKETS.map((m) => {
+          const active = market === m.key;
+          return (
+            <button
+              key={m.key}
+              onClick={() => setMarket(m.key)}
+              aria-pressed={active}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 7,
+                background: active ? "#fff" : "rgba(255,255,255,0.03)",
+                border: `0.5px solid ${active ? "#fff" : "rgba(255,255,255,0.15)"}`,
+                borderRadius: 20, padding: "6px 14px", cursor: "pointer", fontSize: 12, fontWeight: active ? 600 : 400,
+                color: active ? "#0a0e1f" : "rgba(255,255,255,0.6)",
+              }}
+            >
+              {m.label}
+              <span style={{ color: active ? "rgba(10,14,31,0.55)" : "rgba(255,255,255,0.35)", fontSize: 11 }}>{marketCount(m.key)}</span>
+            </button>
+          );
+        })}
+        {market === "ro" && <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>суми в лей (≈ €), доставка с румънски куриер, имейлите към клиента са на румънски</span>}
       </div>
 
       {/* Summary — overview over everything; hidden while searching */}
@@ -277,14 +330,14 @@ export function OrdersBoard({
               </>
             ) : tab === "confirmed" ? (
               <>
-                <MatchPanel />
+                {market !== "ro" && <MatchPanel />}
                 {tabOrders.length === 0
                   ? <Empty text="Няма поръчки за изпълнение." />
                   : tabOrders.map(card)}
               </>
             ) : tab === "shipped" ? (
               <>
-                <EcontCheck />
+                {market !== "ro" && <EcontCheck />}
                 {tabOrders.length === 0
                   ? <Empty text="Няма изпратени пратки." />
                   : tabOrders.map(card)}

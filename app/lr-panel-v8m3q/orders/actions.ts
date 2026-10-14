@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { reconcileShippedOrders, matchTrackingNumbers, classifyExistingReturns, markRestocked as markRestockedTx, type MatchResult } from "@/lib/econt";
 import { sendShipConfirmations } from "@/lib/shipment-notify";
-import { RESERVING_STATUSES, type OrderItem } from "@/lib/orders";
+import { RESERVING_STATUSES, isReturn, type OrderItem } from "@/lib/orders";
+import { isRoOrder } from "@/lib/market";
+import { sendRoPanelMail, type RoPanelMail } from "@/lib/ro/panel-mail";
 
 const ORDERS_PATH = "/lr-panel-v8m3q/orders";
 
@@ -38,9 +40,36 @@ async function restockOrderItems(
 
 const HOLDS_STOCK = (status: string) => (RESERVING_STATUSES as readonly string[]).includes(status);
 
+// ── Romanian orders share this board with the Bulgarian ones. Every action that changes a Romanian order also sends the customer a
+// Romanian e-mail (lib/ro/panel-mail.ts), but only when the order really moves into that state (a repeated click mails nobody) and
+// never for a Bulgarian order. A mail problem never undoes the status change: it is returned as a warning text for the card. ─────
+type Snap = { id: number; status: string; items: OrderItem[]; ship_country: string | null; order_ref: string | null };
+
+async function snapshot(supabase: Awaited<ReturnType<typeof createClient>>, ids: number[]): Promise<Snap[]> {
+  if (!ids.length) return [];
+  const { data } = await supabase.from("orders").select("id, status, items, ship_country, order_ref").in("id", ids);
+  return (data ?? []) as Snap[];
+}
+
+async function notifyRo(
+  supabase: Awaited<ReturnType<typeof createClient>>, before: Snap[], alreadyThere: (status: string) => boolean, mail: RoPanelMail,
+): Promise<string | null> {
+  const warnings: string[] = [];
+  for (const o of before) {
+    if (!isRoOrder(o) || alreadyThere(o.status)) continue;   // a Bulgarian order, or it was in this state already: no e-mail
+    const w = await sendRoPanelMail(supabase, o.id, mail);
+    if (w) warnings.push(before.length > 1 ? `${o.order_ref ?? o.id}: ${w}` : w);
+  }
+  return warnings.length ? warnings.join(" ") : null;
+}
+
 // Потвърждава / big ПОТВЪРДИ button → confirmed (stock stays reserved).
 export async function confirmOrder(id: number): Promise<string | null> {
-  return patchOrder(id, { status: "confirmed", call_state: "confirmed" });
+  const supabase = await createClient();
+  const before = await snapshot(supabase, [id]);
+  const err = await patchOrder(id, { status: "confirmed", call_state: "confirmed" });
+  if (err) return err;
+  return notifyRo(supabase, before, (st) => st === "confirmed", { kind: "order_confirmed" });
 }
 
 // Отказва → cancelled, with a structured reason so an ACTIVE refusal (lost sale)
@@ -55,13 +84,13 @@ export async function cancelOrder(id: number, category: string, reason: string):
   const patch: Record<string, unknown> = { status: "cancelled", cancel_category: category, cancel_reason: reason || null };
   if (category === "refused") patch.call_state = "refused";
   const supabase = await createClient();
-  const { data: before } = await supabase.from("orders").select("status, items").eq("id", id).single();
+  const [b] = await snapshot(supabase, [id]);
   const { error } = await supabase.from("orders").update(patch).eq("id", id);
   if (error) { console.error("[orders] cancel error:", error.message); return error.message; }
-  const b = before as { status: string; items: OrderItem[] } | null;
   if (b && HOLDS_STOCK(b.status)) await restockOrderItems(supabase, b.items);
   revalidatePath(ORDERS_PATH);
-  return null;
+  // Romanian customer: cancellation e-mail (wording by category). A card-paid order is also refunded: see the Stripe branch.
+  return notifyRo(supabase, b ? [b] : [], (st) => st === "cancelled", { kind: "order_cancelled", category });
 }
 
 // „Не вдига" → never locks. Atomic server-side increment (no race on rapid
@@ -88,12 +117,13 @@ export async function markNoAnswer(id: number): Promise<string | null> {
 export async function confirmOrders(ids: number[]): Promise<string | null> {
   if (!ids.length) return null;
   const supabase = await createClient();
+  const before = await snapshot(supabase, ids);
   const { error } = await supabase.from("orders")
     .update({ status: "confirmed", call_state: "confirmed" })
     .in("id", ids);
   if (error) { console.error("[orders] bulk confirm error:", error.message); return error.message; }
   revalidatePath(ORDERS_PATH);
-  return null;
+  return notifyRo(supabase, before, (st) => st === "confirmed", { kind: "order_confirmed" });
 }
 
 export async function cancelOrders(ids: number[], category: string, reason: string): Promise<string | null> {
@@ -101,14 +131,14 @@ export async function cancelOrders(ids: number[], category: string, reason: stri
   const patch: Record<string, unknown> = { status: "cancelled", cancel_category: category, cancel_reason: reason || null };
   if (category === "refused") patch.call_state = "refused";
   const supabase = await createClient();
-  const { data: before } = await supabase.from("orders").select("id, status, items").in("id", ids);
+  const before = await snapshot(supabase, ids);
   const { error } = await supabase.from("orders").update(patch).in("id", ids);
   if (error) { console.error("[orders] bulk cancel error:", error.message); return error.message; }
-  for (const o of (before ?? []) as { status: string; items: OrderItem[] }[]) {
+  for (const o of before) {
     if (HOLDS_STOCK(o.status)) await restockOrderItems(supabase, o.items);
   }
   revalidatePath(ORDERS_PATH);
-  return null;
+  return notifyRo(supabase, before, (st) => st === "cancelled", { kind: "order_cancelled", category });
 }
 
 export async function markNoAnswerOrders(ids: number[]): Promise<string | null> {
@@ -129,8 +159,36 @@ export async function markNoAnswerOrders(ids: number[]): Promise<string | null> 
 // Ship → tracking required. The DB trigger also blocks 'shipped' without it.
 export async function shipOrder(id: number, tracking: string): Promise<string | null> {
   const t = (tracking ?? "").trim();
+  const [snap] = await snapshot(await createClient(), [id]);
+  if (snap && isRoOrder(snap)) return shipRoOrder(id, t, ""); // a Romanian order has an AWB of its own courier, never an Econt waybill
   if (!t) return "Въведи тракинг номер от Еконт първо";
   return patchOrder(id, { tracking_number: t, status: "shipped" });
+}
+
+// Ship a Romanian order: AWB of the Romanian courier (typed in by hand) + optional tracking link, then the customer's Romanian
+// "colet expediat" e-mail (once: ship_email_sent_at). The Bulgarian shipped e-mail is driven by Econt tracking and never fires
+// for a Romanian order (is_international = true, see lib/market.ts).
+export async function shipRoOrder(id: number, awb: string, trackUrl: string): Promise<string | null> {
+  const tracking = (awb ?? "").trim();
+  if (!tracking) return "Въведи AWB номер на куриера първо";
+  const url = (trackUrl ?? "").trim();
+  if (url && !/^https:\/\//i.test(url)) return "Линкът за проследяване трябва да започва с https://";
+
+  const supabase = await createClient();
+  const { data: order, error: readErr } = await supabase
+    .from("orders").select("id, order_ref, ship_country, status, ship_email_sent_at").eq("id", id).single();
+  if (readErr || !order) return readErr?.message ?? "Поръчката не е намерена";
+  if (!isRoOrder(order)) return "Това не е румънска поръчка.";
+
+  const now = new Date().toISOString();
+  const { error } = await supabase.from("orders").update({ tracking_number: tracking, status: "shipped", shipped_at: now }).eq("id", id);
+  if (error) { console.error("[orders] ship RO error:", error.message); return error.message; }
+  revalidatePath(ORDERS_PATH);
+
+  if (order.ship_email_sent_at) return null;                                   // the customer already has the shipped e-mail
+  const warning = await sendRoPanelMail(supabase, id, { kind: "shipment_shipped", awb: tracking, trackUrl: url || undefined });
+  if (!warning) await supabase.from("orders").update({ ship_email_sent_at: now }).eq("id", id);
+  return warning;
 }
 
 // Append a timestamped comment to the order's note history. Append-only —
@@ -158,11 +216,15 @@ export async function addOrderNote(id: number, text: string): Promise<string | n
 // Tagged 'manual' so completions closed by hand stay distinguishable from the
 // ones Econt confirmed (those set completed_source='econt').
 export async function markCompleted(id: number): Promise<string | null> {
-  return patchOrder(id, {
+  const supabase = await createClient();
+  const before = await snapshot(supabase, [id]);
+  const err = await patchOrder(id, {
     status: "completed",
     completed_at: new Date().toISOString(),
     completed_source: "manual",
   });
+  if (err) return err;
+  return notifyRo(supabase, before, (st) => st === "completed", { kind: "order_delivered" });
 }
 
 // Shipment came back / customer never took it → status 'returning'. Leather is
@@ -171,6 +233,7 @@ export async function markCompleted(id: number): Promise<string | null> {
 // Sets returning_at so the cron may auto-restock it once Econt confirms receipt.
 export async function markReturned(id: number): Promise<string | null> {
   const supabase = await createClient();
+  const before = await snapshot(supabase, [id]);
   const nowIso = new Date().toISOString();
   let { error } = await supabase.from("orders").update({ status: "returning", returning_at: nowIso }).eq("id", id);
   if (error && /returning|returning_at|column|schema cache|enum|invalid input/i.test(error.message)) {
@@ -178,7 +241,7 @@ export async function markReturned(id: number): Promise<string | null> {
   }
   if (error) { console.error("[orders] return error:", error.message); return error.message; }
   revalidatePath(ORDERS_PATH);
-  return null;
+  return notifyRo(supabase, before, isReturn, { kind: "order_returned" });
 }
 
 // "Взех пратката" — Koko confirms the returning parcel is physically in hand →

@@ -28,8 +28,9 @@ export const dynamic = "force-dynamic";
 //   3. stock is reserved with the same atomic reserve_wallet_stock (all-or-nothing under a row lock);
 //   4. the order is inserted BEFORE the e-mails; if the insert fails the stock is put back and the customer is told;
 //   5. a repeated orderRef is answered with success without reserving or inserting twice.
-// The order is stored with is_international = true and ship_country = 'RO': it stays out of the Bulgarian board and
-// out of every Econt cron, and appears in the panel tab "Румъния". Amounts in `total`/`subtotal`/`shipping_cost` are lei.
+// The order is stored with is_international = true and ship_country = 'RO': is_international is the switch every Bulgarian-only
+// automation checks (Econt crons, Econt e-mails), so none of them touches it; the order shows in the normal Поръчки list
+// (badge 🇷🇴 RO, filter Румъния, see lib/market.ts). Amounts in `total`/`subtotal`/`shipping_cost` are lei.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const META_PIXEL_ID = "661480326560209";

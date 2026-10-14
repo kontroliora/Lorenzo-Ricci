@@ -10,7 +10,11 @@ export type MailLang = "bg" | "ro" | "en";
 export const MAIL_LANGS = {
   order_confirmation: ["bg", "ro"],   // BG: app/api/order, RO: app/api/order-ro (lib/ro/emails.ts)
   card_paid: ["bg", "ro"],            // payment received (card checkout)
-  shipment_shipped: ["bg", "ro"],     // BG: Econt cron (lib/shipment-emails.ts), RO: panel action (lib/ro/emails.ts)
+  shipment_shipped: ["bg", "ro"],     // BG: Econt cron (lib/shipment-emails.ts), RO: panel action with the AWB (lib/ro/panel-mail.ts)
+  order_confirmed: ["ro"],            // panel action "Потвърждава" on a Romanian order (lib/ro/panel-mail.ts); Bulgarian customers are called, not mailed
+  order_cancelled: ["ro"],            // panel action "Отказва" (Romanian wording by reason category, never the Bulgarian free text)
+  order_delivered: ["ro"],            // panel action "Доставена"
+  order_returned: ["ro"],             // panel action "Върната"
   shipment_reminder: ["bg"],          // "your parcel waits at an Econt office": Bulgarian only, so Romanians never get it
   abandoned_cart: ["bg", "ro"],       // lib/recovery-email.ts, lib/ro/recovery-email.ts
   newsletter_campaign: ["bg"],        // campaign templates exist per language; a Romanian campaign needs its own template first

@@ -5,7 +5,9 @@ import { OrdersBoard } from "./OrdersBoard";
 
 export const dynamic = "force-dynamic";
 
-export default async function OrdersPage() {
+export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
+  const { m } = await searchParams;
+  const initialMarket = m === "ro" ? "ro" : m === "bg" ? "bg" : "all";
   // Was 150 — with >150 orders the oldest (stuck new/confirmed) fell off the
   // panel entirely. Raised so every order shows; paginate properly when it grows.
   const orders = await getOrders(1000);
@@ -32,7 +34,7 @@ export default async function OrdersPage() {
       <AdminNav />
 
       {/* Summary counters + filterable list */}
-      <OrdersBoard orders={orders} histories={histories} log={log} nowMs={nowMs} />
+      <OrdersBoard orders={orders} histories={histories} log={log} nowMs={nowMs} initialMarket={initialMarket} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { AdminNav } from "@/components/admin/AdminNav";
 import { logout } from "../actions";
 import { isOwner } from "@/lib/admin-auth";
 import { getOrders } from "@/lib/orders";
+import { isRoOrder } from "@/lib/market";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export default async function WaitlistPage() {
   if (!(await isOwner())) redirect("/lr-panel-v8m3q/orders");
 
   const all = await getOrders(1000);
-  const leads = all.filter((o) => o.is_international && o.ship_country !== "RO"); // Romanian orders have their own tab
+  const leads = all.filter((o) => o.is_international && !isRoOrder(o)); // Romanian orders are in the normal Поръчки list
 
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleString("bg-BG", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });

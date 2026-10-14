@@ -6,8 +6,19 @@ const eur2 = (n: number) => "€" + Number(n ?? 0).toLocaleString("bg-BG", { min
 const eur0 = (n: number) => "€" + Math.round(Number(n ?? 0)).toLocaleString("bg-BG");
 const lei0 = (n: number) => Math.round(Number(n ?? 0)).toLocaleString("ro-RO") + " lei";
 
+// One euro total for both markets: the Bulgarian figures are euro, the Romanian ones are lei and are converted at the owner's rate
+// (1 EUR = 5.25 RON). Romania also keeps its own row below. `ro` is absent until supabase/owner_revenue_ro.sql has been run.
+const sumPeriods = (bg: RevenuePeriod, ro?: RevenuePeriod): RevenuePeriod => ({
+  revenue: bg.revenue + (ro?.revenue ?? 0) / EUR_RON,
+  collected: bg.collected + (ro?.collected ?? 0) / EUR_RON,
+  shipping: bg.shipping + (ro?.shipping ?? 0) / EUR_RON,
+  count: bg.count + (ro?.count ?? 0),
+});
+
 export function RevenueBoard({ data }: { data: RevenueData }) {
-  const cur = data.current_month;
+  const cur = sumPeriods(data.current_month, data.ro?.current_month);
+  const last = sumPeriods(data.last_month, data.ro?.last_month);
+  const all = sumPeriods(data.all_time, data.ro?.all_time);
   const avg = cur.count > 0 ? cur.revenue / cur.count : 0;
   const goodsPct = cur.collected > 0 ? (cur.revenue / cur.collected) * 100 : 0;
   const shipPct = 100 - goodsPct;
@@ -29,15 +40,20 @@ export function RevenueBoard({ data }: { data: RevenueData }) {
         <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>
           {cur.count} {cur.count === 1 ? "доставена пратка" : "доставени пратки"}
           {cur.count > 0 && <> · средно {eur2(avg)} / поръчка</>}
-          {" · "}<span style={{ color: "rgba(255,255,255,0.35)" }}>без доставката (тя отива на Еконт)</span>
+          {" · "}<span style={{ color: "rgba(255,255,255,0.35)" }}>без доставката (тя отива към куриера)</span>
         </div>
+        {data.ro && (
+          <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 4 }}>
+            🇧🇬 България <b style={{ color: "#fff" }}>{eur2(data.current_month.revenue)}</b> · 🇷🇴 Румъния <b style={{ color: "#fff" }}>{lei0(data.ro.current_month.revenue)}</b> ≈ {eur2(data.ro.current_month.revenue / EUR_RON)}
+          </div>
+        )}
       </div>
 
       {/* Periods */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-        <PeriodCard label="Текущ месец" p={cur} />
-        <PeriodCard label="Минал месец" p={data.last_month} />
-        <PeriodCard label="От началото" p={data.all_time} />
+        <PeriodCard label="Текущ месец" p={cur} roEur={data.ro ? data.ro.current_month.revenue / EUR_RON : undefined} />
+        <PeriodCard label="Минал месец" p={last} roEur={data.ro ? data.ro.last_month.revenue / EUR_RON : undefined} />
+        <PeriodCard label="От началото" p={all} roEur={data.ro ? data.ro.all_time.revenue / EUR_RON : undefined} />
       </div>
 
       {/* Breakdown — current month */}
@@ -49,7 +65,7 @@ export function RevenueBoard({ data }: { data: RevenueData }) {
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", fontSize: 13 }}>
           <span style={{ color: "#FAC775" }}>● Оборот от стока <b>{eur2(cur.revenue)}</b> <span style={{ color: "rgba(255,255,255,0.4)" }}>(твоят приход)</span></span>
-          <span style={{ color: "#85B7EB" }}>● Доставка <b>{eur2(cur.shipping)}</b> <span style={{ color: "rgba(255,255,255,0.4)" }}>(към Еконт)</span></span>
+          <span style={{ color: "#85B7EB" }}>● Доставка <b>{eur2(cur.shipping)}</b> <span style={{ color: "rgba(255,255,255,0.4)" }}>(към Еконт и румънския куриер)</span></span>
           <span style={{ color: "rgba(255,255,255,0.7)" }}>Общо събрано <b style={{ color: "#fff" }}>{eur2(cur.collected)}</b></span>
         </div>
       </div>
@@ -57,7 +73,7 @@ export function RevenueBoard({ data }: { data: RevenueData }) {
       {/* Top products by revenue */}
       {top.length > 0 && (
         <div style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "13px 16px" }}>
-          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 10 }}>Топ продукти по оборот · от началото</div>
+          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 10 }}>Топ продукти по оборот · от началото · само България (евро)</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {top.map((p) => (
               <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -74,10 +90,10 @@ export function RevenueBoard({ data }: { data: RevenueData }) {
         </div>
       )}
 
-      {/* Romania - in lei, separate from the euro figures */}
+      {/* Romania - its own row, in lei (already included in the euro totals above at the owner's rate) */}
       {data.ro && data.ro.all_time.count > 0 && (
         <div style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "13px 16px" }}>
-          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 10 }}>Румъния · в леи (не влиза в сумите в € по-горе)</div>
+          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 10 }}>🇷🇴 Румъния · отделен ред в леи (влиза в общите суми в € по курс {EUR_RON})</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
             {([["Текущ месец", data.ro.current_month], ["Минал месец", data.ro.last_month], ["От началото", data.ro.all_time]] as const).map(([label, p]) => (
               <div key={label} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "12px 14px" }}>
@@ -87,7 +103,7 @@ export function RevenueBoard({ data }: { data: RevenueData }) {
               </div>
             ))}
           </div>
-          <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 8 }}>Оборот от стока без доставката. ≈ € е само за ориентир, по курс {EUR_RON} лея за €1.</div>
+          <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 8 }}>Оборот от стока без доставката. В € по курс {EUR_RON} лея за €1.</div>
         </div>
       )}
 
@@ -95,19 +111,20 @@ export function RevenueBoard({ data }: { data: RevenueData }) {
       <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "rgba(133,183,235,0.08)", border: "0.5px solid rgba(133,183,235,0.25)", borderRadius: 10, padding: "11px 14px" }}>
         <span style={{ color: "#85B7EB", fontSize: 14, flexShrink: 0 }} aria-hidden>ℹ</span>
         <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.55 }}>
-          Брои се <b style={{ color: "#fff" }}>само завършени</b> (реално взети, потвърдени от Еконт). Изпратени/върнати/отказани не влизат. Периодите са по датата на доставяне, българско време. „Оборот от стока" е след промо кодове, без доставката.
+          Брои се <b style={{ color: "#fff" }}>само завършени</b> (реално взети: за България потвърдени от Еконт, за Румъния отбелязани ръчно като „Доставена"). Изпратени/върнати/отказани не влизат. Общото в € е България + Румъния (лей ÷ {EUR_RON}). Периодите са по датата на доставяне, българско време. „Оборот от стока" е след промо кодове, без доставката.
         </span>
       </div>
     </main>
   );
 }
 
-function PeriodCard({ label, p }: { label: string; p: RevenuePeriod }) {
+function PeriodCard({ label, p, roEur }: { label: string; p: RevenuePeriod; roEur?: number }) {
   return (
     <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "12px 14px" }}>
       <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</div>
       <div style={{ color: "#FAC775", fontSize: 20, fontWeight: 500, marginTop: 3 }}>{eur0(p.revenue)}</div>
       <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 11 }}>{p.count} {p.count === 1 ? "пратка" : "пратки"} · {eur0(p.collected)} събрано</div>
+      {roEur !== undefined && roEur > 0 && <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>в т.ч. 🇷🇴 Румъния ≈ {eur0(roEur)}</div>}
     </div>
   );
 }
