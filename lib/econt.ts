@@ -419,14 +419,18 @@ export type MatchResult = {
 };
 
 export async function matchTrackingNumbers(sb: SupabaseClient): Promise<MatchResult> {
-  const { data: ordersData, error } = await sb
+  // payment_method is read when the card-payment migration has run; before it every order is cash on delivery.
+  let ordersRes: { data: unknown; error: { message: string } | null } = await sb
     .from("orders")
-    .select("id, order_ref, name, phone, total, subtotal, created_at")
+    .select("id, order_ref, name, phone, total, subtotal, created_at, payment_method")
     .eq("status", "confirmed")
     .eq("is_international", false)
     .is("tracking_number", null);
-  if (error) throw new Error(error.message);
-  const orders = (ordersData ?? []) as Array<{ id: number; order_ref: string | null; name: string | null; phone: string | null; total: number | null; subtotal: number | null; created_at: string }>;
+  if (ordersRes.error && /payment_method/.test(ordersRes.error.message)) {
+    ordersRes = await sb.from("orders").select("id, order_ref, name, phone, total, subtotal, created_at").eq("status", "confirmed").eq("is_international", false).is("tracking_number", null);
+  }
+  if (ordersRes.error) throw new Error(ordersRes.error.message);
+  const orders = (ordersRes.data ?? []) as unknown as Array<{ id: number; order_ref: string | null; name: string | null; phone: string | null; total: number | null; subtotal: number | null; created_at: string; payment_method?: string | null }>;
   if (!orders.length) return { scanned: 0, autoFilled: [], pending: [] };
 
   // AWBs already assigned anywhere → never reuse.
@@ -462,7 +466,8 @@ export async function matchTrackingNumbers(sb: SupabaseClient): Promise<MatchRes
 
     const total = Number(o.total ?? 0);
     const subtotal = Number(o.subtotal ?? 0);
-    const amountOk = (v: number) => Math.abs(v - total) <= 2 || (subtotal > 0 && Math.abs(v - subtotal) <= 2);
+    // A card order is already paid: its waybill must collect NOTHING (cash on delivery 0), not the order total.
+    const amountOk = (v: number) => o.payment_method === "card" ? Math.abs(v) <= 0.01 : Math.abs(v - total) <= 2 || (subtotal > 0 && Math.abs(v - subtotal) <= 2);
 
     if (cands.length === 1 && amountOk(cands[0].cdAmount)) {
       const awb = cands[0].shipmentNumber;

@@ -28,6 +28,7 @@ export function isWeekendSofia(now = Date.now()): boolean {
 type OrderRow = {
   id: number; order_ref: string | null; name: string | null; email: string | null;
   tracking_number: string | null; items: unknown; total: number | null;
+  payment_method?: string | null; payment_status?: string | null; // after supabase/stripe_payments.sql
 };
 
 export function toEmailData(o: OrderRow, awb: string, officeName = ""): ShipmentEmailData {
@@ -53,10 +54,18 @@ export function toEmailData(o: OrderRow, awb: string, officeName = ""): Shipment
     tracking: awb,
     trackUrl: trackPageUrl(awb),
     officeName,
+    paid: o.payment_method === "card" && o.payment_status === "paid",
   };
 }
 
 const SELECT = "id, order_ref, name, email, tracking_number, items, total";
+// Card orders: the e-mails say "paid by card". The columns exist once stripe_payments.sql has run; until then the old select is used.
+const SELECT_PAID = `${SELECT}, payment_method, payment_status`;
+type Q = { eq: (c: string, v: unknown) => Q; not: (c: string, op: string, v: unknown) => Q; is: (c: string, v: unknown) => Q } & PromiseLike<{ data: unknown; error: { message: string } | null }>;
+async function readOrders(build: (cols: string) => Q): Promise<{ data: unknown; error: { message: string } | null }> {
+  const res = await build(SELECT_PAID);
+  return res.error && /payment_(method|status)/.test(res.error.message) ? build(SELECT) : res;
+}
 
 // ── EMAIL 1 — ship confirmation. Sends for every shipped order that Econt has
 // physically accepted (sendTime != null) and hasn't been emailed. NO weekday
@@ -64,10 +73,10 @@ const SELECT = "id, order_ref, name, email, tracking_number, items, total";
 export async function sendShipConfirmations(sb: SupabaseClient): Promise<{ sent: number; scanned: number }> {
   const resend = getResend();
   if (!resend) return { sent: 0, scanned: 0 };
-  const { data, error } = await sb.from("orders").select(SELECT)
+  const { data, error } = await readOrders((cols) => sb.from("orders").select(cols)
     .eq("status", "shipped").eq("is_international", false)
     .not("tracking_number", "is", null).not("email", "is", null)
-    .is("ship_email_sent_at", null);
+    .is("ship_email_sent_at", null) as unknown as Q);
   if (error) throw new Error(error.message);
   const orders = (data ?? []) as OrderRow[];
   if (!orders.length) return { sent: 0, scanned: 0 };
@@ -96,9 +105,9 @@ export async function sendShipConfirmations(sb: SupabaseClient): Promise<{ sent:
 export async function sendReminders(sb: SupabaseClient): Promise<{ sent: number; scanned: number }> {
   const resend = getResend();
   if (!resend) return { sent: 0, scanned: 0 };
-  const { data, error } = await sb.from("orders").select(SELECT)
+  const { data, error } = await readOrders((cols) => sb.from("orders").select(cols)
     .eq("status", "shipped").not("tracking_number", "is", null).not("email", "is", null)
-    .is("reminder_sent_at", null);
+    .is("reminder_sent_at", null) as unknown as Q);
   if (error) throw new Error(error.message);
   const orders = (data ?? []) as OrderRow[];
   if (!orders.length) return { sent: 0, scanned: 0 };

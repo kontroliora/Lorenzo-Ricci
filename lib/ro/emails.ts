@@ -17,6 +17,7 @@ const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g,
 const NAVY = "#0a0e1f";
 
 export const roCustomerSubject = "Comanda dumneavoastră a fost primită - Lorenzo Ricci";
+export const roPaidSubject = "Plata a fost primită - Lorenzo Ricci";
 export const roShippedSubject = (ref: string) => `Comanda ${ref} a fost expediată`;
 
 function shell(title: string, bodyHtml: string, ref: string): string {
@@ -46,18 +47,20 @@ const addressLine = (c: RoOrderEmailData["customer"]) =>
   [c.address, c.city, c.county ? `jud. ${c.county}` : "", c.postCode].filter(Boolean).join(", ");
 
 // ── Customer: order received (cash on delivery) ───────────────────────────────────
-export function buildRoCustomerEmail(o: RoOrderEmailData): string {
+export function buildRoCustomerEmail(o: RoOrderEmailData, opts: { paidByCard?: boolean } = {}): string {
   const first = esc(String(o.customer.name ?? "").trim().split(" ")[0] || "client");
   return shell("Comanda dumneavoastră de la Lorenzo Ricci", `
     <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Vă mulțumim, ${first}!</p>
-    <p style="margin:0 0 28px;color:#666;font-size:14px;line-height:1.6">Am primit comanda dumneavoastră <strong style="color:#1a1a1a">${esc(o.orderRef)}</strong>. O vom pregăti pentru expediere, iar livrarea se face prin ${esc(RO_COURIER_LABEL)} în ${esc(RO_DELIVERY_DAYS)} zile lucrătoare de la expediere. Plata se face la livrare (ramburs).</p>
+    <p style="margin:0 0 28px;color:#666;font-size:14px;line-height:1.6">${opts.paidByCard
+      ? `Am primit plata dumneavoastră cu cardul pentru comanda <strong style="color:#1a1a1a">${esc(o.orderRef)}</strong>, vă mulțumim! O pregătim pentru expediere, iar livrarea se face prin ${esc(RO_COURIER_LABEL)} în ${esc(RO_DELIVERY_DAYS)} zile lucrătoare de la expediere. Nu aveți nimic de plătit la livrare.`
+      : `Am primit comanda dumneavoastră <strong style="color:#1a1a1a">${esc(o.orderRef)}</strong>. O vom pregăti pentru expediere, iar livrarea se face prin ${esc(RO_COURIER_LABEL)} în ${esc(RO_DELIVERY_DAYS)} zile lucrătoare de la expediere. Plata se face la livrare (ramburs).`}</p>
     <div style="border-top:1px solid #e8dfc8;margin-bottom:28px"></div>
     <p style="margin:0 0 16px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#888">Comanda dumneavoastră</p>
     <table width="100%" cellpadding="0" cellspacing="0"><tbody>${itemRows(o.items)}</tbody>
       <tfoot>
         ${o.discount ? `<tr><td colspan="2" style="padding:12px 0 0;font-size:12px;color:#888">Reducere set</td><td style="padding:12px 0 0;text-align:right;font-size:14px;color:#047857">-${esc(fmtRON(o.discount))}</td></tr>` : ""}
         <tr><td colspan="2" style="padding:12px 0 0;font-size:12px;color:#888">Livrare</td><td style="padding:12px 0 0;text-align:right;font-size:14px;color:#1a1a1a">${o.shippingCost === 0 ? "Gratuită" : esc(fmtRON(o.shippingCost))}</td></tr>
-        <tr><td colspan="2" style="padding:14px 0 0;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#888">Suma de plătit la livrare</td><td style="padding:14px 0 0;text-align:right;font-family:Georgia,serif;font-size:20px;color:${NAVY};font-weight:700">${esc(fmtRON(o.total))}</td></tr>
+        <tr><td colspan="2" style="padding:14px 0 0;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#888">${opts.paidByCard ? "Plătit cu cardul" : "Suma de plătit la livrare"}</td><td style="padding:14px 0 0;text-align:right;font-family:Georgia,serif;font-size:20px;color:${NAVY};font-weight:700">${esc(fmtRON(o.total))}</td></tr>
       </tfoot>
     </table>
     <div style="border-top:1px solid #e8dfc8;margin:28px 0"></div>
@@ -91,14 +94,14 @@ export function buildRoShippedEmail(d: { orderRef: string; firstName: string; it
 }
 
 // ── Team: new Romanian order (Bulgarian, like the existing order e-mail) ─────────
-export function buildRoAdminEmail(o: RoOrderEmailData, alert?: string): string {
+export function buildRoAdminEmail(o: RoOrderEmailData, alert?: string, opts: { paidByCard?: boolean } = {}): string {
   const rows = o.items.map((i) => `<tr><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb">${esc(i.name)}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-family:monospace;font-size:12px">${esc(i.sku)}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center">${i.quantity ?? 1}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right">${esc(fmtRON(Number(i.price ?? 0)))}</td></tr>`).join("");
   const c = o.customer;
   return `<!DOCTYPE html><html lang="bg"><head><meta charset="UTF-8"></head><body style="margin:0;padding:24px;font-family:Arial,sans-serif;background:#f9fafb;color:#111">
   <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden">
    <div style="background:${NAVY};padding:20px 28px;color:#fff"><strong style="letter-spacing:.2em">LORENZO RICCI</strong> <span style="opacity:.6;margin-left:10px">🇷🇴 Нова поръчка от Румъния · ${esc(o.orderRef)}</span></div>
    <div style="padding:28px">
-    ${alert ? `<div style="background:#b91c1c;color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:16px">⚠️ ${esc(alert)}</div>` : ""}
+    ${alert ? `<div style="background:#b91c1c;color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:16px">⚠️ ${esc(alert)}</div>` : ""}${opts.paidByCard ? `<div style="background:#047857;color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:16px">💳 ПЛАТЕНА С КАРТА - куриерът събира 0 лей (НЕ слагай наложен платеж).</div>` : ""}
     <p style="margin:0 0 14px;font-size:13px;color:#555">Сумите са в <strong>леи (RON)</strong>. Доставка с румънски куриер (НЕ Еконт). Поръчката е в раздел „Румъния" на панела.</p>
     <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:22px">
      <tr style="background:#f3f4f6"><td style="padding:8px 12px;font-weight:600;width:150px">Имена</td><td style="padding:8px 12px">${esc(c.name)}</td></tr>
@@ -109,6 +112,6 @@ export function buildRoAdminEmail(o: RoOrderEmailData, alert?: string): string {
     </table>
     <table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:${NAVY};color:#fff"><th style="padding:8px 12px;text-align:left">Продукт</th><th style="padding:8px 12px;text-align:left">SKU</th><th style="padding:8px 12px">Бр.</th><th style="padding:8px 12px;text-align:right">Цена</th></tr></thead><tbody>${rows}</tbody>
      <tfoot>${o.discount ? `<tr><td colspan="3" style="padding:8px 12px;color:#047857">Отстъпка за комплект</td><td style="padding:8px 12px;text-align:right;color:#047857">-${esc(fmtRON(o.discount))}</td></tr>` : ""}<tr><td colspan="3" style="padding:8px 12px;color:#555">Доставка</td><td style="padding:8px 12px;text-align:right">${o.shippingCost === 0 ? "безплатна" : esc(fmtRON(o.shippingCost))}</td></tr>
-     <tr style="background:#f3f4f6;font-weight:700"><td colspan="3" style="padding:10px 12px">ОБЩО (наложен платеж)</td><td style="padding:10px 12px;text-align:right">${esc(fmtRON(o.total))}</td></tr></tfoot></table>
+     <tr style="background:#f3f4f6;font-weight:700"><td colspan="3" style="padding:10px 12px">${opts.paidByCard ? "ОБЩО (платено с карта)" : "ОБЩО (наложен платеж)"}</td><td style="padding:10px 12px;text-align:right">${esc(fmtRON(o.total))}</td></tr></tfoot></table>
    </div></div></body></html>`;
 }

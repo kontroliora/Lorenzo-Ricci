@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
-import { createHash } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getProductBySlug } from "@/lib/products";
 import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
@@ -8,10 +6,13 @@ import { checkOrderable } from "@/lib/order-availability";
 import { ronOf, ronOriginalOf } from "@/lib/ro/config";
 import { roName } from "@/lib/ro/names-ro";
 import { roAmounts } from "@/lib/ro/pricing";
-import { isPreviewDeploy, previewOrdersAllowed } from "@/lib/deploy-env";
+import { previewOrdersAllowed } from "@/lib/deploy-env";
 import { RO_COUNTIES } from "@/lib/ro/counties";
-import { RO_CURRENCY } from "@/lib/ro/config";
+import { CARD_PAYMENTS_ENABLED, PENDING_PAYMENT } from "@/lib/payments";
+import { returnOrigin, startCardPayment } from "@/lib/payment-orders";
+import { SITE_URL } from "@/lib/site";
 import { buildRoCustomerEmail, buildRoAdminEmail, roCustomerSubject, type RoOrderEmailData } from "@/lib/ro/emails";
+import { sendMail, sendCapiPurchase, RO_ADMIN_RECIPIENTS } from "@/lib/ro/order-notify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,12 +31,9 @@ export const dynamic = "force-dynamic";
 // out of every Econt cron, and appears in the panel tab "Румъния". Amounts in `total`/`subtotal`/`shipping_cost` are lei.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const META_PIXEL_ID = "661480326560209";
-const ADMIN_RECIPIENTS = ["info@lorenzo-ricci.com", "sodolos3@gmail.com", "pavelserbezov03@gmail.com"]; // same three as /api/order
 const MAX_QTY = 10;
 
 const fail = (status: number, code: string, error: string) => NextResponse.json({ success: false, code, error }, { status });
-const sha256 = (v: string) => createHash("sha256").update(v.trim().toLowerCase()).digest("hex");
 const str = (v: unknown, max = 300) => String(v ?? "").trim().slice(0, max);
 
 function stockMessage(items: { name: string; available: number }[]): string {
@@ -48,59 +46,6 @@ function normalizePhone(raw: string): string | null {
   const d = raw.replace(/[^\d+]/g, "").replace(/^\+/, "");
   const national = d.startsWith("0040") ? "0" + d.slice(4) : d.startsWith("40") && d.length === 11 ? "0" + d.slice(2) : d;
   return /^07\d{8}$/.test(national) ? national : null;
-}
-
-async function sendMail(opts: { from: string; to: string[]; subject: string; html: string }): Promise<void> {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) { console.warn("[order-ro] RESEND_API_KEY not set - skipping e-mail"); return; }
-  const { error } = await new Resend(key).emails.send(opts);
-  if (error) throw new Error(`Resend: ${error.message}`);
-}
-
-// Meta Conversions API Purchase in RON, deduplicated with the browser pixel through event_id = order reference.
-async function sendCapiPurchase(o: RoOrderEmailData & { skus: string[] }, ctx: { ip?: string; userAgent?: string; fbc?: string; fbp?: string }): Promise<void> {
-  const token = process.env.META_CAPI_ACCESS_TOKEN;
-  if (!token) { console.warn("[order-ro] META_CAPI_ACCESS_TOKEN not set - skipping Purchase"); return; }
-  if (isPreviewDeploy()) { console.warn("[order-ro] preview deployment - Purchase not sent to Meta"); return; }
-  const c = o.customer;
-  const parts = str(c.name).split(/\s+/);
-  const userData: Record<string, unknown> = { country: [sha256("ro")] };
-  if (c.email) userData.em = [sha256(c.email)];
-  if (c.phone) userData.ph = [sha256("4" + "0" + String(c.phone).replace(/^0/, ""))]; // E.164 digits without "+"
-  if (parts[0]) userData.fn = [sha256(parts[0])];
-  if (parts.length > 1) userData.ln = [sha256(parts.slice(1).join(" "))];
-  if (c.city) userData.ct = [sha256(String(c.city).replace(/\s+/g, ""))];
-  if (c.postCode) userData.zp = [sha256(String(c.postCode).replace(/\s+/g, ""))];
-  if (ctx.ip) userData.client_ip_address = ctx.ip;
-  if (ctx.userAgent) userData.client_user_agent = ctx.userAgent;
-  if (ctx.fbc) userData.fbc = ctx.fbc;
-  if (ctx.fbp) userData.fbp = ctx.fbp;
-
-  const res = await fetch(`https://graph.facebook.com/v26.0/${META_PIXEL_ID}/events`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      data: [{
-        event_name: "Purchase",
-        event_time: Math.floor(Date.now() / 1000),
-        event_id: o.orderRef,
-        event_source_url: "https://lorenzo-ricci.com/ro",
-        action_source: "website",
-        user_data: userData,
-        custom_data: {
-          value: o.total,
-          currency: RO_CURRENCY,
-          content_ids: o.skus,
-          content_type: "product",
-          content_category: "RO",
-          order_id: o.orderRef,
-        },
-      }],
-      access_token: token,
-    }),
-    signal: AbortSignal.timeout(5000),
-  });
-  if (!res.ok) throw new Error(`CAPI ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`);
 }
 
 export async function POST(req: NextRequest) {
@@ -162,9 +107,13 @@ export async function POST(req: NextRequest) {
         : `${gate.names.join(", ")} nu se poate comanda cu plata la livrare.`);
     }
 
+    // Card payment: delivery is FREE whatever the size of the order (the browser only displays it, the server enforces it)
+    // and nothing is sent to Meta or the customer until Stripe confirms the payment (webhook).
+    const isCard = body.paymentMethod === "card";
+    if (isCard && !CARD_PAYMENTS_ENABLED) return fail(503, "unavailable", "Plata cu cardul nu este disponibilă momentan. Vă rugăm să alegeți plata la livrare.");
     // Every amount comes from ONE function (lib/ro/pricing.ts, shared with the cart): lines at the current lei prices, set
     // discounts, delivery judged on the amount after discounts. The browser's numbers must match to the leu.
-    const { discount, goods: subtotal, shipping: shippingCost, total } = roAmounts(lines);
+    const { discount, goods: subtotal, shipping: shippingCost, total } = roAmounts(lines, { card: isCard });
     const sh = (body.shipping ?? {}) as Record<string, unknown>;
     if (Number(body.subtotal) !== subtotal || Number(body.discount ?? 0) !== discount || Number(sh.cost) !== shippingCost || Number(body.total) !== total) {
       console.warn(`[order-ro] total mismatch: client ${String(body.subtotal)}/${String(body.discount)}/${String(sh.cost)}/${String(body.total)}, server ${subtotal}/${discount}/${shippingCost}/${total}`);
@@ -190,6 +139,7 @@ export async function POST(req: NextRequest) {
     const orderItems = lines.map((l) => ({ sku: l.sku, slug: l.slug, name: l.name, quantity: l.quantity, qty: l.quantity, price: l.ron, currency: "lei" }));
     const notes = str(cu.notes, 500);
     const { error: insErr } = await sb.from("orders").insert({
+      ...(isCard ? { status: PENDING_PAYMENT, payment_method: "card", payment_status: "pending", payment_currency: "RON" } : {}),
       order_ref: ref,
       name,
       phone,
@@ -216,16 +166,39 @@ export async function POST(req: NextRequest) {
       return fail(503, "unavailable", "Nu am putut înregistra comanda. Vă rugăm să reîncercați în câteva momente.");
     }
 
-    // ── 6. E-mails + Meta Purchase (awaited: Vercel kills un-awaited work). Best effort: the order is already saved. ──
-    const data: RoOrderEmailData = { orderRef: ref, customer: { name, phone, email, county, city, address, postCode, notes }, items: orderItems, subtotal, discount, shippingCost, total };
+    // ── 5b. Card: open the Stripe session. E-mails, Meta Purchase and the panel only come after the webhook says PAID. ──
     const capiCtx = {
       ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("x-real-ip") ?? undefined,
       userAgent: req.headers.get("user-agent") ?? undefined,
       fbc: req.cookies.get("_fbc")?.value,
       fbp: req.cookies.get("_fbp")?.value,
     };
+    if (isCard) {
+      const started = await startCardPayment({
+        sb,
+        orderRef: ref,
+        market: "ro",
+        lines: lines.map((l) => ({ name: l.name, sku: l.sku, quantity: l.quantity, unitPrice: l.ron, image: new URL(getProductBySlug(l.slug)!.coverImage.src, SITE_URL).href })),
+        expectedTotal: total,
+        discount,
+        customerEmail: email,
+        origin: returnOrigin(req.nextUrl.origin),
+        heldItems: orderItems,
+        metadata: {
+          ...(capiCtx.fbp ? { fbp: capiCtx.fbp.slice(0, 120) } : {}),
+          ...(capiCtx.fbc ? { fbc: capiCtx.fbc.slice(0, 200) } : {}),
+          ...(capiCtx.ip ? { client_ip: capiCtx.ip.slice(0, 64) } : {}),
+          ...(capiCtx.userAgent ? { client_ua: capiCtx.userAgent.slice(0, 450) } : {}),
+        },
+      });
+      if (!started.ok) return fail(503, "unavailable", "Plata cu cardul nu este disponibilă momentan. Vă rugăm să alegeți plata la livrare sau să reîncercați.");
+      return NextResponse.json({ success: true, paymentMethod: "card", orderRef: ref, checkoutUrl: started.url });
+    }
+
+    // ── 6. E-mails + Meta Purchase (awaited: Vercel kills un-awaited work). Best effort: the order is already saved. ──
+    const data: RoOrderEmailData = { orderRef: ref, customer: { name, phone, email, county, city, address, postCode, notes }, items: orderItems, subtotal, discount, shippingCost, total };
     const results = await Promise.allSettled([
-      sendMail({ from: "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>", to: ADMIN_RECIPIENTS, subject: `🇷🇴 Нова поръчка (Румъния) - ${name} - ${ref}`, html: buildRoAdminEmail(data) }),
+      sendMail({ from: "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>", to: RO_ADMIN_RECIPIENTS, subject: `🇷🇴 Нова поръчка (Румъния) - ${name} - ${ref}`, html: buildRoAdminEmail(data) }),
       sendMail({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [email], subject: roCustomerSubject, html: buildRoCustomerEmail(data) }),
       sendCapiPurchase({ ...data, skus: lines.map((l) => l.sku) }, capiCtx),
     ]);
