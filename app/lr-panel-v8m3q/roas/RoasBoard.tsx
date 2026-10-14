@@ -6,6 +6,7 @@ import type { RoasData } from "@/lib/roas";
 type PeriodKey = "today" | "7d" | "30d" | "custom";
 
 const eur = (n: number) => `€${n.toFixed(2)}`;
+const lei = (n: number) => `${n.toLocaleString("ro-RO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} lei`;
 const roas = (n: number | null) => (n == null ? "—" : `${n.toFixed(2)}×`);
 const fmtD = (iso: string) => new Date(iso).toLocaleDateString("bg-BG", { day: "2-digit", month: "short" });
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -101,6 +102,29 @@ export function RoasBoard({ initial }: { initial: RoasData }) {
           <span className="text-white/40">Реално = <b className="text-emerald-400">{eur(data.real)}</b></span>
         </div>
       </section>
+
+      {/* ── Romania, in lei (never mixed into the euro numbers above) ──── */}
+      {data.ro && (
+        <section className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-5">
+          <h3 className="text-[11px] tracking-[0.2em] uppercase text-white/40">Румъния · в леи (не влиза в сумите в € и в ROAS)</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-[12px]">
+            {([
+              ["Всички поръчки", { count: data.ro.count, total: data.ro.gross }, "text-white"],
+              ["Доставени", data.ro.delivered, "text-emerald-400"],
+              ["В движение", data.ro.inMotion, "text-sky-300"],
+              ["Изчакват", data.ro.pending, "text-white/70"],
+              ["Отказани / върнати", { count: data.ro.cancelled.count + data.ro.returned.count, total: data.ro.cancelled.total + data.ro.returned.total }, "text-rose-300"],
+            ] as const).map(([label, b, tone]) => (
+              <div key={label}>
+                <p className="text-white/40">{label}</p>
+                <p className={`mt-1 text-lg font-semibold tabular-nums ${tone}`}>{lei(b.total)}</p>
+                <p className="text-white/35">{b.count} {b.count === 1 ? "поръчка" : "поръчки"} · ≈ €{(b.total / data.ro!.rate).toFixed(2)}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-white/35">≈ € е само за ориентир, по курс {data.ro.rate} лея за €1. Рекламният разход по-горе е за България, затова румънските поръчки нямат ROAS.</p>
+        </section>
+      )}
 
       {/* ── Signals ─────────────────────────────────────────────────── */}
       <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">

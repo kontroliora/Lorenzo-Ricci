@@ -7,6 +7,9 @@ export type RevenueData = {
   last_month: RevenuePeriod;
   all_time: RevenuePeriod;
   top_products: TopProduct[];
+  // Romanian orders (ship_country = 'RO') in LEI, kept out of the euro figures above. Present once
+  // supabase/owner_revenue_ro.sql has been run.
+  ro?: { current_month: RevenuePeriod; last_month: RevenuePeriod; all_time: RevenuePeriod };
 };
 
 // Owner-only turnover. The SECURITY DEFINER owner_revenue() returns NULL for

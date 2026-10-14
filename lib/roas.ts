@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { isOwner } from "@/lib/admin-auth";
+import { EUR_RON } from "@/lib/ro/config";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // What the shop eats when a parcel is never collected: it pays BOTH delivery
@@ -9,6 +10,18 @@ export const UNCOLLECTED_DELIVERY_COST = 10;
 // ── Types ────────────────────────────────────────────────────────────────────
 export type SpendEntry = { id: string; period_start: string; period_end: string; amount: number; note: string | null };
 export type StatusBucket = { count: number; total: number };
+
+/** Romanian orders (ship_country = 'RO') are in LEI: they are kept out of the euro numbers above and summed here, in lei. */
+export type RoRoas = {
+  rate: number;                  // lei per euro used for the "about EUR" notes (lib/ro/config EUR_RON)
+  count: number;
+  gross: number;                 // every placed order, lei
+  delivered: StatusBucket;       // completed
+  inMotion: StatusBucket;        // shipped
+  pending: StatusBucket;         // new + confirmed
+  cancelled: StatusBucket;
+  returned: StatusBucket;
+};
 
 export type RoasData = {
   range: { start: string; end: string };
@@ -28,6 +41,7 @@ export type RoasData = {
   potentialRoas: number | null;  // (real + inMotion + pending) / spend
   exaggerationPct: number | null;// how much Meta overstates vs real (gross→real)
   cancelRate: number;            // cancelled count / total, %
+  ro: RoRoas | null;             // Romanian orders in the window, in lei (null when there are none)
 };
 
 type OrderRow = {
@@ -36,6 +50,7 @@ type OrderRow = {
   excluded_from_stock: boolean;
   cancel_category: string | null;
   return_kind?: string | null;
+  ship_country?: string | null;
   created_at: string;
 };
 
@@ -79,20 +94,20 @@ export async function computeRoas(startISO: string, endISO: string): Promise<Roa
 async function computeRoasCore(startISO: string, endISO: string): Promise<RoasData> {
   const sb = supabaseAdmin();
 
-  // Orders in window — resilient to a missing return_kind column.
-  const withKind = "status, total, excluded_from_stock, cancel_category, return_kind, created_at";
-  const noKind = "status, total, excluded_from_stock, cancel_category, created_at";
+  // Orders in window - resilient to columns that are not migrated yet (return_kind, ship_country): the first column list the
+  // database accepts is used.
+  const base = "status, total, excluded_from_stock, cancel_category, created_at";
+  const candidates = [`${base}, return_kind, ship_country`, `${base}, ship_country`, `${base}, return_kind`, base];
   let rows: OrderRow[] = [];
   let classified = true;
-  const q = await sb.from("orders").select(withKind).gte("created_at", startISO).lte("created_at", endISO);
-  if (q.error) {
-    classified = false;
-    const q2 = await sb.from("orders").select(noKind).gte("created_at", startISO).lte("created_at", endISO);
-    rows = (q2.data ?? []) as OrderRow[];
-  } else {
-    rows = (q.data ?? []) as OrderRow[];
+  for (const cols of candidates) {
+    const q = await sb.from("orders").select(cols).gte("created_at", startISO).lte("created_at", endISO);
+    if (!q.error) { rows = (q.data ?? []) as unknown as OrderRow[]; classified = cols.includes("return_kind"); break; }
   }
-  const orders = rows.filter((r) => !r.excluded_from_stock);
+  // Romanian orders are in lei: never mixed into the euro figures (they get their own block below).
+  const real0 = rows.filter((r) => !r.excluded_from_stock);
+  const orders = real0.filter((r) => r.ship_country !== "RO");
+  const roOrders = real0.filter((r) => r.ship_country === "RO");
 
   const byStatus: Record<string, StatusBucket> = {};
   for (const r of orders) {
@@ -137,6 +152,22 @@ async function computeRoasCore(startISO: string, endISO: string): Promise<RoasDa
   const exaggerationPct = real > 0 ? Math.round(((gross - real) / real) * 100) : null;
   const cancelRate = orders.length > 0 ? Math.round((cancelled.count / orders.length) * 1000) / 10 : 0;
 
+  // Romania (lei)
+  const roSum = (pred: (s: string) => boolean): StatusBucket => {
+    const m = roOrders.filter((r) => pred(r.status ?? "?"));
+    return { count: m.length, total: round2(m.reduce((s, r) => s + (Number(r.total) || 0), 0)) };
+  };
+  const ro: RoRoas | null = roOrders.length === 0 ? null : {
+    rate: EUR_RON,
+    count: roOrders.length,
+    gross: round2(roOrders.reduce((s, r) => s + (Number(r.total) || 0), 0)),
+    delivered: roSum((s) => s === "completed"),
+    inMotion: roSum((s) => s === "shipped"),
+    pending: roSum((s) => s === "new" || s === "confirmed"),
+    cancelled: roSum((s) => s === "cancelled"),
+    returned: roSum((s) => s === "returning" || s === "restocked" || s === "returned"),
+  };
+
   return {
     range: { start: startISO, end: endISO },
     spend,
@@ -155,5 +186,6 @@ async function computeRoasCore(startISO: string, endISO: string): Promise<RoasDa
     potentialRoas,
     exaggerationPct,
     cancelRate,
+    ro,
   };
 }

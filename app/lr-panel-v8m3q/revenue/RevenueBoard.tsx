@@ -1,8 +1,10 @@
 "use client";
 import type { RevenueData, RevenuePeriod } from "@/lib/revenue";
+import { EUR_RON } from "@/lib/ro/config";
 
 const eur2 = (n: number) => "€" + Number(n ?? 0).toLocaleString("bg-BG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const eur0 = (n: number) => "€" + Math.round(Number(n ?? 0)).toLocaleString("bg-BG");
+const lei0 = (n: number) => Math.round(Number(n ?? 0)).toLocaleString("ro-RO") + " lei";
 
 export function RevenueBoard({ data }: { data: RevenueData }) {
   const cur = data.current_month;
@@ -69,6 +71,23 @@ export function RevenueBoard({ data }: { data: RevenueData }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Romania - in lei, separate from the euro figures */}
+      {data.ro && data.ro.all_time.count > 0 && (
+        <div style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "13px 16px" }}>
+          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 10 }}>Румъния · в леи (не влиза в сумите в € по-горе)</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+            {([["Текущ месец", data.ro.current_month], ["Минал месец", data.ro.last_month], ["От началото", data.ro.all_time]] as const).map(([label, p]) => (
+              <div key={label} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "12px 14px" }}>
+                <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</div>
+                <div style={{ color: "#FAC775", fontSize: 20, fontWeight: 500, marginTop: 3 }}>{lei0(p.revenue)}</div>
+                <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 11 }}>{p.count} {p.count === 1 ? "пратка" : "пратки"} · ≈ €{Math.round(p.revenue / EUR_RON).toLocaleString("bg-BG")} · {lei0(p.collected)} събрано</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 8 }}>Оборот от стока без доставката. ≈ € е само за ориентир, по курс {EUR_RON} лея за €1.</div>
         </div>
       )}
 
