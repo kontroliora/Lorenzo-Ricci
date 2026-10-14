@@ -337,7 +337,7 @@ export async function sendCapiPurchase(
     console.warn("[CAPI] META_CAPI_ACCESS_TOKEN not set - skipping");
     return;
   }
-  if (process.env.VERCEL_ENV === "preview") { console.warn("[CAPI] preview deployment - Purchase not sent to Meta"); return; }
+  if (process.env.VERCEL_ENV !== "production") { console.warn("[CAPI] not a production deployment - Purchase not sent to Meta"); return; }
 
   const customer = (order.customer ?? {}) as Record<string, unknown>;
   const items    = (order.items    ?? []) as Array<{ sku?: string; quantity?: number }>;
@@ -346,7 +346,7 @@ export async function sendCapiPurchase(
   const firstName = nameParts[0] ?? "";
   const lastName  = nameParts.slice(1).join(" ");
 
-  const userData: Record<string, unknown> = { country: ["bg"] };
+  const userData: Record<string, unknown> = { country: [sha256("bg")] };
   const email = String(customer.email ?? "").trim();
   const phone = String(customer.phone ?? "").replace(/\D/g, "");
   if (email)     userData.em = [sha256(email)];

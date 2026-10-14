@@ -36,9 +36,9 @@ export type PaymentStatus = "unpaid" | "pending" | "paid" | "expired" | "failed"
 /** orders.status while a card payment is open (stock reserved, not yet a real order). */
 export const PENDING_PAYMENT = "pending_payment";
 
-/** How long stock is held for an unpaid card order. Stripe's minimum session lifetime is 30 min; we add a minute of slack. */
+/** How long stock is held for an unpaid card order. Stripe's minimum session lifetime is 30 min; we add 2 minutes of slack (clock skew). */
 export const CARD_HOLD_MINUTES = 30;
-export const STRIPE_SESSION_TTL_SECONDS = (CARD_HOLD_MINUTES + 1) * 60;
+export const STRIPE_SESSION_TTL_SECONDS = (CARD_HOLD_MINUTES + 2) * 60;
 
 export const isCard = (o: { payment_method?: string | null }): boolean => o.payment_method === "card";
 export const isPaidCard = (o: { payment_method?: string | null; payment_status?: string | null }): boolean => isCard(o) && o.payment_status === "paid";

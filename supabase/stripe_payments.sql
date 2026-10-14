@@ -24,6 +24,11 @@ ALTER TABLE orders
   ADD COLUMN IF NOT EXISTS paid_at               timestamptz,
   ADD COLUMN IF NOT EXISTS payment_currency      text;                                  -- 'EUR' | 'RON'
 
+-- notifications of a paid order (e-mails, Meta Purchase) are claimed once and marked done: a webhook that dies half-way is finished later
+ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS notify_claimed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS notified_at       timestamptz;
+
 CREATE UNIQUE INDEX IF NOT EXISTS orders_stripe_session_uidx ON orders (stripe_session_id) WHERE stripe_session_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS orders_pending_payment_idx ON orders (created_at) WHERE payment_status = 'pending';
 
@@ -37,6 +42,37 @@ CREATE TABLE IF NOT EXISTS stripe_events (
 );
 ALTER TABLE stripe_events ENABLE ROW LEVEL SECURITY;   -- no policies: server (service role) only
 
--- Check after running (3 rows expected; 'pending_payment' listed among the enum values):
--- SELECT column_name FROM information_schema.columns WHERE table_name = 'orders' AND column_name IN ('payment_method','payment_status','stripe_session_id');
+-- 4. an order reference must identify ONE order (every payment lookup is by reference). Created only if no duplicates exist;
+--    otherwise a NOTICE says so - fix the duplicates (SELECT order_ref, count(*) FROM orders GROUP BY 1 HAVING count(*) > 1) and run again.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM orders WHERE order_ref IS NOT NULL GROUP BY order_ref HAVING count(*) > 1) THEN
+    RAISE NOTICE 'orders.order_ref has duplicates: the unique index was NOT created. Fix them, then run this script again.';
+  ELSE
+    CREATE UNIQUE INDEX IF NOT EXISTS orders_order_ref_uidx ON orders (order_ref) WHERE order_ref IS NOT NULL;
+  END IF;
+END $$;
+
+-- 5. a single-use promo code is CLAIMED when a card order is created (promo_mark_used) and given back when that order is not
+--    paid. Only the server (service role) may call it.
+CREATE OR REPLACE FUNCTION promo_release(p_code text)
+RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $f$
+DECLARE v_n int;
+BEGIN
+  UPDATE newsletter_subscribers
+     SET code_used = false
+   WHERE promo_code = upper(trim(coalesce(p_code, ''))) AND code_used = true;
+  GET DIAGNOSTICS v_n = ROW_COUNT;
+  RETURN v_n > 0;
+END;
+$f$;
+REVOKE ALL ON FUNCTION promo_release(text) FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION promo_release(text) TO service_role;
+
+-- Check after running (the new columns, the enum value, the function):
+-- SELECT column_name FROM information_schema.columns WHERE table_name = 'orders' AND column_name IN ('payment_method','payment_status','stripe_session_id','notified_at');  -- 4 rows
+-- SELECT indexname FROM pg_indexes WHERE tablename = 'orders' AND indexname IN ('orders_order_ref_uidx','orders_stripe_session_uidx');  -- 2 rows (order_ref only if no duplicates)
+-- SELECT proname FROM pg_proc WHERE proname = 'promo_release';  -- 1 row
 -- SELECT unnest(enum_range(NULL::order_status));

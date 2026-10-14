@@ -24,6 +24,8 @@ export async function shipRoOrder(id: number, awb: string, trackUrl: string): Pr
     .single();
   if (readErr || !order) return readErr?.message ?? "Поръчката не е намерена";
   if (order.ship_country !== "RO") return "Това не е румънска поръчка - използвай раздел Поръчки.";
+  const { data: pay } = await supabase.from("orders").select("payment_status").eq("id", id).single();
+  if (pay?.payment_status === "refunded") return "Плащането е върнато в Stripe: поръчката не може да се изпрати.";
 
   const now = new Date().toISOString();
   const { error } = await supabase.from("orders").update({ tracking_number: tracking, status: "shipped", shipped_at: now }).eq("id", id);

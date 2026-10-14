@@ -9,6 +9,7 @@ import { trackFbEvent } from "@/lib/fbq";
 import { requiresPrepayment, PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY, type PaymentMethod } from "@/lib/payments";
 import { saveCardCartSnapshot } from "@/lib/card-cart-snapshot";
+import { newOrderRef } from "@/lib/order-ref";
 
 // ─── Shipping options ────────────────────────────────────────────────────────
 const SHIPPING_OPTIONS = [
@@ -216,7 +217,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     setSubmitError("");
     setSubmitting(true);
 
-    const ref = `LR-${Date.now().toString(36).slice(-6).toUpperCase()}`;
+    const ref = newOrderRef("LR");
     const capturedTotal = grandTotal;
 
     const orderSummary = {

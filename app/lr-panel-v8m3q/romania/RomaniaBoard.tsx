@@ -51,7 +51,7 @@ export function RomaniaBoard({ orders }: { orders: AdminOrder[] }) {
   const listed = showPending ? [...openAttempts, ...(showDead ? deadAttempts : [])] : shown;
   const open = sales.filter((o) => o.status === "new" || o.status === "confirmed");
   // What the courier still has to collect: a PAID card order contributes 0.
-  const toCollect = sales.filter((o) => ["new", "confirmed", "shipped"].includes(o.status) && !isPaidCard(o)).reduce((s, o) => s + Number(o.total ?? 0), 0);
+  const toCollect = sales.filter((o) => ["new", "confirmed", "shipped"].includes(o.status) && !isPaidCard(o) && o.payment_status !== "refunded").reduce((s, o) => s + Number(o.total ?? 0), 0);
 
   const run = (job: () => Promise<string | null>) =>
     start(async () => {

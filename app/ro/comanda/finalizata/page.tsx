@@ -23,14 +23,15 @@ type Phase =
   | { kind: "failed" };
 type StatusBody = { status?: string; total?: number; currency?: string; items?: unknown };
 
-// Purchase must fire once per order: sessionStorage survives a reload of this tab, the Set covers blocked storage.
+// Purchase must fire once per order: localStorage survives a reload and a new tab, the Set covers blocked storage.
 const firedThisLoad = new Set<string>();
 function firePurchaseOnce(ref: string, total: number, items: PaidItem[]) {
   if (firedThisLoad.has(ref)) return;
   firedThisLoad.add(ref);
   const key = `lr_purchase_fired_${ref}`;
   try {
-    if (sessionStorage.getItem(key)) return;
+    if (localStorage.getItem(key) || sessionStorage.getItem(key)) return;
+    localStorage.setItem(key, "1");
     sessionStorage.setItem(key, "1");
   } catch { /* storage blocked: the Set above still prevents a second event on this page load */ }
   trackFbEvent("Purchase", {

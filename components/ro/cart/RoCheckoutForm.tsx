@@ -13,6 +13,7 @@ import {
 } from "@/lib/ro/config";
 import { trackFbEvent } from "@/lib/fbq";
 import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY, type PaymentMethod } from "@/lib/payments";
+import { newOrderRef } from "@/lib/order-ref";
 import { PREPAYMENT_THRESHOLD_TEXT, bundleLineLabel } from "./shared";
 
 // Romania checkout (cash on delivery / ramburs, or card through Stripe Checkout while the card option is switched on).
@@ -193,7 +194,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
     submittingRef.current = true;
     setSubmitting(true);
 
-    const ref = `LRRO-${Date.now().toString(36).slice(-6).toUpperCase()}`;
+    const ref = newOrderRef("LRRO");
     // Snapshot everything the order and the tracking need: the cart is cleared the moment the order is accepted.
     const lines = items.map((i) => ({ ...i }));
     const method: PaymentMethod = isCardPay ? "card" : "cod";

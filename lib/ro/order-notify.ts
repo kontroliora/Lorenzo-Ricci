@@ -22,7 +22,7 @@ export async function sendMail(opts: { from: string; to: string[]; subject: stri
 export async function sendCapiPurchase(o: RoOrderEmailData & { skus: string[] }, ctx: RoCapiContext): Promise<void> {
   const token = process.env.META_CAPI_ACCESS_TOKEN;
   if (!token) { console.warn("[order-ro] META_CAPI_ACCESS_TOKEN not set - skipping Purchase"); return; }
-  if (process.env.VERCEL_ENV === "preview") { console.warn("[order-ro] preview deployment - Purchase not sent to Meta"); return; }
+  if (process.env.VERCEL_ENV !== "production") { console.warn("[order-ro] not a production deployment - Purchase not sent to Meta"); return; }
   const c = o.customer;
   const parts = str(c.name).split(/\s+/);
   const userData: Record<string, unknown> = { country: [sha256("ro")] };

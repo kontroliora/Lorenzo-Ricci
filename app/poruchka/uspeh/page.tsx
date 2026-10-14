@@ -41,10 +41,10 @@ function PaymentReturn() {
 
       const guardKey = `lr_purchase_fired_${ref}`;
       let alreadyFired = purchaseFired.current;
-      try { alreadyFired = alreadyFired || sessionStorage.getItem(guardKey) === "1"; } catch { /* ignore */ }
+      try { alreadyFired = alreadyFired || localStorage.getItem(guardKey) === "1" || sessionStorage.getItem(guardKey) === "1"; } catch { /* ignore */ }
       if (!alreadyFired) {
         purchaseFired.current = true;
-        try { sessionStorage.setItem(guardKey, "1"); } catch { /* ignore */ }
+        try { localStorage.setItem(guardKey, "1"); sessionStorage.setItem(guardKey, "1"); } catch { /* ignore */ }
         trackFbEvent("Purchase", {
           value:        paid.total ?? 0,
           currency:     "EUR",

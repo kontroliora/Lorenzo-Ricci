@@ -3,7 +3,8 @@ import { supabase } from "@/lib/supabase";
 import { buildAdminEmail, buildCustomerEmail, sendAdminEmail, sendCustomerEmail, sendCapiPurchase, type CapiContext } from "@/lib/order-notify";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { CARD_PAYMENTS_ENABLED, PENDING_PAYMENT } from "@/lib/payments";
-import { restockLines, returnOrigin, startCardPayment } from "@/lib/payment-orders";
+import { claimPromo, releasePromo, restockLines, returnOrigin, startCardPayment } from "@/lib/payment-orders";
+import { BG_ORDER_REF_RE } from "@/lib/order-ref";
 import { SITE_URL } from "@/lib/site";
 import { previewMarked, previewOrdersAllowed } from "@/lib/deploy-env";
 import type { CardLine } from "@/lib/stripe";
@@ -53,6 +54,17 @@ export async function POST(req: NextRequest) {
     const customerAddress = String(customer.email ?? "").trim();
     const customerName    = String(customer.name  ?? "");
 
+    // The reference is minted by the browser: check its shape, and treat the same reference twice (double click, retry after a
+    // timeout) as the same order - never a second reservation or a second row.
+    const orderRefIn = String(order.orderRef ?? "");
+    if (!BG_ORDER_REF_RE.test(orderRefIn)) {
+      return NextResponse.json({ success: false, error: "Невалидна поръчка. Моля, презаредете страницата." }, { status: 400 });
+    }
+    {
+      const dup = await supabaseAdmin().from("orders").select("id").eq("order_ref", orderRefIn).limit(1);
+      if (!dup.error && dup.data && dup.data.length > 0) return NextResponse.json({ success: true, duplicate: true, gifts: [], giftNotes: [] });
+    }
+
     // ── PRICE GUARD - the browser reports unit prices and totals; check them against
     //    the catalog first, before anything with a side effect (no stock reserved, no
     //    emails, no DB row). A stale tab or a tampered request gets a 409 and reloads.
@@ -93,6 +105,10 @@ export async function POST(req: NextRequest) {
     const isCard = order.paymentMethod === "card";
     if (isCard && !CARD_PAYMENTS_ENABLED) {
       return NextResponse.json({ success: false, error: "Плащането с карта не е налично в момента. Моля, изберете наложен платеж." }, { status: 503 });
+    }
+    // Stripe refuses an invalid customer_email, which would look like "card payment unavailable": say what is wrong instead.
+    if (isCard && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(customerAddress)) {
+      return NextResponse.json({ success: false, code: "bad_email", error: "Моля, въведете валиден имейл адрес за плащане с карта." }, { status: 400 });
     }
     if (isCard && (Number(((order.shipping ?? {}) as Record<string, unknown>).cost ?? 0) !== 0 || pricing.shippingCost !== 0)) {
       return NextResponse.json(
@@ -201,6 +217,17 @@ export async function POST(req: NextRequest) {
       const orderRef = String(order.orderRef ?? "");
       const cardUnavailable = () => NextResponse.json({ success: false, error: "Плащането с карта не е налично в момента. Моля, опитайте с наложен платеж." }, { status: 503 });
 
+      // 0. A single-use promo code is CLAIMED now (atomic), not when the money arrives: two open card orders can never both
+      //    use it. It is given back if this order is not paid (expireOrder) or cannot be saved.
+      let promoClaimed = false;
+      if (promoCodeCard && promoRate !== null && Number(order.promoDiscount ?? 0) > 0) {
+        try { promoClaimed = await claimPromo(sbAdmin, promoCodeCard); } catch (e) { console.error("[Order] promo claim failed:", e); }
+        if (!promoClaimed) {
+          await restockLines(sbAdmin, savedOrder.items);
+          return NextResponse.json({ success: false, code: "promo_used", error: "Промо кодът вече е използван. Премахнете го и опитайте отново." }, { status: 409 });
+        }
+      }
+
       // 1. Save the order as PENDING_PAYMENT (stock is already reserved). It stays out of the fulfilment board and the Econt flows.
       const { error: insErr } = await sbAdmin.from("orders").insert({
         order_ref:               orderRef,
@@ -219,8 +246,8 @@ export async function POST(req: NextRequest) {
         sms_marketing_consent:   Boolean(customer.smsMarketingConsent),
         email_marketing_consent: Boolean(customer.emailMarketingConsent),
         notes:                   previewMarked(String(customer.notes         ?? "")),
-        promo_code:              promoCodeCard || null,
-        promo_discount:          Number(order.promoDiscount ?? 0) || null,
+        promo_code:              promoClaimed ? promoCodeCard : null,
+        promo_discount:          promoClaimed ? Number(order.promoDiscount ?? 0) || null : null,
         status:                  PENDING_PAYMENT,
         payment_method:          "card",
         payment_status:          "pending",
@@ -229,6 +256,7 @@ export async function POST(req: NextRequest) {
       if (insErr) {
         console.error("[Order] card order insert failed (stripe_payments.sql run?):", insErr.message);
         await restockLines(sbAdmin, savedOrder.items);
+        if (promoClaimed) await releasePromo(sbAdmin, promoCodeCard);
         return cardUnavailable();
       }
 
@@ -305,14 +333,14 @@ export async function POST(req: NextRequest) {
         promo_code:              promoCode || null,
         promo_discount:          Number(order.promoDiscount ?? 0) || null,
       };
-      let dbError = (await supabase.from("orders").insert(orderRow)).error;
+      let dbError = (await supabaseAdmin().from("orders").insert(orderRow)).error;
       // If the promo columns aren't migrated yet, save the order WITHOUT them
       // rather than losing the whole order (it's already shown as success).
       if (dbError && /promo_(code|discount)|schema cache|column/i.test(dbError.message)) {
         const rowNoPromo: Record<string, unknown> = { ...orderRow };
         delete rowNoPromo.promo_code;
         delete rowNoPromo.promo_discount;
-        dbError = (await supabase.from("orders").insert(rowNoPromo)).error;
+        dbError = (await supabaseAdmin().from("orders").insert(rowNoPromo)).error;
       }
       if (dbError) throw dbError;
       console.log("[Supabase] Order saved");

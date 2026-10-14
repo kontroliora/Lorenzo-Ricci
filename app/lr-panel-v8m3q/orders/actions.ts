@@ -38,8 +38,21 @@ async function restockOrderItems(
 
 const HOLDS_STOCK = (status: string) => (RESERVING_STATUSES as readonly string[]).includes(status);
 
+// A card payment that was refunded in Stripe: the order must not be confirmed or shipped (the webhook already cancels an
+// unshipped one; this stops a stale screen). Never blocks on a read problem (e.g. columns not migrated yet).
+async function refundedBlock(ids: number[]): Promise<string | null> {
+  if (!ids.length) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("orders").select("order_ref, payment_status").in("id", ids);
+  if (error || !data) return null;
+  const bad = data.filter((o) => o.payment_status === "refunded");
+  return bad.length ? `Плащането е върнато в Stripe (${bad.map((o) => o.order_ref).join(", ")}): поръчката не може да се потвърди или изпрати.` : null;
+}
+
 // Потвърждава / big ПОТВЪРДИ button → confirmed (stock stays reserved).
 export async function confirmOrder(id: number): Promise<string | null> {
+  const blocked = await refundedBlock([id]);
+  if (blocked) return blocked;
   return patchOrder(id, { status: "confirmed", call_state: "confirmed" });
 }
 
@@ -87,6 +100,8 @@ export async function markNoAnswer(id: number): Promise<string | null> {
 // logs) once per order — a group action leaves one audit entry per order. ──────
 export async function confirmOrders(ids: number[]): Promise<string | null> {
   if (!ids.length) return null;
+  const blocked = await refundedBlock(ids);
+  if (blocked) return blocked;
   const supabase = await createClient();
   const { error } = await supabase.from("orders")
     .update({ status: "confirmed", call_state: "confirmed" })
@@ -130,6 +145,8 @@ export async function markNoAnswerOrders(ids: number[]): Promise<string | null> 
 export async function shipOrder(id: number, tracking: string): Promise<string | null> {
   const t = (tracking ?? "").trim();
   if (!t) return "Въведи тракинг номер от Еконт първо";
+  const blocked = await refundedBlock([id]);
+  if (blocked) return blocked;
   return patchOrder(id, { tracking_number: t, status: "shipped" });
 }
 

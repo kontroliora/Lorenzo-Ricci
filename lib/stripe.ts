@@ -17,9 +17,9 @@ export function getStripe(): Stripe {
     const base = process.env.STRIPE_API_BASE;
     if (base && key.startsWith("sk_test_")) {
       const u = new URL(base);
-      client = new Stripe(key, { host: u.hostname, port: u.port, protocol: u.protocol.replace(":", "") as "http" | "https", telemetry: false });
+      client = new Stripe(key, { apiVersion: Stripe.API_VERSION, host: u.hostname, port: u.port, protocol: u.protocol.replace(":", "") as "http" | "https", telemetry: false });
     } else {
-      client = new Stripe(key, { telemetry: false });
+      client = new Stripe(key, { apiVersion: Stripe.API_VERSION, telemetry: false });
     }
   }
   return client;
@@ -48,6 +48,9 @@ export async function createCardSession(args: {
 }): Promise<{ id: string; url: string }> {
   const session = await getStripe().checkout.sessions.create({
     mode: "payment",
+    // Cards only (Apple Pay and Google Pay are part of "card"): an asynchronous / offline method enabled in the Dashboard would
+    // leave orders "complete but unpaid" for days. (This API version filters with allowed_payment_method_types.)
+    allowed_payment_method_types: ["card"],
     client_reference_id: args.orderRef,
     ...(args.customerEmail ? { customer_email: args.customerEmail } : {}),
     line_items: args.lines.map((l) => ({
