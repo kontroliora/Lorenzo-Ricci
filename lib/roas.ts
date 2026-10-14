@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { isOwner } from "@/lib/admin-auth";
 import { EUR_RON } from "@/lib/ro/config";
+import { isUnpaidCardAttempt } from "@/lib/order-status";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // What the shop eats when a parcel is never collected: it pays BOTH delivery
@@ -51,6 +52,7 @@ type OrderRow = {
   cancel_category: string | null;
   return_kind?: string | null;
   ship_country?: string | null;
+  payment_status?: string | null;   // undefined until supabase/stripe_payments.sql has run
   created_at: string;
 };
 
@@ -94,18 +96,24 @@ export async function computeRoas(startISO: string, endISO: string): Promise<Roa
 async function computeRoasCore(startISO: string, endISO: string): Promise<RoasData> {
   const sb = supabaseAdmin();
 
-  // Orders in window - resilient to columns that are not migrated yet (return_kind, ship_country): the first column list the
-  // database accepts is used.
+  // Orders in window - resilient to columns that are not migrated yet (return_kind, payment_status, ship_country): the first
+  // column list the database accepts is used. classified = the return_kind column exists (drives the "непотърсени" loss line).
   const base = "status, total, excluded_from_stock, cancel_category, created_at";
-  const candidates = [`${base}, return_kind, ship_country`, `${base}, ship_country`, `${base}, return_kind`, base];
+  const sets: string[][] = [
+    ["return_kind", "payment_status", "ship_country"], ["return_kind", "ship_country"], ["payment_status", "ship_country"], ["ship_country"],
+    ["return_kind", "payment_status"], ["return_kind"], ["payment_status"], [],
+  ];
   let rows: OrderRow[] = [];
-  let classified = true;
-  for (const cols of candidates) {
+  let classified = false;
+  for (const extra of sets) {
+    const cols = [base, ...extra].join(", ");
     const q = await sb.from("orders").select(cols).gte("created_at", startISO).lte("created_at", endISO);
-    if (!q.error) { rows = (q.data ?? []) as unknown as OrderRow[]; classified = cols.includes("return_kind"); break; }
+    if (!q.error) { rows = (q.data ?? []) as unknown as OrderRow[]; classified = extra.includes("return_kind"); break; }
   }
+  // Test/fake orders and unpaid card attempts (pending_payment, or cancelled with payment_status expired/failed) are not
+  // sales: they never count toward Meta's gross, the cancel rate, or any bucket. A PAID card order counts like any other.
+  const real0 = rows.filter((r) => !r.excluded_from_stock && !isUnpaidCardAttempt(r));
   // Romanian orders are in lei: never mixed into the euro figures (they get their own block below).
-  const real0 = rows.filter((r) => !r.excluded_from_stock);
   const orders = real0.filter((r) => r.ship_country !== "RO");
   const roOrders = real0.filter((r) => r.ship_country === "RO");
 

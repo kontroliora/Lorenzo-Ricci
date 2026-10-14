@@ -4,9 +4,11 @@ import { OrderCard } from "./OrderCard";
 import { GroupedOrderCard } from "./GroupedOrderCard";
 import { CreateOrderForm } from "./CreateOrderForm";
 import { MatchPanel } from "./MatchPanel";
+import { PaymentFilters } from "./PaymentUi";
 import { checkEcontStatuses } from "./actions";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
-import { isReturn } from "@/lib/order-status";
+import { isReturn, isPendingPayment, isUnpaidCardAttempt, matchesPayment, type PayMethodFilter, type PayStateFilter } from "@/lib/order-status";
+import { isCard } from "@/lib/payments";
 import { activeWindow, nextWindow, callTimer } from "@/lib/callSchedule";
 
 type Tab = "new" | "confirmed" | "shipped" | "completed" | "returned" | "cancelled";
@@ -74,7 +76,8 @@ function groupByCustomer(orders: AdminOrder[]): AdminOrder[][] {
   const noPhone: AdminOrder[][] = [];
   for (const o of orders) {
     const key = phoneCore(o.phone ?? "");
-    if (!key) { noPhone.push([o]); continue; }
+    // A card order is never merged: its courier-collects amount differs from a cash-on-delivery one.
+    if (!key || isCard(o)) { noPhone.push([o]); continue; }
     const b = buckets.get(key);
     if (b) b.push(o); else buckets.set(key, [o]);
   }
@@ -112,6 +115,10 @@ export function OrdersBoard({
   nowMs: number;
 }) {
   const [tab, setTab] = useState<Tab>("new");
+  const [showPending, setShowPending] = useState(false);   // the "Чакат плащане" chip view (unpaid card attempts)
+  const [showDead, setShowDead] = useState(false);
+  const [payMethod, setPayMethod] = useState<PayMethodFilter>("all");
+  const [payState, setPayState] = useState<PayStateFilter>("all");
   const [showFake, setShowFake] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [query, setQuery] = useState("");
@@ -132,8 +139,16 @@ export function OrdersBoard({
   // International "soft decline" waitlist orders never enter the normal queue —
   // they live in the separate "Международни" panel view. One filter here keeps them
   // out of every tab, counter and search at once (same pattern as excluded_from_stock).
-  const real = orders.filter((o) => !o.excluded_from_stock && !o.is_international);
+  const live = orders.filter((o) => !o.excluded_from_stock && !o.is_international);
+  // Unpaid card attempts (status pending_payment, or cancelled with payment_status expired/failed) are NOT orders:
+  // they stay out of every fulfilment tab, counter and search, and are shown only under the "Чакат плащане" chip.
+  const openAttempts = live.filter(isPendingPayment);
+  const deadAttempts = live.filter((o) => isUnpaidCardAttempt(o) && !isPendingPayment(o));
+  const salesOrders = live.filter((o) => !isUnpaidCardAttempt(o));
+  // The payment filters combine with the tabs, the summary counters and the search.
+  const real = salesOrders.filter((o) => matchesPayment(o, payMethod, payState));
   const fake = orders.filter((o) => o.excluded_from_stock);
+  const openTab = (t: Tab) => { setTab(t); setShowPending(false); };
 
   const count = (t: Tab) => real.filter((o) => inTab(o, t)).length;
   const stuckCount = real.filter((o) => o.status === "new" && ageH(o) > 24).length;
@@ -142,7 +157,7 @@ export function OrdersBoard({
   const dueNow = (o: AdminOrder) =>
     o.status === "new" &&
     callTimer(o.call_attempts ?? 0, o.last_attempt_at ? Date.parse(o.last_attempt_at) : null, now).status === "due";
-  const dueCount = real.filter(dueNow).length;
+  const dueCount = salesOrders.filter(dueNow).length;
 
   const tabOrders = real.filter((o) => inTab(o, tab));
   // "За обаждане" splits into first-call vs re-call (не вдига).
@@ -201,9 +216,9 @@ export function OrdersBoard({
       {!searching && (
         <div className="border-b border-white/6">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex gap-2.5 items-stretch flex-wrap">
-            <Chip onClick={() => setTab("new")}       count={stuckCount}    title="Над 24 часа"   sub="заседнали · обработи спешно" accent="#A32D2D"                  fg="#F09595" bg="rgba(163,45,45,0.16)" strong />
-            <Chip onClick={() => setTab("new")}       count={count("new")}       title="Непотвърдени"  sub="за обаждане"                accent="rgba(255,255,255,0.12)" fg="#FAC775" />
-            <Chip onClick={() => setTab("confirmed")} count={count("confirmed")} title="За изпълнение" sub="чакат пакетиране"           accent="rgba(255,255,255,0.12)" fg="#97C459" />
+            <Chip onClick={() => openTab("new")}       count={stuckCount}    title="Над 24 часа"   sub="заседнали · обработи спешно" accent="#A32D2D"                  fg="#F09595" bg="rgba(163,45,45,0.16)" strong />
+            <Chip onClick={() => openTab("new")}       count={count("new")}       title="Непотвърдени"  sub="за обаждане"                accent="rgba(255,255,255,0.12)" fg="#FAC775" />
+            <Chip onClick={() => openTab("confirmed")} count={count("confirmed")} title="За изпълнение" sub="чакат пакетиране"           accent="rgba(255,255,255,0.12)" fg="#97C459" />
             <span className="ml-auto self-center text-white/25 text-[11px] hidden sm:block">клик = отвори подтаба</span>
           </div>
         </div>
@@ -212,6 +227,10 @@ export function OrdersBoard({
       {/* Search box (always visible) + sub-tabs (hidden while searching) */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
         <SearchBox value={query} onChange={setQuery} count={matches.length} searching={searching} />
+
+        <div className="mt-3">
+          <PaymentFilters method={payMethod} state={payState} onMethod={setPayMethod} onState={setPayState} />
+        </div>
 
         {!searching && (
           <div className="flex gap-2 flex-wrap items-center mt-3">
@@ -223,12 +242,12 @@ export function OrdersBoard({
               + Създай поръчка
             </button>
             {TABS.map((t) => {
-              const active = tab === t.key;
+              const active = !showPending && tab === t.key;
               const c = count(t.key);
               return (
                 <button
                   key={t.key}
-                  onClick={() => setTab(t.key)}
+                  onClick={() => openTab(t.key)}
                   aria-current={active ? "page" : undefined}
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 7,
@@ -243,6 +262,22 @@ export function OrdersBoard({
                 </button>
               );
             })}
+            {/* Unpaid card attempts: not orders, read-only, shown only here */}
+            {(openAttempts.length > 0 || deadAttempts.length > 0 || showPending) && (
+              <button
+                onClick={() => setShowPending(true)}
+                aria-current={showPending ? "page" : undefined}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  background: showPending ? "rgba(250,199,117,0.14)" : "transparent",
+                  border: `${showPending ? "1px" : "0.5px"} dashed ${showPending ? "#FAC775" : "rgba(255,255,255,0.25)"}`,
+                  borderRadius: 20, padding: "5px 12px", cursor: "pointer",
+                  fontSize: 11, color: showPending ? "#FAC775" : "rgba(255,255,255,0.5)",
+                }}
+              >
+                Чакат плащане · {openAttempts.length}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -261,7 +296,28 @@ export function OrdersBoard({
           </>
         ) : (
           <>
-            {tab === "new" ? (
+            {showPending ? (
+              <>
+                <SectionHeader label={`Чакат плащане · ${openAttempts.length}`} color="#FAC775" />
+                <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, margin: 0 }}>
+                  Незавършени плащания с карта. Не са поръчки: не се звъни и не се изпраща. Наличността е резервирана и се връща автоматично, ако клиентът не плати.
+                </p>
+                {openAttempts.length === 0
+                  ? <Empty text="Няма чакащи плащания." />
+                  : openAttempts.map(card)}
+                {deadAttempts.length > 0 && (
+                  <div className="mt-2 pt-3 border-t border-white/6">
+                    <button
+                      onClick={() => setShowDead((v) => !v)}
+                      style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer", padding: 0 }}
+                    >
+                      {showDead ? "▾" : "▸"} {deadAttempts.length} изтекли / неуспешни плащания (не са поръчки)
+                    </button>
+                    {showDead && <div className="flex flex-col gap-4 mt-3">{deadAttempts.map(card)}</div>}
+                  </div>
+                )}
+              </>
+            ) : tab === "new" ? (
               <>
                 <SectionHeader label={`Нови · за първо обаждане (${fresh.length})`} />
                 {fresh.length === 0
@@ -305,7 +361,7 @@ export function OrdersBoard({
             )}
 
             {/* Fake / test orders — kept out of the working tabs, revealable */}
-            {fake.length > 0 && (
+            {!showPending && fake.length > 0 && (
               <div className="mt-4 pt-4 border-t border-white/6">
                 <button
                   onClick={() => setShowFake((s) => !s)}

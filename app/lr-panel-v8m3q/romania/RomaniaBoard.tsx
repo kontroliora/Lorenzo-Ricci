@@ -4,9 +4,15 @@ import { useRouter } from "next/navigation";
 import type { AdminOrder } from "@/lib/orders";
 import { confirmOrder, cancelOrder, markCompleted, markReturned, markRestocked } from "../orders/actions";
 import { shipRoOrder } from "./actions";
+import { isPendingPayment, isDeadCardAttempt, isUnpaidCardAttempt, matchesPayment, type PayMethodFilter, type PayStateFilter } from "@/lib/order-status";
+import { isCard, isPaidCard } from "@/lib/payments";
+import { PaymentBadge, PaymentFilters, PaidCardCollectLine } from "../orders/PaymentUi";
 
 // Orders from the Romanian test (/ro). Amounts are LEI. Same stock rules as the Bulgarian board: cancelling an order
 // that holds stock puts the units back (cancelOrder), a returned parcel is restocked with "Взех пратката".
+// Payment: cash on delivery or card (Stripe). A PAID card order is collected as 0 by the courier. Unpaid card attempts
+// (status pending_payment, or cancelled with payment_status expired/failed) are not orders: they are kept out of every
+// list and counter below and shown only under the "Чакат плащане" chip, read-only.
 
 const FILTERS = [
   { id: "active", label: "За работа", match: (s: string) => s === "new" || s === "confirmed" },
@@ -19,7 +25,7 @@ const FILTERS = [
 
 const STATUS_LABEL: Record<string, string> = {
   new: "Нова", confirmed: "Потвърдена", shipped: "Изпратена", completed: "Доставена", cancelled: "Отказана",
-  returning: "Връща се", returned: "Върната", restocked: "Върната на склад",
+  returning: "Връща се", returned: "Върната", restocked: "Върната на склад", pending_payment: "Чака плащане",
 };
 
 const lei = (n: number | null) => `${Number(n ?? 0).toLocaleString("ro-RO")} lei`;
@@ -28,13 +34,24 @@ const fmtDate = (iso: string) => new Date(iso).toLocaleString("bg-BG", { day: "2
 export function RomaniaBoard({ orders }: { orders: AdminOrder[] }) {
   const router = useRouter();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["id"]>("active");
+  const [showPending, setShowPending] = useState(false);   // the "Чакат плащане" chip view
+  const [showDead, setShowDead] = useState(false);
+  const [payMethod, setPayMethod] = useState<PayMethodFilter>("all");
+  const [payState, setPayState] = useState<PayStateFilter>("all");
   const [msg, setMsg] = useState("");
   const [pending, start] = useTransition();
 
-  const counts = useMemo(() => Object.fromEntries(FILTERS.map((f) => [f.id, orders.filter((o) => f.match(o.status)).length])), [orders]);
-  const shown = orders.filter((o) => FILTERS.find((f) => f.id === filter)!.match(o.status));
-  const open = orders.filter((o) => o.status === "new" || o.status === "confirmed");
-  const toCollect = orders.filter((o) => ["new", "confirmed", "shipped"].includes(o.status)).reduce((s, o) => s + Number(o.total ?? 0), 0);
+  const openAttempts = useMemo(() => orders.filter(isPendingPayment), [orders]);
+  const deadAttempts = useMemo(() => orders.filter((o) => isUnpaidCardAttempt(o) && !isPendingPayment(o)), [orders]);
+  // Real orders only (no unpaid card attempts); the payment filters narrow the tabs and their counters.
+  const sales = useMemo(() => orders.filter((o) => !isUnpaidCardAttempt(o)), [orders]);
+  const real = useMemo(() => sales.filter((o) => matchesPayment(o, payMethod, payState)), [sales, payMethod, payState]);
+  const counts = useMemo(() => Object.fromEntries(FILTERS.map((f) => [f.id, real.filter((o) => f.match(o.status)).length])), [real]);
+  const shown = real.filter((o) => FILTERS.find((f) => f.id === filter)!.match(o.status));
+  const listed = showPending ? [...openAttempts, ...(showDead ? deadAttempts : [])] : shown;
+  const open = sales.filter((o) => o.status === "new" || o.status === "confirmed");
+  // What the courier still has to collect: a PAID card order contributes 0.
+  const toCollect = sales.filter((o) => ["new", "confirmed", "shipped"].includes(o.status) && !isPaidCard(o)).reduce((s, o) => s + Number(o.total ?? 0), 0);
 
   const run = (job: () => Promise<string | null>) =>
     start(async () => {
@@ -50,7 +67,7 @@ export function RomaniaBoard({ orders }: { orders: AdminOrder[] }) {
     run(() => shipRoOrder(o.id, awb, url));
   };
   const cancel = (o: AdminOrder) => {
-    const reason = window.prompt("Причина за отказ (по желание):", "");
+    const reason = window.prompt(`${isPaidCard(o) ? "ВНИМАНИЕ: платена с карта - след отказа върни сумата от Stripe.\n" : ""}Причина за отказ (по желание):`, "");
     if (reason === null) return;
     run(() => cancelOrder(o.id, "other", reason));
   };
@@ -60,31 +77,56 @@ export function RomaniaBoard({ orders }: { orders: AdminOrder[] }) {
       <div className="mb-6">
         <h1 className="font-sans text-sm tracking-[0.14em] uppercase text-white/80">Румъния · {orders.length} поръчки</h1>
         <p className="font-sans text-xs text-white/40 mt-1">
-          Суми в леи (RON), наложен платеж, румънски куриер. За работа: {open.length} · За събиране от куриера (нови + потвърдени + изпратени): {lei(toCollect)}
+          Суми в леи (RON), наложен платеж или карта, румънски куриер. За работа: {open.length} · За събиране от куриера (нови + потвърдени + изпратени, без платените с карта): {lei(toCollect)}
         </p>
+      </div>
+
+      <div className="mb-4">
+        <PaymentFilters method={payMethod} state={payState} onMethod={setPayMethod} onState={setPayState} />
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">
         {FILTERS.map((f) => (
-          <button key={f.id} onClick={() => setFilter(f.id)}
-            className={`px-4 py-2 rounded-full border font-sans text-xs tracking-wide transition-colors ${filter === f.id ? "bg-white text-[#0a0e1f] border-white" : "border-white/15 text-white/60 hover:text-white"}`}>
+          <button key={f.id} onClick={() => { setFilter(f.id); setShowPending(false); }}
+            className={`px-4 py-2 rounded-full border font-sans text-xs tracking-wide transition-colors ${!showPending && filter === f.id ? "bg-white text-[#0a0e1f] border-white" : "border-white/15 text-white/60 hover:text-white"}`}>
             {f.label} · {counts[f.id]}
           </button>
         ))}
+        {/* Unpaid card attempts: not orders, read-only, shown only here */}
+        {(openAttempts.length > 0 || deadAttempts.length > 0 || showPending) && (
+          <button onClick={() => setShowPending(true)}
+            className={`px-3 py-2 rounded-full border border-dashed font-sans text-[11px] tracking-wide transition-colors ${showPending ? "border-amber-300 text-amber-300 bg-amber-300/10" : "border-white/25 text-white/50 hover:text-white"}`}>
+            Чакат плащане · {openAttempts.length}
+          </button>
+        )}
       </div>
 
       {msg && <p className="mb-4 font-sans text-xs text-amber-300 border border-amber-300/20 bg-amber-300/5 px-4 py-3">{msg}</p>}
 
-      {shown.length === 0 ? (
-        <p className="text-white/40 text-sm text-center py-20">Няма поръчки в този изглед.</p>
+      {showPending && (
+        <div className="mb-4">
+          <p className="font-sans text-xs text-white/50">
+            Незавършени плащания с карта. Не са поръчки: наличността е резервирана и се връща автоматично, ако клиентът не плати.
+          </p>
+          {deadAttempts.length > 0 && (
+            <button onClick={() => setShowDead((v) => !v)} className="mt-2 font-sans text-xs text-white/40 hover:text-white/70">
+              {showDead ? "▾" : "▸"} {deadAttempts.length} изтекли / неуспешни плащания (не са поръчки)
+            </button>
+          )}
+        </div>
+      )}
+
+      {listed.length === 0 ? (
+        <p className="text-white/40 text-sm text-center py-20">{showPending ? "Няма чакащи плащания." : "Няма поръчки в този изглед."}</p>
       ) : (
         <div className="flex flex-col gap-4">
-          {shown.map((o) => (
+          {listed.map((o) => (
             <div key={o.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-3">
                   <span className="text-white" style={{ fontFamily: "monospace", fontSize: 13 }}>{o.order_ref}</span>
-                  <span className="font-sans text-[11px] px-2 py-0.5 rounded-full border border-white/20 text-white/70">{STATUS_LABEL[o.status] ?? o.status}</span>
+                  <span className="font-sans text-[11px] px-2 py-0.5 rounded-full border border-white/20 text-white/70">{isDeadCardAttempt(o) ? "Неплатена · изтекла" : (STATUS_LABEL[o.status] ?? o.status)}</span>
+                  <PaymentBadge order={o} />
                 </div>
                 <span className="font-sans text-xs text-white/40">{fmtDate(o.created_at)}</span>
               </div>
@@ -102,11 +144,18 @@ export function RomaniaBoard({ orders }: { orders: AdminOrder[] }) {
                 ))}
               </ul>
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="font-sans text-sm text-white">
-                  За плащане: <strong>{lei(o.total)}</strong>
-                  <span className="text-white/40"> (доставка {Number(o.shipping_cost ?? 0) === 0 ? "безплатна" : lei(o.shipping_cost)})</span>
-                  {o.tracking_number && <span className="text-white/50 ml-3">AWB {o.tracking_number}</span>}
-                </p>
+                {isPaidCard(o) ? (
+                  <div>
+                    <PaidCardCollectLine zero="0 лей" paidAmount={lei(o.total)} paidAt={o.paid_at ? fmtDate(o.paid_at) : null} />
+                    {o.tracking_number && <p className="font-sans text-sm text-white/50 mt-1">AWB {o.tracking_number}</p>}
+                  </div>
+                ) : (
+                  <p className="font-sans text-sm text-white">
+                    {isCard(o) ? "Сума (карта, още не е платено)" : "За плащане"}: <strong>{lei(o.total)}</strong>
+                    <span className="text-white/40"> (доставка {Number(o.shipping_cost ?? 0) === 0 ? "безплатна" : lei(o.shipping_cost)})</span>
+                    {o.tracking_number && <span className="text-white/50 ml-3">AWB {o.tracking_number}</span>}
+                  </p>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {o.status === "new" && <Btn onClick={() => run(() => confirmOrder(o.id))} disabled={pending} tone="go">Потвърди</Btn>}
                   {o.status === "confirmed" && <Btn onClick={() => ship(o)} disabled={pending} tone="go">Изпратена + AWB</Btn>}
@@ -116,6 +165,8 @@ export function RomaniaBoard({ orders }: { orders: AdminOrder[] }) {
                   {(o.status === "new" || o.status === "confirmed") && <Btn onClick={() => cancel(o)} disabled={pending} tone="bad">Откажи</Btn>}
                 </div>
               </div>
+              {isPendingPayment(o) && <p className="mt-3 font-sans text-xs text-amber-300">Клиентът още не е платил - резервирана наличност, изтича автоматично</p>}
+              {isDeadCardAttempt(o) && <p className="mt-3 font-sans text-xs text-white/50">Плащането с карта не е завършено - не е поръчка, наличността е върната</p>}
               {o.notes && <p className="mt-3 font-sans text-xs text-white/50">Бележка на клиента: {o.notes}</p>}
             </div>
           ))}

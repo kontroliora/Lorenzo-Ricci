@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect, useTransition } from "react";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
-import { isReturn } from "@/lib/order-status";
+import { isReturn, isPendingPayment, isDeadCardAttempt } from "@/lib/order-status";
+import { isCard, isPaidCard } from "@/lib/payments";
 import {
   confirmOrder,
   cancelOrder,
@@ -15,6 +16,7 @@ import {
 } from "./actions";
 import { callTimer, sofiaHHMM, formatAttemptList, formatAttemptAudit } from "@/lib/callSchedule";
 import { OrderItemsList } from "./OrderItemsList";
+import { PaymentBadge, PaidCardCollectLine } from "./PaymentUi";
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
   new:       { label: "Нова · за обаждане", bg: "#412402", fg: "#FAC775" },
@@ -25,7 +27,9 @@ const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = 
   returned:  { label: "Върната",             bg: "#4A1B0C", fg: "#F0997B" },
   returning: { label: "Връща се",            bg: "#4A1B0C", fg: "#F0997B" },
   restocked: { label: "Върната · в наличност", bg: "#173404", fg: "#97C459" },
+  pending_payment: { label: "Чака плащане",    bg: "#412402", fg: "#FAC775" },
 };
+const DEAD_ATTEMPT_BADGE = { label: "Неплатена · изтекла", bg: "#2C2C2A", fg: "#D3D1C7" };
 
 function fmtDate(iso: string): string {
   try {
@@ -113,7 +117,12 @@ export function OrderCard({
       return err;
     });
 
-  const badge = STATUS_BADGE[order.status] ?? STATUS_BADGE.new;
+  // Card payments: an open card payment (pending_payment) is NOT an order yet - read-only card, no actions.
+  const pendingPay = isPendingPayment(order);
+  const deadAttempt = isDeadCardAttempt(order);   // card checkout that expired / failed unpaid
+  const readOnly = pendingPay || deadAttempt;
+  const paidCard = isPaidCard(order);
+  const badge = deadAttempt ? DEAD_ATTEMPT_BADGE : (STATUS_BADGE[order.status] ?? STATUS_BADGE.new);
   const excluded = order.excluded_from_stock;
   const digits = (order.phone ?? "").replace(/[^\d+]/g, "");
 
@@ -172,9 +181,12 @@ export function OrderCard({
             {order.name || "—"}
             {order.order_ref && <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, marginLeft: 8, fontFamily: "monospace" }}>{order.order_ref}</span>}
           </div>
-          <span style={{ display: "inline-block", marginTop: 5, background: histBadge.bg, color: histBadge.fg, fontSize: 11, padding: "3px 9px", borderRadius: 20 }}>{histBadge.text}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 5 }}>
+            <span style={{ display: "inline-block", background: histBadge.bg, color: histBadge.fg, fontSize: 11, padding: "3px 9px", borderRadius: 20 }}>{histBadge.text}</span>
+            <PaymentBadge order={order} />
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
           {excluded && <span style={{ background: "#2C2C2A", color: "#D3D1C7", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>Фалшива</span>}
           {order.is_manual && <span style={{ background: "#3C3489", color: "#CECBF6", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>Ръчна</span>}
           <span style={{ background: badge.bg, color: badge.fg, fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>{badge.label}</span>
@@ -195,7 +207,11 @@ export function OrderCard({
             <span>Доставка: <span style={{ color: "rgba(255,255,255,0.8)" }}>{codShip > 0 ? `€${codShip.toFixed(2)}` : "безплатна"}</span></span>
           </div>
         )}
-        <div style={{ color: "#fff", fontWeight: 500 }}>€{cod.toFixed(2)}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · наложен платеж</span></div>
+        {paidCard ? (
+          <PaidCardCollectLine zero="0" paidAmount={`€${cod.toFixed(2)}`} paidAt={order.paid_at ? fmtDate(order.paid_at) : null} />
+        ) : (
+          <div style={{ color: "#fff", fontWeight: 500 }}>€{cod.toFixed(2)}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · {isCard(order) ? "карта, още не е платено" : "наложен платеж"}</span></div>
+        )}
         {order.promo_code && (
           <div style={{ marginTop: 4, fontSize: 12, color: "#C0DD97" }}>
             ◈ Промо код: <span style={{ fontFamily: "monospace", color: "#fff", letterSpacing: "0.04em" }}>{order.promo_code}</span>
@@ -270,7 +286,7 @@ export function OrderCard({
             })}
           </div>
         )}
-        {!excluded && (
+        {!excluded && !readOnly && (
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <input
               value={noteDraft}
@@ -287,7 +303,15 @@ export function OrderCard({
       </div>
 
       {/* Controls — single flow, one action set per stage */}
-      {excluded ? (
+      {readOnly ? (
+        <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", marginTop: 14, paddingTop: 12 }}>
+          <span style={{ color: pendingPay ? "#FAC775" : "rgba(255,255,255,0.45)", fontSize: 12 }}>
+            {pendingPay
+              ? "Клиентът още не е платил - резервирана наличност, изтича автоматично"
+              : "Плащането с карта не е завършено - не е поръчка, наличността е върната"}
+          </span>
+        </div>
+      ) : excluded ? (
         <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", marginTop: 14, paddingTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
           <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>Маркирана като фалшива/тестова · не се брои в наличността</span>
           <button disabled={pending} onClick={() => run(() => setFake(order.id, false))} style={outlineBtn("rgba(255,255,255,0.2)", "rgba(255,255,255,0.6)")}>Върни в реални</button>
@@ -353,6 +377,7 @@ export function OrderCard({
               {cancelStep === "category" && (
                 <>
                   <span style={{ color: "#F09595", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>Причина за отказ</span>
+                  {paidCard && <span style={{ color: "#FAC775", fontSize: 12 }}>⚠ Платена с карта - след отказа върни сумата от Stripe (автоматично връщане няма).</span>}
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button onClick={() => setCancelStep("refuse")} style={pillBtn}>Отказа по телефон</button>
                     <button onClick={() => doCancel("unreachable", "не вдига 3+ опита")} style={pillBtn}>Не вдига 3+ опита</button>

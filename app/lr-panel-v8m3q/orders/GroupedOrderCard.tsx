@@ -3,6 +3,7 @@ import { useState, useTransition } from "react";
 import type { AdminOrder, CustomerHistory } from "@/lib/orders";
 import { confirmOrders, cancelOrders, markNoAnswerOrders } from "./actions";
 import { OrderItemsList } from "./OrderItemsList";
+import { PaymentBadge } from "./PaymentUi";
 
 function fmtDT(iso: string): string {
   try {
@@ -94,7 +95,11 @@ export function GroupedOrderCard({
             {last.name || "—"}
             <span style={{ background: "rgba(93,202,165,0.15)", color: "#5DCAA5", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", padding: "3px 9px", borderRadius: 20, border: "0.5px solid rgba(93,202,165,0.4)" }}>◈ {n} поръчки</span>
           </div>
-          <span style={{ display: "inline-block", marginTop: 6, background: histBadge.bg, color: histBadge.fg, fontSize: 11, padding: "3px 9px", borderRadius: 20 }}>{histBadge.text}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+            <span style={{ display: "inline-block", background: histBadge.bg, color: histBadge.fg, fontSize: 11, padding: "3px 9px", borderRadius: 20 }}>{histBadge.text}</span>
+            {/* A group only ever merges cash-on-delivery orders (card orders are never grouped, see OrdersBoard) */}
+            <PaymentBadge order={last} />
+          </div>
         </div>
         <span style={{ background: "#412402", color: "#FAC775", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>Нова · за обаждане</span>
       </div>
@@ -112,7 +117,7 @@ export function GroupedOrderCard({
             <span>Доставка: <span style={{ color: "rgba(255,255,255,0.8)" }}>{groupShip > 0 ? `€${groupShip.toFixed(2)}` : "безплатна"}</span></span>
           </div>
         )}
-        <div style={{ color: "#fff", fontWeight: 500 }}>€{total.toFixed(2)}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · обща сума от {n}-те</span></div>
+        <div style={{ color: "#fff", fontWeight: 500 }}>€{total.toFixed(2)}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · обща сума от {n}-те · наложен платеж</span></div>
         {promoCodes.length > 0 && (
           <div style={{ marginTop: 4, fontSize: 12, color: "#C0DD97" }}>
             ◈ Промо {promoCodes.length > 1 ? "кодове" : "код"}: <span style={{ fontFamily: "monospace", color: "#fff", letterSpacing: "0.04em" }}>{promoCodes.join(" · ")}</span>
