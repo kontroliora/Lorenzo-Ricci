@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { langOf, mayEmail } from "@/lib/mail-policy";
+
+// mail-policy: abandoned_cart
 import { supabase } from "@/lib/supabase";
 
 // ─── Auth ──────────────────────────────────────────────────────────────────
@@ -299,6 +302,8 @@ export async function POST(req: NextRequest) {
   const results: Array<{ id: string; email: string; ok: boolean; error?: string }> = [];
 
   for (const session of candidates) {
+    // This manual sender only has the Bulgarian template: Romanian carts are mailed by the cron (Romanian template, consent check).
+    if (!mayEmail("abandoned_cart", langOf(session as { lang?: string | null }), "bg")) continue;
     try {
       const { subject, html } = buildRecoveryEmail({
         name:     session.name ?? "",

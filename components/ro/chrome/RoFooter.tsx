@@ -2,10 +2,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { fmtRON, RO_DELIVERY_DAYS, RO_FREE_SHIPPING_RON, RO_INSPECT_BEFORE_PAY, RO_RETURN_DAYS } from "@/lib/ro/config";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
+import { RoNewsletterStrip } from "./RoNewsletterStrip";
 
 // Romanian counterpart of components/layout/Footer.tsx (server component). Company name, e-mail, opening hours and
-// the postal address are the ones the Bulgarian site already publishes (footer + privacy policy). No newsletter form
-// and no social links. The trust badges take every figure from lib/ro/config.ts. The BG · RO switch sits in the brand column
+// the postal address are the ones the Bulgarian site already publishes (footer + privacy policy). The newsletter signup
+// (RoNewsletterStrip, Romanian, stores lang = ro) sits above it; no social links. The trust badges take every figure from lib/ro/config.ts. The BG · RO switch sits in the brand column
 // (the footer is one of the places it may live: never beside the cart icon in the header).
 const TRUST = [
   { title: "5 ani garanție comercială", sub: "la ceasuri · pe viață la bijuterii" },
@@ -19,6 +20,7 @@ const TRUST = [
 export function RoFooter() {
   return (
     <footer className="bg-white border-t border-border">
+      <RoNewsletterStrip />
       <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-16">
         {/* Top grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8 mb-16">

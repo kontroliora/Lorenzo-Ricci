@@ -10,9 +10,11 @@ import { roName } from "@/lib/ro/names-ro";
 import { roAmounts } from "@/lib/ro/pricing";
 import { isPreviewDeploy, previewOrdersAllowed } from "@/lib/deploy-env";
 import { RO_COUNTIES } from "@/lib/ro/counties";
+import { mayEmail } from "@/lib/mail-policy";
 import { RO_CURRENCY } from "@/lib/ro/config";
 import { buildRoCustomerEmail, buildRoAdminEmail, roCustomerSubject, type RoOrderEmailData } from "@/lib/ro/emails";
 
+// mail-policy: order_confirmation
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -189,7 +191,7 @@ export async function POST(req: NextRequest) {
     // ── 5. Save the order (BEFORE the e-mails). A failed insert gives the stock back and tells the customer. ──
     const orderItems = lines.map((l) => ({ sku: l.sku, slug: l.slug, name: l.name, quantity: l.quantity, qty: l.quantity, price: l.ron, currency: "lei" }));
     const notes = str(cu.notes, 500);
-    const { error: insErr } = await sb.from("orders").insert({
+    const orderRow = {
       order_ref: ref,
       name,
       phone,
@@ -208,12 +210,22 @@ export async function POST(req: NextRequest) {
       notes: notes || null,
       is_international: true,
       ship_country: "RO",
-    });
+    };
+    // lang = 'ro' (supabase/lang_columns.sql) marks the order Romanian for every later e-mail; the Romanian signals (ship_country,
+    // the LRRO- reference) work without it, so an order is never lost because the column has not been added yet.
+    let { error: insErr } = await sb.from("orders").insert({ ...orderRow, lang: "ro" });
+    if (insErr && /lang/i.test(insErr.message)) ({ error: insErr } = await sb.from("orders").insert(orderRow));
     if (insErr) {
       console.error("[order-ro] insert failed:", insErr.message);
       const { error: restockErr } = await sb.rpc("restock_wallet_stock", { p_items: reserveItems });
       if (restockErr) console.error("[order-ro] restock after failed insert ALSO failed:", restockErr.message, ref);
       return fail(503, "unavailable", "Nu am putut înregistra comanda. Vă rugăm să reîncercați în câteva momente.");
+    }
+
+    // The saved cart of this visit (abandoned-cart reminder, only exists with the customer's consent) is done: no reminder.
+    const cartSession = typeof body.sessionId === "string" ? body.sessionId.slice(0, 80) : "";
+    if (cartSession) {
+      await sb.from("cart_sessions").update({ status: "converted", converted_at: new Date().toISOString() }).eq("session_id", cartSession).eq("status", "pending");
     }
 
     // ── 6. E-mails + Meta Purchase (awaited: Vercel kills un-awaited work). Best effort: the order is already saved. ──
@@ -226,7 +238,10 @@ export async function POST(req: NextRequest) {
     };
     const results = await Promise.allSettled([
       sendMail({ from: "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>", to: ADMIN_RECIPIENTS, subject: `🇷🇴 Нова поръчка (Румъния) - ${name} - ${ref}`, html: buildRoAdminEmail(data) }),
-      sendMail({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [email], subject: roCustomerSubject, html: buildRoCustomerEmail(data) }),
+      // the customer's confirmation is Romanian (mail-policy: order_confirmation); the team e-mail above is internal
+      mayEmail("order_confirmation", "ro", "ro")
+        ? sendMail({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [email], subject: roCustomerSubject, html: buildRoCustomerEmail(data) })
+        : Promise.resolve(),
       sendCapiPurchase({ ...data, skus: lines.map((l) => l.sku) }, capiCtx),
     ]);
     results.forEach((r, i) => { if (r.status === "rejected") console.error(`[order-ro] ${["admin e-mail", "customer e-mail", "CAPI Purchase"][i]} failed:`, r.reason); });

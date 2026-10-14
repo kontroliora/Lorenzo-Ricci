@@ -104,12 +104,41 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   const purchaseFired = useRef(false);
   const submittingRef = useRef(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cartSessionRef = useRef("");   // id of the saved cart (abandoned-cart reminder), created on the first capture
+  const captureTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // A pending auto-close must not outlive the form (e.g. the customer closed the drawer or reopened it meanwhile).
   useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
 
   // ── Derived values (the only money maths: lib/ro/pricing.ts roAmounts) ─────
   const { shipping: shippingCost, total: grandTotal, bundles } = roAmounts(items);
+
+  // Abandoned-cart reminder (Romanian e-mail): the cart is saved ONLY while the customer has ticked the e-mail consent box (unticked
+  // by default) and the address looks valid; unticking it afterwards withdraws the saved cart. Nothing is saved otherwise.
+  const consent = form.emailMarketingConsent;
+  useEffect(() => {
+    const email = form.email.trim();
+    if (!cartSessionRef.current && (!consent || !EMAIL_RE.test(email))) return; // nothing saved yet, nothing to withdraw
+    if (items.length === 0 || items.some((i) => i.prepay)) return;
+    if (captureTimer.current) clearTimeout(captureTimer.current);
+    captureTimer.current = setTimeout(() => {
+      if (!cartSessionRef.current) cartSessionRef.current = crypto.randomUUID();
+      fetch("/api/cart-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: cartSessionRef.current,
+          email: EMAIL_RE.test(email) ? email : undefined,
+          name: form.name.trim() || undefined,
+          lang: "ro",
+          emailConsent: consent,
+          items: items.map((i) => ({ slug: i.slug, sku: i.sku, name: i.name, price: i.ron, quantity: i.quantity })),
+          subtotal: roAmounts(items).goods,
+        }),
+      }).catch(() => {});
+    }, 1200);
+    return () => { if (captureTimer.current) clearTimeout(captureTimer.current); };
+  }, [consent, form.email, form.name, items]);
   const freeShipping = shippingCost === 0;
   const needsPrepayment = items.some((i) => i.prepay);
 
@@ -196,6 +225,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
         emailMarketingConsent: form.emailMarketingConsent,
         termsAccepted: true,
       },
+      sessionId: cartSessionRef.current || undefined,           // the saved cart (if any) is marked as converted by the server
       items: lines.map((i) => ({ slug: i.slug, sku: i.sku, name: i.name, quantity: i.quantity, price: i.ron })),
       discount: amounts.discount,                              // set discount in lei (0 if none)
       shipping: { method: SHIPPING_METHOD, cost: amounts.shipping },
@@ -395,7 +425,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
             className="mt-0.5 flex-shrink-0 w-3.5 h-3.5 accent-white cursor-pointer"
           />
           <span className="font-sans text-[10px] text-white/40 leading-relaxed tracking-wide">
-            Vreau să primesc oferte și noutăți prin e-mail (opțional)
+            Vreau să primesc oferte, noutăți și un memento prin e-mail dacă nu finalizez comanda (opțional)
           </span>
         </label>
 

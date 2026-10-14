@@ -1,9 +1,12 @@
 "use server";
 
+// mail-policy: shipment_shipped
+
 import { revalidatePath } from "next/cache";
 import { Resend } from "resend";
 import { createClient } from "@/lib/supabase/server";
 import { buildRoShippedEmail, roShippedSubject } from "@/lib/ro/emails";
+import { mayEmail } from "@/lib/mail-policy";
 
 const PATH = "/lr-panel-v8m3q/romania";
 
@@ -31,7 +34,7 @@ export async function shipRoOrder(id: number, awb: string, trackUrl: string): Pr
 
   // E-mail 1 (once). A mail problem never undoes the shipment; it is reported back so staff can tell the customer.
   let warning: string | null = null;
-  if (order.email && !order.ship_email_sent_at) {
+  if (order.email && !order.ship_email_sent_at && mayEmail("shipment_shipped", "ro", "ro")) { // the Romanian shipped e-mail, to a Romanian order
     try {
       const key = process.env.RESEND_API_KEY;
       if (!key) throw new Error("RESEND_API_KEY липсва");
