@@ -142,7 +142,7 @@ export function BundleUpsell({ product: rawProduct }: Props) {
                 <button
                   onClick={() => handleAdd(partner)}
                   disabled={isLocked}
-                  className={`font-sans text-[10px] font-medium tracking-[0.18em] uppercase px-4 py-2.5 border transition-all duration-200 active:scale-[0.97] whitespace-nowrap disabled:cursor-not-allowed ${
+                  className={`font-sans text-[10px] font-medium tracking-[0.18em] uppercase px-4 py-2.5 min-h-[44px] border transition-all duration-200 active:scale-[0.97] whitespace-nowrap disabled:cursor-not-allowed ${
                     isAdded
                       ? "bg-navy border-navy text-white"
                       : "bg-transparent border-navy text-navy hover:bg-navy hover:text-white"

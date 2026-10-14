@@ -37,7 +37,7 @@ export function EditorialJewellery() {
             </p>
             <Link
               href="/story"
-              className="inline-flex items-center gap-3 w-fit group/btn"
+              className="inline-flex items-center gap-3 w-fit min-h-[44px] group/btn"
             >
               <span className="font-sans text-[10px] tracking-[0.28em] uppercase text-white/60 group-hover/btn:text-white transition-colors duration-300">
                 Научи повече

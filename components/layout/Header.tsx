@@ -43,7 +43,7 @@ export function Header() {
 
               {/* Бижута dropdown */}
               <div className="relative group">
-                <button className="flex items-center gap-1 font-sans text-xs font-light tracking-[0.18em] uppercase text-ink-muted hover:text-navy transition-colors duration-300 relative">
+                <button className="flex items-center gap-1 font-sans text-xs font-light tracking-[0.18em] uppercase text-ink-muted hover:text-navy transition-colors duration-300 relative [@media(pointer:coarse)]:py-3.5 [@media(pointer:coarse)]:-my-3.5">
                   Бижута
                   <svg
                     width="10" height="10" viewBox="0 0 24 24"
@@ -77,7 +77,7 @@ export function Header() {
           </div>
 
           {/* Logo - always centred */}
-          <Link href="/" className="flex-shrink-0 flex items-center" aria-label="Lorenzo Ricci - начало">
+          <Link href="/" className="flex-shrink-0 flex items-center min-h-[44px]" aria-label="Lorenzo Ricci - начало">
             <Image
               src="/logo.webp"
               alt="Lorenzo Ricci"
@@ -85,7 +85,7 @@ export function Header() {
               height={40}
               quality={90}
               loading="eager" // above the fold, but not `priority`: only the page's LCP image gets the preload + high fetch priority
-              className={`object-contain transition-all duration-300 logo-invert ${scrolled ? "h-8" : "h-10"} w-auto`}
+              className={`object-contain transition-all duration-300 logo-invert ${scrolled ? "h-7 min-[360px]:h-8" : "h-7 min-[360px]:h-8 sm:h-10"} w-auto`}
             />
           </Link>
 
@@ -99,7 +99,7 @@ export function Header() {
             <button
               onClick={openCart}
               aria-label={`Количка (${count})`}
-              className="relative text-ink-soft hover:text-navy transition-colors duration-300"
+              className="relative p-[11px] -m-[11px] text-ink-soft hover:text-navy transition-colors duration-300"
             >
               <CartIcon />
               {count > 0 && (
@@ -112,7 +112,7 @@ export function Header() {
             <button
               onClick={() => setMenuOpen(true)}
               aria-label="Меню"
-              className="lg:hidden text-ink-soft hover:text-navy transition-colors duration-300"
+              className="lg:hidden p-[11px] -m-[11px] text-ink-soft hover:text-navy transition-colors duration-300"
             >
               <HamburgerIcon />
             </button>
@@ -129,19 +129,19 @@ export function Header() {
           <div className="flex flex-col h-full overflow-y-auto px-8 py-10" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-16">
               <Image src="/logo.webp" alt="Lorenzo Ricci" width={140} height={36} className="h-9 w-auto" />
-              <button onClick={closeMobile} className="text-white/60 hover:text-white text-3xl leading-none transition-colors">
+              <button onClick={closeMobile} aria-label="Затвори менюто" className="w-11 h-11 -mr-3 flex items-center justify-center text-white/60 hover:text-white text-3xl leading-none transition-colors">
                 ×
               </button>
             </div>
 
-            <nav className="flex flex-col gap-8">
+            <nav className="flex flex-col gap-6">
               {/* Static links */}
               {([
                 { href: "/",        label: "Начало" },
                 { href: "/watches", label: "Часовници" },
               ] as const).map(({ href, label }) => (
                 <Link key={href} href={href} onClick={closeMobile}
-                  className="font-serif text-4xl text-white/80 hover:text-white transition-colors duration-300">
+                  className="py-1 font-serif text-4xl text-white/80 hover:text-white transition-colors duration-300">
                   {label}
                 </Link>
               ))}
@@ -150,7 +150,7 @@ export function Header() {
               <div>
                 <button
                   onClick={() => setJewelleryOpen((v) => !v)}
-                  className="flex items-center gap-3 font-serif text-4xl text-white/80 hover:text-white transition-colors duration-300 w-full text-left"
+                  className="flex items-center gap-3 py-1 font-serif text-4xl text-white/80 hover:text-white transition-colors duration-300 w-full text-left"
                 >
                   Бижута
                   <svg
@@ -164,13 +164,13 @@ export function Header() {
                 </button>
 
                 {jewelleryOpen && (
-                  <div className="mt-4 ml-4 flex flex-col gap-4 border-l border-white/10 pl-5">
+                  <div className="mt-2 ml-4 flex flex-col gap-0 border-l border-white/10 pl-5">
                     <Link href="/jewellery" onClick={closeMobile}
-                      className="font-sans text-sm font-light tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors duration-300">
+                      className="py-3.5 min-h-[44px] flex items-center font-sans text-sm font-light tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors duration-300">
                       Всички бижута
                     </Link>
                     <Link href="/bundles" onClick={closeMobile}
-                      className="font-sans text-sm font-light tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors duration-300">
+                      className="py-3.5 min-h-[44px] flex items-center font-sans text-sm font-light tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors duration-300">
                       Комплекти  -10%
                     </Link>
                   </div>
@@ -184,7 +184,7 @@ export function Header() {
                 { href: "/faq",           label: "FAQ" },
               ] as const).map(({ href, label }) => (
                 <Link key={href} href={href} onClick={closeMobile}
-                  className="font-serif text-4xl text-white/80 hover:text-white transition-colors duration-300">
+                  className="py-1 font-serif text-4xl text-white/80 hover:text-white transition-colors duration-300">
                   {label}
                 </Link>
               ))}
@@ -204,9 +204,9 @@ export function Header() {
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Link href={href}
-      className="font-sans text-xs font-light tracking-[0.18em] uppercase text-ink-muted hover:text-navy transition-colors duration-300 relative group">
+      className="font-sans text-xs font-light tracking-[0.18em] uppercase text-ink-muted hover:text-navy transition-colors duration-300 relative group [@media(pointer:coarse)]:py-3.5 [@media(pointer:coarse)]:-my-3.5 [@media(pointer:coarse)]:min-w-[44px]">
       {children}
-      <span className="absolute -bottom-1 left-0 w-0 h-px bg-navy transition-all duration-300 group-hover:w-full" />
+      <span className="absolute -bottom-1 [@media(pointer:coarse)]:bottom-2.5 left-0 w-0 h-px bg-navy transition-all duration-300 group-hover:w-full" />
     </Link>
   );
 }
@@ -214,7 +214,7 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
 function DropdownLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Link href={href}
-      className="block px-4 py-2.5 font-sans text-[11px] font-light tracking-[0.18em] uppercase text-ink-muted hover:text-navy hover:bg-ivory-warm transition-colors duration-200">
+      className="block px-4 py-2.5 [@media(pointer:coarse)]:py-3.5 font-sans text-[11px] font-light tracking-[0.18em] uppercase text-ink-muted hover:text-navy hover:bg-ivory-warm transition-colors duration-200">
       {children}
     </Link>
   );

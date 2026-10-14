@@ -77,7 +77,7 @@ export function MilanoAvorioFlagship({ product }: Props) {
                 </span>
               )}
             </div>
-            <Link href={`/products/${product.slug}`} className="inline-flex items-center gap-3 w-fit group/btn">
+            <Link href={`/products/${product.slug}`} className="inline-flex items-center gap-3 w-fit min-h-[44px] group/btn">
               <span className="font-sans text-[10px] tracking-[0.28em] uppercase text-navy group-hover/btn:text-charcoal transition-colors duration-300">
                 Разгледай продукта
               </span>

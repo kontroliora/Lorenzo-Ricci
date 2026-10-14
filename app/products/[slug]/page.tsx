@@ -84,7 +84,7 @@ export default async function ProductPage({ params }: Props) {
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-[10px] font-sans tracking-widest uppercase text-ink-faint mb-10">
-          <Link href="/" className="hover:text-navy transition-colors duration-200">Начало</Link>
+          <Link href="/" className="[@media(pointer:coarse)]:py-4 [@media(pointer:coarse)]:-my-4 [@media(pointer:coarse)]:min-w-[44px] hover:text-navy transition-colors duration-200">Начало</Link>
           <span className="text-border-strong">/</span>
           <Link
             href={
@@ -92,7 +92,7 @@ export default async function ProductPage({ params }: Props) {
               product.category === "wallets" || product.category === "cardholders" || product.category === "bags" ? "/leather-goods" :
               "/jewellery"
             }
-            className="hover:text-navy transition-colors duration-200"
+            className="[@media(pointer:coarse)]:py-4 [@media(pointer:coarse)]:-my-4 [@media(pointer:coarse)]:min-w-[44px] hover:text-navy transition-colors duration-200"
           >
             {product.category === "watches" ? "Часовници" :
              product.category === "wallets" ? "Портфейли" :

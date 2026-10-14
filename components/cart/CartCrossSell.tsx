@@ -129,7 +129,7 @@ export function CartCrossSell() {
               </div>
               <button
                 onClick={() => handleAdd(product)}
-                className={`flex-shrink-0 w-8 h-8 flex items-center justify-center border transition-all duration-200 ${
+                className={`flex-shrink-0 w-11 h-11 flex items-center justify-center border transition-all duration-200 ${
                   isAdded
                     ? "bg-navy border-navy text-white"
                     : "border-white/25 text-white/50 hover:border-white/60 hover:text-white"

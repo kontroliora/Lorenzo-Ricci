@@ -151,7 +151,7 @@ export function CartDrawer() {
           <button
             onClick={closeCart}
             aria-label="Затвори"
-            className="text-white/40 hover:text-white transition-colors text-2xl leading-none"
+            className="w-11 h-11 -mr-3 flex items-center justify-center text-white/40 hover:text-white transition-colors text-2xl leading-none"
           >
             ×
           </button>
@@ -193,7 +193,7 @@ export function CartDrawer() {
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <button
               onClick={() => setShowCheckout(false)}
-              className="flex items-center gap-2 text-white/40 hover:text-white transition-colors text-xs tracking-widest uppercase mb-6"
+              className="flex items-center gap-2 py-3 -mt-3 mb-3 text-white/40 hover:text-white transition-colors text-xs tracking-widest uppercase"
             >
               ← Обратно към количката
             </button>
@@ -256,7 +256,7 @@ export function CartDrawer() {
                       <div className="flex items-center gap-0 border border-white/10">
                         <button
                           onClick={() => updateQuantity(product.id, quantity - 1)}
-                          className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-colors text-lg"
+                          className="w-11 h-11 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-colors text-lg"
                         >
                           −
                         </button>
@@ -266,7 +266,7 @@ export function CartDrawer() {
                         <button
                           onClick={() => updateQuantity(product.id, quantity + 1)}
                           disabled={product.stock != null && quantity >= product.stock}
-                          className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-colors text-lg disabled:opacity-20 disabled:cursor-not-allowed"
+                          className="w-11 h-11 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-colors text-lg disabled:opacity-20 disabled:cursor-not-allowed"
                         >
                           +
                         </button>
@@ -286,7 +286,7 @@ export function CartDrawer() {
                         <button
                           onClick={() => removeItem(product.id)}
                           aria-label="Премахни"
-                          className="text-white/25 hover:text-white transition-colors text-sm"
+                          className="p-3 -m-3 text-white/25 hover:text-white transition-colors text-sm"
                         >
                           ✕
                         </button>
