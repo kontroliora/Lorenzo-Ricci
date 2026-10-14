@@ -4,12 +4,14 @@ import { products } from "@/lib/products";
 import { RoProductCard } from "@/components/ro/RoProductCard";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 import { localizeProduct } from "@/lib/ro/catalog";
-import { roEligible, ronOf } from "@/lib/ro/config";
-import { fmtRON } from "@/lib/ro/config";
+import { roEligible, ronOf, ronOriginalOf, fmtRON } from "@/lib/ro/config";
+import { roToBgPath } from "@/lib/ro/route-map";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via lib/price-overrides.ts) - the page stays
-// statically generated; the admin discount route revalidates it. Eligibility is decided on the catalogue before the
-// overrides are applied (same set as RO_SLUGS).
+// statically generated; the admin discount route revalidates it. All six watches are listed (same set as RO_SLUGS), with
+// the same sale (current price, old price crossed out, badge) as on the Bulgarian site.
+
+const PATH = "/ro/ceasuri";
 
 // Price wording comes from the catalogue so it can never drift from the real prices.
 const roWatches = products.filter((p) => p.category === "watches" && roEligible(p));
@@ -26,12 +28,15 @@ export const metadata: Metadata = {
   title: "Ceasuri",
   description: DESCRIPTION,
   keywords: ["Lorenzo Ricci", "ceasuri de lux", "cronograf", "sticlă safir", "mecanism japonez", "Yachting", "Chrono Black", "Golden Eclipse", "Polar Frost"],
-  alternates: { canonical: "https://lorenzo-ricci.com/ro/ceasuri" },
+  alternates: {
+    canonical: `https://lorenzo-ricci.com${PATH}`,
+    languages: { "ro-RO": `https://lorenzo-ricci.com${PATH}`, "bg-BG": `https://lorenzo-ricci.com${roToBgPath(PATH)}` },
+  },
   openGraph: {
     type: "website",
     locale: "ro_RO",
     siteName: "Lorenzo Ricci",
-    url: "https://lorenzo-ricci.com/ro/ceasuri",
+    url: `https://lorenzo-ricci.com${PATH}`,
     title: "Ceasuri | Lorenzo Ricci",
     description: DESCRIPTION,
   },
@@ -95,7 +100,7 @@ export default async function RoWatchesPage() {
               Cadranele parțial scheletate dezvăluie precizia din interior, iar cronografele multifuncționale permit măsurarea timpului cu exactitate și stil.
             </p>
             <p className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide">
-              Fiecare model beneficiază de garanție comercială de 5 ani pentru mecanism și este livrat într-o cutie premium - gata de oferit cadou sau pentru tine.
+              Fiecare model beneficiază de garanție comercială de 5 ani pentru mecanism și este livrat într-o cutie premium - gata de oferit cadou sau pentru dumneavoastră.
             </p>
           </div>
           <div className="flex flex-col gap-6">
@@ -113,7 +118,7 @@ export default async function RoWatchesPage() {
         </div>
 
         {/* Specs comparison */}
-        <div className="mt-20 border border-border overflow-x-auto">
+        <div className="relative mt-20 border border-border overflow-x-auto">
           <table className="w-full min-w-[500px]">
             <thead>
               <tr className="border-b border-border bg-ivory-warm">
@@ -153,11 +158,20 @@ export default async function RoWatchesPage() {
                 <td className="py-4 px-6 font-sans text-[10px] tracking-widest uppercase text-ink-faint">
                   Preț
                 </td>
-                {watches.map((w) => (
-                  <td key={w.id} className="py-4 px-6 text-center">
-                    <span className="font-serif text-xl text-navy">{fmtRON(ronOf(w))}</span>
-                  </td>
-                ))}
+                {watches.map((w) => {
+                  const original = ronOriginalOf(w);
+                  return (
+                    <td key={w.id} className="py-4 px-6 text-center">
+                      <span className="font-serif text-xl text-navy">{fmtRON(ronOf(w))}</span>
+                      {original !== undefined && (
+                        <span className="block font-sans text-xs text-ink-faint line-through mt-0.5">
+                          <span className="sr-only">Preț inițial: </span>
+                          {fmtRON(original)}
+                        </span>
+                      )}
+                    </td>
+                  );
+                })}
               </tr>
             </tbody>
           </table>

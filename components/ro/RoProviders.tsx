@@ -4,24 +4,27 @@ import { CountryProvider } from "@/lib/country";
 import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import { useRoCart } from "@/lib/ro/store";
 import { getProductBySlug } from "@/lib/products";
-import { roEligible } from "@/lib/ro/config";
-import { ronPrice } from "@/lib/ro/config";
+import { ronPrice, roNeedsPrepayment } from "@/lib/ro/config";
 
 // A cart line is a price snapshot taken when it was added. Re-derive each line's lei price from the catalog plus the
 // current price overrides (the same inputs /api/order-ro validates against), so a price change never leaves a customer
 // stuck on "prices were updated" with a cart that keeps the old numbers. Lines that can no longer be sold are dropped.
 async function repriceCart(): Promise<void> {
   if (useRoCart.getState().items.length === 0) return;
-  let overrides: Record<string, { price?: number }> = {};
+  let overrides: Record<string, { price?: number; originalPrice?: number }> = {};
   try {
     const r = await fetch("/api/price-overrides", { cache: "no-store" });
     if (r.ok) overrides = await r.json();
   } catch { /* offline: fall back to catalog prices */ }
   useRoCart.getState().reprice((line) => {
     const product = getProductBySlug(line.slug);
-    if (!product || !roEligible(product)) return null;
-    const eur = typeof overrides[line.slug]?.price === "number" ? overrides[line.slug].price! : product.price;
-    return { ...line, ron: ronPrice(eur) };
+    if (!product) return null;
+    const ov = overrides[line.slug];
+    const eur = typeof ov?.price === "number" ? ov.price : product.price;
+    const orig = typeof ov?.originalPrice === "number" ? ov.originalPrice : product.originalPrice;
+    const ron = ronPrice(eur);
+    const originalRon = typeof orig === "number" && orig > eur && ronPrice(orig) > ron ? ronPrice(orig) : undefined;
+    return { ...line, ron, originalRon, onSale: originalRon !== undefined, prepay: roNeedsPrepayment({ price: eur }) };
   });
 }
 

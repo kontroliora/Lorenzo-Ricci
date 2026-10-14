@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
+import { roToBgPath } from "@/lib/ro/route-map";
 import {
   RO_COD_FEE_RON,
   RO_COURIER_LABEL,
@@ -9,12 +11,25 @@ import {
   RO_RETURN_DAYS,
   RO_SHIPPING_FEE_RON,
   fmtRON,
+  ronPrice,
 } from "@/lib/ro/config";
+
+const PATH = "/ro/intrebari-frecvente";
+
+// Products priced from EUR 1500 up are sold on advance payment (no cash on delivery), exactly like on the Bulgarian site.
+const PREPAY_RON = fmtRON(ronPrice(PREPAYMENT_THRESHOLD_EUR));
+const PREPAY_EUR = PREPAYMENT_THRESHOLD_EUR.toLocaleString("ro-RO");
 
 export const metadata: Metadata = {
   title: "Întrebări frecvente",
-  description: "Răspunsuri la cele mai frecvente întrebări despre ceasurile și articolele din piele de crocodil Lorenzo Ricci: comandă, plata ramburs, livrare, garanție și retur.",
-  alternates: { canonical: "https://lorenzo-ricci.com/ro/intrebari-frecvente" },
+  description: "Răspunsuri la cele mai frecvente întrebări despre ceasurile, bijuteriile și articolele din piele de crocodil Lorenzo Ricci: comandă, plată, livrare, garanție și retur.",
+  alternates: {
+    canonical: `https://lorenzo-ricci.com${PATH}`,
+    languages: {
+      "ro-RO": `https://lorenzo-ricci.com${PATH}`,
+      "bg-BG": `https://lorenzo-ricci.com${roToBgPath(PATH)}`,
+    },
+  },
   other: { "content-language": "ro" },
 };
 
@@ -47,10 +62,37 @@ const faqs: { category: string; items: FaqItem[] }[] = [
       {
         q: "Cum reglez ceasul?",
         a: "Trageți coroana în poziția dorită și rotiți-o pentru a regla ora. Ghidul complet de utilizare este disponibil la primirea ceasului.",
+        link: { text: "Ghidul de utilizare a ceasului", href: "/ro/ghid-ceas" },
       },
       {
         q: "Cât rezistă mecanismul?",
         a: "Mecanismul japonez de cuarț este proiectat pentru cel puțin 10 ani de funcționare precisă. Bateria se schimbă, de regulă, la fiecare 2-3 ani.",
+      },
+    ],
+  },
+  {
+    category: "BIJUTERII",
+    items: [
+      {
+        q: "Se estompează placarea aurie?",
+        a: "Placarea PVD în 4 straturi, aur 18K, este concepută să reziste mulți ani. Tehnologia este semnificativ mai durabilă decât placarea standard, într-un singur strat. Ca orice acoperire, la purtarea zilnică poate prezenta în timp o uzură naturală, care nu constituie defect de fabricație.",
+        link: { text: "Vedeți condițiile de garanție", href: "/ro/garantie-bijuterii" },
+      },
+      {
+        q: "Din ce materiale sunt realizate bijuteriile?",
+        a: "Din oțel inoxidabil 316L, cu placare PVD Gold 18K în 4 straturi - o tehnologie folosită de mărci de bijuterii de lux.",
+      },
+      {
+        q: "Pot uda bijuteriile?",
+        a: "Da. Materialul nu ruginește și nu se întunecă. Recomandăm evitarea apei sărate și a clorului, pentru o durabilitate maximă.",
+      },
+      {
+        q: "Ce marcaje au bijuteriile?",
+        a: "„750” pentru placarea de 18K, „IT / ITALY” pentru designul italian și „LR” pentru sigla Lorenzo Ricci.",
+      },
+      {
+        q: "Cum întrețin bijuteriile?",
+        a: "Curățați-le cu o cârpă moale și evitați parfumurile sau substanțele chimice puternice aplicate direct pe suprafață.",
       },
     ],
   },
@@ -65,9 +107,10 @@ const faqs: { category: string; items: FaqItem[] }[] = [
         q: "Cum plătesc?",
         a: (
           <>
-            Plata se face ramburs: achitați comanda curierului, la livrare.
+            Pentru produsele cu un preț sub {PREPAY_RON}, plata se face ramburs: achitați comanda curierului, la livrare.
             {RO_COD_FEE_RON > 0 && <> Pentru plata ramburs se percepe o taxă de {fmtRON(RO_COD_FEE_RON)}.</>}
             {RO_INSPECT_BEFORE_PAY && <> Aveți dreptul să verificați coletul înainte de plată și să îl refuzați dacă produsul nu corespunde așteptărilor dumneavoastră.</>}
+            {" "}Produsele cu un preț de la {PREPAY_RON} în sus (echivalentul a {PREPAY_EUR} EUR) se comandă cu plata în avans, stabilită direct cu noi - pentru acestea plata ramburs nu este disponibilă. Scrieți-ne la info@lorenzo-ricci.com și vom stabili împreună modalitatea de plată.
           </>
         ),
       },
@@ -93,6 +136,11 @@ const faqs: { category: string; items: FaqItem[] }[] = [
         q: "Ce garanție au ceasurile?",
         a: "Lorenzo Ricci oferă o garanție comercială de 5 ani pentru mecanism, în plus față de drepturile dumneavoastră legale de consumator (inclusiv garanția legală de conformitate de 2 ani). Aceasta acoperă defectele de fabricație. Nu acoperă: carcasa, sticla, cureaua, catarama, daunele cauzate de utilizarea necorespunzătoare sau de lovituri.",
         link: { text: "Vedeți condițiile detaliate de garanție", href: "/ro/politici/termeni#garantie" },
+      },
+      {
+        q: "Ce garanție au bijuteriile?",
+        a: "Garanție comercială pe viață pentru toate bijuteriile din colecția Lorenzo Ricci - acoperă defectele de fabricație, fără limită de timp. Ea se acordă în plus față de drepturile dumneavoastră legale de consumator (inclusiv garanția legală de conformitate de 2 ani).",
+        link: { text: "Vedeți condițiile detaliate de garanție", href: "/ro/garantie-bijuterii" },
       },
       {
         q: "Pot returna un produs?",

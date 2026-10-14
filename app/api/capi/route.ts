@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isPreviewDeploy } from "@/lib/deploy-env";
 
 const META_PIXEL_ID    = "661480326560209";
 const ALLOWED_EVENTS   = new Set(["AddToCart", "InitiateCheckout"]);
@@ -15,6 +16,7 @@ type CAPIBody = {
 export async function POST(req: NextRequest) {
   const token = process.env.META_CAPI_ACCESS_TOKEN;
   if (!token) return NextResponse.json({ ok: false });
+  if (isPreviewDeploy()) return NextResponse.json({ ok: false, skipped: "preview" }); // previews share the live token: no test events
 
   try {
     const body = await req.json() as CAPIBody;

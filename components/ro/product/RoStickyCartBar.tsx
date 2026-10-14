@@ -2,8 +2,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { Product } from "@/lib/types";
-import { fmtRON } from "@/lib/ro/config";
-import { ronOf } from "@/lib/ro/config";
+import { fmtRON, ronOf, ronOriginalOf } from "@/lib/ro/config";
 
 interface Props {
   product: Product;
@@ -15,6 +14,8 @@ interface Props {
 export function RoStickyCartBar({ product, effectiveInStock, onAdd }: Props) {
   const [visible, setVisible] = useState(false);
   const [added, setAdded]     = useState(false);
+  // Sale: the old price in lei (undefined when the product is not on sale)
+  const originalRon = ronOriginalOf(product);
 
   useEffect(() => {
     const el = document.querySelector("[data-main-cta]");
@@ -80,6 +81,11 @@ export function RoStickyCartBar({ product, effectiveInStock, onAdd }: Props) {
               <span className="font-serif text-xl text-navy leading-none">
                 {fmtRON(ronOf(product))}
               </span>
+              {originalRon !== undefined && (
+                <del className="font-sans text-xs text-ink-faint line-through hidden sm:inline">
+                  {fmtRON(originalRon)}
+                </del>
+              )}
             </div>
           </div>
 

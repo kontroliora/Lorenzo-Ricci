@@ -4,28 +4,36 @@ import { RoProductCard } from "@/components/ro/RoProductCard";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 import { localizeProduct } from "@/lib/ro/catalog";
 import { roEligible, RO_CATEGORY_LABEL } from "@/lib/ro/config";
+import { roToBgPath } from "@/lib/ro/route-map";
 
+const PATH = "/ro/piele-de-crocodil";
+
+// Page-wide wording names no species: the range holds more than one (the one-off bag Milano Avorio is a Nile crocodile)
+// and each product's own specs carry its species. Same approach as the Bulgarian certificate strip and FAQ below.
 const DESCRIPTION =
-  "Articole din piele de crocodil Lorenzo Ricci - portofele, port-carduri și clutch-uri din piele 100% naturală de crocodil (Crocodylus Siamensis). Certificat CITES. Lucrate manual.";
+  "Articole din piele de crocodil Lorenzo Ricci - portofele, port-carduri, clutch-uri și genți din piele 100% naturală de crocodil. Origine documentată prin certificat CITES. Lucrate manual.";
 
 export const metadata: Metadata = {
   title: "Articole din piele de crocodil",
   description: DESCRIPTION,
-  keywords: ["Lorenzo Ricci", "piele de crocodil", "portofel piele de crocodil", "port-card piele de crocodil", "clutch piele de crocodil", "Crocodylus Siamensis", "CITES"],
-  alternates: { canonical: "https://lorenzo-ricci.com/ro/piele-de-crocodil" },
+  keywords: ["Lorenzo Ricci", "piele de crocodil", "portofel piele de crocodil", "port-card piele de crocodil", "clutch piele de crocodil", "geantă piele de crocodil", "CITES"],
+  alternates: {
+    canonical: `https://lorenzo-ricci.com${PATH}`,
+    languages: { "ro-RO": `https://lorenzo-ricci.com${PATH}`, "bg-BG": `https://lorenzo-ricci.com${roToBgPath(PATH)}` },
+  },
   openGraph: {
     type: "website",
     locale: "ro_RO",
     siteName: "Lorenzo Ricci",
-    url: "https://lorenzo-ricci.com/ro/piele-de-crocodil",
+    url: `https://lorenzo-ricci.com${PATH}`,
     title: "Articole din piele de crocodil | Lorenzo Ricci",
     description: DESCRIPTION,
   },
 };
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via lib/price-overrides.ts) - the page stays
-// statically generated; the admin discount route revalidates it. Eligibility is decided on the catalogue before the
-// overrides are applied (same set as RO_SLUGS), so a crocodile bag that needs prepayment never shows up here.
+// statically generated; the admin discount route revalidates it. Every leather product is listed (same set as RO_SLUGS),
+// including the one-off bag Milano Avorio, which is sold on prepayment: its card looks like any other.
 
 export default async function RoLeatherPage() {
   const overrides = await getPriceOverrides();
@@ -37,7 +45,8 @@ export default async function RoLeatherPage() {
   const sections = [
     { key: "wallets",     title: RO_CATEGORY_LABEL.wallets,     items: wallets,     gap: "gap-10" },
     { key: "cardholders", title: RO_CATEGORY_LABEL.cardholders, items: cardholders, gap: "gap-8" },
-    { key: "bags",        title: RO_CATEGORY_LABEL.bags,        items: bags,        gap: "gap-10" },
+    // The Bulgarian page calls this section "Bags": it holds the clutches AND the one-off bag, so not the narrower "Clutch-uri" label.
+    { key: "bags",        title: "Genți",                       items: bags,        gap: "gap-10" },
   ].filter((s) => s.items.length > 0);
 
   return (
@@ -54,7 +63,7 @@ export default async function RoLeatherPage() {
         />
         <div className="relative z-10">
           <p className="font-sans text-[10px] font-light tracking-[0.32em] uppercase text-white/40 mb-5">
-            Crocodylus Siamensis
+            Lorenzo Ricci
           </p>
           <h1 className="font-serif text-display-lg text-white mb-5">Articole din piele de crocodil</h1>
           <div className="w-10 h-px bg-white/20 mx-auto my-5" />
@@ -124,7 +133,7 @@ export default async function RoLeatherPage() {
               },
               {
                 q: "Ce este certificatul CITES?",
-                a: "Un certificat internațional care garantează o origine legală și responsabilă, dintr-o fermă autorizată. Îl primești fizic, împreună cu produsul.",
+                a: "Un certificat internațional care garantează o origine legală și responsabilă, dintr-o fermă autorizată. Îl primiți fizic, împreună cu produsul.",
               },
               {
                 q: "Este fiecare piesă unică?",
@@ -132,7 +141,7 @@ export default async function RoLeatherPage() {
               },
               {
                 q: "Cum îngrijesc pielea de crocodil?",
-                a: "Evită umezeala și lumina directă a soarelui. Curăță cu o lavetă moale. Aplică o cremă pentru piele exotică de 1-2 ori pe an.",
+                a: "Evitați umezeala și lumina directă a soarelui. Curățați cu o lavetă moale. Aplicați o cremă pentru piele exotică de 1-2 ori pe an.",
               },
             ].map(({ q, a }) => (
               <div key={q} className="border-t border-border pt-6">

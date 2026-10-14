@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRoCart } from "@/lib/ro/store";
-import { roSubtotal, roShippingCost, roTotal } from "@/lib/ro/pricing";
+import { roAmounts } from "@/lib/ro/pricing";
 import {
   RO_COD_FEE_RON,
   RO_FREE_SHIPPING_RON,
@@ -13,9 +13,12 @@ import {
 } from "@/lib/ro/config";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 import { RoCheckoutForm } from "./RoCheckoutForm";
+import { bundleLineLabel } from "./shared";
 
-// Romania cart drawer (port of components/cart/CartDrawer.tsx): lei, ramburs, free delivery from RO_FREE_SHIPPING_RON.
-// Deliberately without gifts, bundles, promo codes, cross-sell and the reservation countdown.
+// Romania cart drawer (port of components/cart/CartDrawer.tsx): lei, ramburs, sets with their discount, crossed-out sale
+// prices, free delivery from RO_FREE_SHIPPING_RON (judged on the amount after set discounts). A cart holding a product
+// that needs advance payment (EUR 1500 and up) has no ramburs button: the checkout shows the contact flow instead.
+// Deliberately without gifts, promo codes, cross-sell and the reservation countdown.
 export function RoCartDrawer() {
   const isOpen = useRoCart((s) => s.isOpen);
   const items = useRoCart((s) => s.items);
@@ -25,13 +28,13 @@ export function RoCartDrawer() {
   const [showCheckout, setShowCheckout] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
 
-  // All money through lib/ro/pricing.ts (the server uses the same functions).
-  const subtotal = roSubtotal(items);
-  const shippingCost = roShippingCost(subtotal);
-  const total = roTotal(subtotal);
+  // All money through lib/ro/pricing.ts roAmounts (the server uses the same function). `goods` is after set discounts and is
+  // what delivery is judged on.
+  const { subtotal, goods, shipping: shippingCost, total, bundles } = roAmounts(items);
+  const needsPrepayment = items.some((i) => i.prepay);
   const count = items.reduce((s, i) => s + i.quantity, 0);
-  const remaining = Math.max(0, RO_FREE_SHIPPING_RON - subtotal);
-  const progress = Math.min(1, subtotal / RO_FREE_SHIPPING_RON);
+  const remaining = Math.max(0, RO_FREE_SHIPPING_RON - goods);
+  const progress = Math.min(1, goods / RO_FREE_SHIPPING_RON);
   const reached = remaining === 0 && items.length > 0;
 
   useEffect(() => {
@@ -200,9 +203,16 @@ export function RoCartDrawer() {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <span className="font-serif text-base text-white block text-right">
-                            {fmtRON(item.ron * item.quantity)}
-                          </span>
+                          <div className="text-right">
+                            {item.originalRon != null && item.originalRon > item.ron && (
+                              <span className="font-sans text-[11px] text-white/30 line-through block">
+                                {fmtRON(item.originalRon * item.quantity)}
+                              </span>
+                            )}
+                            <span className="font-serif text-base text-white block">
+                              {fmtRON(item.ron * item.quantity)}
+                            </span>
+                          </div>
                           <button
                             onClick={() => removeItem(item.slug)}
                             aria-label={`Elimină ${item.name} din coș`}
@@ -224,6 +234,14 @@ export function RoCartDrawer() {
                 <span className="font-sans text-xs text-white/40 tracking-wide">Subtotal</span>
                 <span className="font-serif text-base text-white">{fmtRON(subtotal)}</span>
               </div>
+
+              {/* Set discount lines */}
+              {bundles.map(({ id, label, discount }) => (
+                <div key={id} className="flex items-center justify-between mb-2">
+                  <span className="font-sans text-xs text-navy-light tracking-wide">◈ {bundleLineLabel(label)}</span>
+                  <span className="font-sans text-xs text-navy-light tracking-wide">-{fmtRON(discount)}</span>
+                </div>
+              ))}
 
               <div className="flex items-center justify-between mb-2">
                 <span className="font-sans text-xs text-white/40 tracking-wide">Livrare</span>
@@ -247,12 +265,18 @@ export function RoCartDrawer() {
               </div>
 
               <button onClick={startCheckout} className="btn-primary w-full text-center justify-center">
-                Comandă acum - plată la livrare
+                {needsPrepayment ? "Continuă comanda - plată în avans" : "Comandă acum - plată la livrare"}
               </button>
 
               <p className="text-center font-sans text-[10px] text-white/25 tracking-wide mt-3">
-                Plătiți la primirea coletului
-                {RO_INSPECT_BEFORE_PAY ? " · Puteți verifica coletul înainte de plată" : ` · Retur în ${RO_RETURN_DAYS} zile`}
+                {needsPrepayment ? (
+                  "Plata în avans, stabilită direct cu noi"
+                ) : (
+                  <>
+                    Plătiți la primirea coletului
+                    {RO_INSPECT_BEFORE_PAY ? " · Puteți verifica coletul înainte de plată" : ` · Retur în ${RO_RETURN_DAYS} zile`}
+                  </>
+                )}
               </p>
             </div>
           </>

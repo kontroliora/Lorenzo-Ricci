@@ -4,28 +4,26 @@ import Link from "next/link";
 import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { useRoCart } from "@/lib/ro/store";
-import { fmtRON } from "@/lib/ro/config";
-import { ronOf } from "@/lib/ro/config";
+import { fmtRON, ronOf, ronOriginalOf, roNeedsPrepayment } from "@/lib/ro/config";
 import { useLeatherStock } from "@/lib/use-gifts";
+import { hasCyrillic, roDisplayName, roSafeText } from "@/components/ro/listing/ro-display";
 
 // Romanian counterpart of components/product/ProductCard.tsx, shared by the home sections and the listings.
-// Expects a product already passed through localizeProduct() (Romanian text, no crossed-out price). Price in lei,
-// never a crossed-out figure, never a sale badge, link under /ro/produse/<slug>, own cart (useRoCart).
+// Expects a product already passed through localizeProduct() (Romanian text; price and sale kept as on the Bulgarian site).
+// Price in lei: the current price, and while the product is on sale the old price crossed out next to it plus the sale
+// badge, exactly like the Bulgarian card. Link under /ro/produse/<slug>, own cart (useRoCart).
 interface RoProductCardProps {
   product: Product;
   priority?: boolean;
   learnMore?: boolean;
 }
 
-// Defence in depth: the Romanian storefront makes no sale/discount claim (no price history there), and must
-// never print Bulgarian wording if an overlay entry is missing. Cyrillic block U+0400-U+04FF, tested by code
-// point so no Cyrillic literal sits in this file.
-const SALE_BADGE = /reducere|promo|namalenie|%/i;
-const hasCyrillic = (text: string) => Array.from(text).some((ch) => { const c = ch.charCodeAt(0); return c >= 1024 && c <= 1279; });
-
-/** The badge text to show on a Romanian card/tile, or undefined (no badge, a sale badge, or foreign-script wording). */
+/**
+ * The badge text to show on a Romanian card/tile, or undefined (no badge, or wording that is still in Bulgarian because
+ * the Romanian overlay has no entry for the product yet: never print foreign-script text on a Romanian page).
+ */
 export const roBadge = (badge?: string): string | undefined =>
-  badge && !SALE_BADGE.test(badge) && !hasCyrillic(badge) ? badge : undefined;
+  badge && !hasCyrillic(badge) ? badge : undefined;
 
 export function RoProductCard({ product, priority = false, learnMore = false }: RoProductCardProps) {
   const [hovered, setHovered] = useState(false);
@@ -42,21 +40,31 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
   const isWatch = product.category === "watches";
   const href = `/ro/produse/${product.slug}`;
   const badge = roBadge(product.badge);
+  const name = roDisplayName(product);
+  const ron = ronOf(product);
+  const ronOriginal = ronOriginalOf(product); // defined while on sale: crossed-out price in lei
 
   // Night image for watches is always images[1]
   const nightImage = isWatch ? (product.images[1] ?? product.coverImage) : null;
   // Second image for non-watch hover swap
   const secondImage = product.images[1] ?? product.coverImage;
+  // Alt text is Romanian from the overlay; if an entry is missing the product name is used rather than Bulgarian text.
+  const coverAlt = roSafeText(product.coverImage.alt, name);
+  const nightAlt = roSafeText(nightImage?.alt, name);
+  const secondAlt = roSafeText(secondImage.alt, name);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     addItem({
       slug: product.slug,
       sku: product.sku,
-      name: product.name,
-      ron: ronOf(product),
+      name,
+      ron,
+      originalRon: ronOriginal,
+      onSale: ronOriginal !== undefined,
+      prepay: roNeedsPrepayment(product),
       image: product.coverImage.src,
-      imageAlt: product.coverImage.alt,
+      imageAlt: coverAlt,
       stock: typeof liveStock === "number" ? liveStock : undefined,
     });
     setAdded(true);
@@ -83,7 +91,7 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
             {/* Day image - no transition class for instant switch */}
             <Image
               src={product.coverImage.src}
-              alt={product.coverImage.alt}
+              alt={coverAlt}
               fill
               priority={priority}
               quality={85}
@@ -94,7 +102,7 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
             {nightImage && (
               <Image
                 src={nightImage.src}
-                alt={nightImage.alt}
+                alt={nightAlt}
                 fill
                 quality={85}
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -133,7 +141,7 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
             {/* Non-watch: hover image swap */}
             <Image
               src={product.coverImage.src}
-              alt={product.coverImage.alt}
+              alt={coverAlt}
               fill
               priority={priority}
               quality={85}
@@ -144,7 +152,7 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
             />
             <Image
               src={secondImage.src}
-              alt={secondImage.alt}
+              alt={secondAlt}
               fill
               quality={80}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -155,7 +163,7 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
           </>
         )}
 
-        {/* Badge (never a sale badge) */}
+        {/* Badges: the product's own badge, including the sale badge (same as the Bulgarian card) */}
         {badge && !isSoldOut && (
           <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
             <span className="bg-white/95 text-navy border border-navy/20 font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
@@ -204,14 +212,20 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
       <div className="pt-4 flex-1 flex flex-col">
         <Link href={href}>
           <h3 className="font-serif text-lg text-charcoal group-hover:text-navy transition-colors duration-300 mb-1">
-            {product.name}
+            {name}
           </h3>
         </Link>
 
         <div className="mt-auto flex items-center gap-3">
           <span className="font-serif text-xl text-navy">
-            {fmtRON(ronOf(product))}
+            {fmtRON(ron)}
           </span>
+          {ronOriginal !== undefined && (
+            <span className="font-sans text-xs text-ink-faint line-through">
+              <span className="sr-only">Preț inițial: </span>
+              {fmtRON(ronOriginal)}
+            </span>
+          )}
         </div>
       </div>
     </div>

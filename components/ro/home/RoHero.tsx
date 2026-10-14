@@ -4,7 +4,7 @@ import { getImageProps } from "next/image";
 import { useCallback, useEffect, useState } from "react";
 
 // Romanian counterpart of components/home/Hero.tsx: identical cover/video logic and files, Romanian text, buttons to
-// the two Romanian collections.
+// the watches and jewellery collections (the crocodile leather goods have their own home section further down).
 // The static cover is the page's LCP (fetched at high priority) and the poster under the video. The looping video is
 // mounted only after the page has loaded and the browser is idle, so it never competes with the LCP.
 // Two encodes, both H.264 / yuv420p / no audio / moov atom first: a vertical 720p crop for phones and 1080p for larger
@@ -105,7 +105,7 @@ export function RoHero() {
         }`}
       >
         <p className="font-sans text-[10px] font-light tracking-[0.32em] uppercase text-white/55 mb-6 animate-fade-up">
-          Ceasuri de lux &amp; articole din piele de crocodil
+          Ceasuri de lux, bijuterii &amp; piele de crocodil
         </p>
 
         <h1 className="font-serif text-display-xl text-white mb-4 animate-fade-up animate-delay-100 text-balance">
@@ -122,8 +122,8 @@ export function RoHero() {
           <Link href="/ro/ceasuri" className="btn-primary min-w-[200px]">
             Descoperiți ceasurile
           </Link>
-          <Link href="/ro/piele-de-crocodil" className="btn-outline-light min-w-[200px]">
-            Descoperiți articolele din piele
+          <Link href="/ro/bijuterii" className="btn-outline-light min-w-[200px]">
+            Descoperiți bijuteriile
           </Link>
         </div>
 

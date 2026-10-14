@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRoCart, type RoCartLine } from "@/lib/ro/store";
-import { roSubtotal, roShippingCost, roTotal } from "@/lib/ro/pricing";
+import { roAmounts } from "@/lib/ro/pricing";
 import { RO_COUNTIES } from "@/lib/ro/counties";
 import {
   RO_COD_FEE_RON,
@@ -12,17 +12,28 @@ import {
   fmtRON,
 } from "@/lib/ro/config";
 import { trackFbEvent } from "@/lib/fbq";
+import { PREPAYMENT_THRESHOLD_TEXT, bundleLineLabel } from "./shared";
 
 // Romania checkout (cash on delivery / ramburs). Port of components/cart/CheckoutForm.tsx: same look, one shipping
 // option, one payment method, GDPR-clean consent (nothing pre-ticked), no abandoned-cart capture. All money comes from
-// lib/ro/pricing.ts, the same functions /api/order-ro uses, so the server agrees to the leu.
+// lib/ro/pricing.ts roAmounts, the same function /api/order-ro uses, so the server agrees to the leu.
+//
+// A cart holding a product that needs advance payment (EUR 1500 and up, line.prepay) gets NO ramburs form: like the
+// Bulgarian checkout, it shows the interim contact flow (Viber / phone / e-mail), the order is arranged with the shop.
 
 const SHIPPING_LABEL = "Livrare la domiciliu cu curierul"; // what the customer reads
 const SHIPPING_METHOD = "Livrare la domiciliu";              // what the API receives (contract)
 
+// Same contact as the Bulgarian checkout's prepayment flow (components/cart/CheckoutForm.tsx): the Viber link and number.
+const PREPAYMENT_VIBER_LINK = "viber://chat?number=%2B359888081811";
+const PREPAYMENT_PHONE = "+359 888 081 811";
+const PREPAYMENT_EMAIL = "info@lorenzo-ricci.com";
+
 const FALLBACK_ERROR = "A apărut o eroare la trimiterea comenzii. Vă rugăm să încercați din nou.";
 const NETWORK_ERROR = "Nu am putut trimite comanda. Verificați conexiunea la internet și încercați din nou.";
 const PRICE_MISMATCH_ERROR = "Prețurile produselor s-au actualizat.";
+const PRICE_RELOAD_HINT = "Reîncărcați pagina pentru a vedea prețurile actualizate, apoi încercați din nou.";
+const CART_RELOAD_HINT = "Reîncărcați pagina pentru a actualiza coșul, apoi încercați din nou.";
 
 /** Romanian mobile -> 10 national digits (07xxxxxxxx), or null. Accepts 07.., +407.., 00407.., 407.., spaces/dots/dashes/(). */
 function normalizeRoPhone(raw: string): string | null {
@@ -84,7 +95,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState("");
-  const [needsReload, setNeedsReload] = useState(false);
+  const [reloadHint, setReloadHint] = useState(""); // non-empty: the cart is stale, offer a page reload with this text
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [orderRef, setOrderRef] = useState("");
@@ -97,11 +108,15 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   // A pending auto-close must not outlive the form (e.g. the customer closed the drawer or reopened it meanwhile).
   useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
 
-  // ── Derived values (the only money maths: lib/ro/pricing.ts) ───────────────
-  const subtotal = roSubtotal(items);
-  const shippingCost = roShippingCost(subtotal);
-  const grandTotal = roTotal(subtotal);
+  // ── Derived values (the only money maths: lib/ro/pricing.ts roAmounts) ─────
+  const { shipping: shippingCost, total: grandTotal, bundles } = roAmounts(items);
   const freeShipping = shippingCost === 0;
+  const needsPrepayment = items.some((i) => i.prepay);
+
+  // Same signal as the Bulgarian "prepayment_required" Contact event (Viber link click).
+  const handleViberContactClick = () => {
+    trackFbEvent("Contact", { content_category: "prepayment_required" });
+  };
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
   const clearError = (key: string) =>
@@ -128,14 +143,14 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
     if (form.address.trim().length < 5) errs.address = "Introduceți adresa completă (stradă, număr, bloc/scară/apartament).";
     const postCode = form.postCode.replace(/\s/g, "");
     if (postCode && !/^\d{6}$/.test(postCode)) errs.postCode = "Codul poștal are 6 cifre.";
-    if (!form.termsAccepted) errs.terms = "Trebuie să accepți Termenii și condițiile și Politica de confidențialitate.";
+    if (!form.termsAccepted) errs.terms = "Trebuie să acceptați Termenii și condițiile și Politica de confidențialitate.";
     return errs;
   };
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (submittingRef.current) return;
+    if (submittingRef.current || needsPrepayment) return; // advance-payment carts are arranged with the shop, never posted
 
     const errs = validate();
     if (Object.keys(errs).length > 0) {
@@ -154,16 +169,15 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
 
     setErrors({});
     setSubmitError("");
-    setNeedsReload(false);
+    setReloadHint("");
     submittingRef.current = true;
     setSubmitting(true);
 
     const ref = `LRRO-${Date.now().toString(36).slice(-6).toUpperCase()}`;
     // Snapshot everything the order and the tracking need: the cart is cleared the moment the order is accepted.
     const lines = items.map((i) => ({ ...i }));
-    const orderSubtotal = roSubtotal(lines);
-    const orderShipping = roShippingCost(orderSubtotal);
-    const orderTotal = roTotal(orderSubtotal);
+    const amounts = roAmounts(lines);
+    const orderTotal = amounts.total;
     const phone = normalizeRoPhone(form.phone) as string;
     const email = form.email.trim();
 
@@ -183,15 +197,16 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
         termsAccepted: true,
       },
       items: lines.map((i) => ({ slug: i.slug, sku: i.sku, name: i.name, quantity: i.quantity, price: i.ron })),
-      shipping: { method: SHIPPING_METHOD, cost: orderShipping },
-      subtotal: orderSubtotal,
-      total: orderTotal,
+      discount: amounts.discount,                              // set discount in lei (0 if none)
+      shipping: { method: SHIPPING_METHOD, cost: amounts.shipping },
+      subtotal: amounts.goods,                                 // goods AFTER the set discount
+      total: amounts.total,
       timestamp: new Date().toISOString(),
     };
 
-    const fail = (msg: string, reload = false) => {
+    const fail = (msg: string, reload = "") => {
       setSubmitError(msg);
-      setNeedsReload(reload);
+      setReloadHint(reload);
       setSubmitting(false);
       submittingRef.current = false;
     };
@@ -213,7 +228,9 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
 
     if (!res.ok || body?.success === false) {
       const serverMsg = typeof body?.error === "string" ? body.error.trim() : "";
-      if (body?.code === "price_mismatch") fail(serverMsg || PRICE_MISMATCH_ERROR, true);
+      if (body?.code === "price_mismatch") fail(serverMsg || PRICE_MISMATCH_ERROR, PRICE_RELOAD_HINT);
+      // A stale cart without the advance-payment flag: a reload refreshes the lines and the checkout then shows the contact flow.
+      else if (body?.code === "prepayment_required") fail(serverMsg || FALLBACK_ERROR, CART_RELOAD_HINT);
       else fail(serverMsg || FALLBACK_ERROR);
       return;
     }
@@ -291,8 +308,10 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
       <div>
-        <h3 className="font-serif text-xl text-white mb-1">Date pentru livrare</h3>
-        <p className="font-sans text-xs text-white/40 tracking-wide">Plătiți la livrare - ramburs</p>
+        <h3 className="font-serif text-xl text-white mb-1">{needsPrepayment ? "Comandă cu plată în avans" : "Date pentru livrare"}</h3>
+        <p className="font-sans text-xs text-white/40 tracking-wide">
+          {needsPrepayment ? "Se stabilește direct cu noi" : "Plătiți la livrare - ramburs"}
+        </p>
       </div>
 
       {/* ── Order summary ─────────────────────────────────────────────────── */}
@@ -301,6 +320,13 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
           <div key={i.slug} className="flex justify-between gap-3 text-xs">
             <span className="font-sans text-white/60 tracking-wide">{i.name} × {i.quantity}</span>
             <span className="font-serif text-white whitespace-nowrap">{fmtRON(i.ron * i.quantity)}</span>
+          </div>
+        ))}
+
+        {bundles.map(({ id, label, discount }) => (
+          <div key={id} className="flex justify-between gap-3 text-xs">
+            <span className="font-sans text-navy-light tracking-wide">◈ {bundleLineLabel(label)}</span>
+            <span className="font-sans text-navy-light whitespace-nowrap">-{fmtRON(discount)}</span>
           </div>
         ))}
 
@@ -325,12 +351,13 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
         <div className="h-px bg-white/8 my-1" />
 
         <div className="flex justify-between text-sm">
-          <span className="font-sans font-medium text-white tracking-wide">Total de plată</span>
+          <span className="font-sans font-medium text-white tracking-wide">{needsPrepayment ? "Total" : "Total de plată"}</span>
           <span className="font-serif text-white text-base">{fmtRON(grandTotal)}</span>
         </div>
       </div>
 
-      {/* ── Fields ────────────────────────────────────────────────────────── */}
+      {/* ── Fields (none for an advance-payment cart: those orders are arranged over Viber / phone / e-mail) ── */}
+      {!needsPrepayment && (<>
       <div className="flex flex-col gap-5">
         <Field id="name" label="Nume complet *" error={errors.name}>
           <input type="text" placeholder="Ion Popescu" value={form.name} maxLength={100}
@@ -515,13 +542,14 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
           <p id="ro-terms-err" role="alert" className="font-sans text-[10px] text-red-400 tracking-wide">{errors.terms}</p>
         )}
       </div>
+      </>)}
 
       {submitError && (
         <div role="alert" className="font-sans text-xs text-red-400 text-center leading-relaxed border border-red-400/20 bg-red-400/5 px-4 py-3 flex flex-col items-center gap-2">
           <p>{submitError}</p>
-          {needsReload && (
+          {reloadHint && (
             <>
-              <p className="text-red-300/80">Reîncărcați pagina pentru a vedea prețurile actualizate, apoi încercați din nou.</p>
+              <p className="text-red-300/80">{reloadHint}</p>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
@@ -534,22 +562,49 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
         </div>
       )}
 
-      <button type="submit" disabled={submitting} className="btn-primary w-full justify-center mt-2">
-        {submitting ? (
-          <span className="flex items-center gap-2">
-            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            Se trimite comanda...
-          </span>
-        ) : (
-          `Comandă cu obligație de plată - ${fmtRON(grandTotal)}`
-        )}
-      </button>
+      {needsPrepayment ? (
+        <div className="flex flex-col gap-3 border border-white/15 bg-white/[0.03] px-5 py-5 text-center">
+          <p className="font-sans text-xs text-white/70 leading-relaxed">
+            Produsele cu prețul de la {PREPAYMENT_THRESHOLD_TEXT} în sus se comandă cu plată în avans, stabilită direct cu noi -
+            plata la livrare (ramburs) nu este disponibilă pentru această comandă. Vă rugăm să ne contactați pentru a finaliza comanda.
+          </p>
+          <a
+            href={PREPAYMENT_VIBER_LINK}
+            onClick={handleViberContactClick}
+            className="btn-primary w-full justify-center"
+          >
+            Contactați-ne pe Viber
+          </a>
+          <p className="font-sans text-[11px] text-white/40">
+            sau la telefon <span className="text-white/60">{PREPAYMENT_PHONE}</span>
+          </p>
+          <p className="font-sans text-[11px] text-white/40">
+            sau prin e-mail la{" "}
+            <a href={`mailto:${PREPAYMENT_EMAIL}`} className="text-white/60 underline underline-offset-2 hover:text-white">
+              {PREPAYMENT_EMAIL}
+            </a>
+          </p>
+        </div>
+      ) : (
+        <>
+          <button type="submit" disabled={submitting} className="btn-primary w-full justify-center mt-2">
+            {submitting ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Se trimite comanda...
+              </span>
+            ) : (
+              `Comandă cu obligație de plată - ${fmtRON(grandTotal)}`
+            )}
+          </button>
 
-      <p className="font-sans text-[10px] text-center text-white/25 tracking-wide leading-relaxed">
-        Plătiți la primirea coletului.
-        {RO_INSPECT_BEFORE_PAY && " Puteți deschide și verifica coletul înainte de a plăti curierului."}
-        <br />Retur în {RO_RETURN_DAYS} zile conform legii.
-      </p>
+          <p className="font-sans text-[10px] text-center text-white/25 tracking-wide leading-relaxed">
+            Plătiți la primirea coletului.
+            {RO_INSPECT_BEFORE_PAY && " Puteți deschide și verifica coletul înainte de a plăti curierului."}
+            <br />Retur în {RO_RETURN_DAYS} zile conform legii.
+          </p>
+        </>
+      )}
     </form>
   );
 }

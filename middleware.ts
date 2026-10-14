@@ -1,8 +1,39 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { decideGeoRedirect, LANG_COOKIE } from "@/lib/geo-redirect";
+
+// Two jobs: (1) the admin panel / admin API session gate (below, unchanged); (2) the first-visit redirect of Romanian
+// visitors to the Romanian store (lib/geo-redirect.ts has the rules). The storefront pages themselves stay static: only this
+// edge step looks at the visitor.
+function geoRedirect(request: NextRequest): NextResponse {
+  const { pathname, search } = request.nextUrl;
+  const h = request.headers;
+  const decision = decideGeoRedirect({
+    method: request.method,
+    pathname,
+    search,
+    cookies: { lang: request.cookies.get(LANG_COOKIE)?.value, xGeo: request.cookies.get("x_geo")?.value },
+    headers: {
+      cfCountry: h.get("cf-ipcountry"),
+      vercelCountry: h.get("x-vercel-ip-country"),
+      acceptLanguage: h.get("accept-language"),
+      userAgent: h.get("user-agent"),
+      accept: h.get("accept"),
+      secFetchDest: h.get("sec-fetch-dest"),
+      rsc: h.has("rsc") || h.has("next-router-state-tree"),
+      prefetch: h.has("next-router-prefetch") || h.get("purpose") === "prefetch" || h.get("sec-purpose")?.includes("prefetch") === true,
+    },
+  });
+  if (!decision) return NextResponse.next();
+  const res = NextResponse.redirect(new URL(decision.redirectTo, request.url), 307);
+  if (decision.setCookie) res.cookies.set(LANG_COOKIE, "ro", { path: "/", maxAge: 31_536_000, sameSite: "lax" });
+  return res;
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (!pathname.startsWith("/lr-panel-v8m3q") && !pathname.startsWith("/api/admin")) return geoRedirect(request);
 
   // Programmatic endpoint with its own Bearer-token auth — bypass the session gate.
   if (pathname.startsWith("/api/admin/cart-abandonment")) {
@@ -39,5 +70,20 @@ function redirectWithCookies(url: URL, source: NextResponse): NextResponse {
 }
 
 export const config = {
-  matcher: ["/lr-panel-v8m3q/:path*", "/api/admin/:path*"],
+  matcher: [
+    "/lr-panel-v8m3q/:path*",
+    "/api/admin/:path*",
+    // Bulgarian storefront pages that have a Romanian twin (lib/ro/route-map.ts); nothing else is touched.
+    "/",
+    "/watches",
+    "/jewellery",
+    "/leather-goods",
+    "/bundles",
+    "/story",
+    "/faq",
+    "/watch-manual",
+    "/warranty/:path*",
+    "/policies/:path*",
+    "/products/:path*",
+  ],
 };

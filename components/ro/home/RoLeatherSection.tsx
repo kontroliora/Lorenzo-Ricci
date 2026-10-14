@@ -1,24 +1,27 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { roBadge } from "@/components/ro/RoProductCard";
 import { useReveal } from "@/lib/useReveal";
 import { useLeatherStock } from "@/lib/use-gifts";
-import { fmtRON } from "@/lib/ro/config";
-import { ronOf, RO_CATEGORY_LABEL } from "@/lib/ro/config";
-import type { Product, ProductCategory } from "@/lib/types";
+import { fmtRON, ronOf, ronOriginalOf, RO_CATEGORY_LABEL } from "@/lib/ro/config";
+import type { ProductCategory } from "@/lib/types";
+import { safeText, type RoTileProduct } from "./ro-home-utils";
 
 // Romanian counterpart of components/home/WalletsSection.tsx. Instead of a hard-coded list it renders the products the
-// page hands in (roEligible, price-overridden, localized), so names, sub-lines, images and lei prices always follow
-// the catalogue. Live stock (wallet_inventory) adds "Epuizat" without hard-coding it.
+// page hands in (price-overridden, localized, Milano Avorio excluded: it has its own flagship section), so names,
+// sub-lines, images and lei prices always follow the catalogue. A product on sale shows its badge, the current price and
+// the old price crossed out, exactly like the Bulgarian tiles (old price = same figure, converted to lei).
+// Live stock (wallet_inventory) adds "Epuizat" without hard-coding it.
 const ROWS: { category: ProductCategory; cols: string; sizes: string }[] = [
   { category: "wallets",     cols: "grid-cols-2 sm:grid-cols-3", sizes: "(max-width: 640px) 50vw, 33vw" },
   { category: "cardholders", cols: "grid-cols-2 sm:grid-cols-3", sizes: "(max-width: 640px) 50vw, 33vw" },
   { category: "bags",        cols: "grid-cols-2 sm:grid-cols-5", sizes: "(max-width: 640px) 50vw, 20vw" },
 ];
 
-function LeatherCard({ product, sold, sizes }: { product: Product; sold: boolean; sizes: string }) {
-  const badge = roBadge(product.badge);
+function LeatherCard({ product, sold, sizes }: { product: RoTileProduct; sold: boolean; sizes: string }) {
+  const badge = safeText(product.badge);
+  const sub = safeText(product.shortDescription);
+  const oldRon = ronOriginalOf(product);
   return (
     <Link href={`/ro/produse/${product.slug}`} className="group flex flex-col">
       <div className="relative aspect-square bg-ivory-warm border border-border overflow-hidden">
@@ -29,7 +32,7 @@ function LeatherCard({ product, sold, sizes }: { product: Product; sold: boolean
         )}
         <Image
           src={product.coverImage.src}
-          alt={product.coverImage.alt}
+          alt={safeText(product.coverImage.alt) ?? product.name}
           fill
           quality={80}
           sizes={sizes}
@@ -47,23 +50,28 @@ function LeatherCard({ product, sold, sizes }: { product: Product; sold: boolean
         <h3 className={`font-serif text-sm sm:text-base leading-snug ${sold ? "text-ink-faint" : "text-charcoal group-hover:text-navy transition-colors duration-200"}`}>
           {product.name}
         </h3>
-        <p className="font-sans text-[10px] text-ink-muted mt-0.5 tracking-wide">
-          {sold ? "Epuizat" : product.shortDescription}
-        </p>
+        {(sold || sub) && (
+          <p className="font-sans text-[10px] text-ink-muted mt-0.5 tracking-wide">
+            {sold ? "Epuizat" : sub}
+          </p>
+        )}
         <p className={`font-serif text-sm sm:text-base mt-1 ${sold ? "text-ink-faint" : "text-navy"}`}>
           {fmtRON(ronOf(product))}
+          {oldRon !== undefined && (
+            <span className="font-sans text-[10px] text-ink-faint line-through ml-2">{fmtRON(oldRon)}</span>
+          )}
         </p>
       </div>
     </Link>
   );
 }
 
-export function RoLeatherSection({ products }: { products: Product[] }) {
+export function RoLeatherSection({ products }: { products: RoTileProduct[] }) {
   const featuresRef = useReveal();
   // Live stock → "Epuizat". One batched call shared with the product cards; `inStock: false` in lib/products.ts
   // (the owner's single on/off switch) counts as sold out too.
   const stock = useLeatherStock(true);
-  const isSold = (p: Product) => {
+  const isSold = (p: RoTileProduct) => {
     const live = stock?.[p.slug];
     return (typeof live === "number" && live <= 0) || !p.inStock;
   };

@@ -5,11 +5,12 @@ import Link from "next/link";
 import { RoProductCard } from "@/components/ro/RoProductCard";
 import { useReveal } from "@/lib/useReveal";
 import { fmtRON, RO_FREE_SHIPPING_RON, RO_INSPECT_BEFORE_PAY } from "@/lib/ro/config";
-import { ronOf } from "@/lib/ro/config";
+import { ronOf, ronOriginalOf } from "@/lib/ro/config";
 import type { Product } from "@/lib/types";
 
 // Romanian counterpart of components/home/FeaturedWatches.tsx. The page hands in the watches already filtered
-// (roEligible), price-overridden and localized, so prices here always match the listings.
+// (roEligible), price-overridden and localized, so prices here always match the listings. A watch on sale shows its
+// current price and the old price crossed out (same sale as the Bulgarian site, both converted to lei).
 // Yachting is the new collection: its own block on top, the earlier models below - never in the same carousel or row.
 const isYachting = (p: Product) => p.slug.startsWith("yachting-");
 
@@ -145,6 +146,7 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
   };
 
   const active = watches[activeIndex];
+  const activeOldRon = ronOriginalOf(active);
 
   return (
     <>
@@ -263,6 +265,11 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
             <span className="font-serif text-lg text-navy">
               {fmtRON(ronOf(active))}
             </span>
+            {activeOldRon !== undefined && (
+              <span className="font-sans text-sm text-ink-muted line-through">
+                {fmtRON(activeOldRon)}
+              </span>
+            )}
           </div>
           <Link href={`/ro/produse/${active.slug}`} className="btn-primary">
             Vedeți detalii

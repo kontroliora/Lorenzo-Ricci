@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import {
   RO_COD_FEE_RON,
   RO_COURIER_LABEL,
@@ -9,11 +10,16 @@ import {
   RO_RETURN_DAYS,
   RO_SHIPPING_FEE_RON,
   fmtRON,
+  ronPrice,
 } from "@/lib/ro/config";
+
+// Products priced from EUR 1500 up are sold on advance payment (no cash on delivery), exactly like on the Bulgarian site.
+const PREPAY_RON = fmtRON(ronPrice(PREPAYMENT_THRESHOLD_EUR));
+const PREPAY_EUR = PREPAYMENT_THRESHOLD_EUR.toLocaleString("ro-RO");
 
 export const metadata: Metadata = {
   title: "Termeni și condiții",
-  description: "Termenii și condițiile de vânzare la distanță ale magazinului Lorenzo Ricci: comandă, plata ramburs, livrare, drept de retragere, garanții și reclamații.",
+  description: "Termenii și condițiile de vânzare la distanță ale magazinului Lorenzo Ricci: comandă, plata ramburs sau în avans, livrare, drept de retragere, garanții (inclusiv garanția pe viață pentru bijuterii) și reclamații.",
   alternates: { canonical: "https://lorenzo-ricci.com/ro/politici/termeni" },
   other: { "content-language": "ro" },
 };
@@ -51,7 +57,10 @@ export default function TermeniPage() {
 
         <PolicySection title="Produsele noastre">
           <p>
-            Magazinul oferă <strong className="text-charcoal font-normal">ceasuri</strong> și <strong className="text-charcoal font-normal">articole din piele de crocodil</strong> (portofele, port-carduri și clutch-uri / genți). Caracteristicile fiecărui produs - materiale, dimensiuni, rezistență la apă și altele - sunt prezentate pe pagina produsului.
+            Magazinul oferă <strong className="text-charcoal font-normal">ceasuri</strong>, <strong className="text-charcoal font-normal">bijuterii</strong> (brățări și coliere), <strong className="text-charcoal font-normal">articole din piele de crocodil</strong> (portofele, port-carduri și clutch-uri / genți) și <strong className="text-charcoal font-normal">seturi</strong> formate din produse ale colecției. Caracteristicile fiecărui produs - materiale, dimensiuni, rezistență la apă și altele - sunt prezentate pe pagina produsului.
+          </p>
+          <p className="mt-3">
+            Bijuteriile Lorenzo Ricci sunt realizate din oțel inoxidabil 316L, cu placare PVD în 4 straturi, aur 18K.
           </p>
           <p className="mt-3">
             Pielea de crocodil este un material natural: fiecare articol este unic, iar modelul și textura pot diferi ușor față de fotografiile din magazin. Aceasta este o caracteristică firească a pielii autentice și conferă fiecărui articol un caracter inconfundabil.
@@ -64,6 +73,9 @@ export default function TermeniPage() {
             <strong className="text-charcoal font-normal">gratuită pentru comenzile de peste {fmtRON(RO_FREE_SHIPPING_RON)}</strong>; pentru comenzile de până la {fmtRON(RO_FREE_SHIPPING_RON)}, taxa de livrare este de{" "}
             <strong className="text-charcoal font-normal">{fmtRON(RO_SHIPPING_FEE_RON)}</strong>.
           </p>
+          <p className="mt-3">
+            Unele produse sunt oferite la reducere sau promoție. Regulile privind returnarea și schimbul produselor la reducere sunt descrise în secțiunea „Dreptul de retragere” de mai jos.
+          </p>
         </PolicySection>
 
         <PolicySection title="Plasarea comenzii și încheierea contractului">
@@ -71,14 +83,15 @@ export default function TermeniPage() {
             Pentru a comanda, adăugați produsul în coș, completați datele solicitate (nume, număr de telefon, adresa de livrare) și confirmați comanda. După plasarea comenzii vă vom contacta pentru confirmare. Contractul la distanță se consideră încheiat în momentul în care vă confirmăm comanda.
           </p>
           <p className="mt-3">
-            Comenzile se onorează în limita stocului disponibil. Dacă doriți să anulați o comandă, scrieți-ne cât mai curând la{" "}
+            Pentru produsele care se comandă cu plata în avans (vezi secțiunea „Plata”), comanda se stabilește direct cu noi. Comenzile se onorează în limita stocului disponibil. Dacă doriți să anulați o comandă, scrieți-ne cât mai curând la{" "}
             <a href="mailto:info@lorenzo-ricci.com" className="text-navy hover:underline">info@lorenzo-ricci.com</a>.
           </p>
         </PolicySection>
 
         <PolicySection title="Plata">
           <p>
-            Plata se face <strong className="text-charcoal font-normal">ramburs</strong>, în lei: achitați comanda curierului, la livrare.
+            Pentru produsele cu un preț sub <strong className="text-charcoal font-normal">{PREPAY_RON}</strong>, plata se face{" "}
+            <strong className="text-charcoal font-normal">ramburs</strong>, în lei: achitați comanda curierului, la livrare.
             {RO_COD_FEE_RON > 0 && (
               <>
                 {" "}Pentru plata ramburs se percepe o taxă de <strong className="text-charcoal font-normal">{fmtRON(RO_COD_FEE_RON)}</strong>.
@@ -90,6 +103,12 @@ export default function TermeniPage() {
                 Aveți dreptul să <strong className="text-charcoal font-normal">verificați coletul înainte de plată</strong> și să îl refuzați dacă produsul nu corespunde așteptărilor dumneavoastră.
               </>
             )}
+          </p>
+          <p className="mt-3">
+            Produsele cu un preț de la <strong className="text-charcoal font-normal">{PREPAY_RON}</strong> în sus (echivalentul a {PREPAY_EUR} EUR) se comandă cu{" "}
+            <strong className="text-charcoal font-normal">plata în avans</strong>, stabilită direct cu noi; pentru aceste produse plata ramburs nu este disponibilă. Pentru a comanda un astfel de produs, scrieți-ne la{" "}
+            <a href="mailto:info@lorenzo-ricci.com" className="text-navy hover:underline">info@lorenzo-ricci.com</a>
+            {" "}și vom stabili împreună cu dumneavoastră modalitatea de plată.
           </p>
         </PolicySection>
 
@@ -110,7 +129,10 @@ export default function TermeniPage() {
             <strong className="text-charcoal font-normal">{RO_RETURN_DAYS} zile</strong> de la primirea produsului, fără a invoca vreun motiv, conform O.U.G. nr. 34/2014 privind drepturile consumatorilor în cadrul contractelor încheiate cu profesioniștii. Dreptul se aplică tuturor produselor, inclusiv celor achiziționate la reducere sau promoție.
           </p>
           <p className="mt-3">
-            În plus, pentru produsele achiziționate la preț întreg oferim voluntar un schimb extins de 30 de zile. Condițiile de exercitare și de rambursare sunt descrise în{" "}
+            În plus, pentru produsele achiziționate la <strong className="text-charcoal font-normal">preț întreg</strong> oferim voluntar un schimb extins de 30 de zile. Produsele la reducere sau promoție <strong className="text-charcoal font-normal">nu beneficiază de schimbul de 30 de zile</strong> - pentru ele rămâne dreptul legal de retragere de {RO_RETURN_DAYS} zile, descris mai sus.
+          </p>
+          <p className="mt-3">
+            Produsul returnat trebuie să fie în starea în care a fost primit: nepurtat și nefolosit, cu ambalajul original, cu toate accesoriile și cu certificatul de autenticitate; la bijuterii și la ceasuri, fără urme de purtare. Condițiile de exercitare și de rambursare sunt descrise în{" "}
             <Link href="/ro/politici/retur" className="text-navy hover:underline">Politica de retur și schimb</Link>.
           </p>
         </PolicySection>
@@ -135,6 +157,27 @@ export default function TermeniPage() {
             <li>uzura estetică a carcasei și a curelei (zgârieturi, modificări ale acoperirii) rezultată din purtarea zilnică;</li>
             <li>repararea sau service-ul efectuat de terți neautorizați - orice intervenție a unui service neautorizat ori o încercare de reparare pe cont propriu anulează garanția comercială.</li>
           </ul>
+
+          <p className="font-serif text-base text-charcoal mt-6 mb-2">Garanția comercială pentru bijuterii - pe viață</p>
+          <p>
+            Pentru bijuterii, Lorenzo Ricci oferă voluntar o <strong className="text-charcoal font-normal">garanție comercială pe viață</strong> împotriva defectelor de fabricație, fără limită de timp. În cazul unui defect de fabricație constatat - indiferent de data cumpărării - bijuteria se repară sau se înlocuiește gratuit. Ca și garanția pentru ceasuri, ea se acordă <strong className="text-charcoal font-normal">în plus față de drepturile dumneavoastră legale</strong> de consumator și nu le limitează și nu le afectează în niciun fel. Ea este personală, valabilă doar pentru cumpărătorul inițial, și nu se poate transmite.
+          </p>
+          <p className="mt-3">
+            Garanția comercială pentru bijuterii nu acoperă:
+          </p>
+          <ul className="list-disc list-inside flex flex-col gap-2 mt-3">
+            <li>pierderea sau furtul articolului ori distrugerea lui din motive care nu țin de calitatea fabricației;</li>
+            <li>deteriorările cauzate de utilizarea necorespunzătoare sau de lovituri (deformări, rupturi sau elemente pierdute în urma utilizării brutale, a presării sau a depozitării necorespunzătoare);</li>
+            <li>uzura naturală a placării - zgârieturile fine din folosirea zilnică și estomparea treptată, firească, a suprafețelor;</li>
+            <li>reparațiile efectuate de terți sau modificările - orice intervenție a unor meșteri ori ateliere neautorizate sau o încercare de modificare pe cont propriu anulează garanția comercială;</li>
+            <li>curățarea, lustruirea și întreținerea estetică, care se efectuează contra unui cost suplimentar, pe baza unei solicitări prealabile;</li>
+            <li>desprinderea elementelor și a pietrelor din cauza purtării zilnice normale și a uzurii mecanice;</li>
+            <li>uzura închizătorilor din cauza utilizării îndelungate.</li>
+          </ul>
+          <p className="mt-3">
+            Excluderile de mai sus privesc numai garanțiile comerciale și nu afectează garanția legală de conformitate. Condițiile detaliate pentru bijuterii și ceasuri:{" "}
+            <Link href="/ro/garantie-bijuterii" className="text-navy hover:underline">Condiții de garanție</Link>.
+          </p>
 
           <p className="font-serif text-base text-charcoal mt-6 mb-2">Cum exercitați garanția</p>
           <ol className="list-decimal list-inside flex flex-col gap-3">

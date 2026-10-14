@@ -10,6 +10,9 @@ export type RoCartLine = {
   sku: string;
   name: string;
   ron: number;          // unit price, whole lei
+  originalRon?: number; // crossed-out price in lei while the product is on sale
+  onSale?: boolean;     // on sale: earns no set discount
+  prepay?: boolean;     // EUR 1500 and up: no cash on delivery (arranged with the shop)
   image: string;        // cover image src
   imageAlt: string;
   quantity: number;

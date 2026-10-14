@@ -3,15 +3,25 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRoCart } from "@/lib/ro/store";
+import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 
-// Romanian counterpart of components/layout/Header.tsx: same fixed bar and mobile overlay, own nav (no jewellery,
-// no language switcher, no link to the Bulgarian site) and the separate Romanian cart (lib/ro/store.ts).
+// Romanian counterpart of components/layout/Header.tsx: same fixed bar and mobile overlay, own nav (Romanian routes only)
+// and the separate Romanian cart (lib/ro/store.ts). Labels follow the old Romanian dictionary (lib/i18n/dict.ts):
+// Ceasuri, Bijuterii, Întrebări frecvente. The nav is split 3 + 3 around the centred logo.
+//
+// The BG · RO switch is NOT beside the cart (the 2026-09 toggle there pushed the logo off-centre on phones): it is in the
+// mobile menu panel below, at the right end of the announcement bar on desktop, and in the footer.
+//
+// Six items with long uppercase labels need the full desktop width, so the inline nav starts at `xl` (1280px) and the
+// hamburger menu serves everything below it.
 const LEFT_NAV = [
   { href: "/ro/ceasuri", label: "Ceasuri" },
+  { href: "/ro/bijuterii", label: "Bijuterii" },
   { href: "/ro/piele-de-crocodil", label: "Articole din piele de crocodil" },
 ] as const;
 
 const RIGHT_NAV = [
+  { href: "/ro/seturi", label: "Seturi" },
   { href: "/ro/despre-noi", label: "Despre noi" },
   { href: "/ro/intrebari-frecvente", label: "Întrebări frecvente" },
 ] as const;
@@ -55,7 +65,7 @@ export function RoHeader() {
 
           {/* Left nav - flex-1 keeps logo centred */}
           <div className="flex-1 flex items-center gap-10">
-            <div className="hidden lg:flex items-center gap-8 xl:gap-10">
+            <div className="hidden xl:flex items-center gap-6">
               {LEFT_NAV.map(({ href, label }) => (
                 <NavLink key={href} href={href}>{label}</NavLink>
               ))}
@@ -77,7 +87,7 @@ export function RoHeader() {
 
           {/* Right nav */}
           <div className="flex-1 flex items-center justify-end gap-5">
-            <div className="hidden lg:flex items-center gap-8 xl:gap-10">
+            <div className="hidden xl:flex items-center gap-6">
               {RIGHT_NAV.map(({ href, label }) => (
                 <NavLink key={href} href={href}>{label}</NavLink>
               ))}
@@ -99,7 +109,7 @@ export function RoHeader() {
             <button
               onClick={() => setMenuOpen(true)}
               aria-label="Meniu"
-              className="lg:hidden text-ink-soft hover:text-navy transition-colors duration-300"
+              className="xl:hidden text-ink-soft hover:text-navy transition-colors duration-300"
             >
               <HamburgerIcon />
             </button>
@@ -114,7 +124,7 @@ export function RoHeader() {
           onClick={closeMobile}
         >
           <div className="flex flex-col h-full overflow-y-auto px-8 py-10" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-16">
+            <div className="flex items-center justify-between mb-12">
               <Image src="/logo.webp" alt="Lorenzo Ricci" width={140} height={36} className="h-9 w-auto" />
               <button
                 onClick={closeMobile}
@@ -125,17 +135,19 @@ export function RoHeader() {
               </button>
             </div>
 
-            <nav className="flex flex-col gap-8">
+            <nav className="flex flex-col gap-6">
               {MOBILE_NAV.map(({ href, label }) => (
                 <Link key={href} href={href} onClick={closeMobile}
-                  className="font-serif text-4xl leading-tight text-white/80 hover:text-white transition-colors duration-300">
+                  className="font-serif text-3xl sm:text-4xl leading-tight text-white/80 hover:text-white transition-colors duration-300">
                   {label}
                 </Link>
               ))}
             </nav>
 
             <div className="mt-auto pt-10">
-              <div className="h-px bg-white/10 mb-8" />
+              <div className="h-px bg-white/10 mb-6" />
+              {/* Language switch lives here on phones (never beside the cart icon) */}
+              <LanguageSwitch current="ro" size="lg" className="text-white mb-5" />
               <p className="font-sans text-xs text-white/40 tracking-widest uppercase">info@lorenzo-ricci.com</p>
             </div>
           </div>
@@ -148,7 +160,7 @@ export function RoHeader() {
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Link href={href}
-      className="font-sans text-xs font-light tracking-[0.18em] uppercase text-ink-muted hover:text-navy transition-colors duration-300 relative group whitespace-nowrap">
+      className="font-sans text-[11px] font-light tracking-[0.14em] uppercase text-ink-muted hover:text-navy transition-colors duration-300 relative group whitespace-nowrap">
       {children}
       <span className="absolute -bottom-1 left-0 w-0 h-px bg-navy transition-all duration-300 group-hover:w-full" />
     </Link>

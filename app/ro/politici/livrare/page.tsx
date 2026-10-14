@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
+import { roToBgPath } from "@/lib/ro/route-map";
 import {
   RO_COD_FEE_RON,
   RO_COURIER_LABEL,
@@ -9,12 +11,25 @@ import {
   RO_RETURN_DAYS,
   RO_SHIPPING_FEE_RON,
   fmtRON,
+  ronPrice,
 } from "@/lib/ro/config";
+
+const PATH = "/ro/politici/livrare";
+
+// Products priced from EUR 1500 up are sold on advance payment (no cash on delivery), exactly like on the Bulgarian site.
+const PREPAY_RON = fmtRON(ronPrice(PREPAYMENT_THRESHOLD_EUR));
+const PREPAY_EUR = PREPAYMENT_THRESHOLD_EUR.toLocaleString("ro-RO");
 
 export const metadata: Metadata = {
   title: "Politica de livrare",
-  description: `Livrare gratuită pentru comenzile de peste ${fmtRON(RO_FREE_SHIPPING_RON)} · Plata ramburs, la livrare · ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere.`,
-  alternates: { canonical: "https://lorenzo-ricci.com/ro/politici/livrare" },
+  description: `Livrare gratuită pentru comenzile de peste ${fmtRON(RO_FREE_SHIPPING_RON)} · Plata ramburs, la livrare (în avans pentru produsele de valoare mare) · ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere.`,
+  alternates: {
+    canonical: `https://lorenzo-ricci.com${PATH}`,
+    languages: {
+      "ro-RO": `https://lorenzo-ricci.com${PATH}`,
+      "bg-BG": `https://lorenzo-ricci.com${roToBgPath(PATH)}`,
+    },
+  },
   other: { "content-language": "ro" },
 };
 
@@ -55,9 +70,9 @@ export default function LivrarePage() {
           </div>
         </PolicySection>
 
-        <PolicySection title="Plata ramburs">
+        <PolicySection title="Plata">
           <p>
-            Plata se face <strong className="text-charcoal font-normal">ramburs</strong>: achitați comanda curierului, la livrare.
+            Pentru produsele cu un preț sub <strong className="text-charcoal font-normal">{PREPAY_RON}</strong>, plata se face <strong className="text-charcoal font-normal">ramburs</strong>: achitați comanda curierului, la livrare.
             {RO_COD_FEE_RON > 0 && (
               <>
                 {" "}Pentru plata ramburs se percepe o taxă de <strong className="text-charcoal font-normal">{fmtRON(RO_COD_FEE_RON)}</strong>.
@@ -69,6 +84,10 @@ export default function LivrarePage() {
                 Aveți dreptul să <strong className="text-charcoal font-normal">verificați coletul înainte de plată</strong> și să îl refuzați dacă produsul nu corespunde așteptărilor dumneavoastră.
               </>
             )}
+          </p>
+          <p className="mt-3">
+            Produsele cu un preț de la <strong className="text-charcoal font-normal">{PREPAY_RON}</strong> în sus (echivalentul a {PREPAY_EUR} EUR) se comandă cu <strong className="text-charcoal font-normal">plata în avans</strong>, stabilită direct cu noi; pentru aceste produse plata ramburs nu este disponibilă. Pentru a comanda un astfel de produs, scrieți-ne la{" "}
+            <a href="mailto:info@lorenzo-ricci.com" className="text-navy hover:underline">info@lorenzo-ricci.com</a>.
           </p>
         </PolicySection>
 

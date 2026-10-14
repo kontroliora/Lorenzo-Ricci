@@ -345,6 +345,7 @@ async function sendCapiPurchase(
     console.warn("[CAPI] META_CAPI_ACCESS_TOKEN not set - skipping");
     return;
   }
+  if (process.env.VERCEL_ENV === "preview") { console.warn("[CAPI] preview deployment - Purchase not sent to Meta"); return; }
 
   const customer = (order.customer ?? {}) as Record<string, unknown>;
   const items    = (order.items    ?? []) as Array<{ sku?: string; quantity?: number }>;

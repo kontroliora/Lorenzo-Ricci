@@ -5,8 +5,10 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getProductBySlug } from "@/lib/products";
 import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
 import { checkOrderable } from "@/lib/order-availability";
-import { roEligible, ronOf } from "@/lib/ro/config";
-import { roSubtotal, roShippingCost, roTotal } from "@/lib/ro/pricing";
+import { ronOf, ronOriginalOf } from "@/lib/ro/config";
+import { roName } from "@/lib/ro/names-ro";
+import { roAmounts } from "@/lib/ro/pricing";
+import { isPreviewDeploy, previewOrdersAllowed } from "@/lib/deploy-env";
 import { RO_COUNTIES } from "@/lib/ro/counties";
 import { RO_CURRENCY } from "@/lib/ro/config";
 import { buildRoCustomerEmail, buildRoAdminEmail, roCustomerSubject, type RoOrderEmailData } from "@/lib/ro/emails";
@@ -59,6 +61,7 @@ async function sendMail(opts: { from: string; to: string[]; subject: string; htm
 async function sendCapiPurchase(o: RoOrderEmailData & { skus: string[] }, ctx: { ip?: string; userAgent?: string; fbc?: string; fbp?: string }): Promise<void> {
   const token = process.env.META_CAPI_ACCESS_TOKEN;
   if (!token) { console.warn("[order-ro] META_CAPI_ACCESS_TOKEN not set - skipping Purchase"); return; }
+  if (isPreviewDeploy()) { console.warn("[order-ro] preview deployment - Purchase not sent to Meta"); return; }
   const c = o.customer;
   const parts = str(c.name).split(/\s+/);
   const userData: Record<string, unknown> = { country: [sha256("ro")] };
@@ -102,6 +105,7 @@ async function sendCapiPurchase(o: RoOrderEmailData & { skus: string[] }, ctx: {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!previewOrdersAllowed()) return fail(503, "preview", "Aceasta este o versiune de previzualizare: comenzile sunt dezactivate.");
     let body: Record<string, unknown>;
     try { body = await req.json(); } catch { return fail(400, "bad_request", "Cerere invalidă. Vă rugăm să reîncercați."); }
 
@@ -135,11 +139,11 @@ export async function POST(req: NextRequest) {
       return p ? applyOverride(p, overrides) : undefined;
     };
 
-    const lines: { slug: string; sku: string; name: string; quantity: number; ron: number }[] = [];
+    const lines: { slug: string; sku: string; name: string; quantity: number; ron: number; onSale: boolean }[] = [];
     for (const it of rawItems) {
       const slug = str(it.slug, 80);
       const product = slug ? findProduct(slug) : undefined;
-      if (!product || !roEligible(product)) return fail(409, "not_for_sale", "Unul dintre produse nu este disponibil în această comandă. Vă rugăm să reîncărcați pagina.");
+      if (!product) return fail(409, "not_for_sale", "Unul dintre produse nu este disponibil în această comandă. Vă rugăm să reîncărcați pagina.");
       const quantity = Number(it.quantity);
       if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QTY) return fail(400, "bad_request", "Cantitate invalidă în coș.");
       const unit = Number(it.price);
@@ -147,23 +151,23 @@ export async function POST(req: NextRequest) {
         console.warn(`[order-ro] price mismatch for ${slug}: client ${String(it.price)}, server ${ronOf(product)}`);
         return fail(409, "price_mismatch", "Prețurile au fost actualizate, vă rugăm să reîncărcați pagina.");
       }
-      lines.push({ slug, sku: product.sku, name: product.name, quantity, ron: unit });
+      lines.push({ slug, sku: product.sku, name: roName(product), quantity, ron: unit, onSale: ronOriginalOf(product) !== undefined });
     }
     if (new Set(lines.map((l) => l.slug)).size !== lines.length) return fail(400, "bad_request", "Coș invalid. Vă rugăm să reîncărcați pagina.");
 
-    const gate = checkOrderable(lines, findProduct);
+    const gate = checkOrderable(lines, (slug) => { const p = findProduct(slug); return p ? { ...p, name: roName(p) } : undefined; }); // messages carry the Romanian product name
     if (!gate.ok) {
       return fail(409, gate.code, gate.code === "not_for_sale"
         ? stockMessage(gate.names.map((n) => ({ name: n, available: 0 })))
         : `${gate.names.join(", ")} nu se poate comanda cu plata la livrare.`);
     }
 
-    const subtotal = roSubtotal(lines);
-    const shippingCost = roShippingCost(subtotal);
-    const total = roTotal(subtotal);
+    // Every amount comes from ONE function (lib/ro/pricing.ts, shared with the cart): lines at the current lei prices, set
+    // discounts, delivery judged on the amount after discounts. The browser's numbers must match to the leu.
+    const { discount, goods: subtotal, shipping: shippingCost, total } = roAmounts(lines);
     const sh = (body.shipping ?? {}) as Record<string, unknown>;
-    if (Number(body.subtotal) !== subtotal || Number(sh.cost) !== shippingCost || Number(body.total) !== total) {
-      console.warn(`[order-ro] total mismatch: client ${String(body.subtotal)}/${String(sh.cost)}/${String(body.total)}, server ${subtotal}/${shippingCost}/${total}`);
+    if (Number(body.subtotal) !== subtotal || Number(body.discount ?? 0) !== discount || Number(sh.cost) !== shippingCost || Number(body.total) !== total) {
+      console.warn(`[order-ro] total mismatch: client ${String(body.subtotal)}/${String(body.discount)}/${String(sh.cost)}/${String(body.total)}, server ${subtotal}/${discount}/${shippingCost}/${total}`);
       return fail(409, "price_mismatch", "Prețurile au fost actualizate, vă rugăm să reîncărcați pagina.");
     }
 
@@ -213,7 +217,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 6. E-mails + Meta Purchase (awaited: Vercel kills un-awaited work). Best effort: the order is already saved. ──
-    const data: RoOrderEmailData = { orderRef: ref, customer: { name, phone, email, county, city, address, postCode, notes }, items: orderItems, subtotal, shippingCost, total };
+    const data: RoOrderEmailData = { orderRef: ref, customer: { name, phone, email, county, city, address, postCode, notes }, items: orderItems, subtotal, discount, shippingCost, total };
     const capiCtx = {
       ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("x-real-ip") ?? undefined,
       userAgent: req.headers.get("user-agent") ?? undefined,

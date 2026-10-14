@@ -1,12 +1,25 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { RO_RETURN_DAYS } from "@/lib/ro/config";
+import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
+import { RO_RETURN_DAYS, fmtRON, ronPrice } from "@/lib/ro/config";
+import { roToBgPath } from "@/lib/ro/route-map";
+
+const PATH = "/ro/despre-noi";
+
+// Cash on delivery only below this price (products from EUR 1500 up are sold on advance payment), same as on the Bulgarian site.
+const PREPAY_RON = fmtRON(ronPrice(PREPAYMENT_THRESHOLD_EUR));
 
 export const metadata: Metadata = {
   title: "Povestea noastră",
   description: "Lorenzo Ricci a fost înființată de frați ceasornicari, conduși de dorința de a crea ceasuri de lux cu caracter, precizie și prezență rafinată.",
-  alternates: { canonical: "https://lorenzo-ricci.com/ro/despre-noi" },
+  alternates: {
+    canonical: `https://lorenzo-ricci.com${PATH}`,
+    languages: {
+      "ro-RO": `https://lorenzo-ricci.com${PATH}`,
+      "bg-BG": `https://lorenzo-ricci.com${roToBgPath(PATH)}`,
+    },
+  },
   other: { "content-language": "ro" },
 };
 
@@ -136,7 +149,7 @@ export default function DespreNoiPage() {
               Lucrăm direct cu clienții noștri, ceea ce elimină adaosurile comerciale tradiționale. Investim în producție de calitate, nu în publicitate costisitoare sau ambasadori de brand.
             </p>
             <p className="font-sans text-base font-light text-ink-soft leading-[1.9] tracking-wide">
-              Rezultatul - ceasuri și articole din piele de crocodil cu o valoare reală de lux, la un preț accesibil. Dumneavoastră primiți maximum, noi ne păstrăm onestitatea.
+              Rezultatul - ceasuri, bijuterii și articole din piele de crocodil cu o valoare reală de lux, la un preț accesibil. Dumneavoastră primiți maximum, noi ne păstrăm onestitatea.
             </p>
           </div>
         </div>
@@ -147,21 +160,22 @@ export default function DespreNoiPage() {
           <h2 className="font-serif text-display-sm mb-6" style={{color: "#ffffff"}}>Încredere deplină</h2>
           <div className="w-12 h-px mx-auto mb-8" style={{backgroundColor: "rgba(255,255,255,0.3)"}} />
           <p className="font-sans text-sm font-light leading-relaxed max-w-2xl mx-auto mb-6" style={{color: "rgba(255,255,255,0.8)"}}>
-            Stăm în spatele calității ceasurilor noastre cu deplină încredere. Fiecare model este o dovadă a dedicării noastre pentru perfecțiune - 5 ani garanție comercială pentru mecanisme.
+            Stăm în spatele calității ceasurilor și bijuteriilor noastre cu deplină încredere. Fiecare model este o dovadă a dedicării noastre pentru perfecțiune - 5 ani garanție comercială pentru mecanismele ceasurilor, garanție comercială pe viață pentru bijuterii.
           </p>
           <p className="font-sans text-sm font-light leading-relaxed max-w-xl mx-auto" style={{color: "rgba(255,255,255,0.6)"}}>
-            Alăturați-vă comunității care apreciază ceasurile elegante, create cu precizie.
+            Alăturați-vă comunității care apreciază ceasurile elegante și bijuteriile create cu precizie.
           </p>
 
           {/* Trust badges */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-12 max-w-2xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-6 mt-12 max-w-2xl mx-auto">
             {[
-              { label: "5 ani garanție", sub: "Comercială, pentru mecanism" },
+              { label: "5 ani garanție", sub: "Comercială, pentru mecanismul ceasurilor" },
+              { label: "Pe viață", sub: "Garanție comercială, bijuterii" },
               { label: `${RO_RETURN_DAYS} zile`, sub: "Drept legal de retragere" },
               { label: "30 de zile", sub: "Schimb pentru produse la preț întreg" },
-              { label: "Ramburs", sub: "Plata la livrare" },
+              { label: "Ramburs", sub: `Plata la livrare, sub ${PREPAY_RON}` },
             ].map(({ label, sub }) => (
-              <div key={label} className="flex flex-col items-center gap-1">
+              <div key={label} className="flex flex-col items-center gap-1 w-[calc(50%-0.75rem)] sm:w-[calc(33.333%-1rem)]">
                 <p className="font-sans text-sm font-medium tracking-wide" style={{color: "#ffffff"}}>{label}</p>
                 <p className="font-sans text-[10px] tracking-widest uppercase" style={{color: "rgba(255,255,255,0.45)"}}>{sub}</p>
               </div>
@@ -173,9 +187,12 @@ export default function DespreNoiPage() {
         <div className="text-center">
           <div className="w-12 h-px bg-border mx-auto mb-10" />
           <p className="font-serif text-display-sm text-charcoal mb-8">Găsiți-vă stilul</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4 justify-center">
             <Link href="/ro/ceasuri" className="btn-primary min-w-[200px]">
               Descoperiți ceasurile
+            </Link>
+            <Link href="/ro/bijuterii" className="btn-outline min-w-[200px]">
+              Descoperiți bijuteriile
             </Link>
             <Link href="/ro/piele-de-crocodil" className="btn-outline min-w-[200px]">
               Descoperiți pielea de crocodil

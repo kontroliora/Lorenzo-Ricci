@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import Image from "next/image";
 import Link from "next/link";
 import { useCartStore } from "@/lib/store";
@@ -192,6 +193,7 @@ export function Header() {
 
             <div className="mt-auto">
               <div className="h-px bg-white/10 mb-8" />
+              <LanguageSwitch current="bg" size="lg" className="text-white mb-6" />
               <p className="font-sans text-xs text-white/40 tracking-widest uppercase">info@lorenzo-ricci.com</p>
             </div>
           </div>

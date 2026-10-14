@@ -1,11 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { RO_RETURN_DAYS } from "@/lib/ro/config";
+import { roToBgPath } from "@/lib/ro/route-map";
+
+const PATH = "/ro/politici/retur";
 
 export const metadata: Metadata = {
   title: "Politica de retur și schimb",
   description: `Drept legal de retragere de ${RO_RETURN_DAYS} zile pentru toate produsele · Schimb extins de 30 de zile pentru produsele la preț întreg.`,
-  alternates: { canonical: "https://lorenzo-ricci.com/ro/politici/retur" },
+  alternates: {
+    canonical: `https://lorenzo-ricci.com${PATH}`,
+    languages: {
+      "ro-RO": `https://lorenzo-ricci.com${PATH}`,
+      "bg-BG": `https://lorenzo-ricci.com${roToBgPath(PATH)}`,
+    },
+  },
   other: { "content-language": "ro" },
 };
 
@@ -46,7 +55,9 @@ export default function ReturPage() {
             Dacă un produs este defect sau nu corespunde descrierii, beneficiați de garanția legală de conformitate, în condițiile legii (repararea sau înlocuirea produsului ori, atunci când legea o permite, reducerea prețului sau încetarea contractului) - <strong className="text-charcoal font-normal">indiferent dacă a fost achiziționat la preț întreg sau redus</strong> și indiferent de termenele de mai sus.
           </p>
           <p className="mt-3">
-            Separat de drepturile dumneavoastră legale, Lorenzo Ricci oferă și o <strong className="text-charcoal font-normal">garanție comercială</strong> de 5 ani pentru ceasuri. Condițiile sunt descrise în{" "}
+            Separat de drepturile dumneavoastră legale, Lorenzo Ricci oferă și o <strong className="text-charcoal font-normal">garanție comercială</strong>: 5 ani pentru ceasuri și pe viață pentru bijuterii. Condițiile sunt descrise în{" "}
+            <Link href="/ro/garantie-bijuterii" className="text-navy hover:underline">Condiții de garanție</Link>{" "}
+            și în{" "}
             <Link href="/ro/politici/termeni#garantie" className="text-navy hover:underline">Termeni și condiții</Link>.
           </p>
         </PolicySection>
@@ -56,7 +67,7 @@ export default function ReturPage() {
           <ul className="list-disc list-inside flex flex-col gap-2">
             <li>Produsul trebuie să fie nepurtat și nefolosit</li>
             <li>Cu etichetele și ambalajul original</li>
-            <li>La ceasuri - fără urme de purtare</li>
+            <li>La bijuterii și ceasuri - fără urme de purtare</li>
           </ul>
           <p className="mt-3">
             În cazul retragerii legale din contract aveți dreptul să examinați produsul; dacă însă acesta a fost folosit peste ceea ce este necesar pentru verificare sau este returnat incomplet, valoarea rambursării poate fi diminuată corespunzător.

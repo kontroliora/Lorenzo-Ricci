@@ -1,7 +1,7 @@
 import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import type { ProductCategory } from "@/lib/types";
 
-// Romania market test (watches + crocodile leather goods only). ONE place for the market's facts, so the
+// Romania market (the whole catalogue: watches, jewellery, crocodile leather goods, sets). ONE place for the market's facts, so the
 // pages, the checkout and the e-mails can't drift apart. Values marked PROVISIONAL are assumptions until the
 // courier is chosen (see "Lorenzo Ricci private/romania-test/curieri-si-ramburs.md") - change them here only.
 
@@ -10,17 +10,15 @@ export const RO_BASE_PATH = "/ro";
 // Owner's rate: 1 EUR = 5.25 RON. Prices are rounded to whole lei (display and charge), see ronPrice().
 export const EUR_RON = 5.25;
 
-// Categories sold in Romania. Jewellery is NOT shown there.
-export const RO_CATEGORIES = ["watches", "wallets", "cardholders", "bags"] as const;
+// Romanians see the whole catalogue (owner, 2026-10-14). Cash on delivery ("ramburs") is only for goods under EUR 1500,
+// same rule as Bulgaria (lib/price.ts PREPAYMENT_THRESHOLD_EUR): the bag "Milano Avorio" (EUR 4000) is shown and sold on
+// prepayment, arranged directly with the shop, exactly like on the Bulgarian site.
 
-// Cash on delivery ("ramburs") is only for goods under this EUR price, same rule as Bulgaria (lib/price.ts
-// PREPAYMENT_THRESHOLD_EUR = 1500). Bag "Milano Avorio" (EUR 4000) is therefore not orderable in the RO COD checkout.
-
-// PROVISIONAL - set once the courier and its price list are confirmed:
+// DELIVERY TERMS - confirmed by the owner on 2026-10-14: free from 315 lei (EUR 60 x 5.25), 46 lei below it, 2-4 working days.
 export const RO_FREE_SHIPPING_EUR = 60;                                 // same threshold as Bulgaria
 export const RO_FREE_SHIPPING_RON = Math.round(RO_FREE_SHIPPING_EUR * EUR_RON); // 315
-export const RO_SHIPPING_FEE_RON = 25;                                  // PROVISIONAL flat fee under the threshold
-export const RO_DELIVERY_DAYS = "2-4";                                  // PROVISIONAL working days after dispatch
+export const RO_SHIPPING_FEE_RON = 46;                                  // flat delivery fee under the threshold
+export const RO_DELIVERY_DAYS = "2-4";                                  // working days after dispatch
 export const RO_COURIER_LABEL = "curier rapid";                         // generic until the courier is chosen
 export const RO_COD_FEE_RON = 0;                                        // PROVISIONAL: extra ramburs fee charged to the customer
 
@@ -35,19 +33,30 @@ export const RO_CURRENCY = "RON";
 // Pure helpers live here (not in catalog.ts): client components import this file, and catalog.ts pulls in the whole
 // Bulgarian catalog plus the Romanian text overlay.
 
-/** Sold in Romania: watches and crocodile leather goods; never jewellery; never an item that needs prepayment (>= EUR 1500, no COD). */
-export const roEligible = (p: { category: string; price: number }): boolean =>
-  (RO_CATEGORIES as readonly string[]).includes(p.category) && p.price < PREPAYMENT_THRESHOLD_EUR;
+/** Every catalogue product is sold in Romania (kept as a function so callers do not change). */
+export const roEligible = (_p?: { category: string; price: number }): boolean => true; // eslint-disable-line @typescript-eslint/no-unused-vars
+
+/** Needs prepayment (EUR 1500 and up): no cash on delivery, the customer arranges payment with the shop. */
+export const roNeedsPrepayment = (p: { price: number }): boolean => p.price >= PREPAYMENT_THRESHOLD_EUR;
 
 /** Whole lei for a product whose EUR price may already carry a price override (applyOverride). */
 export const ronOf = (p: { price: number }): number => ronPrice(p.price);
+
+/**
+ * The crossed-out price in lei while the product is on sale in Bulgaria (originalPrice above price): the same sale, the
+ * same old price, converted and rounded to whole lei. undefined when not on sale (or when rounding made them equal).
+ */
+export const ronOriginalOf = (p: { price: number; originalPrice?: number }): number | undefined =>
+  typeof p.originalPrice === "number" && p.originalPrice > p.price && ronPrice(p.originalPrice) > ronPrice(p.price)
+    ? ronPrice(p.originalPrice)
+    : undefined;
 
 export const RO_CATEGORY_LABEL: Record<ProductCategory, string> = {
   watches: "Ceasuri",
   wallets: "Portofele",
   cardholders: "Port-carduri",
-  bags: "Clutch-uri",
-  jewellery: "Bijuterii", // never shown in Romania; kept so the record is complete
+  bags: "Genți",
+  jewellery: "Bijuterii",
 };
 
 /** EUR base price -> whole lei (the displayed AND collected amount for the Romania test). */

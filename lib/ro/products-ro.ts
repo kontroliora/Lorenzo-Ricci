@@ -1,4 +1,4 @@
-// Romanian product texts for the Romania market test (watches + crocodile leather goods; jewellery is NOT sold there).
+// Romanian product texts for the Romania market test (the whole catalogue: watches, jewellery, crocodile leather goods).
 // Source of truth is the Bulgarian catalogue in lib/products.ts: every entry mirrors its structure exactly (same number
 // of features / specs / tabDescription paragraphs / descriptionSections / imageAlts) and only translates the wording.
 // Names, SKUs, prices, stock and image paths are NOT here: they stay in lib/products.ts. Species names are Latin and kept
@@ -23,9 +23,11 @@ const NILE = "crocodil de Nil (Crocodylus niloticus)";
 const BADGE_LIMITED = "SERIE LIMITATĂ";
 const BADGE_SALE = "REDUCERE DE TOAMNĂ";
 const BADGE_NEW = "Colecție nouă";
-const BADGE_SOLD_OUT = "Epuizat";
+const BADGE_SOLD_OUT = "Stoc epuizat";
+const BADGE_LOW_STOCK = "Stoc limitat";
 
 const WARRANTY_WATCH = "Garanție comercială 5 ani";
+const WARRANTY_LIFETIME = "Garanție pe viață"; // jewellery: lifetime warranty, as in the Bulgarian catalogue
 const WARRANTY_NONE = ""; // leather goods: no warranty is offered (same as the Bulgarian catalogue)
 
 const WATCH_TAGLINE = "Design italian. Precizie japoneză.";
@@ -69,6 +71,13 @@ const CHRONO_SPECS: Spec[] = [
   { label: "Curea", value: "Silicon hipoalergenic" },
   { label: "Rezistență la apă", value: "5 ATM / 50 m" },
 ];
+
+// Jewellery (bracelets and necklaces: same material, plating, hallmark and colour rows in the Bulgarian catalogue)
+const JEWELLERY_MATERIAL: Spec = { label: "Material", value: "Oțel inoxidabil 316L cu placare 18K PVD" };
+const JEWELLERY_PLATING: Spec = { label: "Placare", value: "Aurie 18K PVD, în 4 straturi" };
+const JEWELLERY_STAMP: Spec = { label: "Marcaj", value: "750 IT" };
+const JEWELLERY_GENDER: Spec = { label: "Gen", value: "Unisex" };
+const JEWELLERY_COLOR: Spec = { label: "Culoare", value: "Auriu" };
 
 // Leather goods
 const LEATHER_DESC =
@@ -269,6 +278,244 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
       "Lorenzo Ricci Polar Frost - închizătoare, curea din silicon hipoalergenic",
       "Lorenzo Ricci Polar Frost într-o cutie de lux - ambalaj cadou deschis",
       "Lorenzo Ricci Polar Frost - cutie cadou închisă",
+    ],
+  },
+
+  // ─── JEWELLERY ─────────────────────────────────────────────────────────────
+  "bracelet-diamante-cross": {
+    badge: BADGE_SALE,
+    warranty: WARRANTY_LIFETIME,
+    shortDescription: "Strălucire care nu îngreunează",
+    description:
+      "Crucea cu zirconiu prinde lumina la fiecare mișcare. Un detaliu fin, care strălucește fără să îngreuneze mâna. Subțire și ușoară, se potrivește la fel de bine pe o încheietură de femeie și pe una de bărbat. Poart-o singură sau lângă ceas. Strălucire, nu volum.",
+    features: [
+      "Cruce de cristal în centru",
+      "Lanț tennis elegant",
+      "Reglabilă 18-22 cm",
+      "Design unisex",
+    ],
+    specs: [
+      JEWELLERY_MATERIAL,
+      { label: "Lungime", value: "18 + 4 cm (reglabilă)" },
+      JEWELLERY_PLATING,
+      JEWELLERY_STAMP,
+      JEWELLERY_GENDER,
+      JEWELLERY_COLOR,
+    ],
+    coverAlt: "Brățară Diamante Cross Lorenzo Ricci - placare cu aur 18K PVD, cruce cu zirconiu, oțel 316L",
+    imageAlts: [
+      "Brățară Diamante Cross Lorenzo Ricci - fotografie de produs pe fundal alb, aur 18K PVD",
+      "Brățară Diamante Cross - detaliu al crucii cu zirconiu, brățară de lux",
+      "Brățară Diamante Cross - fotografie lifestyle, purtată la încheietura mâinii",
+      "Brățară Diamante Cross - vedere laterală, grosimea și detaliul închizătorii",
+      "Brățară Diamante Cross în cutie cadou Lorenzo Ricci",
+    ],
+  },
+  "bracelet-milano-forte": {
+    warranty: WARRANTY_LIFETIME,
+    shortDescription: "Opt milimetri de prezență",
+    description:
+      "Are o greutate pe care o simți la încheietură, de îndată ce închizătoarea face clic. Opt milimetri de împletitură care are prezență, fără să se impună. Alături de ceas capătă context, iar singură reține atenția. Aur 18K PVD consistent, fără compromisuri.",
+    features: [
+      "Împletitură masivă de 8 mm",
+      "Greutate pronunțată",
+      "Lungime 20 cm",
+      "Execuție milaneză",
+    ],
+    specs: [
+      JEWELLERY_MATERIAL,
+      { label: "Lățime", value: "8 mm" },
+      { label: "Lungime", value: "20 cm" },
+      JEWELLERY_PLATING,
+      JEWELLERY_STAMP,
+      JEWELLERY_GENDER,
+      JEWELLERY_COLOR,
+    ],
+    coverAlt: "Brățară Milano Forte Lorenzo Ricci - masivă 8 mm, placare cu aur 18K PVD, oțel 316L",
+    imageAlts: [
+      "Brățară Milano Forte Lorenzo Ricci - fotografie de produs pe fundal alb, aur 18K PVD",
+      "Brățară Milano Forte - fotografie lifestyle, purtată la încheietura mâinii",
+      "Brățară Milano Forte - detaliu al împletiturii, lățime 8 mm",
+      "Brățară Milano Forte - detaliu al închizătorii, marcaj 750 IT",
+      "Brățară Milano Forte în cutie cadou Lorenzo Ricci",
+    ],
+  },
+  "bracelet-milano-twist": {
+    warranty: WARRANTY_LIFETIME,
+    shortDescription: "Spirală de lumină",
+    description:
+      "Împletitura răsucită refractă lumina într-o spirală la fiecare mișcare. Mai fină decât modelele masive, dar cu același caracter auriu. Se poartă singură sau în combinație cu altele. Șase milimetri de strălucire reținută.",
+    features: [
+      "Împletitură răsucită de 6 mm",
+      "Joc fluid al luminii",
+      "Lungime 22 cm",
+      "Eleganță de zi cu zi",
+    ],
+    specs: [
+      JEWELLERY_MATERIAL,
+      { label: "Grosime", value: "6 mm" },
+      { label: "Lungime", value: "22 cm" },
+      JEWELLERY_PLATING,
+      JEWELLERY_STAMP,
+      JEWELLERY_GENDER,
+      JEWELLERY_COLOR,
+    ],
+    coverAlt: "Brățară Milano Twist Lorenzo Ricci - împletitură răsucită, placare cu aur 18K PVD, oțel 316L",
+    imageAlts: [
+      "Brățară Milano Twist Lorenzo Ricci - fotografie de produs pe fundal alb, aur 18K PVD",
+      "Brățară Milano Twist - fotografie lifestyle, purtată la încheietura mâinii",
+      "Brățară Milano Twist - detaliu al împletiturii răsucite, design italian",
+      "Brățară Milano Twist - detaliu al închizătorii, marcaj 750 IT",
+      "Brățară Milano Twist în cutie cadou Lorenzo Ricci",
+    ],
+  },
+  "bracelet-signature": {
+    warranty: WARRANTY_LIFETIME,
+    shortDescription: "Semnătura ta la încheietură",
+    description:
+      "Brățara care rămâne la încheietură. Închizătoarea T se închide cu un clic sigur, cei șase milimetri se așază curat sub mânecă și arată la fel de sigur și cu o cămașă, și cu un tricou. Un însoțitor de zi cu zi, care nu se scoate.",
+    features: [
+      "Împletitură curb de 6 mm",
+      "Pandantiv cruce ca accent",
+      "Închizătoare T",
+      "Lungime 22 cm",
+    ],
+    specs: [
+      JEWELLERY_MATERIAL,
+      { label: "Lățime", value: "6 mm" },
+      { label: "Lungime", value: "22 cm" },
+      JEWELLERY_PLATING,
+      JEWELLERY_STAMP,
+      JEWELLERY_GENDER,
+      JEWELLERY_COLOR,
+    ],
+    coverAlt: "Brățară Signature Lorenzo Ricci - clasică 6 mm, placare cu aur 18K PVD, oțel 316L",
+    imageAlts: [
+      "Brățară Signature Lorenzo Ricci - fotografie de produs pe fundal alb, aur 18K PVD",
+      "Brățară Signature - fotografie lifestyle, purtată la încheietura mâinii",
+      "Brățară Signature - detaliu al împletiturii, lățime 6 mm",
+      "Brățară Signature - detaliu al închizătorii, marcaj 750 IT",
+      "Brățară Signature în cutie cadou Lorenzo Ricci",
+    ],
+  },
+  "necklace-aurelius": {
+    badge: BADGE_LOW_STOCK,
+    warranty: WARRANTY_LIFETIME,
+    shortDescription: "Spiritul Romei eterne",
+    description:
+      "O cruce cu proporții măsurate și geometrie calmă, inspirată de tradiția antică. Un lanț de trei milimetri poartă greutatea cu ușurință și rămâne discret sub guler. Un simbol care vorbește încet, dar cu o convingere clară.",
+    features: [
+      "Cruce de 3,7 cm, cu proporții curate",
+      "Lănțișor de 3 mm",
+      "Lungime 60 cm",
+      "Siluetă unisex",
+    ],
+    specs: [
+      JEWELLERY_MATERIAL,
+      { label: "Dimensiunea crucii", value: "3,7 × 2 cm" },
+      { label: "Grosime", value: "3 mm" },
+      { label: "Lungime", value: "60 cm" },
+      JEWELLERY_PLATING,
+      JEWELLERY_STAMP,
+      JEWELLERY_GENDER,
+      JEWELLERY_COLOR,
+    ],
+    coverAlt: "Colier Aurelius Cross Lorenzo Ricci - placare cu aur 18K PVD, cruce 3,7×2 cm, oțel 316L",
+    imageAlts: [
+      "Colier Aurelius Cross Lorenzo Ricci - fotografie de produs pe fundal alb, aur 18K PVD",
+      "Colier Aurelius Cross - detaliu al crucii, dimensiuni 3,7×2 cm, grosime 3 mm",
+      "Colier Aurelius Cross - fotografie lifestyle, purtat la gât",
+      "Colier Aurelius Cross - detaliu al lănțișorului, lungime 60 cm",
+      "Colier Aurelius Cross - detaliu al carabinei, marcaj 750 IT",
+      "Colier Aurelius Cross în cutie cadou Lorenzo Ricci",
+    ],
+  },
+  "necklace-grande-imperiale": {
+    badge: BADGE_SALE,
+    warranty: WARRANTY_LIFETIME,
+    shortDescription: "Intră înaintea ta",
+    description:
+      "O cruce de opt centimetri și jumătate, cu o formă impunătoare, dar stăpânită. Grande Imperiale poartă amploare fără ostentație, iar liniile curate transformă volumul în demnitate. Pentru cel care preferă să lase prezența să vorbească în locul lui.",
+    features: [
+      "Cruce impunătoare de 8,5 cm",
+      "Lanț de 3 mm",
+      "Lungime 60 cm",
+      "Accent expresiv",
+    ],
+    specs: [
+      JEWELLERY_MATERIAL,
+      { label: "Dimensiunea crucii", value: "8,5 × 5 cm" },
+      { label: "Lățimea lănțișorului", value: "3 mm" },
+      { label: "Lungime", value: "60 cm" },
+      JEWELLERY_PLATING,
+      JEWELLERY_STAMP,
+      JEWELLERY_COLOR,
+    ],
+    coverAlt: "Colier Grande Imperiale Lorenzo Ricci - cruce masivă 8,5×5 cm, placare cu aur 18K PVD, oțel 316L",
+    imageAlts: [
+      "Colier Grande Imperiale Lorenzo Ricci - fotografie de produs pe fundal alb, aur 18K PVD",
+      "Colier Grande Imperiale - detaliu al crucii masive, dimensiuni 8,5×5 cm",
+      "Colier Grande Imperiale - fotografie lifestyle, purtat la gât",
+      "Colier Grande Imperiale - detaliu al lănțișorului de 3 mm, lungime 60 cm",
+      "Colier Grande Imperiale în cutie cadou Lorenzo Ricci",
+    ],
+  },
+  "necklace-milano-forte": {
+    warranty: WARRANTY_LIFETIME,
+    shortDescription: "Greutatea Milanului",
+    description:
+      "O împletitură milaneză compactă, de opt milimetri lățime, cu o greutate perceptibilă care se simte la fiecare mișcare. Lanțul își păstrează forma și caracterul fără compromisuri. O prezență încrezătoare, care nu are nevoie de explicații.",
+    features: [
+      "Lanț compact de 8 mm",
+      "Greutate pronunțată",
+      "Lungime 55 cm",
+      "Împletitură milaneză",
+    ],
+    specs: [
+      JEWELLERY_MATERIAL,
+      { label: "Lățime", value: "8 mm" },
+      { label: "Lungime", value: "55 cm" },
+      JEWELLERY_PLATING,
+      JEWELLERY_STAMP,
+      JEWELLERY_COLOR,
+    ],
+    coverAlt: "Colier Milano Forte Lorenzo Ricci - lănțișor împletit masiv, placare cu aur 18K PVD, oțel 316L",
+    imageAlts: [
+      "Colier Milano Forte Lorenzo Ricci - fotografie de produs pe fundal alb, aur 18K PVD",
+      "Colier Milano Forte - fotografie lifestyle, purtat la gât",
+      "Colier Milano Forte - detaliu al lănțișorului împletit masiv",
+      "Colier Milano Forte - detaliu al carabinei, marcaj 750 IT",
+      "Colier Milano Forte în cutie cadou Lorenzo Ricci",
+    ],
+  },
+  "necklace-milano-twist": {
+    badge: BADGE_SALE,
+    warranty: WARRANTY_LIFETIME,
+    shortDescription: "Funie de aur",
+    description:
+      "Un lanț răsucit, a cărui împletitură în spirală prinde și refractă lumina în mișcare. Mai fin decât modelele masive, dar cu aceeași profunzime a aurului. Se poartă singur sau ca bază pentru un pandantiv ales.",
+    features: [
+      "Lanț răsucit de 6 mm",
+      "Joc fluid al luminii",
+      "Lungime 55 cm",
+      "Singur sau cu pandantiv",
+    ],
+    specs: [
+      JEWELLERY_MATERIAL,
+      { label: "Lățime", value: "6 mm" },
+      { label: "Lungime", value: "55 cm" },
+      JEWELLERY_PLATING,
+      JEWELLERY_STAMP,
+      JEWELLERY_COLOR,
+    ],
+    coverAlt: "Colier Milano Twist Lorenzo Ricci - lănțișor răsucit de 6 mm, placare cu aur 18K PVD, oțel 316L",
+    imageAlts: [
+      "Colier Milano Twist Lorenzo Ricci - fotografie de produs pe fundal alb, aur 18K PVD",
+      "Colier Milano Twist - fotografie lifestyle, purtat la gât",
+      "Colier Milano Twist - detaliu al lănțișorului răsucit, lățime 6 mm",
+      "Colier Milano Twist - detaliu al carabinei, lungime 55 cm",
+      "Colier Milano Twist - prim-plan al împletiturii, marcaj 750 IT",
+      "Colier Milano Twist în cutie cadou Lorenzo Ricci",
     ],
   },
 

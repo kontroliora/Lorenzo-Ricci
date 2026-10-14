@@ -22,6 +22,8 @@ function revalidateStorefront(slug: string) {
   revalidatePath("/ro");
   revalidatePath("/ro/ceasuri");
   revalidatePath("/ro/piele-de-crocodil");
+  revalidatePath("/ro/bijuterii");
+  revalidatePath("/ro/seturi");
   revalidatePath(`/ro/produse/${slug}`);
 }
 

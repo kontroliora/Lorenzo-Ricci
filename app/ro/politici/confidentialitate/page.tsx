@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { roToBgPath } from "@/lib/ro/route-map";
+
+const PATH = "/ro/politici/confidentialitate";
 
 export const metadata: Metadata = {
   title: "Politica de confidențialitate",
   description: "Politica de confidențialitate Lorenzo Ricci - cum colectăm, folosim și protejăm datele dumneavoastră cu caracter personal, în conformitate cu GDPR.",
-  alternates: { canonical: "https://lorenzo-ricci.com/ro/politici/confidentialitate" },
+  alternates: {
+    canonical: `https://lorenzo-ricci.com${PATH}`,
+    languages: {
+      "ro-RO": `https://lorenzo-ricci.com${PATH}`,
+      "bg-BG": `https://lorenzo-ricci.com${roToBgPath(PATH)}`,
+    },
+  },
   other: { "content-language": "ro" },
 };
 

@@ -4,10 +4,15 @@ import Link from "next/link";
 import { Award, RefreshCw, Truck, Eye, Banknote, type LucideIcon } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { getProductBySlug } from "@/lib/products";
+import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import { useRoCart } from "@/lib/ro/store";
 import { RO_SLUGS } from "@/lib/ro/catalog";
-import { ronOf, RO_CATEGORY_LABEL } from "@/lib/ro/config";
 import {
+  ronOf,
+  ronOriginalOf,
+  roNeedsPrepayment,
+  RO_CATEGORY_LABEL,
+  EUR_RON,
   fmtRON,
   RO_CURRENCY,
   RO_DELIVERY_DAYS,
@@ -18,6 +23,8 @@ import {
   RO_COURIER_LABEL,
 } from "@/lib/ro/config";
 import { RoStickyCartBar } from "@/components/ro/product/RoStickyCartBar";
+import { roCartLine } from "@/components/ro/product/cart-line";
+import { hasCyrillic, roReviewsCount, roRatingText } from "@/components/ro/product/ro-text";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 
 // A colour swatch reads as sold out when its product is switched off in
@@ -105,7 +112,7 @@ const CARDHOLDER_VARIANTS: Variant[] = [
   { slug: "cardholder-topazio",   label: "Topazio - Galben",          color: "#E4AB05", inStock: true },
 ];
 
-// Evening clutches (the one-off Milano Avorio bag is not sold in Romania).
+// Evening clutches (the one-off Milano Avorio bag is a single piece and has no siblings).
 const CLUTCH_VARIANTS: Variant[] = [
   { slug: "clutch-torino",    label: "Torino - Negru",          color: "#1B1818", inStock: true },
   { slug: "clutch-verona",    label: "Verona - Bordo",          color: "#6B1F2B", inStock: true },
@@ -117,13 +124,27 @@ const CLUTCH_VARIANTS: Variant[] = [
 // Show the low-stock line only when AVAILABLE units drop below this (bags sit at 5 as a matter of course).
 const lowStockThreshold = (category: Product["category"]) => (category === "bags" ? 5 : 6);
 
+// The one-of-one bag: "limited", never "running out" (same as the Bulgarian page).
+const ONE_OF_ONE_SLUG = "bag-milano-avorio";
+
+// RO_CATEGORY_LABEL calls every bag a clutch; the big Milano Avorio bag is not one.
+const categoryLabel = (p: Product): string =>
+  p.slug === ONE_OF_ONE_SLUG ? "Genți" : RO_CATEGORY_LABEL[p.category];
+
+// Where a watch / jewellery warranty is explained (counterpart of the Bulgarian /warranty/jewelry page).
+const WARRANTY_HREF = "/ro/garantie-bijuterii";
+
+// Prepayment threshold in lei, for the wording of the delivery tab (the rule itself is roNeedsPrepayment).
+const PREPAYMENT_THRESHOLD_RON = Math.round(PREPAYMENT_THRESHOLD_EUR * EUR_RON);
+
 interface RoProductInfoProps {
-  product: Product;     // already localized (localizeProduct) and override-applied
-  reviewCount?: number; // Bulgarian customer reviews of the same product (lib/reviews.ts)
+  product: Product;     // already localized (localizeProduct), override-applied and made safe (roSafeProduct)
+  reviewCount?: number; // number of reviews of the same product, as the Bulgarian store shows it (lib/reviews.ts)
   reviewAvg?: number;
+  reviewsTranslated?: boolean; // every one of those reviews has a Romanian text: the numbers then need no "(Bulgaria)" label
 }
 
-export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0 }: RoProductInfoProps) {
+export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviewsTranslated = false }: RoProductInfoProps) {
   const addItem = useRoCart((s) => s.addItem);
   const [added, setAdded] = useState(false);
   // A product with no description content gets no Descriere tab and opens on the specs instead of an empty tab.
@@ -138,16 +159,18 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0 }: RoPro
   const [liveStock, setLiveStock] = useState<number | null>(null);
 
   const ron = ronOf(product);
-  // The Romanian market shows no sale (no price history there): never render a promotional badge, whatever
-  // the catalogue overlay carries (localizeProduct already drops it for products on sale).
-  const badge = product.badge && !/reducer|redus|promo|ofert|%/i.test(product.badge) ? product.badge : undefined;
+  // The sale is the Bulgarian one (owner, 2026-10-14): the current price, the old price crossed out (both converted to whole lei)
+  // and the catalogue badge. Defence in depth: a badge that still reads Bulgarian (overlay missing) is never printed.
+  const originalRon = ronOriginalOf(product);
+  const prepay = roNeedsPrepayment(product);
+  const badge = product.badge && !hasCyrillic(product.badge) ? product.badge : undefined;
 
   const variants = (
     product.category === "watches"
       ? (WATCH_VARIANT_GROUPS.find((g) => g.some((v) => v.slug === product.slug)) ?? WATCH_VARIANT_GROUPS[0])
       : product.category === "wallets" ? WALLET_VARIANTS
       : product.category === "cardholders" ? CARDHOLDER_VARIANTS
-      : product.category === "bags" ? CLUTCH_VARIANTS
+      : product.category === "bags" && product.slug !== ONE_OF_ONE_SLUG ? CLUTCH_VARIANTS // the one-off bag has no siblings
       : []
   ).filter((v) => RO_SLUGS.includes(v.slug));
 
@@ -206,16 +229,10 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0 }: RoPro
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.slug]);
 
+  // The cart line carries the sale snapshot (originalRon, onSale: a sale item earns no set discount) and the prepayment flag
+  // (EUR 1500 and up: no cash on delivery; the checkout then shows the prepayment flow instead of the delivery form).
   const handleAdd = () => {
-    addItem({
-      slug:     product.slug,
-      sku:      product.sku,
-      name:     product.name,
-      ron,
-      image:    product.coverImage.src,
-      imageAlt: product.coverImage.alt,
-      stock:    effectiveStock,
-    });
+    addItem(roCartLine(product, effectiveStock));
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
     trackWithCapi("AddToCart", {
@@ -229,14 +246,18 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0 }: RoPro
     }, genEventId("ATC"));
   };
 
-  // Trust strip. Guarantee tile: the product's own (localized) warranty line when it has one (watches); leather
-  // goods offer none, so that tile stays craftsmanship. The parcel-inspection promise only shows when the
-  // chosen courier allows it (RO_INSPECT_BEFORE_PAY).
-  const trust: { label: string; Icon: LucideIcon }[] = [
-    { label: product.warranty.trim() || "Manoperă artizanală", Icon: Award },
+  // Trust strip. Guarantee tile: the product's own (localized) warranty line when it has one (watches: commercial guarantee,
+  // jewellery: lifetime guarantee, both explained on the warranty page); leather goods offer none, so that tile stays
+  // craftsmanship. The payment tile never promises cash on delivery for a prepayment product. The parcel-inspection promise only
+  // shows when the chosen courier allows it (RO_INSPECT_BEFORE_PAY).
+  const warrantyHref = product.category === "watches" || product.category === "jewellery" ? WARRANTY_HREF : undefined;
+  const trust: { label: string; Icon: LucideIcon; href?: string }[] = [
+    { label: product.warranty.trim() || "Manoperă artizanală", Icon: Award, href: warrantyHref },
     { label: `Retur în ${RO_RETURN_DAYS} zile`,                Icon: RefreshCw },
     { label: `Livrare în ${RO_DELIVERY_DAYS} zile lucrătoare`, Icon: Truck },
-    { label: "Plată ramburs, la livrare",                      Icon: Banknote },
+    prepay
+      ? { label: "Plată în avans, stabilită direct cu noi", Icon: Banknote }
+      : { label: "Plată ramburs, la livrare",               Icon: Banknote },
     ...(RO_INSPECT_BEFORE_PAY ? [{ label: "Verificarea coletului înainte de plată", Icon: Eye }] : []),
   ];
   const odd = trust.length % 2 === 1;
@@ -246,7 +267,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0 }: RoPro
     <div className="flex flex-col gap-6">
       {/* Category */}
       <p className="font-sans text-[10px] text-ink-faint tracking-widest uppercase">
-        {RO_CATEGORY_LABEL[product.category]} / {product.name}
+        {categoryLabel(product)} / {product.name}
       </p>
 
       {/* Name & badge */}
@@ -300,7 +321,8 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0 }: RoPro
         </div>
       )}
 
-      {/* Rating: the product's reviews from Bulgarian customers (same numbers the Bulgarian store shows) */}
+      {/* Rating: the product's reviews from the Bulgarian store (same numbers it shows). Labelled "(Bulgaria)" until every
+          one of those reviews has a Romanian text. */}
       {reviewCount > 0 && (
         <div className="flex items-center gap-3">
           <div className="star-rating text-sm">★★★★★</div>
@@ -308,16 +330,21 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0 }: RoPro
             href="#reviews"
             className="font-sans text-xs text-ink-muted tracking-wide hover:text-navy transition-colors"
           >
-            {reviewAvg.toFixed(1).replace(".", ",")} · {reviewCount} recenzii clienți (Bulgaria)
+            {roRatingText(reviewAvg)} · {roReviewsCount(reviewCount)}{reviewsTranslated ? "" : " ale clienților (Bulgaria)"}
           </a>
         </div>
       )}
 
-      {/* Price (lei, no crossed-out price: the Romanian market has no price history) */}
+      {/* Price (lei). Sale: the old price crossed out - the same sale as on the Bulgarian site, converted the same way. */}
       <div className="flex items-baseline gap-4 py-5 border-y border-border">
         <span className="font-serif text-4xl text-navy">
           {fmtRON(ron)}
         </span>
+        {originalRon !== undefined && (
+          <del className="font-sans text-lg text-ink-faint line-through">
+            {fmtRON(originalRon)}
+          </del>
+        )}
       </div>
 
       {/* Stock indicator - the number AVAILABLE (free to order). Shown only below the low-stock threshold; above
@@ -329,6 +356,12 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0 }: RoPro
             <>
               <span className="text-ink-faint text-xs">◈</span>
               <span className="font-sans text-[11px] text-ink-faint tracking-wide">Stoc epuizat</span>
+            </>
+          ) : product.slug === ONE_OF_ONE_SLUG ? (
+            // A one-of-one is limited, not "running out".
+            <>
+              <span className="text-navy/70 text-xs">◈</span>
+              <span className="font-sans text-[11px] text-navy tracking-wide font-medium">Limitat la un singur exemplar</span>
             </>
           ) : (
             <>
@@ -388,17 +421,28 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0 }: RoPro
 
       {/* Trust strip */}
       <div className="grid grid-cols-2 gap-0 border border-border">
-        {trust.map(({ label, Icon }, i) => {
+        {trust.map(({ label, Icon, href }, i) => {
           const isLoneLast = odd && i === trust.length - 1;
           const cls = `py-4 px-5 flex items-center gap-3 ${i < lastRowStart ? "border-b border-border" : ""} ${
             i % 2 === 0 && !isLoneLast ? "border-r border-border" : ""
           } ${isLoneLast ? "col-span-2" : ""}`;
-          return (
-            <div key={label} className={cls}>
+          const inner = (
+            <>
               <Icon className="w-4 h-4 text-ink-faint flex-shrink-0" strokeWidth={1.5} />
-              <p className="font-sans text-[11px] font-light tracking-wide leading-snug text-ink-soft">
+              <p className={`font-sans text-[11px] font-light tracking-wide leading-snug ${
+                href ? "text-navy border-b border-transparent hover:border-navy/30 transition-colors duration-200" : "text-ink-soft"
+              }`}>
                 {label}
               </p>
+            </>
+          );
+          return href ? (
+            <Link key={label} href={href} className={`${cls} group hover:bg-ivory-warm transition-colors duration-200`}>
+              {inner}
+            </Link>
+          ) : (
+            <div key={label} className={cls}>
+              {inner}
             </div>
           );
         })}
@@ -477,13 +521,21 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0 }: RoPro
               </p>
               <p>Livrăm în România prin <strong className="text-charcoal font-normal">{RO_COURIER_LABEL}</strong>.</p>
               <p>
-                Coletul ajunge la tine în <strong className="text-charcoal font-normal">{RO_DELIVERY_DAYS} zile lucrătoare</strong> de
+                Coletul ajunge la dumneavoastră în <strong className="text-charcoal font-normal">{RO_DELIVERY_DAYS} zile lucrătoare</strong> de
                 la expediere.
               </p>
-              <p>
-                <strong className="text-charcoal font-normal">Plată ramburs</strong> - achiți comanda curierului, la primirea
-                coletului.
-              </p>
+              {prepay ? (
+                <p>
+                  <strong className="text-charcoal font-normal">Plată în avans</strong> - produsele cu un preț de la{" "}
+                  {fmtRON(PREPAYMENT_THRESHOLD_RON)} în sus se comandă cu plată în avans și se stabilesc direct cu noi. Pentru
+                  acestea nu este disponibilă plata ramburs.
+                </p>
+              ) : (
+                <p>
+                  <strong className="text-charcoal font-normal">Plată ramburs</strong> - achitați comanda curierului, la primirea
+                  coletului.
+                </p>
+              )}
               {RO_INSPECT_BEFORE_PAY && (
                 <p>
                   <strong className="text-charcoal font-normal">Verificarea coletului înainte de plată</strong> - puteți deschide

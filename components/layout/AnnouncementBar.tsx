@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 
 const DESKTOP = ["Безплатна доставка за поръчки над €60", "5 години търговска гаранция на часовниците · Доживотна на бижутата", "Доставка до 2 работни дни · Преглед и тест преди плащане"];
 const MOBILE  = ["Безплатна доставка над €60", "Гаранция 5 год. · Доживотна за бижута", "Доставка до 2 работни дни"];
@@ -29,6 +30,8 @@ export function AnnouncementBar() {
         <span className="hidden sm:inline">{DESKTOP[index]}</span>
         <span className="sm:hidden">{MOBILE[index]}</span>
       </p>
+      {/* Desktop only: on phones the switch lives in the menu and the footer (a switch beside the cart pushed the logo off-centre) */}
+      <LanguageSwitch current="bg" className="hidden sm:flex absolute right-8 top-1/2 -translate-y-1/2 text-white" />
     </div>
   );
 }

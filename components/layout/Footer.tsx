@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import Image from "next/image";
 import { NewsletterStrip } from "./NewsletterStrip";
 
@@ -89,6 +90,7 @@ export function Footer() {
           <p className="font-sans text-[10px] font-light text-ink-faint tracking-widest uppercase">
             © 2026 Lorenzo Ricci. Всички права запазени.
           </p>
+          <LanguageSwitch current="bg" className="text-ink-muted" />
           <div className="flex items-center gap-2">
             <div className="flex gap-0.5 text-[9px] text-navy/60">★★★★★</div>
             <p className="font-sans text-[10px] font-light text-ink-faint tracking-widest uppercase">
