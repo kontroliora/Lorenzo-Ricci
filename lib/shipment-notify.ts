@@ -97,7 +97,7 @@ export async function sendReminders(sb: SupabaseClient): Promise<{ sent: number;
   const resend = getResend();
   if (!resend) return { sent: 0, scanned: 0 };
   const { data, error } = await sb.from("orders").select(SELECT)
-    .eq("status", "shipped").not("tracking_number", "is", null).not("email", "is", null)
+    .eq("status", "shipped").eq("is_international", false).not("tracking_number", "is", null).not("email", "is", null)
     .is("reminder_sent_at", null);
   if (error) throw new Error(error.message);
   const orders = (data ?? []) as OrderRow[];
