@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { CARD_PAYMENTS_ENABLED, PENDING_PAYMENT } from "@/lib/payments";
 import { restockLines, returnOrigin, startCardPayment } from "@/lib/payment-orders";
 import { SITE_URL } from "@/lib/site";
+import { previewMarked, previewOrdersAllowed } from "@/lib/deploy-env";
 import type { CardLine } from "@/lib/stripe";
 import { getProductBySlug } from "@/lib/products";
 import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
@@ -36,6 +37,7 @@ function stockErrorMessage(items: { name: string; available: number }[]): string
 // ─────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
+    if (!previewOrdersAllowed()) return NextResponse.json({ success: false, error: "Това е тестова (preview) версия: поръчките са изключени." }, { status: 503 });
     // Extract matching context before body is consumed
     const capiCtx: CapiContext = {
       ip:        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -216,7 +218,7 @@ export async function POST(req: NextRequest) {
         total:                   pricing.total,
         sms_marketing_consent:   Boolean(customer.smsMarketingConsent),
         email_marketing_consent: Boolean(customer.emailMarketingConsent),
-        notes:                   String(customer.notes         ?? "") || null,
+        notes:                   previewMarked(String(customer.notes         ?? "")),
         promo_code:              promoCodeCard || null,
         promo_discount:          Number(order.promoDiscount ?? 0) || null,
         status:                  PENDING_PAYMENT,
@@ -299,7 +301,7 @@ export async function POST(req: NextRequest) {
         total:                   Number(order.total            ?? 0),
         sms_marketing_consent:   Boolean(customer.smsMarketingConsent),
         email_marketing_consent: Boolean(customer.emailMarketingConsent),
-        notes:                   String(customer.notes         ?? "") || null,
+        notes:                   previewMarked(String(customer.notes         ?? "")),
         promo_code:              promoCode || null,
         promo_discount:          Number(order.promoDiscount ?? 0) || null,
       };

@@ -6,7 +6,7 @@ import { checkOrderable } from "@/lib/order-availability";
 import { ronOf, ronOriginalOf } from "@/lib/ro/config";
 import { roName } from "@/lib/ro/names-ro";
 import { roAmounts } from "@/lib/ro/pricing";
-import { previewOrdersAllowed } from "@/lib/deploy-env";
+import { previewMarked, previewOrdersAllowed } from "@/lib/deploy-env";
 import { RO_COUNTIES } from "@/lib/ro/counties";
 import { CARD_PAYMENTS_ENABLED, PENDING_PAYMENT } from "@/lib/payments";
 import { returnOrigin, startCardPayment } from "@/lib/payment-orders";
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
       total,
       sms_marketing_consent: cu.smsMarketingConsent === true,
       email_marketing_consent: cu.emailMarketingConsent === true,
-      notes: notes || null,
+      notes: previewMarked(notes),
       is_international: true,
       ship_country: "RO",
     });
