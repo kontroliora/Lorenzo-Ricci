@@ -598,14 +598,14 @@ export async function POST(req: NextRequest) {
         promo_code:              promoCode || null,
         promo_discount:          Number(order.promoDiscount ?? 0) || null,
       };
-      let dbError = (await supabase.from("orders").insert(orderRow)).error;
+      let dbError = (await supabaseAdmin().from("orders").insert(orderRow)).error;
       // If the promo columns aren't migrated yet, save the order WITHOUT them
       // rather than losing the whole order (it's already shown as success).
       if (dbError && /promo_(code|discount)|schema cache|column/i.test(dbError.message)) {
         const rowNoPromo: Record<string, unknown> = { ...orderRow };
         delete rowNoPromo.promo_code;
         delete rowNoPromo.promo_discount;
-        dbError = (await supabase.from("orders").insert(rowNoPromo)).error;
+        dbError = (await supabaseAdmin().from("orders").insert(rowNoPromo)).error;
       }
       if (dbError) throw dbError;
       console.log("[Supabase] Order saved");

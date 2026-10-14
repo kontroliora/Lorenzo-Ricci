@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { Resend } from "resend";
 import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { buildWaitlistEmail, waitlistSubject } from "@/lib/waitlist-email";
 
 export const dynamic = "force-dynamic";
@@ -129,7 +130,7 @@ export async function POST(req: NextRequest) {
       email_marketing_consent: Boolean(customer.emailMarketingConsent),
       is_international:         true,
     };
-    const { error: dbError } = await supabase.from("orders").insert(orderRow);
+    const { error: dbError } = await supabaseAdmin().from("orders").insert(orderRow);
     if (dbError) {
       // The lead is the deliverable — losing it is loud, not silent.
       console.error("[order-intl] Failed to save lead:", dbError.message);
