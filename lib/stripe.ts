@@ -51,6 +51,8 @@ export async function createCardSession(args: {
     // Cards only (Apple Pay and Google Pay are part of "card"): an asynchronous / offline method enabled in the Dashboard would
     // leave orders "complete but unpaid" for days. (This API version filters with allowed_payment_method_types.)
     allowed_payment_method_types: ["card"],
+    // Prices are the shop's own (EUR for Bulgaria, lei for Romania): no "pay in your currency" switcher with Stripe's exchange rate.
+    adaptive_pricing: { enabled: false },
     client_reference_id: args.orderRef,
     ...(args.customerEmail ? { customer_email: args.customerEmail } : {}),
     line_items: args.lines.map((l) => ({
