@@ -7,6 +7,8 @@ import { giftDisplayName } from "@/lib/gifts";
 import { useGiftLines } from "@/lib/use-gifts";
 import { trackFbEvent } from "@/lib/fbq";
 import { requiresPrepayment, PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
+import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY, type PaymentMethod } from "@/lib/payments";
+import { saveCardCartSnapshot } from "@/lib/card-cart-snapshot";
 
 // ─── Shipping options ────────────────────────────────────────────────────────
 const SHIPPING_OPTIONS = [
@@ -15,6 +17,11 @@ const SHIPPING_OPTIONS = [
 ] as const;
 
 const FREE_SHIPPING_THRESHOLD = 60;
+
+const PAYMENT_OPTIONS = [
+  { id: "cod",  label: "Наложен платеж",   subtitle: "Плащате при получаване" },
+  { id: "card", label: "Плащане с карта",  subtitle: "Visa, Mastercard, Apple Pay, Google Pay · Безплатна доставка" },
+] as const;
 
 // Same contact as the product-page Viber fallback (ProductInfo.tsx) - kept as a
 // local literal here since prepayment orders are an interim, manual-only path.
@@ -63,6 +70,8 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     };
   });
   const [shippingId, setShippingId] = useState<ShippingId>("econt-office");
+  // Cash on delivery stays the default; card (Stripe Checkout) is an opt-in and never offered for prepayment carts.
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
   const [submitting, setSubmitting]         = useState(false);
   const [submitted, setSubmitted]           = useState(false);
   const purchaseFired  = useRef(false);
@@ -75,6 +84,14 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     let id = sessionStorage.getItem("lr_cart_session");
     if (!id) { id = crypto.randomUUID(); sessionStorage.setItem("lr_cart_session", id); }
     sessionIdRef.current = id;
+  }, []);
+
+  // Coming back from Stripe with the browser's Back button can restore this page frozen mid-redirect
+  // (bfcache) - give the customer a working button again.
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => { if (e.persisted) setSubmitting(false); };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
   }, []);
 
   const cartItemsPayload = () => items.map((i) => ({
@@ -148,8 +165,10 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   const [gifted, setGifted] = useState<{ gifts: { name: string; qty: number; forName: string }[]; notes: string[] }>({ gifts: [], notes: [] });
 
   // ── Derived values ─────────────────────────────────────────────────────────
+  // Paying by card always ships free, whatever the order size.
+  const isCardPay        = paymentMethod === "card" && !needsPrepayment;
   // Threshold is checked on the pre-promo amount so a discount code never adds shipping.
-  const freeShipping     = (total + promoDiscount) >= FREE_SHIPPING_THRESHOLD;
+  const freeShipping     = isCardPay || (total + promoDiscount) >= FREE_SHIPPING_THRESHOLD;
   const selectedOption   = SHIPPING_OPTIONS.find((o) => o.id === shippingId)!;
   const shippingCost     = freeShipping ? 0 : selectedOption.price;
   const grandTotal       = total + shippingCost;
@@ -220,6 +239,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       subtotal:     total,
       shipping:     { method: selectedOption.label, courier: selectedOption.courier, cost: shippingCost },
       total:        grandTotal,
+      paymentMethod: isCardPay ? "card" : "cod",
       timestamp:    new Date().toISOString(),
     };
 
@@ -236,13 +256,35 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         setSubmitting(false);
         return;
       }
+      let cardCheckout: { url: string; ref: string } | null = null;
       try {
         const body = await res.json();
-        setGifted({
-          gifts: Array.isArray(body?.gifts) ? body.gifts : [],
-          notes: Array.isArray(body?.giftNotes) ? body.giftNotes : [],
-        });
+        if (isCardPay) {
+          if (body?.paymentMethod === "card" && typeof body?.checkoutUrl === "string" && body.checkoutUrl) {
+            cardCheckout = { url: body.checkoutUrl, ref: typeof body?.orderRef === "string" && body.orderRef ? body.orderRef : ref };
+          }
+        } else {
+          setGifted({
+            gifts: Array.isArray(body?.gifts) ? body.gifts : [],
+            notes: Array.isArray(body?.giftNotes) ? body.giftNotes : [],
+          });
+        }
       } catch { /* an unreadable body doesn't undo an accepted order */ }
+
+      if (isCardPay) {
+        // Card: the order is only a reservation until Stripe confirms the payment - keep the cart, no Purchase,
+        // no success screen. Remember the order for the return page and send the customer to Stripe.
+        if (!cardCheckout) {
+          setSubmitError("Не успяхме да отворим страницата за плащане. Моля, опитайте отново или изберете наложен платеж.");
+          setSubmitting(false);
+          return;
+        }
+        try { sessionStorage.setItem(PENDING_ORDER_KEY, cardCheckout.ref); } catch { /* private mode: the return page still has ?ref= */ }
+        // The cart is in memory only: leave a snapshot so "Плащането не беше завършено" can bring it back.
+        saveCardCartSnapshot(cardCheckout.ref, items, { name: form.name, email: form.email, phone: form.phone });
+        window.location.assign(cardCheckout.url);
+        return; // stay in the "redirecting" state until the browser leaves the page
+      }
     } catch {
       setSubmitError("Възникна грешка при свързването. Моля, опитайте отново.");
       setSubmitting(false);
@@ -338,7 +380,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       <div>
         <h3 className="font-serif text-xl text-white mb-1">{needsPrepayment ? "Поръчка с предплащане" : "Данни за доставка"}</h3>
         <p className="font-sans text-xs text-white/40 tracking-wide">
-          {needsPrepayment ? "Урежда се директно с нас" : "Плащате при получаване - Наложен платеж"}
+          {needsPrepayment ? "Урежда се директно с нас" : isCardPay ? "Плащане с карта - Безплатна доставка" : "Плащате при получаване - Наложен платеж"}
         </p>
       </div>
 
@@ -449,6 +491,54 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
             className="input-luxury" autoComplete="address-level2"
             style={errors.city ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
         </Field>
+
+        {/* ── Payment method radio cards (only while the card option is switched on) ── */}
+        {CARD_PAYMENTS_ENABLED && (
+        <div className="flex flex-col gap-1.5">
+          <span className="font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-white/40">
+            Начин на плащане
+          </span>
+
+          <div className="border border-white/10 overflow-hidden mt-1">
+            {PAYMENT_OPTIONS.map((option) => {
+              const isSelected = paymentMethod === option.id;
+              return (
+                <label
+                  key={option.id}
+                  className={`flex items-center gap-3 p-4 border-b border-white/8 last:border-b-0 cursor-pointer transition-colors duration-200 ${
+                    isSelected ? "bg-white/8" : "hover:bg-white/4"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value={option.id}
+                    checked={isSelected}
+                    onChange={() => { setPaymentMethod(option.id); setSubmitError(""); }}
+                    className="sr-only"
+                  />
+                  {/* Custom radio circle */}
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
+                    isSelected ? "border-white" : "border-white/25"
+                  }`}>
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className={`font-sans text-xs tracking-wide transition-colors duration-200 ${
+                      isSelected ? "text-white" : "text-white/55"
+                    }`}>
+                      {option.label}
+                    </span>
+                    <span className="font-sans text-[10px] text-white/35 tracking-wide leading-snug">
+                      {option.subtitle}
+                    </span>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+        )}
 
         {/* ── Shipping method radio cards (hidden for prepayment-required orders) ── */}
         {!needsPrepayment && (
@@ -575,15 +665,29 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         {submitting ? (
           <span className="flex items-center gap-2">
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            Обработване...
+            {isCardPay ? "Пренасочване към плащане..." : "Обработване..."}
           </span>
+        ) : isCardPay ? (
+          `Плати с карта - €${grandTotal.toFixed(2)}`
         ) : (
           `Потвърди поръчката - €${grandTotal.toFixed(2)}`
         )}
       </button>
       )}
 
-      {!needsPrepayment && (
+      {!needsPrepayment && isCardPay && (
+        <div className="flex flex-col gap-2 -mt-3">
+          <p className="font-sans text-xs text-center text-white/55 tracking-wide leading-relaxed border border-green-400/25 bg-green-400/5 px-4 py-3">
+            <span className="text-green-400 font-medium">Безплатна доставка при плащане с карта.</span>{" "}
+            Плащането е през Stripe - данните на картата не минават през нашия сайт.
+          </p>
+          <p className="font-sans text-[10px] text-center text-white/25 tracking-wide leading-relaxed">
+            30 дни лесна замяна.
+          </p>
+        </div>
+      )}
+
+      {!needsPrepayment && !isCardPay && (
         <p className="font-sans text-[10px] text-center text-white/25 tracking-wide leading-relaxed">
           Плащате при получаване. Имате право на преглед и тест преди да заплатите.
           <br />30 дни лесна замяна.

@@ -12,11 +12,13 @@ import {
   fmtRON,
 } from "@/lib/ro/config";
 import { trackFbEvent } from "@/lib/fbq";
+import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY, type PaymentMethod } from "@/lib/payments";
 import { PREPAYMENT_THRESHOLD_TEXT, bundleLineLabel } from "./shared";
 
-// Romania checkout (cash on delivery / ramburs). Port of components/cart/CheckoutForm.tsx: same look, one shipping
-// option, one payment method, GDPR-clean consent (nothing pre-ticked), no abandoned-cart capture. All money comes from
-// lib/ro/pricing.ts roAmounts, the same function /api/order-ro uses, so the server agrees to the leu.
+// Romania checkout (cash on delivery / ramburs, or card through Stripe Checkout while the card option is switched on).
+// Port of components/cart/CheckoutForm.tsx: same look, one shipping option, GDPR-clean consent (nothing pre-ticked), no
+// abandoned-cart capture. All money comes from lib/ro/pricing.ts roAmounts, the same function /api/order-ro uses, so the
+// server agrees to the leu. Card orders have free delivery and no ramburs fee (roAmounts {card: true}).
 //
 // A cart holding a product that needs advance payment (EUR 1500 and up, line.prepay) gets NO ramburs form: like the
 // Bulgarian checkout, it shows the interim contact flow (Viber / phone / e-mail), the order is arranged with the shop.
@@ -97,6 +99,8 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   const [submitError, setSubmitError] = useState("");
   const [reloadHint, setReloadHint] = useState(""); // non-empty: the cart is stale, offer a page reload with this text
   const [submitting, setSubmitting] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+  const [payMethod, setPayMethod] = useState<PaymentMethod>("cod");
   const [submitted, setSubmitted] = useState(false);
   const [orderRef, setOrderRef] = useState("");
   const [submittedTotal, setSubmittedTotal] = useState(0);
@@ -108,10 +112,26 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   // A pending auto-close must not outlive the form (e.g. the customer closed the drawer or reopened it meanwhile).
   useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
 
+  // Coming back from the Stripe page with the browser's back button can restore this page frozen in the redirecting
+  // state; unlock the form so the customer can retry or switch to ramburs.
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => {
+      if (!e.persisted || !submittingRef.current) return;
+      submittingRef.current = false;
+      setSubmitting(false);
+      setRedirecting(false);
+    };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
+
   // ── Derived values (the only money maths: lib/ro/pricing.ts roAmounts) ─────
-  const { shipping: shippingCost, total: grandTotal, bundles } = roAmounts(items);
-  const freeShipping = shippingCost === 0;
   const needsPrepayment = items.some((i) => i.prepay);
+  const isCardPay = CARD_PAYMENTS_ENABLED && payMethod === "card" && !needsPrepayment;
+  const { shipping: shippingCost, total: grandTotal, bundles } = roAmounts(items, { card: isCardPay });
+  const codTotal = roAmounts(items).total;
+  const cardTotal = roAmounts(items, { card: true }).total;
+  const freeShipping = shippingCost === 0;
 
   // Same signal as the Bulgarian "prepayment_required" Contact event (Viber link click).
   const handleViberContactClick = () => {
@@ -176,7 +196,8 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
     const ref = `LRRO-${Date.now().toString(36).slice(-6).toUpperCase()}`;
     // Snapshot everything the order and the tracking need: the cart is cleared the moment the order is accepted.
     const lines = items.map((i) => ({ ...i }));
-    const amounts = roAmounts(lines);
+    const method: PaymentMethod = isCardPay ? "card" : "cod";
+    const amounts = roAmounts(lines, { card: method === "card" });
     const orderTotal = amounts.total;
     const phone = normalizeRoPhone(form.phone) as string;
     const email = form.email.trim();
@@ -201,6 +222,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       shipping: { method: SHIPPING_METHOD, cost: amounts.shipping },
       subtotal: amounts.goods,                                 // goods AFTER the set discount
       total: amounts.total,
+      paymentMethod: method,
       timestamp: new Date().toISOString(),
     };
 
@@ -223,7 +245,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       return;
     }
 
-    let body: { success?: boolean; code?: string; error?: string } | null = null;
+    let body: { success?: boolean; code?: string; error?: string; paymentMethod?: string; checkoutUrl?: string; orderRef?: string } | null = null;
     try { body = await res.json(); } catch { /* an unreadable body doesn't undo an accepted order (see below) */ }
 
     if (!res.ok || body?.success === false) {
@@ -232,6 +254,22 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       // A stale cart without the advance-payment flag: a reload refreshes the lines and the checkout then shows the contact flow.
       else if (body?.code === "prepayment_required") fail(serverMsg || FALLBACK_ERROR, CART_RELOAD_HINT);
       else fail(serverMsg || FALLBACK_ERROR);
+      return;
+    }
+
+    // Card: nothing is final until Stripe confirms the payment. No success screen, no cart clearing, no Purchase here:
+    // the return page (/ro/comanda/finalizata) does those once the payment is confirmed. Park the order reference and
+    // go to Stripe; the form stays locked in the "redirecting" state meanwhile.
+    if (method === "card") {
+      const url = typeof body?.checkoutUrl === "string" ? body.checkoutUrl : "";
+      if (body?.success !== true || body.paymentMethod !== "card" || !/^https?:\/\//i.test(url)) {
+        fail(FALLBACK_ERROR);
+        return;
+      }
+      const pendingRef = typeof body.orderRef === "string" && body.orderRef ? body.orderRef : ref;
+      try { sessionStorage.setItem(PENDING_ORDER_KEY, pendingRef); } catch { /* private mode: the return page reads ?ref= */ }
+      setRedirecting(true);
+      window.location.assign(url);
       return;
     }
 
@@ -310,7 +348,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       <div>
         <h3 className="font-serif text-xl text-white mb-1">{needsPrepayment ? "Comandă cu plată în avans" : "Date pentru livrare"}</h3>
         <p className="font-sans text-xs text-white/40 tracking-wide">
-          {needsPrepayment ? "Se stabilește direct cu noi" : "Plătiți la livrare - ramburs"}
+          {needsPrepayment ? "Se stabilește direct cu noi" : isCardPay ? "Plata cu cardul - livrare gratuită" : "Plătiți la livrare - ramburs"}
         </p>
       </div>
 
@@ -341,7 +379,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
           )}
         </div>
 
-        {RO_COD_FEE_RON > 0 && (
+        {!isCardPay && RO_COD_FEE_RON > 0 && (
           <div className="flex justify-between text-xs">
             <span className="font-sans text-white/60 tracking-wide">Taxă ramburs</span>
             <span className="font-serif text-white">{fmtRON(RO_COD_FEE_RON)}</span>
@@ -479,28 +517,56 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
         </div>
       </div>
 
-      {/* ── Payment (single method) ───────────────────────────────────────── */}
-      <div className="flex flex-col gap-1.5">
-        <span className="font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-white/40">
-          Metodă de plată
-        </span>
-        <div className="border border-white/10 overflow-hidden mt-1">
-          <div className="p-4 bg-white/8 flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-4 h-4 rounded-full border-2 border-white flex items-center justify-center flex-shrink-0" aria-hidden="true">
-                  <div className="w-2 h-2 rounded-full bg-white" />
-                </div>
-                <span className="font-sans text-xs tracking-wide text-white">Plata la livrare (ramburs)</span>
-              </div>
-              <span className="font-serif text-sm text-white flex-shrink-0 ml-3">{fmtRON(grandTotal)}</span>
-            </div>
-            <p className="font-sans text-[10px] text-white/40 tracking-wide leading-relaxed pl-7">
-              Plătiți curierului suma de {fmtRON(grandTotal)} la primirea coletului.
-            </p>
+      {/* ── Payment: ramburs (default) or card (only while the card option is switched on) ── */}
+      {CARD_PAYMENTS_ENABLED ? (
+        <div className="flex flex-col gap-1.5">
+          <span id="ro-pay-label" className="font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-white/40">
+            Metodă de plată
+          </span>
+          <div role="radiogroup" aria-labelledby="ro-pay-label" className="flex flex-col gap-2 mt-1">
+            <PayOption
+              id="ro-pay-cod"
+              checked={!isCardPay}
+              disabled={submitting}
+              onSelect={() => setPayMethod("cod")}
+              title="Plata la livrare (ramburs)"
+              subtitle="Plătiți curierului la primirea coletului"
+              amount={fmtRON(codTotal)}
+            />
+            <PayOption
+              id="ro-pay-card"
+              checked={isCardPay}
+              disabled={submitting}
+              onSelect={() => setPayMethod("card")}
+              title="Plata cu cardul"
+              subtitle="Visa, Mastercard, Apple Pay, Google Pay · Livrare gratuită"
+              amount={fmtRON(cardTotal)}
+            />
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <span className="font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-white/40">
+            Metodă de plată
+          </span>
+          <div className="border border-white/10 overflow-hidden mt-1">
+            <div className="p-4 bg-white/8 flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-full border-2 border-white flex items-center justify-center flex-shrink-0" aria-hidden="true">
+                    <div className="w-2 h-2 rounded-full bg-white" />
+                  </div>
+                  <span className="font-sans text-xs tracking-wide text-white">Plata la livrare (ramburs)</span>
+                </div>
+                <span className="font-serif text-sm text-white flex-shrink-0 ml-3">{fmtRON(grandTotal)}</span>
+              </div>
+              <p className="font-sans text-[10px] text-white/40 tracking-wide leading-relaxed pl-7">
+                Plătiți curierului suma de {fmtRON(grandTotal)} la primirea coletului.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Required consent: terms + privacy (unchecked by default) ──────── */}
       <div id="field-terms" className="flex flex-col gap-1.5">
@@ -591,21 +657,62 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
             {submitting ? (
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Se trimite comanda...
+                {redirecting ? "Vă redirecționăm către plată..." : isCardPay ? "Se pregătește plata..." : "Se trimite comanda..."}
               </span>
+            ) : isCardPay ? (
+              `Plătiți cu cardul - ${fmtRON(grandTotal)}`
             ) : (
               `Comandă cu obligație de plată - ${fmtRON(grandTotal)}`
             )}
           </button>
 
-          <p className="font-sans text-[10px] text-center text-white/25 tracking-wide leading-relaxed">
-            Plătiți la primirea coletului.
-            {RO_INSPECT_BEFORE_PAY && " Puteți deschide și verifica coletul înainte de a plăti curierului."}
-            <br />Retur în {RO_RETURN_DAYS} zile conform legii.
-          </p>
+          {isCardPay ? (
+            <div className="flex flex-col gap-2 -mt-3">
+              <p className="font-sans text-[11px] text-center text-white/60 tracking-wide leading-relaxed">
+                Livrare gratuită la plata cu cardul. Plata se face prin Stripe - datele cardului nu trec prin site-ul nostru.
+              </p>
+              <p className="font-sans text-[10px] text-center text-white/25 tracking-wide leading-relaxed">
+                Retur în {RO_RETURN_DAYS} zile conform legii.
+              </p>
+            </div>
+          ) : (
+            <p className="font-sans text-[10px] text-center text-white/25 tracking-wide leading-relaxed">
+              Plătiți la primirea coletului.
+              {RO_INSPECT_BEFORE_PAY && " Puteți deschide și verifica coletul înainte de a plăti curierului."}
+              <br />Retur în {RO_RETURN_DAYS} zile conform legii.
+            </p>
+          )}
         </>
       )}
     </form>
+  );
+}
+
+function PayOption({ id, checked, disabled, onSelect, title, subtitle, amount }: {
+  id: string; checked: boolean; disabled: boolean; onSelect: () => void; title: string; subtitle: string; amount: string;
+}) {
+  return (
+    <label
+      htmlFor={id}
+      className={`flex flex-col gap-1.5 p-4 border transition-colors has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-white/50 ${
+        checked ? "border-white/40 bg-white/8" : "border-white/10 hover:bg-white/5"
+      } ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+    >
+      <input id={id} type="radio" name="ro-payment" checked={checked} disabled={disabled} onChange={onSelect} className="sr-only" />
+      <span className="flex items-center justify-between">
+        <span className="flex items-center gap-3">
+          <span
+            className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${checked ? "border-white" : "border-white/30"}`}
+            aria-hidden="true"
+          >
+            {checked && <span className="block w-2 h-2 rounded-full bg-white" />}
+          </span>
+          <span className={`font-sans text-xs tracking-wide ${checked ? "text-white" : "text-white/70"}`}>{title}</span>
+        </span>
+        <span className="font-serif text-sm text-white flex-shrink-0 ml-3">{amount}</span>
+      </span>
+      <span className="block font-sans text-[10px] text-white/40 tracking-wide leading-relaxed pl-7">{subtitle}</span>
+    </label>
   );
 }
 
