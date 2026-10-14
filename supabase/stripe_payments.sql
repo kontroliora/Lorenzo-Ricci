@@ -11,7 +11,8 @@
 --   not paid     Stripe session expired (30 min) / failed: status 'cancelled', payment_status 'expired',
 --                the reserved stock is put back (restock_wallet_stock)
 
--- 1. a new order status (orders.status is the enum order_status). Must be committed before it is used.
+-- 1. a new order status (orders.status is the enum order_status). Nothing below uses the new value: Postgres refuses to use an enum
+--    value in the same transaction that added it, and the SQL editor runs a pasted script as one transaction.
 ALTER TYPE order_status ADD VALUE IF NOT EXISTS 'pending_payment';
 
 -- 2. payment columns
@@ -24,7 +25,7 @@ ALTER TABLE orders
   ADD COLUMN IF NOT EXISTS payment_currency      text;                                  -- 'EUR' | 'RON'
 
 CREATE UNIQUE INDEX IF NOT EXISTS orders_stripe_session_uidx ON orders (stripe_session_id) WHERE stripe_session_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS orders_pending_payment_idx ON orders (created_at) WHERE status = 'pending_payment';
+CREATE INDEX IF NOT EXISTS orders_pending_payment_idx ON orders (created_at) WHERE payment_status = 'pending';
 
 -- 3. one row per processed Stripe event: a repeated webhook delivery is recognised and ignored
 CREATE TABLE IF NOT EXISTS stripe_events (
