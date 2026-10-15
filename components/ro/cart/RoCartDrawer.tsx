@@ -68,7 +68,9 @@ export function RoCartDrawer() {
       content_ids:      items.map((i) => i.sku),
       content_category: "RO",
       num_items:        count,
-      value:            total,
+      // InitiateCheckout = the value of the goods in the cart (like AddToCart and the Bulgarian InitiateCheckout): delivery is not in it.
+      // Purchase keeps the full amount (goods + delivery) on the success page.
+      value:            goods,
       currency:         "RON",
     }, genEventId("IC"));
   };
