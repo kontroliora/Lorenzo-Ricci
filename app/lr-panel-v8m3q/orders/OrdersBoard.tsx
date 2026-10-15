@@ -342,8 +342,8 @@ export function OrdersBoard({
                 Чакат плащане · {openAttempts.length}
               </button>
             )}
-            {/* Saved carts with a phone and no order: to be phoned (Bulgaria only) */}
-            {market !== "ro" && (cartsRecent > 0 || cartsMissed > 0 || cartsOpen) && (
+            {/* Saved carts with a phone and no order: to be phoned (Bulgaria only). Always visible under Всички / България: it also holds the "засядания в чекаута" strip. */}
+            {market !== "ro" && (
               <button
                 onClick={() => { setShowCarts(true); setShowPending(false); }}
                 aria-current={cartsOpen ? "page" : undefined}
