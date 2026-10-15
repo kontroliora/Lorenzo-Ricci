@@ -17,8 +17,8 @@ import { trackFbEvent } from "@/lib/fbq";
 import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY, type PaymentMethod } from "@/lib/payments";
 import { newOrderRef } from "@/lib/order-ref";
 import {
-  CoCheck, CoField, CoRadioCard, CoSection, CoSubmit, CoSummary, CoTrust, IconHome, IconOffice, PaymentMarks, SecureNote, coInput,
-  type SummaryLine, type SummaryRow,
+  CoCheck, CoField, CoLegal, CoRadioCard, CoSection, CoSubmit, CoSummary, CoTrust, IconHome, IconOffice, PaymentMarks, SecureNote, coInput,
+  coLegalLink, type SummaryLine, type SummaryRow,
 } from "@/components/checkout/ui";
 import { PREPAYMENT_THRESHOLD_TEXT, bundleLineLabel } from "./shared";
 
@@ -81,13 +81,12 @@ type FormState = {
   notes: string;
   smsMarketingConsent: boolean;
   emailMarketingConsent: boolean;
-  termsAccepted: boolean;
 };
 
 export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   const clearCart = useRoCart((s) => s.clear);
 
-  // Marketing consents default to UNCHECKED (GDPR); the terms box is required and also starts unchecked.
+  // Marketing consents default to UNCHECKED (GDPR). There is no terms checkbox: the agreement is the line under the order button.
   const [form, setForm] = useState<FormState>({
     name: "",
     phone: "",
@@ -100,7 +99,6 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
     notes: "",
     smsMarketingConsent: false,
     emailMarketingConsent: false,
-    termsAccepted: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState("");
@@ -202,7 +200,6 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
     } else if (form.officeAddress.trim().length < 5) {
       errs.officeAddress = "Introduceți adresa biroului Econt (oraș și adresa biroului).";
     }
-    if (!form.termsAccepted) errs.terms = "Trebuie să acceptați Termenii și condițiile și Politica de confidențialitate.";
     return errs;
   };
 
@@ -255,7 +252,6 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
         notes: form.notes.trim(),
         smsMarketingConsent: form.smsMarketingConsent,
         emailMarketingConsent: form.emailMarketingConsent,
-        termsAccepted: true,
       },
       sessionId: cartSessionRef.current || undefined,           // the saved cart (if any) is marked as converted by the server
       items: lines.map((i) => ({ slug: i.slug, sku: i.sku, name: i.name, quantity: i.quantity, price: i.ron })),
@@ -580,45 +576,6 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
         </CoSection>
       )}
 
-      {/* ── Required consent: terms + privacy (unchecked by default) ──────── */}
-      <div id="field-terms" className="flex flex-col gap-1.5">
-        <CoCheck
-          id="ro-terms"
-          checked={form.termsAccepted}
-          onChange={(v) => { set("termsAccepted", v); clearError("terms"); }}
-          invalid={!!errors.terms}
-          describedBy={errors.terms ? "ro-terms-err" : undefined}
-        >
-          Am citit și sunt de acord cu{" "}
-          <a
-            href="/ro/politici/termeni"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="font-medium text-white underline underline-offset-2"
-          >
-            Termenii și condițiile
-          </a>{" "}
-          și cu{" "}
-          <a
-            href="/ro/politici/confidentialitate"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="font-medium text-white underline underline-offset-2"
-          >
-            Politica de confidențialitate
-          </a>
-        </CoCheck>
-        {errors.terms && (
-          <p id="ro-terms-err" role="alert" className="flex items-start gap-1.5 font-sans text-[13px] text-[#F87171]">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden className="mt-[3px] flex-shrink-0">
-              <circle cx="8" cy="8" r="7" stroke="#B42318" strokeWidth="1.5" /><path d="M8 4.5v4" stroke="#B42318" strokeWidth="1.5" strokeLinecap="round" /><circle cx="8" cy="11" r="0.9" fill="#B42318" />
-            </svg>
-            <span>{errors.terms}</span>
-          </p>
-        )}
-      </div>
       </>)}
 
       {submitError && (
@@ -664,9 +621,17 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
         </div>
       ) : (
         <div className="flex flex-col gap-5">
-          <CoSubmit busy={submitting} busyLabel={redirecting ? "Vă redirecționăm către plată..." : isCardPay ? "Se pregătește plata..." : "Se trimite comanda..."}>
-            {isCardPay ? `Plătiți ${fmtRON(grandTotal)}` : `Finalizați comanda · ${fmtRON(grandTotal)}`}
-          </CoSubmit>
+          <div className="flex flex-col gap-3">
+            <CoSubmit busy={submitting} busyLabel={redirecting ? "Vă redirecționăm către plată..." : isCardPay ? "Se pregătește plata..." : "Se trimite comanda..."}>
+              {isCardPay ? `Plătiți ${fmtRON(grandTotal)}` : `Finalizați comanda · ${fmtRON(grandTotal)}`}
+            </CoSubmit>
+            <CoLegal>
+              Plasând comanda, ești de acord cu{" "}
+              <a href="/ro/politici/termeni" target="_blank" rel="noopener noreferrer" className={coLegalLink}>Termenii și condițiile</a>{" "}
+              și cu{" "}
+              <a href="/ro/politici/confidentialitate" target="_blank" rel="noopener noreferrer" className={coLegalLink}>Politica de confidențialitate</a>.
+            </CoLegal>
+          </div>
 
           <CoTrust
             points={[

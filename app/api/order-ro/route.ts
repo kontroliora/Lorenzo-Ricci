@@ -80,7 +80,6 @@ export async function POST(req: NextRequest) {
     if (city.length < 2 || (!office && address.length < 5)) return fail(400, "bad_customer", "Vă rugăm să completați localitatea și adresa de livrare.");
     if (office && officeAddress.length < 5) return fail(400, "bad_customer", "Vă rugăm să introduceți adresa biroului Econt.");
     if (postCode && !/^\d{6}$/.test(postCode)) return fail(400, "bad_customer", "Codul poștal trebuie să aibă 6 cifre.");
-    if (cu.termsAccepted !== true) return fail(400, "terms", "Pentru a plasa comanda trebuie să acceptați Termenii și condițiile.");
 
     const rawItems = Array.isArray(body.items) ? (body.items as Record<string, unknown>[]) : [];
     if (rawItems.length === 0 || rawItems.length > 20) return fail(400, "bad_request", "Coșul este gol.");

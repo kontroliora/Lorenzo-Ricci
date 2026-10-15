@@ -11,7 +11,7 @@ import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY, type PaymentMethod } from "@/
 import { saveCardCartSnapshot } from "@/lib/card-cart-snapshot";
 import { newOrderRef } from "@/lib/order-ref";
 import {
-  BrandMark, CoCheck, CoField, CoRadioCard, CoSection, CoSubmit, CoSummary, CoTrust, IconHome, IconOffice, PaymentMarks, SecureNote, coInput,
+  BrandMark, CoCheck, CoField, CoLegal, CoRadioCard, CoSection, CoSubmit, CoSummary, CoTrust, IconHome, IconOffice, PaymentMarks, SecureNote, coInput, coLegalLink,
   type SummaryLine, type SummaryRow,
 } from "@/components/checkout/ui";
 import { EcontOfficePicker, useEcontOffices } from "@/components/checkout/EcontOfficePicker";
@@ -600,9 +600,17 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         </div>
       ) : (
         <div className="flex flex-col gap-5">
-          <CoSubmit busy={submitting} busyLabel={isCardPay ? "Пренасочване към плащане..." : "Обработване..."}>
-            {isCardPay ? `Плати €${grandTotal.toFixed(2)}` : `Завърши поръчката · €${grandTotal.toFixed(2)}`}
-          </CoSubmit>
+          <div className="flex flex-col gap-3">
+            <CoSubmit busy={submitting} busyLabel={isCardPay ? "Пренасочване към плащане..." : "Обработване..."}>
+              {isCardPay ? `Плати €${grandTotal.toFixed(2)}` : `Завърши поръчката · €${grandTotal.toFixed(2)}`}
+            </CoSubmit>
+            <CoLegal>
+              С поръчката приемате условията за{" "}
+              <a href="/policies/shipping" target="_blank" rel="noopener noreferrer" className={coLegalLink}>Доставка</a> и{" "}
+              <a href="/policies/returns" target="_blank" rel="noopener noreferrer" className={coLegalLink}>Връщане</a> и{" "}
+              <a href="/policies/privacy" target="_blank" rel="noopener noreferrer" className={coLegalLink}>Политиката за поверителност</a>.
+            </CoLegal>
+          </div>
 
           <CoTrust
             points={isCardPay

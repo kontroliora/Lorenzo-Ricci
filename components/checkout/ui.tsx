@@ -293,6 +293,12 @@ export function CoSubmit({ busy, busyLabel, children }: { busy: boolean; busyLab
   );
 }
 
+/** Small agreement line directly under the order button (no checkbox): the text and its links come from the caller. */
+export const coLegalLink = "font-medium text-[#E6E6E6] underline decoration-[#8A8A8A] underline-offset-2 hover:text-white";
+export function CoLegal({ children }: { children: ReactNode }) {
+  return <p className="px-1 text-center font-sans text-xs font-normal leading-relaxed text-[#A0A0A0]">{children}</p>;
+}
+
 export function CoTrust({
   points, note, links,
 }: {
