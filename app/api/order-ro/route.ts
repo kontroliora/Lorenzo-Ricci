@@ -76,9 +76,11 @@ export async function POST(req: NextRequest) {
     if (name.length < 2) return fail(400, "bad_customer", "Vă rugăm să introduceți numele complet.");
     if (!phone) return fail(400, "bad_customer", "Vă rugăm să introduceți un număr de telefon mobil valid (ex. 07xx xxx xxx).");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(400, "bad_customer", "Vă rugăm să introduceți o adresă de e-mail validă.");
-    if (!RO_COUNTIES.includes(county)) return fail(400, "bad_customer", "Vă rugăm să alegeți județul.");
-    if (city.length < 2 || (!office && address.length < 5)) return fail(400, "bad_customer", "Vă rugăm să completați localitatea și adresa de livrare.");
-    if (office && officeAddress.length < 5) return fail(400, "bad_customer", "Vă rugăm să introduceți adresa biroului Econt.");
+    // Delivery to an address needs județ, localitate and address; an Econt office needs only its typed address (it names the city).
+    if (!office) {
+      if (!RO_COUNTIES.includes(county)) return fail(400, "bad_customer", "Vă rugăm să alegeți județul.");
+      if (city.length < 2 || address.length < 5) return fail(400, "bad_customer", "Vă rugăm să completați localitatea și adresa de livrare.");
+    } else if (officeAddress.length < 5) return fail(400, "bad_customer", "Vă rugăm să introduceți adresa biroului Econt.");
     if (postCode && !/^\d{6}$/.test(postCode)) return fail(400, "bad_customer", "Codul poștal trebuie să aibă 6 cifre.");
 
     const rawItems = Array.isArray(body.items) ? (body.items as Record<string, unknown>[]) : [];
@@ -151,9 +153,9 @@ export async function POST(req: NextRequest) {
       name,
       phone,
       email,
-      city,
+      city: office ? "" : city,
       post_code: postCode,
-      address: `jud. ${county}, ${office ? officeAddress : address}`,
+      address: office ? officeAddress : `jud. ${county}, ${address}`,
       shipping_method: office ? RO_SHIPPING_OFFICE : RO_SHIPPING_HOME,
       courier: "ro-curier",
       items: orderItems,
@@ -215,7 +217,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 6. E-mails + Meta Purchase (awaited: Vercel kills un-awaited work). Best effort: the order is already saved. ──
-    const data: RoOrderEmailData = { orderRef: ref, customer: { name, phone, email, county, city, address: office ? officeAddress : address, postCode, notes }, items: orderItems, subtotal, discount, shippingCost, total, officeDelivery: office };
+    const data: RoOrderEmailData = { orderRef: ref, customer: { name, phone, email, county: office ? "" : county, city: office ? "" : city, address: office ? officeAddress : address, postCode, notes }, items: orderItems, subtotal, discount, shippingCost, total, officeDelivery: office };
     const results = await Promise.allSettled([
       sendMail({ from: "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>", to: RO_ADMIN_RECIPIENTS, subject: `🇷🇴 Нова поръчка (Румъния) - ${name} - ${ref}`, html: buildRoAdminEmail(data) }),
       // the customer's confirmation is Romanian (mail-policy: order_confirmation); the team e-mail above is internal

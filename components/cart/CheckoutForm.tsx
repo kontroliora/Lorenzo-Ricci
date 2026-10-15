@@ -20,7 +20,7 @@ import { officeLabel } from "@/lib/econt-label";
 
 // ─── Shipping options ────────────────────────────────────────────────────────
 // What the customer is told is missing (the field names in the red summary above the button).
-const FIELD_LABEL_BG: Record<string, string> = { name: "Две имена", phone: "Телефон", email: "Имейл", city: "Град", postCode: "Пощенски код" };
+const FIELD_LABEL_BG: Record<string, string> = { name: "Две имена", phone: "Телефон", email: "Имейл", city: "Град", address: "Адрес", postCode: "Пощенски код", officeAddress: "Офис на Еконт" };
 
 const SHIPPING_OPTIONS = [
   { id: "econt-office",  label: "Доставка чрез Еконт до офис",  courier: "econt", price: 4.25 },
@@ -69,7 +69,9 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       email: p?.email ?? "",
       city: "",
       postCode: "",
-      officeAddress: "",
+      officeAddress: "",     // the chosen office's label (or the text typed by hand when Econt's list is unavailable)
+      officeCity: "",        // the city of the chosen office: it becomes the order's city
+      homeAddress: "",       // delivery to an address: kept apart from the office, so switching the method never mixes them
       econtOfficeCode: "",   // code of the office / automat chosen from Econt's list ("" = typed by hand)
       notes: "",
       smsMarketingConsent:   false,
@@ -188,11 +190,6 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   const pickerLoading    = !isHomeAddress && (offices.status === "idle" || offices.status === "loading");
   const chosenOffice     = offices.data?.offices.find((o) => o.c === form.econtOfficeCode) ?? null;
 
-  const addressLabel       = isHomeAddress ? "Адрес за доставка" : "Адрес на офис или автомат";
-  const addressPlaceholder =
-    shippingId === "econt-office" ? "Еконт офис или автомат..." :
-    "Вашият точен адрес...";
-
   // ── Validation ─────────────────────────────────────────────────────────────
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -200,9 +197,22 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     if (form.phone.replace(/\D/g, "").length < 10)        errs.phone = "Моля, въведете валиден телефонен номер.";
     if (!form.email.trim())                                errs.email = "Въведете имейл";
     else if (!form.email.includes("@"))                    errs.email = "Невалиден имейл";
-    if (!form.city.trim())                                 errs.city = "Въведете град";
-    if (isHomeAddress && !form.postCode.trim())            errs.postCode = "Моля, въведете пощенски код";
-    if (!form.officeAddress.trim())                        errs.officeAddress = isHomeAddress ? "Въведете личен адрес" : pickerActive ? "Изберете офис на Еконт от списъка" : "Въведете адрес на офис";
+    if (isHomeAddress) {
+      // delivery to an address: city, address, post code (under the delivery choice)
+      if (!form.city.trim())                               errs.city = "Въведете град";
+      if (!form.homeAddress.trim())                        errs.address = "Въведете личен адрес";
+      if (!form.postCode.trim())                           errs.postCode = "Моля, въведете пощенски код";
+    } else if (pickerActive) {
+      // office / automat: the picker alone. The order's city is the city of the chosen office, so there is no separate city to type.
+      if (!form.city.trim())                               errs.officeAddress = "Изберете град и офис на Еконт от списъка";
+      else if (!form.econtOfficeCode)                      errs.officeAddress = "Изберете офис на Еконт от списъка";
+    } else if (pickerLoading) {
+      errs.officeAddress = "Списъкът с офисите на Еконт още се зарежда. Опитайте след секунда.";
+    } else {
+      // Econt's list cannot be loaded: the manual fallback needs the city too
+      if (!form.city.trim())                               errs.city = "Въведете град";
+      if (!form.officeAddress.trim())                      errs.officeAddress = "Въведете адрес на офис";
+    }
     return errs;
   };
 
@@ -221,8 +231,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     if (Object.keys(errs).length > 0) {
       const keys = Object.keys(errs);
       setErrors(errs);
-      const label = (k: string) => (k === "officeAddress" ? (isHomeAddress ? "Адрес" : "Офис на Еконт") : FIELD_LABEL_BG[k] ?? k);
-      setFormSummary(`Поръчката не е изпратена. Проверете: ${keys.map(label).join(", ")}.`);
+      setFormSummary(`Поръчката не е изпратена. Проверете: ${keys.map((k) => FIELD_LABEL_BG[k] ?? k).join(", ")}.`);
       logCheckoutFailure({ market: "bg", kind: "validation", fields: keys, delivery: isHomeAddress ? "home" : pickerActive ? "office" : "office-manual", picker: offices.status, sessionId: sessionIdRef.current || undefined });
       // Take the customer to the first problem. The message sits right at it (the picker prints it at its top); if that element is
       // somehow missing, the red summary above the button is shown instead: the button never "does nothing".
@@ -249,7 +258,11 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     const orderSummary = {
       orderRef:  ref,
       sessionId: sessionIdRef.current || undefined,
-      customer: { ...form, shippingMethod: selectedOption.label, courier: selectedOption.courier },
+      customer: (() => {
+        // what the server gets: the address of the chosen delivery only (the other one stays in the form for a switch back)
+        const { homeAddress, officeCity, ...rest } = form; void officeCity;
+        return { ...rest, officeAddress: isHomeAddress ? homeAddress : form.officeAddress, postCode: isHomeAddress ? form.postCode : "", econtOfficeCode: isHomeAddress ? "" : form.econtOfficeCode, shippingMethod: selectedOption.label, courier: selectedOption.courier };
+      })(),
       items: items.map((i) => ({
         sku:      i.product.sku,
         slug:     i.product.slug,
@@ -427,6 +440,14 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     "aria-invalid": errors[key] ? true : undefined,
     "aria-describedby": errors[key] ? `bg-${key}-err` : undefined,
   });
+  // The city is asked ONLY where it is needed: under "До адрес" and in the manual fallback. With the office picker it comes from the chosen office.
+  const cityField = (
+    <CoField id="field-city" htmlFor="bg-city" label="Град" error={errors.city} errorId="bg-city-err">
+      <input type="text" placeholder="София" value={form.city}
+        onChange={(e) => { setForm((f) => ({ ...f, city: e.target.value, ...(f.officeCity && f.officeCity.trim().toLowerCase() !== e.target.value.trim().toLowerCase() ? { officeAddress: "", econtOfficeCode: "", officeCity: "" } : {}) })); clearError("city"); }}
+        className={coInput(!!errors.city)} autoComplete="address-level2" {...inputProps("city")} />
+    </CoField>
+  );
 
   // ── Form ────────────────────────────────────────────────────────────────────
   return (
@@ -480,12 +501,6 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
           </CoCheck>
         </div>
 
-        <CoField id="field-city" htmlFor="bg-city" label="Град" error={errors.city} errorId="bg-city-err">
-          <input type="text" placeholder="София" value={form.city}
-            onChange={(e) => { setForm((f) => ({ ...f, city: e.target.value })); clearError("city"); }}
-            className={coInput(!!errors.city)} autoComplete="address-level2" {...inputProps("city")} />
-        </CoField>
-
         {/* ── Payment method radio cards (only while the card option is switched on) ── */}
         {CARD_PAYMENTS_ENABLED && (
         <CoSection title="Начин на плащане">
@@ -519,9 +534,10 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
                 name="shippingMethod" value={option.id} selected={shippingId === option.id}
                 onSelect={() => {
                   setShippingId(option.id);
-                  if (option.id !== "home-address") { setForm((f) => ({ ...f, postCode: "" })); clearError("postCode"); }
-                  // the office label and a home address are different things: do not carry one over into the other
-                  if (option.id !== shippingId && form.econtOfficeCode) { setForm((f) => ({ ...f, officeAddress: "", econtOfficeCode: "" })); clearError("officeAddress"); }
+                  // Everything typed is kept: the city is ONE value shared by both ways (office -> address and back), the address and the
+                  // chosen office are remembered apart. An office remembered from another city is dropped when the city has changed since.
+                  setForm((f) => (f.officeCity && f.city.trim() && f.officeCity.trim().toLowerCase() !== f.city.trim().toLowerCase() ? { ...f, officeAddress: "", econtOfficeCode: "", officeCity: "" } : f));
+                  setErrors({}); setFormSummary("");
                 }}
                 icon={option.id === "econt-office" ? <IconOffice /> : <IconHome />}
                 title={option.id === "econt-office" ? "До офис или автомат на Еконт" : "До адрес с Еконт"}
@@ -538,49 +554,69 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         </CoSection>
         )}
 
-        {/* ── Address: office / automat picker (Econt's official list), the manual field as the fallback, a home address by hand ── */}
-        {pickerActive && offices.data ? (
-          <div id="field-officeAddress">
-            <EcontOfficePicker
-              data={offices.data}
-              cityHint={form.city}
-              selected={chosenOffice}
-              onCity={(c) => { setForm((f) => ({ ...f, city: c.n, ...(chosenOffice && chosenOffice.i !== c.i ? { officeAddress: "", econtOfficeCode: "" } : {}) })); clearError("city"); }}
-              onSelect={(o) => {
-                setForm((f) => ({ ...f, officeAddress: o ? officeLabel(o) : "", econtOfficeCode: o ? o.c : "" }));
-                if (o) clearError("officeAddress");
-              }}
-              error={errors.officeAddress}
-              errorId="bg-officeAddress-err"
-            />
-          </div>
-        ) : pickerLoading ? (
-          <div id="field-officeAddress" role="status" className="rounded-[8px] border border-[#2F2F2F] bg-[#141414] px-4 py-4 font-sans text-[13px] text-[#A0A0A0]">
-            Зареждане на офисите и автоматите на Еконт...
-          </div>
+        {/* ── Where to, UNDER the delivery choice: an office = the picker alone (the order's city is the city of the chosen office);
+               an address = city + address + post code. Nothing is asked twice, and what was typed survives a switch. ── */}
+        {!isHomeAddress ? (
+          pickerActive && offices.data ? (
+            <div id="field-officeAddress">
+              <EcontOfficePicker
+                data={offices.data}
+                cityHint={form.city}
+                selected={chosenOffice}
+                onCity={(c) => { setForm((f) => ({ ...f, city: c.n, ...(chosenOffice && chosenOffice.i !== c.i ? { officeAddress: "", econtOfficeCode: "", officeCity: "" } : {}) })); clearError("officeAddress"); }}
+                onSelect={(o) => {
+                  const cityName = o ? offices.data?.cities.find((c) => c.i === o.i)?.n ?? "" : "";
+                  setForm((f) => ({ ...f, officeAddress: o ? officeLabel(o) : "", econtOfficeCode: o ? o.c : "", officeCity: cityName, ...(cityName ? { city: cityName } : {}) }));
+                  if (o) clearError("officeAddress");
+                }}
+                error={errors.officeAddress}
+                errorId="bg-officeAddress-err"
+              />
+            </div>
+          ) : pickerLoading ? (
+            <div id="field-officeAddress" role="status" className="rounded-[8px] border border-[#2F2F2F] bg-[#141414] px-4 py-4 font-sans text-[13px] text-[#A0A0A0]">
+              Зареждане на офисите и автоматите на Еконт...
+              {errors.officeAddress && <p id="bg-officeAddress-err" role="alert" className="mt-2 font-sans text-[13px] text-[#F87171]">{errors.officeAddress}</p>}
+            </div>
+          ) : (
+            <>
+              {cityField}
+              <CoField
+                id="field-officeAddress" htmlFor="bg-officeAddress" label="Адрес на офис или автомат" error={errors.officeAddress} errorId="bg-officeAddress-err"
+                hint="Списъкът с офисите на Еконт не се зарежда в момента. Въведете офиса или автомата ръчно."
+              >
+                <input
+                  type="text"
+                  placeholder="Еконт офис или автомат..."
+                  value={form.officeAddress}
+                  onChange={(e) => { setForm((f) => ({ ...f, officeAddress: e.target.value, econtOfficeCode: "", officeCity: "" })); clearError("officeAddress"); }}
+                  className={coInput(!!errors.officeAddress)}
+                  autoComplete="off"
+                  {...inputProps("officeAddress")}
+                />
+              </CoField>
+            </>
+          )
         ) : (
-          <CoField
-            id="field-officeAddress" htmlFor="bg-officeAddress" label={addressLabel} error={errors.officeAddress} errorId="bg-officeAddress-err"
-            hint={!isHomeAddress ? "Списъкът с офисите на Еконт не се зарежда в момента. Въведете офиса или автомата ръчно." : undefined}
-          >
-            <input
-              type="text"
-              placeholder={addressPlaceholder}
-              value={form.officeAddress}
-              onChange={(e) => { setForm((f) => ({ ...f, officeAddress: e.target.value, econtOfficeCode: "" })); clearError("officeAddress"); }}
-              className={coInput(!!errors.officeAddress)}
-              autoComplete={isHomeAddress ? "street-address" : "off"}
-              {...inputProps("officeAddress")}
-            />
-          </CoField>
-        )}
-
-        {isHomeAddress && (
-          <CoField id="field-postCode" htmlFor="bg-postCode" label="Пощенски код" error={errors.postCode} errorId="bg-postCode-err">
-            <input type="text" placeholder="1000" value={form.postCode}
-              onChange={(e) => { setForm((f) => ({ ...f, postCode: e.target.value })); clearError("postCode"); }}
-              className={coInput(!!errors.postCode)} autoComplete="postal-code" inputMode="numeric" {...inputProps("postCode")} />
-          </CoField>
+          <>
+            {cityField}
+            <CoField id="field-address" htmlFor="bg-address" label="Адрес за доставка" error={errors.address} errorId="bg-address-err">
+              <input
+                type="text"
+                placeholder="Вашият точен адрес..."
+                value={form.homeAddress}
+                onChange={(e) => { setForm((f) => ({ ...f, homeAddress: e.target.value })); clearError("address"); }}
+                className={coInput(!!errors.address)}
+                autoComplete="street-address"
+                {...inputProps("address")}
+              />
+            </CoField>
+            <CoField id="field-postCode" htmlFor="bg-postCode" label="Пощенски код" error={errors.postCode} errorId="bg-postCode-err">
+              <input type="text" placeholder="1000" value={form.postCode}
+                onChange={(e) => { setForm((f) => ({ ...f, postCode: e.target.value })); clearError("postCode"); }}
+                className={coInput(!!errors.postCode)} autoComplete="postal-code" inputMode="numeric" {...inputProps("postCode")} />
+            </CoField>
+          </>
         )}
 
         <CoField htmlFor="bg-notes" label="Бележка" optional>

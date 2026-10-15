@@ -196,14 +196,15 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
     const email = form.email.trim();
     if (!email) errs.email = "Introduceți adresa de e-mail.";
     else if (!EMAIL_RE.test(email)) errs.email = "Adresa de e-mail nu este validă.";
-    if (!RO_COUNTIES.includes(form.county)) errs.county = "Alegeți județul.";
-    if (form.city.trim().length < 2) errs.city = "Introduceți localitatea.";
     if (delivery === "home") {
+      // delivery to an address: județ, localitate, address, post code. An Econt office needs none of them: its typed address says it all.
+      if (!RO_COUNTIES.includes(form.county)) errs.county = "Alegeți județul.";
+      if (form.city.trim().length < 2) errs.city = "Introduceți localitatea.";
       if (form.address.trim().length < 5) errs.address = "Introduceți adresa completă (stradă, număr, bloc/scară/apartament).";
       const postCode = form.postCode.replace(/\s/g, "");
       if (postCode && !/^\d{6}$/.test(postCode)) errs.postCode = "Codul poștal are 6 cifre.";
     } else if (form.officeAddress.trim().length < 5) {
-      errs.officeAddress = "Introduceți adresa biroului Econt (oraș și adresa biroului).";
+      errs.officeAddress = "Introduceți adresa biroului Econt.";
     }
     return errs;
   };
@@ -260,8 +261,8 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
         name: form.name.trim().replace(/\s+/g, " "),
         phone,
         email,
-        county: form.county,
-        city: form.city.trim(),
+        county: delivery === "home" ? form.county : "",
+        city: delivery === "home" ? form.city.trim() : "",
         address: delivery === "home" ? form.address.trim() : "",
         officeAddress: delivery === "office" ? form.officeAddress.trim() : "",
         postCode: delivery === "home" ? form.postCode.replace(/\s/g, "") : "",
@@ -460,6 +461,39 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
           </CoCheck>
         </div>
 
+      {/* ── Delivery (single option, shown as the selected card) ──────────── */}
+      <CoSection title="Mod de livrare">
+        <div role="radiogroup" aria-label="Mod de livrare" className="flex flex-col gap-2.5">
+          <CoRadioCard
+            name="ro-delivery" value="home" selected={delivery === "home"}
+            onSelect={() => { setDelivery("home"); setErrors({}); setFormSummary(""); }}
+            icon={<IconHome />}
+            title={SHIPPING_LABEL}
+            subtitle={`Termen: ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere`}
+            right={freeShipping ? (
+            <span className="flex flex-col items-end leading-tight">
+              <span className="text-[#4ADE80]">Gratuită</span>
+              <span className="text-xs font-normal text-[#A0A0A0] line-through">{fmtRON(RO_SHIPPING_FEE_RON)}</span>
+            </span>
+          ) : fmtRON(shippingCost)}
+          />
+          <CoRadioCard
+            name="ro-delivery" value="office" selected={delivery === "office"}
+            onSelect={() => { setDelivery("office"); setErrors({}); setFormSummary(""); }}
+            icon={<IconOffice />}
+            title="Livrare la biroul Econt"
+            subtitle={`Ridicați din birou · ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere`}
+            right={freeShipping ? (
+            <span className="flex flex-col items-end leading-tight">
+              <span className="text-[#4ADE80]">Gratuită</span>
+              <span className="text-xs font-normal text-[#A0A0A0] line-through">{fmtRON(RO_SHIPPING_FEE_RON)}</span>
+            </span>
+          ) : fmtRON(shippingCost)}
+          />
+        </div>
+      </CoSection>
+
+        {delivery === "home" ? (<>
         <CoField id="field-county" htmlFor="ro-county" label="Județ" error={errors.county} errorId="ro-county-err">
           <div className="relative">
             <select
@@ -488,7 +522,6 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
             className={coInput(!!errors.city)} autoComplete="address-level2" {...fieldProps("city")} />
         </CoField>
 
-        {delivery === "home" && (<>
         <CoField id="field-address" htmlFor="ro-address" label="Adresă (stradă, număr, bloc/scară/apartament)" error={errors.address} errorId="ro-address-err">
           <input type="text" placeholder="Str. Exemplu 12, bl. A3, sc. 2, ap. 14" value={form.address} maxLength={200}
             onChange={(e) => { set("address", e.target.value); clearError("address"); }}
@@ -500,7 +533,16 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
             onChange={(e) => { set("postCode", e.target.value); clearError("postCode"); }}
             className={coInput(!!errors.postCode)} autoComplete="postal-code" inputMode="numeric" {...fieldProps("postCode")} />
         </CoField>
-        </>)}
+        </>) : (
+        <CoField
+          id="field-officeAddress" htmlFor="ro-officeAddress" label="Adresa biroului Econt" error={errors.officeAddress} errorId="ro-officeAddress-err"
+          hint="ex. Econt București, Bd. Iuliu Maniu 7"
+        >
+          <input type="text" placeholder="Econt București, Bd. Iuliu Maniu 7" value={form.officeAddress} maxLength={200}
+            onChange={(e) => { set("officeAddress", e.target.value); clearError("officeAddress"); }}
+            className={coInput(!!errors.officeAddress)} autoComplete="off" {...fieldProps("officeAddress")} />
+        </CoField>
+      )}
 
         <CoField id="field-notes" htmlFor="ro-notes" label="Observații" optional optionalText={OPT}>
           <textarea
@@ -514,49 +556,6 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
           />
         </CoField>
       </div>
-
-      {/* ── Delivery (single option, shown as the selected card) ──────────── */}
-      <CoSection title="Mod de livrare">
-        <div role="radiogroup" aria-label="Mod de livrare" className="flex flex-col gap-2.5">
-          <CoRadioCard
-            name="ro-delivery" value="home" selected={delivery === "home"}
-            onSelect={() => { setDelivery("home"); clearError("officeAddress"); }}
-            icon={<IconHome />}
-            title={SHIPPING_LABEL}
-            subtitle={`Termen: ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere`}
-            right={freeShipping ? (
-            <span className="flex flex-col items-end leading-tight">
-              <span className="text-[#4ADE80]">Gratuită</span>
-              <span className="text-xs font-normal text-[#A0A0A0] line-through">{fmtRON(RO_SHIPPING_FEE_RON)}</span>
-            </span>
-          ) : fmtRON(shippingCost)}
-          />
-          <CoRadioCard
-            name="ro-delivery" value="office" selected={delivery === "office"}
-            onSelect={() => { setDelivery("office"); clearError("address"); clearError("postCode"); }}
-            icon={<IconOffice />}
-            title="Livrare la biroul Econt"
-            subtitle={`Ridicați din birou · ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere`}
-            right={freeShipping ? (
-            <span className="flex flex-col items-end leading-tight">
-              <span className="text-[#4ADE80]">Gratuită</span>
-              <span className="text-xs font-normal text-[#A0A0A0] line-through">{fmtRON(RO_SHIPPING_FEE_RON)}</span>
-            </span>
-          ) : fmtRON(shippingCost)}
-          />
-        </div>
-      </CoSection>
-
-      {delivery === "office" && (
-        <CoField
-          id="field-officeAddress" htmlFor="ro-officeAddress" label="Adresa biroului Econt" error={errors.officeAddress} errorId="ro-officeAddress-err"
-          hint="Scrieți orașul și adresa biroului Econt la care doriți să ridicați coletul."
-        >
-          <input type="text" placeholder="Econt Cluj-Napoca, Str. Exemplu 5" value={form.officeAddress} maxLength={200}
-            onChange={(e) => { set("officeAddress", e.target.value); clearError("officeAddress"); }}
-            className={coInput(!!errors.officeAddress)} autoComplete="off" {...fieldProps("officeAddress")} />
-        </CoField>
-      )}
 
       {/* ── Payment: ramburs (default) or card (only while the card option is switched on) ── */}
       {CARD_PAYMENTS_ENABLED ? (

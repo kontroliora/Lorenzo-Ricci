@@ -95,7 +95,12 @@ export async function POST(req: NextRequest) {
         const office = officeList.offices.find((o) => o.c === econtOfficeCode);
         if (!office) return NextResponse.json({ success: false, code: "bad_office", error: "Този офис на Еконт не е намерен. Моля, изберете офис отново." }, { status: 400 });
         customer.officeAddress = officeLabel(office);
+        // the order's city is the city of the office Econt knows (the checkout asks for no separate city with the picker)
+        customer.city = officeList.cities.find((c) => c.i === office.i)?.n ?? customer.city;
       }
+    }
+    if (!String(customer.city ?? "").trim()) {
+      return NextResponse.json({ success: false, code: "bad_customer", error: "Моля, изберете град (или офис на Еконт от списъка)." }, { status: 400 });
     }
 
     // ── PRICE GUARD - the browser reports unit prices and totals; check them against
