@@ -14,6 +14,7 @@ import {
   fmtRON,
 } from "@/lib/ro/config";
 import { trackFbEvent } from "@/lib/fbq";
+import { logCheckoutFailure } from "@/lib/checkout-log";
 import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY, type PaymentMethod } from "@/lib/payments";
 import { newOrderRef } from "@/lib/order-ref";
 import {
@@ -32,6 +33,9 @@ import { PREPAYMENT_THRESHOLD_TEXT, bundleLineLabel } from "./shared";
 
 const SHIPPING_LABEL = "Livrare la domiciliu cu curierul"; // what the customer reads (the API receives RO_SHIPPING_HOME / RO_SHIPPING_OFFICE)
 type Delivery = "home" | "office";
+
+// What the customer is told is missing (the field names in the red summary above the button).
+const FIELD_LABEL_RO: Record<string, string> = { name: "Nume complet", phone: "Telefon", email: "E-mail", county: "Județ", city: "Localitate", address: "Adresă", postCode: "Cod poștal", officeAddress: "Adresa biroului Econt" };
 
 // Same contact as the Bulgarian checkout's prepayment flow (components/cart/CheckoutForm.tsx): the Viber link and number.
 const PREPAYMENT_VIBER_LINK = "viber://chat?number=%2B359888081811";
@@ -104,6 +108,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   const [submitError, setSubmitError] = useState("");
   const [reloadHint, setReloadHint] = useState(""); // non-empty: the cart is stale, offer a page reload with this text
   const [submitting, setSubmitting] = useState(false);
+  const [formSummary, setFormSummary] = useState("");   // red line above the button: what stopped the order (never a silent button)
   const [redirecting, setRedirecting] = useState(false);
   const [payMethod, setPayMethod] = useState<PaymentMethod>("cod");
   const [delivery, setDelivery] = useState<Delivery>("home");
@@ -210,14 +215,25 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
 
     const errs = validate();
     if (Object.keys(errs).length > 0) {
+      const keys = Object.keys(errs);
       setErrors(errs);
-      const firstKey = Object.keys(errs)[0];
+      setFormSummary(`Comanda nu a fost trimisă. Verificați: ${keys.map((k) => FIELD_LABEL_RO[k] ?? k).join(", ")}.`);
+      logCheckoutFailure({ market: "ro", kind: "validation", fields: keys, delivery, sessionId: cartSessionRef.current || undefined });
+      // Take the customer to the first problem (the message sits right at it); if that element is missing, the red summary above
+      // the button is shown instead: the button never "does nothing".
       setTimeout(() => {
-        document.getElementById(`field-${firstKey}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-        document.getElementById(`ro-${firstKey}`)?.focus({ preventScroll: true });
-      }, 50);
+        for (const k of keys) {
+          const box = document.getElementById(`field-${k}`);
+          if (!box) continue;
+          (document.getElementById(`ro-${k}-err`) ?? box).scrollIntoView({ behavior: "smooth", block: "center" });
+          (document.getElementById(`ro-${k}`) ?? box.querySelector<HTMLElement>("input, select, textarea"))?.focus({ preventScroll: true });
+          return;
+        }
+        document.getElementById("ro-form-summary")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 80);
       return;
     }
+    setFormSummary("");
     if (items.length === 0) {
       setSubmitError("Coșul este gol. Adăugați un produs pentru a plasa comanda.");
       return;
@@ -263,7 +279,8 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       timestamp: new Date().toISOString(),
     };
 
-    const fail = (msg: string, reload = "") => {
+    const fail = (msg: string, reload = "", log?: { code?: string; status?: number; kind?: "server" | "network" }) => {
+      logCheckoutFailure({ market: "ro", kind: log?.kind ?? "server", code: log?.code, status: log?.status, delivery, sessionId: cartSessionRef.current || undefined });
       setSubmitError(msg);
       setReloadHint(reload);
       setSubmitting(false);
@@ -278,7 +295,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
         body: JSON.stringify(payload),
       });
     } catch {
-      fail(NETWORK_ERROR);
+      fail(NETWORK_ERROR, "", { kind: "network" });
       return;
     }
 
@@ -287,10 +304,11 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
 
     if (!res.ok || body?.success === false) {
       const serverMsg = typeof body?.error === "string" ? body.error.trim() : "";
-      if (body?.code === "price_mismatch") fail(serverMsg || PRICE_MISMATCH_ERROR, PRICE_RELOAD_HINT);
+      const lg = { code: typeof body?.code === "string" ? body.code : undefined, status: res.status };
+      if (body?.code === "price_mismatch") fail(serverMsg || PRICE_MISMATCH_ERROR, PRICE_RELOAD_HINT, lg);
       // A stale cart without the advance-payment flag: a reload refreshes the lines and the checkout then shows the contact flow.
-      else if (body?.code === "prepayment_required") fail(serverMsg || FALLBACK_ERROR, CART_RELOAD_HINT);
-      else fail(serverMsg || FALLBACK_ERROR);
+      else if (body?.code === "prepayment_required") fail(serverMsg || FALLBACK_ERROR, CART_RELOAD_HINT, lg);
+      else fail(serverMsg || FALLBACK_ERROR, "", lg);
       return;
     }
 
@@ -622,6 +640,11 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       ) : (
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-3">
+            {formSummary && (
+              <div id="ro-form-summary" role="alert" className="rounded-[6px] border border-[#7A2A22] bg-[#2A1210] px-4 py-3 text-center font-sans text-[13px] leading-relaxed text-[#F87171]">
+                {formSummary}
+              </div>
+            )}
             <CoSubmit busy={submitting} busyLabel={redirecting ? "Vă redirecționăm către plată..." : isCardPay ? "Se pregătește plata..." : "Se trimite comanda..."}>
               {isCardPay ? `Plătiți ${fmtRON(grandTotal)}` : `Finalizați comanda · ${fmtRON(grandTotal)}`}
             </CoSubmit>

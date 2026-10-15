@@ -6,6 +6,7 @@ import { calcBundleDiscount } from "@/lib/bundles";
 import { giftDisplayName } from "@/lib/gifts";
 import { useGiftLines } from "@/lib/use-gifts";
 import { trackFbEvent } from "@/lib/fbq";
+import { logCheckoutFailure } from "@/lib/checkout-log";
 import { requiresPrepayment, PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY, type PaymentMethod } from "@/lib/payments";
 import { saveCardCartSnapshot } from "@/lib/card-cart-snapshot";
@@ -18,6 +19,9 @@ import { EcontOfficePicker, useEcontOffices } from "@/components/checkout/EcontO
 import { officeLabel } from "@/lib/econt-label";
 
 // ─── Shipping options ────────────────────────────────────────────────────────
+// What the customer is told is missing (the field names in the red summary above the button).
+const FIELD_LABEL_BG: Record<string, string> = { name: "Две имена", phone: "Телефон", email: "Имейл", city: "Град", postCode: "Пощенски код" };
+
 const SHIPPING_OPTIONS = [
   { id: "econt-office",  label: "Доставка чрез Еконт до офис",  courier: "econt", price: 4.25 },
   { id: "home-address",  label: "Доставка чрез Еконт до адрес", courier: "home",  price: 5.45 },
@@ -162,6 +166,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   }, [form.email, form.emailMarketingConsent, form.phone, form.name, items, total]);
   const [errors, setErrors]                 = useState<Record<string, string>>({});
   const [submitError, setSubmitError]       = useState("");
+  const [formSummary, setFormSummary]       = useState("");   // red line above the button: what stopped the order (never a silent button)
   const [orderRef, setOrderRef]             = useState("");
   const [submittedTotal, setSubmittedTotal] = useState(0);
   // What the server actually gave as gifts (it can swap a sold-out cardholder for Bianco, or drop it).
@@ -197,7 +202,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     else if (!form.email.includes("@"))                    errs.email = "Невалиден имейл";
     if (!form.city.trim())                                 errs.city = "Въведете град";
     if (isHomeAddress && !form.postCode.trim())            errs.postCode = "Моля, въведете пощенски код";
-    if (!form.officeAddress.trim())                        errs.officeAddress = isHomeAddress ? "Въведете личен адрес" : pickerActive ? "Изберете офис или автомат от списъка" : "Въведете адрес на офис";
+    if (!form.officeAddress.trim())                        errs.officeAddress = isHomeAddress ? "Въведете личен адрес" : pickerActive ? "Изберете офис на Еконт от списъка" : "Въведете адрес на офис";
     return errs;
   };
 
@@ -214,14 +219,27 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) {
+      const keys = Object.keys(errs);
       setErrors(errs);
-      const firstKey = Object.keys(errs)[0];
+      const label = (k: string) => (k === "officeAddress" ? (isHomeAddress ? "Адрес" : "Офис на Еконт") : FIELD_LABEL_BG[k] ?? k);
+      setFormSummary(`Поръчката не е изпратена. Проверете: ${keys.map(label).join(", ")}.`);
+      logCheckoutFailure({ market: "bg", kind: "validation", fields: keys, delivery: isHomeAddress ? "home" : pickerActive ? "office" : "office-manual", picker: offices.status, sessionId: sessionIdRef.current || undefined });
+      // Take the customer to the first problem. The message sits right at it (the picker prints it at its top); if that element is
+      // somehow missing, the red summary above the button is shown instead: the button never "does nothing".
       setTimeout(() => {
-        document.getElementById(`field-${firstKey}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 50);
+        for (const k of keys) {
+          const box = document.getElementById(`field-${k}`);
+          if (!box) continue;
+          (document.getElementById(`bg-${k}-err`) ?? box).scrollIntoView({ behavior: "smooth", block: "center" });
+          (document.getElementById(`bg-${k}`) ?? box.querySelector<HTMLElement>("input, button"))?.focus({ preventScroll: true });
+          return;
+        }
+        document.getElementById("bg-form-summary")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 80);
       return;
     }
     setErrors({});
+    setFormSummary("");
     setSubmitError("");
     setSubmitting(true);
 
@@ -260,7 +278,9 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       });
       if (!res.ok) {
         let msg = "Възникна грешка при изпращането на поръчката. Моля, опитайте отново.";
-        try { const body = await res.json(); if (body?.error) msg = body.error; } catch { /* ignore parse error */ }
+        let errCode = "";
+        try { const body = await res.json(); if (body?.error) msg = body.error; if (typeof body?.code === "string") errCode = body.code; } catch { /* ignore parse error */ }
+        logCheckoutFailure({ market: "bg", kind: "server", code: errCode || undefined, status: res.status, delivery: isHomeAddress ? "home" : pickerActive ? "office" : "office-manual", picker: offices.status, sessionId: sessionIdRef.current || undefined });
         setSubmitError(msg);
         setSubmitting(false);
         return;
@@ -295,6 +315,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         return; // stay in the "redirecting" state until the browser leaves the page
       }
     } catch {
+      logCheckoutFailure({ market: "bg", kind: "network", sessionId: sessionIdRef.current || undefined });
       setSubmitError("Възникна грешка при свързването. Моля, опитайте отново.");
       setSubmitting(false);
       return;
@@ -601,6 +622,11 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       ) : (
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-3">
+            {formSummary && (
+              <div id="bg-form-summary" role="alert" className="rounded-[6px] border border-[#7A2A22] bg-[#2A1210] px-4 py-3 text-center font-sans text-[13px] leading-relaxed text-[#F87171]">
+                {formSummary}
+              </div>
+            )}
             <CoSubmit busy={submitting} busyLabel={isCardPay ? "Пренасочване към плащане..." : "Обработване..."}>
               {isCardPay ? `Плати €${grandTotal.toFixed(2)}` : `Завърши поръчката · €${grandTotal.toFixed(2)}`}
             </CoSubmit>

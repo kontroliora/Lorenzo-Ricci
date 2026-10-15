@@ -141,6 +141,15 @@ export function EcontOfficePicker({
 
   return (
     <div className="flex flex-col gap-4" data-testid="econt-picker">
+      {/* the message comes FIRST: a customer who pressed the order button is taken here and must see it without scrolling */}
+      {error && (
+        <p id={errorId} role="alert" className="flex items-start gap-1.5 font-sans text-[13px] font-normal text-[#F87171]">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden className="mt-[3px] flex-shrink-0">
+            <circle cx="8" cy="8" r="7" stroke="#F87171" strokeWidth="1.5" /><path d="M8 4.5v4" stroke="#F87171" strokeWidth="1.5" strokeLinecap="round" /><circle cx="8" cy="11" r="0.9" fill="#F87171" />
+          </svg>
+          <span>{error}</span>
+        </p>
+      )}
       {/* 1. city */}
       <div className="flex flex-col gap-1.5">
         <label htmlFor={cityId} className="font-sans text-[13px] font-medium text-[#E6E6E6]">Град на офиса или автомата</label>
@@ -153,7 +162,7 @@ export function EcontOfficePicker({
             onFocus={() => setCityOpen(true)}
             onBlur={() => setTimeout(() => setCityOpen(false), 150)}
             onKeyDown={onCityKey}
-            className={coInput(false)}
+            className={coInput(!!error && !city)} aria-invalid={error && !city ? true : undefined} aria-describedby={error ? errorId : undefined}
           />
           {cityOpen && suggestions.length > 0 && (
             <ul id={listId} role="listbox" aria-label="Градове" className="absolute left-0 right-0 top-full z-10 mt-1 max-h-60 overflow-y-auto rounded-[8px] border border-[#606060] bg-[#101010] shadow-lg">
@@ -177,7 +186,7 @@ export function EcontOfficePicker({
       <div className="flex flex-col gap-2.5">
         <label htmlFor={searchId} className="font-sans text-[13px] font-medium text-[#E6E6E6]">Офис или автомат на Еконт</label>
         {!city ? (
-          <p className="rounded-[8px] border border-[#2F2F2F] bg-[#141414] px-3.5 py-3 font-sans text-[13px] text-[#A0A0A0]">Изберете град, за да видите офисите и автоматите.</p>
+          <p className={`rounded-[8px] border bg-[#141414] px-3.5 py-3 font-sans text-[13px] text-[#A0A0A0] ${error ? "border-[#F87171]" : "border-[#2F2F2F]"}`}>Изберете град, за да видите офисите и автоматите.</p>
         ) : (
           <>
             <input id={searchId} type="search" autoComplete="off" placeholder="Търсене по име или адрес" value={q} onChange={(e) => setQ(e.target.value)} className={coInput(false)} />
@@ -195,7 +204,7 @@ export function EcontOfficePicker({
             {offices.length === 0 ? (
               <p className="rounded-[8px] border border-[#2F2F2F] bg-[#141414] px-3.5 py-3 font-sans text-[13px] text-[#A0A0A0]">Няма офис или автомат по това търсене.</p>
             ) : (
-              <ul aria-label="Офиси и автомати" className="max-h-[320px] divide-y divide-[#2F2F2F] overflow-y-auto rounded-[8px] border border-[#606060] bg-[#101010]">
+              <ul aria-label="Офиси и автомати" className={`max-h-[320px] divide-y divide-[#2F2F2F] overflow-y-auto rounded-[8px] border bg-[#101010] ${error ? "border-[#F87171]" : "border-[#606060]"}`}>
                 {offices.map((o) => (
                   <li key={o.c}>
                     <button type="button" onClick={() => onSelect(o)} className="flex w-full flex-col items-start gap-1 px-3.5 py-3 text-left hover:bg-[#1A1A1A] focus-visible:bg-[#1F1F1F] focus-visible:outline-none">
@@ -211,14 +220,6 @@ export function EcontOfficePicker({
         )}
       </div>
 
-      {error && (
-        <p id={errorId} role="alert" className="flex items-start gap-1.5 font-sans text-[13px] font-normal text-[#F87171]">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden className="mt-[3px] flex-shrink-0">
-            <circle cx="8" cy="8" r="7" stroke="#F87171" strokeWidth="1.5" /><path d="M8 4.5v4" stroke="#F87171" strokeWidth="1.5" strokeLinecap="round" /><circle cx="8" cy="11" r="0.9" fill="#F87171" />
-          </svg>
-          <span>{error}</span>
-        </p>
-      )}
     </div>
   );
 }
