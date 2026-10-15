@@ -32,6 +32,8 @@ export function RoCartDrawer() {
   // what delivery is judged on.
   const { subtotal, goods, shipping: shippingCost, total, bundles } = roAmounts(items);
   const needsPrepayment = items.some((i) => i.prepay);
+  // "Economisiți": every crossed-out price minus the current one, over the whole cart.
+  const savings = items.reduce((s, i) => s + (i.originalRon != null && i.originalRon > i.ron ? (i.originalRon - i.ron) * i.quantity : 0), 0);
   const count = items.reduce((s, i) => s + i.quantity, 0);
   const remaining = Math.max(0, RO_FREE_SHIPPING_RON - goods);
   const progress = Math.min(1, goods / RO_FREE_SHIPPING_RON);
@@ -86,7 +88,7 @@ export function RoCartDrawer() {
       <div
         ref={drawerRef}
         tabIndex={-1}
-        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] ${showCheckout ? "bg-white" : "bg-charcoal-deep"} z-[80] flex flex-col shadow-2xl outline-none transition-transform duration-400 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] bg-charcoal-deep z-[80] flex flex-col shadow-2xl outline-none transition-transform duration-400 ease-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         role="dialog"
@@ -95,18 +97,18 @@ export function RoCartDrawer() {
         aria-hidden={!isOpen}
         inert={!isOpen}
       >
-        {/* Header - checkout step: light, with the way back to the cart in it */}
+        {/* Header - checkout step: same dark theme, with the way back to the cart in it */}
         {showCheckout ? (
-          <div className="flex items-center justify-between border-b border-[#E4E0D7] bg-white px-5 py-4">
+          <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
             <button
               onClick={() => setShowCheckout(false)}
-              className="flex items-center gap-2 font-sans text-sm font-medium text-[#4A463E] transition-colors hover:text-[#1A1A1A]"
+              className="flex items-center gap-2 font-sans text-sm font-medium text-[#C9C9C9] transition-colors hover:text-white"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M8.5 2.5 4 7l4.5 4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
               Coș
             </button>
-            <h2 className="font-sans text-base font-semibold text-[#1A1A1A]">Comandă</h2>
-            <button onClick={close} aria-label="Închide" className="text-2xl leading-none text-[#6F6B61] transition-colors hover:text-[#1A1A1A]">×</button>
+            <h2 className="font-serif text-xl text-white">Comandă</h2>
+            <button onClick={close} aria-label="Închide" className="text-2xl leading-none text-[#A0A0A0] transition-colors hover:text-white">×</button>
           </div>
         ) : (
         <div className="flex items-center justify-between px-6 py-5 border-b border-white/8">
@@ -134,7 +136,7 @@ export function RoCartDrawer() {
         )}
 
         {showCheckout ? (
-          <div className="flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6 sm:py-6">
+          <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
             <RoCheckoutForm
               items={items}
               onSuccess={() => {
@@ -267,21 +269,30 @@ export function RoCartDrawer() {
                 </div>
               )}
 
-              <div className="flex items-center justify-between mb-4 pt-2 border-t border-white/8">
-                <span className="font-sans text-xs font-medium text-white tracking-wide">Total</span>
-                <span className="font-serif text-lg text-white">{fmtRON(total)}</span>
+              <div className="mb-4 pt-2 border-t border-white/8">
+                {/* Only when there is a discount: how much the crossed-out prices save, in the site's accent colour */}
+                {savings > 0 && (
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-sans text-xs text-[#D4AF37] tracking-wide">Economisiți</span>
+                    <span className="font-sans text-xs font-medium text-[#D4AF37] tracking-wide">-{fmtRON(savings)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="font-sans text-xs font-medium text-white tracking-wide">Total</span>
+                  <span className="font-serif text-lg text-white">{fmtRON(total)}</span>
+                </div>
               </div>
 
               <button onClick={startCheckout} className="btn-primary w-full text-center justify-center">
                 {needsPrepayment ? "Continuă comanda - plată în avans" : "Comandă acum - plată la livrare"}
               </button>
 
-              <p className="text-center font-sans text-[10px] text-white/25 tracking-wide mt-3">
+              <p className="text-center font-sans text-[13px] leading-snug text-[#C9C9C9] mt-3">
                 {needsPrepayment ? (
                   "Plata în avans, stabilită direct cu noi"
                 ) : (
                   <>
-                    Plătiți la primirea coletului
+                    Plata la livrare · Livrare cu Econt
                     {RO_INSPECT_BEFORE_PAY ? " · Puteți verifica coletul înainte de plată" : ` · Retur în ${RO_RETURN_DAYS} zile`}
                   </>
                 )}

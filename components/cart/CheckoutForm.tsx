@@ -317,53 +317,53 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   if (submitted) {
     return (
       <div className="flex flex-col items-center gap-6 py-6 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#B7E0C4] bg-[#E7F5EC]">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#1E5C37] bg-[#0F2A1A]">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15803D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
 
         <div>
-          <h3 className="font-sans text-2xl font-semibold text-[#1A1A1A]">Поръчката е получена!</h3>
-          <p className="mt-1 font-sans text-sm text-[#5F5B52]">Номер: {orderRef}</p>
+          <h3 className="font-serif text-2xl text-white">Поръчката е получена!</h3>
+          <p className="mt-1 font-sans text-sm text-[#B0B0B0]">Номер: {orderRef}</p>
         </div>
 
-        <div className="flex w-full flex-col gap-2.5 rounded-[8px] border border-[#E4E0D7] bg-[#F7F6F2] p-4 text-left">
+        <div className="flex w-full flex-col gap-2.5 rounded-[8px] border border-[#2F2F2F] bg-[#141414] p-4 text-left">
           <div className="flex justify-between font-sans text-sm">
-            <span className="text-[#5F5B52]">Сума за плащане</span>
-            <span className="font-semibold text-[#1A1A1A]">€{submittedTotal.toFixed(2)}</span>
+            <span className="text-[#B0B0B0]">Сума за плащане</span>
+            <span className="font-semibold text-white">€{submittedTotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-sans text-sm">
-            <span className="text-[#5F5B52]">Начин на плащане</span>
-            <span className="text-[#1A1A1A]">Наложен платеж</span>
+            <span className="text-[#B0B0B0]">Начин на плащане</span>
+            <span className="text-white">Наложен платеж</span>
           </div>
           {gifted.gifts.map((g) => (
             <div key={`${g.forName}-${g.name}`} className="flex justify-between font-sans text-sm">
-              <span className="text-[#15803D]">Подарък към {g.forName}</span>
-              <span className="text-[#15803D]">{g.name} × {g.qty}</span>
+              <span className="text-[#4ADE80]">Подарък към {g.forName}</span>
+              <span className="text-[#4ADE80]">{g.name} × {g.qty}</span>
             </div>
           ))}
         </div>
 
         {gifted.notes.length > 0 && (
-          <div className="flex w-full flex-col gap-1.5 rounded-[8px] border border-[#EBD9A8] bg-[#FBF5E3] p-3 text-left">
+          <div className="flex w-full flex-col gap-1.5 rounded-[8px] border border-[#5C4A12] bg-[#241D0A] p-3 text-left">
             {gifted.notes.map((n) => (
-              <p key={n} className="font-sans text-[13px] leading-relaxed text-[#6B5517]">{n}</p>
+              <p key={n} className="font-sans text-[13px] leading-relaxed text-[#F3D98B]">{n}</p>
             ))}
           </div>
         )}
 
         {form.email ? (
-          <p className="font-sans text-sm leading-relaxed text-[#4A463E]">
-            Изпратихме потвърждение на <span className="font-medium text-[#1A1A1A]">{form.email}</span>
+          <p className="font-sans text-sm leading-relaxed text-[#C9C9C9]">
+            Изпратихме потвърждение на <span className="font-medium text-white">{form.email}</span>
           </p>
         ) : (
-          <p className="font-sans text-sm leading-relaxed text-[#4A463E]">
-            Ще се свържем с вас на <span className="font-medium text-[#1A1A1A]">{form.phone}</span> в рамките на 24ч.
+          <p className="font-sans text-sm leading-relaxed text-[#C9C9C9]">
+            Ще се свържем с вас на <span className="font-medium text-white">{form.phone}</span> в рамките на 24ч.
           </p>
         )}
 
-        <p className="font-sans text-xs text-[#6F6B61]">Плащате при получаване · 30 дни лесна замяна</p>
+        <p className="font-sans text-xs text-[#A0A0A0]">Плащате при получаване · 30 дни лесна замяна</p>
       </div>
     );
   }
@@ -412,8 +412,8 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       />
 
       <div>
-        <h3 className="font-sans text-xl font-semibold text-[#1A1A1A]">{needsPrepayment ? "Поръчка с предплащане" : "Данни за доставка"}</h3>
-        <p className="mt-1 font-sans text-sm text-[#5F5B52]">
+        <h3 className="font-serif text-xl text-white">{needsPrepayment ? "Поръчка с предплащане" : "Данни за доставка"}</h3>
+        <p className="mt-1 font-sans text-sm text-[#B0B0B0]">
           {needsPrepayment ? "Урежда се директно с нас" : isCardPay ? "Плащане с карта - Безплатна доставка" : "Плащате при получаване - Наложен платеж"}
         </p>
       </div>
@@ -496,8 +496,8 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
                 subtitle="Срок: до 2 работни дни"
                 right={freeShipping ? (
                   <span className="flex flex-col items-end leading-tight">
-                    <span className="text-[#15803D]">Безплатна</span>
-                    <span className="text-xs font-normal text-[#6F6B61] line-through">€{option.price.toFixed(2)}</span>
+                    <span className="text-[#4ADE80]">Безплатна</span>
+                    <span className="text-xs font-normal text-[#A0A0A0] line-through">€{option.price.toFixed(2)}</span>
                   </span>
                 ) : `€${option.price.toFixed(2)}`}
               />
@@ -541,26 +541,26 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       )}
 
       {submitError && (
-        <p role="alert" className="rounded-[6px] border border-[#F2C4BE] bg-[#FDF3F2] px-4 py-3 text-center font-sans text-[13px] leading-relaxed text-[#B42318]">
+        <p role="alert" className="rounded-[6px] border border-[#7A2A22] bg-[#2A1210] px-4 py-3 text-center font-sans text-[13px] leading-relaxed text-[#F87171]">
           {submitError}
         </p>
       )}
 
       {needsPrepayment ? (
-        <div className="flex flex-col gap-3 rounded-[8px] border border-[#D9D5CC] bg-[#F7F6F2] px-5 py-5 text-center">
-          <p className="font-sans text-sm leading-relaxed text-[#4A463E]">
+        <div className="flex flex-col gap-3 rounded-[8px] border border-[#606060] bg-[#141414] px-5 py-5 text-center">
+          <p className="font-sans text-sm leading-relaxed text-[#C9C9C9]">
             Продукти на цена от €{PREPAYMENT_THRESHOLD_EUR} нагоре се поръчват с предплащане и се уреждат директно с нас -
             наложен платеж не е наличен за тази поръчка.
           </p>
           <a
             href={PREPAYMENT_VIBER_LINK}
             onClick={handleViberContactClick}
-            className="flex h-14 w-full items-center justify-center rounded-[6px] bg-[#0F2850] px-6 font-sans text-base font-medium text-white transition-colors hover:bg-[#163A6E]"
+            className="flex h-14 w-full items-center justify-center rounded-[6px] bg-[#0F2850] px-6 font-sans text-base font-medium text-white transition-colors hover:bg-[#1A3A6B]"
           >
             Свържете се по Viber
           </a>
-          <p className="font-sans text-xs text-[#6F6B61]">
-            или на телефон <span className="font-medium text-[#1A1A1A]">{PREPAYMENT_PHONE}</span>
+          <p className="font-sans text-xs text-[#A0A0A0]">
+            или на телефон <span className="font-medium text-white">{PREPAYMENT_PHONE}</span>
           </p>
         </div>
       ) : (

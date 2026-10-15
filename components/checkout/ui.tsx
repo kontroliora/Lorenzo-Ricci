@@ -7,13 +7,14 @@
 import Image from "next/image";
 import { useState, type ReactNode } from "react";
 
-// Colours: ink #1A1A1A, navy #0F2850 (the site's navy), lines #D9D5CC. Written out as literal classes on purpose: Tailwind only
-// generates classes it can read in the source, so they cannot be built from variables.
+// Dark theme of the cart and the site: panel #0A0A0A (charcoal-deep), surfaces #141414, lines #2F2F2F / #606060 (fields and cards: >= 3:1),
+// gold #C9A84C as the accent, navy #0F2850 button, text white / #C9C9C9 / #A0A0A0 (all >= 4.5:1). Written out as literal classes on purpose:
+// Tailwind only generates classes it can read in the source, so they cannot be built from variables.
 
 /** Input / select / textarea look. `invalid` turns the border red (the message itself is shown by CoField). */
 export const coInput = (invalid?: boolean): string =>
-  `block w-full min-h-12 rounded-[6px] bg-white px-3.5 font-sans text-[15px] font-normal text-[#1A1A1A] placeholder:text-[#77736A] border transition-colors focus:outline-none focus:ring-2 focus:ring-[#0F2850]/20 ${
-    invalid ? "border-[#B42318] focus:border-[#B42318]" : `border-[#CFCABF] hover:border-[#A8A397] focus:border-[#0F2850]`
+  `block w-full min-h-12 rounded-[6px] bg-[#141414] px-3.5 [color-scheme:dark] font-sans text-[15px] font-normal text-white placeholder:text-[#9A9A9A] border transition-colors focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/25 ${
+    invalid ? "border-[#F87171] focus:border-[#F87171]" : `border-[#6B6B6B] hover:border-[#8A8A8A] focus:border-[#C9A84C]`
   }`;
 
 // ── Field: label above, message below ───────────────────────────────────────
@@ -32,14 +33,14 @@ export function CoField({
 }) {
   return (
     <div id={id} className="flex flex-col gap-1.5">
-      <label htmlFor={htmlFor} className="font-sans text-[13px] font-medium text-[#2B2B2B]">
+      <label htmlFor={htmlFor} className="font-sans text-[13px] font-medium text-[#E6E6E6]">
         {label}
-        {optional && <span className="ml-1 font-normal text-[#6F6B61]">{optionalText}</span>}
+        {optional && <span className="ml-1 font-normal text-[#A0A0A0]">{optionalText}</span>}
       </label>
       {children}
-      {hint && !error && <p className="font-sans text-xs text-[#6F6B61]">{hint}</p>}
+      {hint && !error && <p className="font-sans text-xs text-[#A0A0A0]">{hint}</p>}
       {error && (
-        <p id={errorId} role="alert" className="flex items-start gap-1.5 font-sans text-[13px] font-normal text-[#B42318]">
+        <p id={errorId} role="alert" className="flex items-start gap-1.5 font-sans text-[13px] font-normal text-[#F87171]">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden className="mt-[3px] flex-shrink-0">
             <circle cx="8" cy="8" r="7" stroke="#B42318" strokeWidth="1.5" />
             <path d="M8 4.5v4" stroke="#B42318" strokeWidth="1.5" strokeLinecap="round" />
@@ -67,9 +68,9 @@ export function CoCheck({
         onChange={(e) => onChange(e.target.checked)}
         aria-invalid={invalid ? true : undefined}
         aria-describedby={describedBy}
-        className={`mt-[1px] h-[18px] w-[18px] flex-shrink-0 cursor-pointer rounded-[3px] accent-[#0F2850] ${invalid ? "outline outline-2 outline-[#B42318]" : ""}`}
+        className={`mt-[1px] h-[18px] w-[18px] flex-shrink-0 cursor-pointer rounded-[3px] accent-[#C9A84C] ${invalid ? "outline outline-2 outline-[#F87171]" : ""}`}
       />
-      <span className="font-sans text-[13px] font-normal leading-snug text-[#4A463E]">{children}</span>
+      <span className="font-sans text-[13px] font-normal leading-snug text-[#C9C9C9]">{children}</span>
     </label>
   );
 }
@@ -79,7 +80,7 @@ export function CoSection({ title, aside, children }: { title: string; aside?: R
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
-        <h4 className="font-sans text-[15px] font-semibold tracking-normal text-[#1A1A1A]">{title}</h4>
+        <h4 className="font-sans text-[15px] font-semibold tracking-normal text-white">{title}</h4>
         {aside}
       </div>
       {children}
@@ -96,24 +97,24 @@ export function CoRadioCard({
 }) {
   return (
     <label
-      className={`flex cursor-pointer flex-col gap-3 rounded-[8px] border bg-white p-4 transition-colors focus-within:ring-2 focus-within:ring-[#0F2850]/25 ${
-        selected ? `border-[#0F2850] bg-[#F5F8FD] ring-1 ring-[#0F2850]` : "border-[#D9D5CC] hover:border-[#A8A397]"
+      className={`flex cursor-pointer flex-col gap-3 rounded-[8px] border p-4 transition-colors focus-within:ring-2 focus-within:ring-[#C9A84C]/30 ${
+        selected ? `border-[#C9A84C] bg-[#1B180D] ring-1 ring-[#C9A84C]` : "border-[#606060] bg-[#101010] hover:border-[#8A8A8A]"
       }`}
     >
       <div className="flex items-start gap-3">
         <input type="radio" name={name} value={value} checked={selected} onChange={onSelect} className="sr-only" />
         <span
           aria-hidden
-          className={`mt-[3px] flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full border-2 ${selected ? `border-[#0F2850]` : "border-[#A8A397]"}`}
+          className={`mt-[3px] flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full border-2 ${selected ? `border-[#C9A84C]` : "border-[#8A8A8A]"}`}
         >
-          {selected && <span className={`h-2 w-2 rounded-full bg-[#0F2850]`} />}
+          {selected && <span className="h-2 w-2 rounded-full bg-[#C9A84C]" />}
         </span>
-        {icon && <span className="mt-[1px] flex-shrink-0 text-[#4A463E]">{icon}</span>}
+        {icon && <span className="mt-[1px] flex-shrink-0 text-[#C9C9C9]">{icon}</span>}
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="font-sans text-[15px] font-medium leading-snug text-[#1A1A1A]">{title}</span>
-          {subtitle && <span className="font-sans text-[13px] font-normal leading-snug text-[#5F5B52]">{subtitle}</span>}
+          <span className="font-sans text-[15px] font-medium leading-snug text-white">{title}</span>
+          {subtitle && <span className="font-sans text-[13px] font-normal leading-snug text-[#B0B0B0]">{subtitle}</span>}
         </div>
-        {right && <div className="flex-shrink-0 text-right font-sans text-[15px] font-medium text-[#1A1A1A]">{right}</div>}
+        {right && <div className="flex-shrink-0 text-right font-sans text-[15px] font-medium text-white">{right}</div>}
       </div>
       {children}
     </label>
@@ -151,16 +152,20 @@ const BRAND_LABEL: Record<BrandName, string> = { econt: "Еконт", visa: "Vis
 export function BrandMark({ name, height = 20 }: { name: BrandName; height?: number }) {
   const [missing, setMissing] = useState(false);
   const label = BRAND_LABEL[name];
+  // Every mark sits on a small light tile (white, rounded corners) so it reads on the dark panel.
   if (missing) {
-    return <span className="inline-flex items-center rounded-[4px] border border-[#D9D5CC] bg-white px-2 py-0.5 font-sans text-[11px] font-medium text-[#4A463E]" style={{ height }}>{label}</span>;
+    return <span className="inline-flex items-center rounded-[6px] bg-white px-2 font-sans text-[11px] font-medium text-[#4A463E]" style={{ height: 28 }}>{label}</span>;
   }
   if (name === "econt") {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src="/brand/econt.svg" alt={label} height={height} style={{ height, width: "auto" }} onError={() => setMissing(true)} />;
+    return (
+      <span className="inline-flex items-center rounded-[6px] bg-white px-2.5 py-1.5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/econt.svg" alt={label} height={height} style={{ height, width: "auto" }} onError={() => setMissing(true)} />
+      </span>
+    );
   }
-  // Payment marks: one uniform badge (white, hairline border) so glyphs of different shapes line up; the glyph is scaled to fit inside.
   return (
-    <span className="inline-flex h-8 w-[54px] items-center justify-center rounded-[4px] border border-[#D9D5CC] bg-white">
+    <span className="inline-flex h-8 w-[54px] items-center justify-center rounded-[6px] bg-white">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`/brand/${name}.svg`} alt={label} width={38} height={18} style={{ objectFit: "contain" }} onError={() => setMissing(true)} />
     </span>
@@ -178,8 +183,8 @@ export function PaymentMarks({ label }: { label: string }) {
 /** "Secure payment" line under the card marks. */
 export function SecureNote({ children }: { children: ReactNode }) {
   return (
-    <p className="flex items-start gap-2 font-sans text-[13px] font-normal leading-snug text-[#4A463E]">
-      <span className="mt-[2px] flex-shrink-0 text-[#4A463E]"><IconLock /></span>
+    <p className="flex items-start gap-2 font-sans text-[13px] font-normal leading-snug text-[#C9C9C9]">
+      <span className="mt-[2px] flex-shrink-0 text-[#C9C9C9]"><IconLock /></span>
       <span>{children}</span>
     </p>
   );
@@ -208,60 +213,60 @@ export function CoSummary({
 }) {
   const [open, setOpen] = useState(false); // phones start collapsed; from 640 px up the summary is always open
   return (
-    <div className="overflow-hidden rounded-[8px] border border-[#E4E0D7] bg-[#F7F6F2]">
+    <div className="overflow-hidden rounded-[8px] border border-[#2F2F2F] bg-[#141414]">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left sm:hidden"
       >
-        <span className="flex items-center gap-2 font-sans text-sm font-medium text-[#1A3A6B]">
+        <span className="flex items-center gap-2 font-sans text-sm font-medium text-[#D4AF37]">
           {open ? hideLabel : toggleLabel}
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden className={`transition-transform ${open ? "rotate-180" : ""}`}>
             <path d="M2 4.5 6 8l4-3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
-        <span className="font-sans text-[15px] font-semibold text-[#1A1A1A]">{total}</span>
+        <span className="font-serif text-lg text-white">{total}</span>
       </button>
 
-      <div className={`${open ? "block" : "hidden"} border-t border-[#E4E0D7] sm:block sm:border-t-0`}>
+      <div className={`${open ? "block" : "hidden"} border-t border-[#2F2F2F] sm:block sm:border-t-0`}>
         <ul className="flex flex-col gap-3.5 px-4 pt-4 pb-3">
           {lines.map((l) => (
             <li key={l.key} className="flex items-center gap-3">
               <div className="relative h-16 w-14 flex-shrink-0 overflow-visible">
-                <div className="relative h-full w-full overflow-hidden rounded-[6px] border border-[#E4E0D7] bg-white">
+                <div className="relative h-full w-full overflow-hidden rounded-[6px] border border-[#2F2F2F] bg-white">
                   {l.image ? (
                     <Image src={l.image} alt={l.imageAlt ?? l.name} fill quality={70} sizes="56px" className="object-cover object-center" />
                   ) : null}
                 </div>
-                <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#4A463E] px-1 font-sans text-[11px] font-medium text-white">
+                <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#3A3A3A] px-1 font-sans text-[11px] font-medium text-white">
                   {l.quantity}
                 </span>
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className={`font-sans text-sm font-medium leading-snug ${l.gift ? "text-[#15803D]" : "text-[#1A1A1A]"}`}>{l.name}</span>
-                {l.detail && <span className="font-sans text-xs text-[#6F6B61]">{l.detail}</span>}
+                <span className={`font-serif text-base leading-snug ${l.gift ? "text-[#4ADE80]" : "text-white"}`}>{l.name}</span>
+                {l.detail && <span className="font-sans text-xs text-[#A0A0A0]">{l.detail}</span>}
               </div>
               <div className="flex flex-shrink-0 flex-col items-end">
-                <span className={`font-sans text-sm font-medium ${l.gift ? "text-[#15803D]" : "text-[#1A1A1A]"}`}>{l.price}</span>
-                {l.compareAt && <span className="font-sans text-xs text-[#6F6B61] line-through">{l.compareAt}</span>}
+                <span className={`font-serif text-base ${l.gift ? "text-[#4ADE80]" : "text-white"}`}>{l.price}</span>
+                {l.compareAt && <span className="font-sans text-xs text-[#A0A0A0] line-through">{l.compareAt}</span>}
               </div>
             </li>
           ))}
         </ul>
 
-        <div className="flex flex-col gap-2 border-t border-[#E4E0D7] px-4 py-3.5">
+        <div className="flex flex-col gap-2 border-t border-[#2F2F2F] px-4 py-3.5">
           {rows.map((r) => (
             <div key={r.key} className="flex items-baseline justify-between gap-3 font-sans text-sm">
-              <span className={r.tone === "discount" ? "text-[#15803D]" : "text-[#4A463E]"}>{r.label}</span>
-              <span className={`font-medium ${r.tone === "discount" || r.tone === "free" ? "text-[#15803D]" : "text-[#1A1A1A]"}`}>{r.value}</span>
+              <span className={r.tone === "discount" ? "text-[#4ADE80]" : "text-[#C9C9C9]"}>{r.label}</span>
+              <span className={`font-medium ${r.tone === "discount" || r.tone === "free" ? "text-[#4ADE80]" : "text-white"}`}>{r.value}</span>
             </div>
           ))}
         </div>
 
-        <div className="flex items-baseline justify-between gap-3 border-t border-[#E4E0D7] px-4 py-3.5">
-          <span className="font-sans text-[15px] font-semibold text-[#1A1A1A]">{totalLabel}</span>
-          <span className="font-sans text-xl font-semibold text-[#1A1A1A]">{total}</span>
+        <div className="flex items-baseline justify-between gap-3 border-t border-[#2F2F2F] px-4 py-3.5">
+          <span className="font-sans text-[15px] font-semibold text-white">{totalLabel}</span>
+          <span className="font-serif text-2xl text-white">{total}</span>
         </div>
       </div>
     </div>
@@ -274,7 +279,7 @@ export function CoSubmit({ busy, busyLabel, children }: { busy: boolean; busyLab
     <button
       type="submit"
       disabled={busy}
-      className={`flex h-14 w-full items-center justify-center gap-2 rounded-[6px] bg-[#0F2850] px-6 font-sans text-base font-medium text-white transition-colors hover:bg-[#163A6E] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60`}
+      className={`flex h-14 w-full items-center justify-center gap-2 rounded-[6px] bg-[#0F2850] px-6 font-sans text-base font-medium text-white transition-colors hover:bg-[#1A3A6B] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60`}
     >
       {busy ? (
         <>
@@ -295,13 +300,13 @@ export function CoTrust({
 }) {
   return (
     <div className="flex flex-col items-center gap-2.5 text-center">
-      <p className="font-sans text-[13px] font-normal leading-relaxed text-[#4A463E]">{points.join("  ·  ")}</p>
-      {note && <p className="font-sans text-xs text-[#6F6B61]">{note}</p>}
-      <p className="font-sans text-xs text-[#6F6B61]">
+      <p className="font-sans text-[13px] font-normal leading-relaxed text-[#C9C9C9]">{points.join("  ·  ")}</p>
+      {note && <p className="font-sans text-xs text-[#A0A0A0]">{note}</p>}
+      <p className="font-sans text-xs text-[#A0A0A0]">
         {links.map((l, i) => (
           <span key={l.href}>
-            {i > 0 && <span aria-hidden className="mx-2 text-[#6F6B61]">|</span>}
-            <a href={l.href} target="_blank" rel="noopener noreferrer" className="underline decoration-[#8F8A80] underline-offset-2 hover:text-[#1A1A1A]">{l.label}</a>
+            {i > 0 && <span aria-hidden className="mx-2 text-[#A0A0A0]">|</span>}
+            <a href={l.href} target="_blank" rel="noopener noreferrer" className="underline decoration-[#8A8A8A] underline-offset-2 hover:text-white">{l.label}</a>
           </span>
         ))}
       </p>

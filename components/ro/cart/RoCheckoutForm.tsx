@@ -333,37 +333,37 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   if (submitted) {
     return (
       <div className="flex flex-col items-center gap-6 py-6 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#B7E0C4] bg-[#E7F5EC]">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#1E5C37] bg-[#0F2A1A]">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15803D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
 
         <div>
-          <h3 className="font-sans text-2xl font-semibold text-[#1A1A1A]">Comanda a fost primită!</h3>
-          <p className="mt-1 font-sans text-sm text-[#5F5B52]">Număr comandă: {orderRef}</p>
+          <h3 className="font-serif text-2xl text-white">Comanda a fost primită!</h3>
+          <p className="mt-1 font-sans text-sm text-[#B0B0B0]">Număr comandă: {orderRef}</p>
         </div>
 
-        <div className="flex w-full flex-col gap-2.5 rounded-[8px] border border-[#E4E0D7] bg-[#F7F6F2] p-4 text-left">
+        <div className="flex w-full flex-col gap-2.5 rounded-[8px] border border-[#2F2F2F] bg-[#141414] p-4 text-left">
           <div className="flex justify-between font-sans text-sm">
-            <span className="text-[#5F5B52]">Sumă de plată</span>
-            <span className="font-semibold text-[#1A1A1A]">{fmtRON(submittedTotal)}</span>
+            <span className="text-[#B0B0B0]">Sumă de plată</span>
+            <span className="font-semibold text-white">{fmtRON(submittedTotal)}</span>
           </div>
           <div className="flex justify-between font-sans text-sm">
-            <span className="text-[#5F5B52]">Metodă de plată</span>
-            <span className="text-[#1A1A1A]">Plata la livrare</span>
+            <span className="text-[#B0B0B0]">Metodă de plată</span>
+            <span className="text-white">Plata la livrare</span>
           </div>
           <div className="flex justify-between gap-4 font-sans text-sm">
-            <span className="text-[#5F5B52]">Livrare estimată</span>
-            <span className="text-right text-[#1A1A1A]">{RO_DELIVERY_DAYS} zile lucrătoare de la expediere</span>
+            <span className="text-[#B0B0B0]">Livrare estimată</span>
+            <span className="text-right text-white">{RO_DELIVERY_DAYS} zile lucrătoare de la expediere</span>
           </div>
         </div>
 
-        <p className="font-sans text-sm leading-relaxed text-[#4A463E]">
-          Am trimis confirmarea la <span className="break-all font-medium text-[#1A1A1A]">{submittedEmail}</span>
+        <p className="font-sans text-sm leading-relaxed text-[#C9C9C9]">
+          Am trimis confirmarea la <span className="break-all font-medium text-white">{submittedEmail}</span>
         </p>
 
-        <p className="font-sans text-xs text-[#6F6B61]">Plătiți la primirea coletului · Retur în {RO_RETURN_DAYS} zile conform legii</p>
+        <p className="font-sans text-xs text-[#A0A0A0]">Plătiți la primirea coletului · Retur în {RO_RETURN_DAYS} zile conform legii</p>
       </div>
     );
   }
@@ -399,8 +399,8 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       />
 
       <div>
-        <h3 className="font-sans text-xl font-semibold text-[#1A1A1A]">{needsPrepayment ? "Comandă cu plată în avans" : "Date pentru livrare"}</h3>
-        <p className="mt-1 font-sans text-sm text-[#5F5B52]">
+        <h3 className="font-serif text-xl text-white">{needsPrepayment ? "Comandă cu plată în avans" : "Date pentru livrare"}</h3>
+        <p className="mt-1 font-sans text-sm text-[#B0B0B0]">
           {needsPrepayment ? "Se stabilește direct cu noi" : isCardPay ? "Plata cu cardul - livrare gratuită" : "Plătiți la livrare - ramburs"}
         </p>
       </div>
@@ -441,7 +441,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
             <select
               value={form.county}
               onChange={(e) => { set("county", e.target.value); clearError("county"); }}
-              className={`${coInput(!!errors.county)} cursor-pointer appearance-none pr-10 ${form.county ? "" : "text-[#77736A]"}`}
+              className={`${coInput(!!errors.county)} cursor-pointer appearance-none pr-10 ${form.county ? "" : "text-[#9A9A9A]"}`}
               autoComplete="address-level1"
               {...fieldProps("county")}
             >
@@ -451,7 +451,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
             <svg
               width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
               strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-              className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#6F6B61]"
+              className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#A0A0A0]"
             >
               <polyline points="6 9 12 15 18 9" />
             </svg>
@@ -498,8 +498,8 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
           subtitle={`Termen: ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere`}
           right={freeShipping ? (
             <span className="flex flex-col items-end leading-tight">
-              <span className="text-[#15803D]">Gratuită</span>
-              <span className="text-xs font-normal text-[#6F6B61] line-through">{fmtRON(RO_SHIPPING_FEE_RON)}</span>
+              <span className="text-[#4ADE80]">Gratuită</span>
+              <span className="text-xs font-normal text-[#A0A0A0] line-through">{fmtRON(RO_SHIPPING_FEE_RON)}</span>
             </span>
           ) : fmtRON(shippingCost)}
         />
@@ -556,7 +556,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="font-medium text-[#1A1A1A] underline underline-offset-2"
+            className="font-medium text-white underline underline-offset-2"
           >
             Termenii și condițiile
           </a>{" "}
@@ -566,13 +566,13 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="font-medium text-[#1A1A1A] underline underline-offset-2"
+            className="font-medium text-white underline underline-offset-2"
           >
             Politica de confidențialitate
           </a>
         </CoCheck>
         {errors.terms && (
-          <p id="ro-terms-err" role="alert" className="flex items-start gap-1.5 font-sans text-[13px] text-[#B42318]">
+          <p id="ro-terms-err" role="alert" className="flex items-start gap-1.5 font-sans text-[13px] text-[#F87171]">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden className="mt-[3px] flex-shrink-0">
               <circle cx="8" cy="8" r="7" stroke="#B42318" strokeWidth="1.5" /><path d="M8 4.5v4" stroke="#B42318" strokeWidth="1.5" strokeLinecap="round" /><circle cx="8" cy="11" r="0.9" fill="#B42318" />
             </svg>
@@ -583,15 +583,15 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       </>)}
 
       {submitError && (
-        <div role="alert" className="flex flex-col items-center gap-2 rounded-[6px] border border-[#F2C4BE] bg-[#FDF3F2] px-4 py-3 text-center font-sans text-[13px] leading-relaxed text-[#B42318]">
+        <div role="alert" className="flex flex-col items-center gap-2 rounded-[6px] border border-[#7A2A22] bg-[#2A1210] px-4 py-3 text-center font-sans text-[13px] leading-relaxed text-[#F87171]">
           <p>{submitError}</p>
           {reloadHint && (
             <>
-              <p className="text-[#8E2A20]">{reloadHint}</p>
+              <p className="text-[#FCA5A5]">{reloadHint}</p>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="rounded-[6px] border border-[#B42318]/40 px-4 py-2 font-sans text-xs font-medium text-[#B42318] transition-colors hover:bg-[#B42318]/10"
+                className="rounded-[6px] border border-[#F87171]/50 px-4 py-2 font-sans text-xs font-medium text-[#F87171] transition-colors hover:bg-[#F87171]/10"
               >
                 Reîncărcați pagina
               </button>
@@ -601,24 +601,24 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       )}
 
       {needsPrepayment ? (
-        <div className="flex flex-col gap-3 rounded-[8px] border border-[#D9D5CC] bg-[#F7F6F2] px-5 py-5 text-center">
-          <p className="font-sans text-sm leading-relaxed text-[#4A463E]">
+        <div className="flex flex-col gap-3 rounded-[8px] border border-[#606060] bg-[#141414] px-5 py-5 text-center">
+          <p className="font-sans text-sm leading-relaxed text-[#C9C9C9]">
             Produsele cu prețul de la {PREPAYMENT_THRESHOLD_TEXT} în sus se comandă cu plată în avans, stabilită direct cu noi -
             plata la livrare (ramburs) nu este disponibilă pentru această comandă. Vă rugăm să ne contactați pentru a finaliza comanda.
           </p>
           <a
             href={PREPAYMENT_VIBER_LINK}
             onClick={handleViberContactClick}
-            className="flex h-14 w-full items-center justify-center rounded-[6px] bg-[#0F2850] px-6 font-sans text-base font-medium text-white transition-colors hover:bg-[#163A6E]"
+            className="flex h-14 w-full items-center justify-center rounded-[6px] bg-[#0F2850] px-6 font-sans text-base font-medium text-white transition-colors hover:bg-[#1A3A6B]"
           >
             Contactați-ne pe Viber
           </a>
-          <p className="font-sans text-xs text-[#6F6B61]">
-            sau la telefon <span className="font-medium text-[#1A1A1A]">{PREPAYMENT_PHONE}</span>
+          <p className="font-sans text-xs text-[#A0A0A0]">
+            sau la telefon <span className="font-medium text-white">{PREPAYMENT_PHONE}</span>
           </p>
-          <p className="font-sans text-xs text-[#6F6B61]">
+          <p className="font-sans text-xs text-[#A0A0A0]">
             sau prin e-mail la{" "}
-            <a href={`mailto:${PREPAYMENT_EMAIL}`} className="font-medium text-[#1A1A1A] underline underline-offset-2">
+            <a href={`mailto:${PREPAYMENT_EMAIL}`} className="font-medium text-white underline underline-offset-2">
               {PREPAYMENT_EMAIL}
             </a>
           </p>

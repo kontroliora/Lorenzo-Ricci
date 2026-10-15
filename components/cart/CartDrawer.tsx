@@ -33,6 +33,10 @@ export function CartDrawer() {
   // discounts) - sale items are excluded. The server re-derives the same number.
   const promoDiscount = promoApplied ? parseFloat((promoBase(items, totalDiscount) * promoRate).toFixed(2)) : 0;
   const hasSaleItems = items.some((i) => isOnSale(i.product));
+  // "Спестявате": every crossed-out price minus the current one, over the whole cart (sale items only; sets and promo are separate lines).
+  const savings = Math.round(
+    items.reduce((s, { product, quantity }) => s + (isOnSale(product) ? ((product.originalPrice as number) - product.price) * quantity : 0), 0) * 100,
+  ) / 100;
   const total = afterBundles - promoDiscount;
   const count = totalItems();
   const freeShippingThreshold = 60;
@@ -132,24 +136,24 @@ export function CartDrawer() {
       {/* Drawer */}
       <div
         ref={drawerRef}
-        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] ${showCheckout ? "bg-white" : "bg-charcoal-deep"} z-[80] flex flex-col shadow-2xl transition-transform duration-400 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] bg-charcoal-deep z-[80] flex flex-col shadow-2xl transition-transform duration-400 ease-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         role="dialog"
         aria-label="Количка"
       >
-        {/* Header - checkout step: light, with the way back to the cart in it */}
+        {/* Header - checkout step: same dark theme, with the way back to the cart in it */}
         {showCheckout ? (
-          <div className="flex items-center justify-between border-b border-[#E4E0D7] bg-white px-5 py-4">
+          <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
             <button
               onClick={() => setShowCheckout(false)}
-              className="flex items-center gap-2 font-sans text-sm font-medium text-[#4A463E] transition-colors hover:text-[#1A1A1A]"
+              className="flex items-center gap-2 font-sans text-sm font-medium text-[#C9C9C9] transition-colors hover:text-white"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M8.5 2.5 4 7l4.5 4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
               Количка
             </button>
-            <h2 className="font-sans text-base font-semibold text-[#1A1A1A]">Поръчка</h2>
-            <button onClick={closeCart} aria-label="Затвори" className="text-2xl leading-none text-[#6F6B61] transition-colors hover:text-[#1A1A1A]">×</button>
+            <h2 className="font-serif text-xl text-white">Поръчка</h2>
+            <button onClick={closeCart} aria-label="Затвори" className="text-2xl leading-none text-[#A0A0A0] transition-colors hover:text-white">×</button>
           </div>
         ) : (
         <div className="flex items-center justify-between px-6 py-5 border-b border-white/8">
@@ -176,13 +180,13 @@ export function CartDrawer() {
           <FreeShippingRing progress={progress} remaining={remaining} reached={reached} />
         )}
 
-        {/* Countdown timer in the checkout step (owner decision, 2026-10-15): the same running countdown as in the cart, in a slim
-            light bar right under the header - always visible, and never over the order summary. */}
+        {/* Countdown timer in the checkout step (owner decision, 2026-10-15): the same running countdown as in the cart, as a slim
+            dark bar with yellow text right under the header - always visible, and never over the order summary. */}
         {items.length > 0 && showCheckout && (
-          <div className={`flex items-center gap-2.5 border-b px-5 py-2.5 ${timeLeft === 0 ? "border-[#F2C4BE] bg-[#FDF3F2]" : "border-[#F0DDB0] bg-[#FFF8E6]"}`}>
+          <div className={`flex items-center gap-2.5 border-b border-white/8 px-5 py-2.5 ${timeLeft === 0 ? "bg-red-950/30" : "bg-amber-950/20"}`}>
             <svg
               width="15" height="15" viewBox="0 0 24 24" fill="none"
-              stroke={timeLeft === 0 ? "#B42318" : "#8A5A00"}
+              stroke={timeLeft === 0 ? "#FCA5A5" : "#FCD34D"}
               strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
               className="flex-shrink-0"
               aria-hidden="true"
@@ -191,13 +195,13 @@ export function CartDrawer() {
               <polyline points="12 6 12 12 16 14"/>
             </svg>
             {timeLeft > 0 ? (
-              <p className="font-sans text-[13px] font-normal leading-snug text-[#5C4A12]">
+              <p className="font-sans text-[13px] font-normal leading-snug text-[#FDE68A]">
                 Вашата количка ще се пази още{" "}
-                <span className="font-semibold text-[#8A5A00]">{timerMM}:{timerSS}</span>{" "}
+                <span className="font-bold text-[#FCD34D]">{timerMM}:{timerSS}</span>{" "}
                 минути.
               </p>
             ) : (
-              <p className="font-sans text-[13px] font-normal leading-snug text-[#B42318]">
+              <p className="font-sans text-[13px] font-normal leading-snug text-[#FCA5A5]">
                 Времето за резервация изтече.
               </p>
             )}
@@ -232,7 +236,7 @@ export function CartDrawer() {
         )}
 
         {showCheckout ? (
-          <div className="flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6 sm:py-6">
+          <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
             <CheckoutForm
               items={items}
               total={total}
@@ -413,10 +417,19 @@ export function CartDrawer() {
                 </div>
               )}
 
-              {(totalDiscount > 0 || promoDiscount > 0) && (
-                <div className="flex items-center justify-between mb-4 pt-2 border-t border-white/8">
+              {(totalDiscount > 0 || promoDiscount > 0 || savings > 0) && (
+                <div className="mb-4 pt-2 border-t border-white/8">
+                  {/* Only when there is a discount: how much the crossed-out prices save, in the site's accent colour */}
+                  {savings > 0 && (
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-sans text-xs text-[#D4AF37] tracking-wide">Спестявате</span>
+                      <span className="font-sans text-xs font-medium text-[#D4AF37] tracking-wide">-€{savings.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
                   <span className="font-sans text-xs font-medium text-white tracking-wide">Общо</span>
                   <span className="font-serif text-lg text-white">€{total.toFixed(2)}</span>
+                  </div>
                 </div>
               )}
 
@@ -435,8 +448,8 @@ export function CartDrawer() {
                 Поръчай сега - Наложен платеж
               </button>
 
-              <p className="text-center font-sans text-[10px] text-white/25 tracking-wide mt-3">
-                Плащате при получаване · Преглед преди плащане
+              <p className="text-center font-sans text-[13px] leading-snug text-[#C9C9C9] mt-3">
+                Наложен платеж · Доставка с Еконт · Преглед преди плащане
               </p>
             </div>
           </>
