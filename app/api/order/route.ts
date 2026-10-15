@@ -11,10 +11,25 @@ import { previewMarked, previewOrdersAllowed } from "@/lib/deploy-env";
 import type { CardLine } from "@/lib/stripe";
 import { getProductBySlug } from "@/lib/products";
 import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
+import { getOfficeList } from "@/lib/econt-offices";
+import { officeLabel } from "@/lib/econt-label";
 import { validateOrderPricing } from "@/lib/order-pricing";
 import { checkOrderable } from "@/lib/order-availability";
 import { checkPromoCode } from "@/lib/promo";
 import { reserveWithGifts, giftNotes, giftDisplayName, shortModelName, type GiftLine, type GiftReservation, type MissedGift, type ReserveFn, type Shortfall } from "@/lib/gifts";
+
+// Insert an order row. econt_office_code (supabase/orders_econt_office.sql) is optional: if the column is not there yet the order is saved
+// without it (the readable address in orders.address already carries the office code) rather than lost.
+type OrderInsertClient = { from: (t: string) => { insert: (row: Record<string, unknown>) => PromiseLike<{ error: { message: string } | null }> } };
+async function insertOrderRow(sb: OrderInsertClient, row: Record<string, unknown>) {
+  let res = await sb.from("orders").insert(row);
+  if (res.error && "econt_office_code" in row && /econt_office_code|schema cache|column/i.test(res.error.message)) {
+    const { econt_office_code: _dropped, ...rest } = row;
+    void _dropped;
+    res = await sb.from("orders").insert(rest);
+  }
+  return res;
+}
 
 // Order line item shape.
 type ItemPayload = { sku?: string; qty?: number; quantity?: number; slug?: string; name?: string; price?: number; currency?: string };
@@ -64,6 +79,23 @@ export async function POST(req: NextRequest) {
     {
       const dup = await supabaseAdmin().from("orders").select("id").eq("order_ref", orderRefIn).limit(1);
       if (!dup.error && dup.data && dup.data.length > 0) return NextResponse.json({ success: true, duplicate: true, gifts: [], giftNotes: [] });
+    }
+
+    // ── ECONT OFFICE - the checkout's picker sends the office code from Econt's official list. A code that is not in the list is
+    //    refused; a known one replaces the address text with the canonical label (name, code, address), so what is saved is what
+    //    Econt knows. No code = the manual fallback field (the picker was unavailable): the typed text stays as it is. If the list
+    //    itself cannot be loaded right now the order is NOT blocked (the label the browser built is kept).
+    const econtOfficeCode = String(customer.econtOfficeCode ?? "").trim().slice(0, 20);
+    if (econtOfficeCode) {
+      if (!/^[A-Za-z0-9@_-]{1,20}$/.test(econtOfficeCode)) {
+        return NextResponse.json({ success: false, code: "bad_office", error: "Невалиден офис на Еконт. Моля, изберете офис отново." }, { status: 400 });
+      }
+      const officeList = await getOfficeList();
+      if (officeList) {
+        const office = officeList.offices.find((o) => o.c === econtOfficeCode);
+        if (!office) return NextResponse.json({ success: false, code: "bad_office", error: "Този офис на Еконт не е намерен. Моля, изберете офис отново." }, { status: 400 });
+        customer.officeAddress = officeLabel(office);
+      }
     }
 
     // ── PRICE GUARD - the browser reports unit prices and totals; check them against
@@ -230,7 +262,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 1. Save the order as PENDING_PAYMENT (stock is already reserved). It stays out of the fulfilment board and the Econt flows.
-      const { error: insErr } = await sbAdmin.from("orders").insert({
+      const { error: insErr } = await insertOrderRow(sbAdmin, {
         order_ref:               orderRef,
         name:                    String(customer.name          ?? ""),
         phone:                   String(customer.phone         ?? ""),
@@ -253,6 +285,7 @@ export async function POST(req: NextRequest) {
         payment_method:          "card",
         payment_status:          "pending",
         payment_currency:        "EUR",
+        ...(econtOfficeCode ? { econt_office_code: econtOfficeCode } : {}),
       });
       if (insErr) {
         console.error("[Order] card order insert failed (stripe_payments.sql run?):", insErr.message);
@@ -335,15 +368,16 @@ export async function POST(req: NextRequest) {
         notes:                   previewMarked(String(customer.notes         ?? "")),
         promo_code:              promoCode || null,
         promo_discount:          Number(order.promoDiscount ?? 0) || null,
+        ...(econtOfficeCode ? { econt_office_code: econtOfficeCode } : {}),
       };
-      let dbError = (await supabaseAdmin().from("orders").insert(orderRow)).error;
+      let dbError = (await insertOrderRow(supabaseAdmin(), orderRow)).error;
       // If the promo columns aren't migrated yet, save the order WITHOUT them
       // rather than losing the whole order (it's already shown as success).
       if (dbError && /promo_(code|discount)|schema cache|column/i.test(dbError.message)) {
         const rowNoPromo: Record<string, unknown> = { ...orderRow };
         delete rowNoPromo.promo_code;
         delete rowNoPromo.promo_discount;
-        dbError = (await supabaseAdmin().from("orders").insert(rowNoPromo)).error;
+        dbError = (await insertOrderRow(supabaseAdmin(), rowNoPromo)).error;
       }
       if (dbError) throw dbError;
       console.log("[Supabase] Order saved");

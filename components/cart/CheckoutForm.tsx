@@ -14,6 +14,8 @@ import {
   BrandMark, CoCheck, CoField, CoRadioCard, CoSection, CoSubmit, CoSummary, CoTrust, IconHome, IconOffice, PaymentMarks, SecureNote, coInput,
   type SummaryLine, type SummaryRow,
 } from "@/components/checkout/ui";
+import { EcontOfficePicker, useEcontOffices } from "@/components/checkout/EcontOfficePicker";
+import { officeLabel } from "@/lib/econt-label";
 
 // ─── Shipping options ────────────────────────────────────────────────────────
 const SHIPPING_OPTIONS = [
@@ -64,6 +66,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       city: "",
       postCode: "",
       officeAddress: "",
+      econtOfficeCode: "",   // code of the office / automat chosen from Econt's list ("" = typed by hand)
       notes: "",
       smsMarketingConsent:   false,
       emailMarketingConsent: true,
@@ -173,6 +176,12 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   const shippingCost     = freeShipping ? 0 : selectedOption.price;
   const grandTotal       = total + shippingCost;
   const isHomeAddress    = shippingId === "home-address";
+  // "До офис или автомат на Еконт": pick from Econt's official list. While it loads a placeholder shows; if it cannot be loaded
+  // the old manual field is shown instead (and the order is saved with the typed text, no office code).
+  const offices          = useEcontOffices(!isHomeAddress);
+  const pickerActive     = !isHomeAddress && offices.status === "ready" && !!offices.data;
+  const pickerLoading    = !isHomeAddress && (offices.status === "idle" || offices.status === "loading");
+  const chosenOffice     = offices.data?.offices.find((o) => o.c === form.econtOfficeCode) ?? null;
 
   const addressLabel       = isHomeAddress ? "Адрес за доставка" : "Адрес на офис или автомат";
   const addressPlaceholder =
@@ -188,7 +197,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     else if (!form.email.includes("@"))                    errs.email = "Невалиден имейл";
     if (!form.city.trim())                                 errs.city = "Въведете град";
     if (isHomeAddress && !form.postCode.trim())            errs.postCode = "Моля, въведете пощенски код";
-    if (!form.officeAddress.trim())                        errs.officeAddress = isHomeAddress ? "Въведете личен адрес" : "Въведете адрес на офис";
+    if (!form.officeAddress.trim())                        errs.officeAddress = isHomeAddress ? "Въведете личен адрес" : pickerActive ? "Изберете офис или автомат от списъка" : "Въведете адрес на офис";
     return errs;
   };
 
@@ -490,6 +499,8 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
                 onSelect={() => {
                   setShippingId(option.id);
                   if (option.id !== "home-address") { setForm((f) => ({ ...f, postCode: "" })); clearError("postCode"); }
+                  // the office label and a home address are different things: do not carry one over into the other
+                  if (option.id !== shippingId && form.econtOfficeCode) { setForm((f) => ({ ...f, officeAddress: "", econtOfficeCode: "" })); clearError("officeAddress"); }
                 }}
                 icon={option.id === "econt-office" ? <IconOffice /> : <IconHome />}
                 title={option.id === "econt-office" ? "До офис или автомат на Еконт" : "До адрес с Еконт"}
@@ -506,18 +517,42 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         </CoSection>
         )}
 
-        {/* ── Address field (dynamic label) ────────────────────────────── */}
-        <CoField id="field-officeAddress" htmlFor="bg-officeAddress" label={addressLabel} error={errors.officeAddress} errorId="bg-officeAddress-err">
-          <input
-            type="text"
-            placeholder={addressPlaceholder}
-            value={form.officeAddress}
-            onChange={(e) => { setForm((f) => ({ ...f, officeAddress: e.target.value })); clearError("officeAddress"); }}
-            className={coInput(!!errors.officeAddress)}
-            autoComplete={isHomeAddress ? "street-address" : "off"}
-            {...inputProps("officeAddress")}
-          />
-        </CoField>
+        {/* ── Address: office / automat picker (Econt's official list), the manual field as the fallback, a home address by hand ── */}
+        {pickerActive && offices.data ? (
+          <div id="field-officeAddress">
+            <EcontOfficePicker
+              data={offices.data}
+              cityHint={form.city}
+              selected={chosenOffice}
+              onCity={(c) => { setForm((f) => ({ ...f, city: c.n, ...(chosenOffice && chosenOffice.i !== c.i ? { officeAddress: "", econtOfficeCode: "" } : {}) })); clearError("city"); }}
+              onSelect={(o) => {
+                setForm((f) => ({ ...f, officeAddress: o ? officeLabel(o) : "", econtOfficeCode: o ? o.c : "" }));
+                if (o) clearError("officeAddress");
+              }}
+              error={errors.officeAddress}
+              errorId="bg-officeAddress-err"
+            />
+          </div>
+        ) : pickerLoading ? (
+          <div id="field-officeAddress" role="status" className="rounded-[8px] border border-[#2F2F2F] bg-[#141414] px-4 py-4 font-sans text-[13px] text-[#A0A0A0]">
+            Зареждане на офисите и автоматите на Еконт...
+          </div>
+        ) : (
+          <CoField
+            id="field-officeAddress" htmlFor="bg-officeAddress" label={addressLabel} error={errors.officeAddress} errorId="bg-officeAddress-err"
+            hint={!isHomeAddress ? "Списъкът с офисите на Еконт не се зарежда в момента. Въведете офиса или автомата ръчно." : undefined}
+          >
+            <input
+              type="text"
+              placeholder={addressPlaceholder}
+              value={form.officeAddress}
+              onChange={(e) => { setForm((f) => ({ ...f, officeAddress: e.target.value, econtOfficeCode: "" })); clearError("officeAddress"); }}
+              className={coInput(!!errors.officeAddress)}
+              autoComplete={isHomeAddress ? "street-address" : "off"}
+              {...inputProps("officeAddress")}
+            />
+          </CoField>
+        )}
 
         {isHomeAddress && (
           <CoField id="field-postCode" htmlFor="bg-postCode" label="Пощенски код" error={errors.postCode} errorId="bg-postCode-err">
