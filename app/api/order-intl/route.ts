@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { Resend } from "resend";
+import { langOf, mayEmail } from "@/lib/mail-policy";
+
+// mail-policy: waitlist_intl
 import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { buildWaitlistEmail, waitlistSubject } from "@/lib/waitlist-email";
 
 export const dynamic = "force-dynamic";
@@ -129,7 +133,7 @@ export async function POST(req: NextRequest) {
       email_marketing_consent: Boolean(customer.emailMarketingConsent),
       is_international:         true,
     };
-    const { error: dbError } = await supabase.from("orders").insert(orderRow);
+    const { error: dbError } = await supabaseAdmin().from("orders").insert(orderRow);
     if (dbError) {
       // The lead is the deliverable — losing it is loud, not silent.
       console.error("[order-intl] Failed to save lead:", dbError.message);
@@ -154,7 +158,9 @@ export async function POST(req: NextRequest) {
       fbp:       req.cookies.get("_fbp")?.value,
     };
     await Promise.allSettled([
-      promoCode ? sendWaitlistEmail(email, buildWaitlistEmail({
+      // The note is ENGLISH (Dubai test): never to a Romanian recipient (nor to a Bulgarian one).
+      promoCode && mayEmail("waitlist_intl", langOf({ ship_country: String(customer.country ?? "").toUpperCase() }) === "ro" ? "ro" : "en", "en")
+        ? sendWaitlistEmail(email, buildWaitlistEmail({
         firstName:   String(customer.name ?? "").split(" ")[0],
         itemNames:   items.map((i) => String(i.name ?? "")).filter(Boolean),
         promoCode,

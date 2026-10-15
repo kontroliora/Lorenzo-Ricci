@@ -8,6 +8,7 @@ import {
   cancelOrder,
   markNoAnswer,
   shipOrder,
+  shipRoOrder,
   markCompleted,
   markReturned,
   markRestocked,
@@ -16,6 +17,7 @@ import {
 } from "./actions";
 import { callTimer, sofiaHHMM, formatAttemptList, formatAttemptAudit } from "@/lib/callSchedule";
 import { OrderItemsList } from "./OrderItemsList";
+import { isRoOrder, fmtLei, fmtLeiWithEuro } from "@/lib/market";
 import { PaymentBadge, PaidCardCollectLine } from "./PaymentUi";
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
@@ -63,16 +65,19 @@ const backLink: React.CSSProperties = {
 };
 
 export function OrderCard({
-  order, history, log, now,
+  order, history, log, now, onNotice,
 }: {
   order: AdminOrder;
   history?: CustomerHistory;
   log?: StatusLogRow[];
   now: number;
+  onNotice?: (msg: string) => void; // board-level banner: the card may leave the tab (and unmount) right after the action
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
+  const ro = isRoOrder(order); // Romanian order: lei, AWB of a Romanian courier, every action also e-mails the customer in Romanian
   const [tracking, setTracking] = useState(order.tracking_number ?? "");
+  const [trackUrl, setTrackUrl] = useState("");
   const [noteDraft, setNoteDraft] = useState("");
   const [hoursOpen, setHoursOpen] = useState<number | null>(null);
 
@@ -102,7 +107,7 @@ export function OrderCard({
       setError("");
       try {
         const err = await fn();
-        if (err) setError(err);
+        if (err) { setError(err); onNotice?.(`${order.order_ref ?? order.id}: ${err}`); }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Възникна грешка. Опитай пак.");
       }
@@ -134,6 +139,9 @@ export function OrderCard({
   const codSub = order.subtotal != null ? Number(order.subtotal) : null;
   const codShip = Number(order.shipping_cost ?? 0);
   const showBreakdown = codSub != null && codSub > 0 && Math.abs(codSub + codShip - cod) < 0.01;
+  // Money: euro for Bulgaria, lei for Romania (with the euro equivalent next to the total).
+  const money = (n: number) => (ro ? fmtLei(n) : `€${n.toFixed(2)}`);
+  const totalLabel = ro ? fmtLeiWithEuro(cod) : `€${cod.toFixed(2)}`;
 
   // Notes shown on every card, every status, to owner AND employee. Two sources:
   // the note from "Създай поръчка" (order.notes) + appended call comments
@@ -180,6 +188,7 @@ export function OrderCard({
           <div style={{ color: "#fff", fontSize: 15, fontWeight: 500 }}>
             {order.name || "—"}
             {order.order_ref && <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, marginLeft: 8, fontFamily: "monospace" }}>{order.order_ref}</span>}
+            {ro && <span title="Поръчка от Румъния" style={{ marginLeft: 8, background: "rgba(0,43,127,0.35)", border: "0.5px solid rgba(255,206,0,0.55)", color: "#FFCE00", fontSize: 10, letterSpacing: "0.12em", padding: "2px 8px", borderRadius: 20, verticalAlign: "middle", whiteSpace: "nowrap" }}>🇷🇴 RO</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 5 }}>
             <span style={{ display: "inline-block", background: histBadge.bg, color: histBadge.fg, fontSize: 11, padding: "3px 9px", borderRadius: 20 }}>{histBadge.text}</span>
@@ -200,22 +209,23 @@ export function OrderCard({
       {/* Details */}
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
         <OrderItemsList items={order.items ?? []} />
-        <div style={{ color: "#fff" }}>{order.shipping_method || (order.courier === "home" ? "Еконт до адрес" : "Еконт до офис")} — {order.address || "—"}{order.city ? `, ${order.city}` : ""}</div>
+        <div style={{ color: "#fff" }}>{ro ? "Куриер до адрес (Румъния)" : (order.shipping_method || (order.courier === "home" ? "Еконт до адрес" : "Еконт до офис"))} — {order.address || "—"}{order.city ? `, ${order.city}` : ""}{ro && order.post_code ? `, ${order.post_code}` : ""}</div>
+        {ro && order.email && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{order.email}</div>}
         {showBreakdown && (
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2, display: "flex", gap: 14, flexWrap: "wrap" }}>
-            <span>Стока: <span style={{ color: "rgba(255,255,255,0.8)" }}>€{codSub!.toFixed(2)}</span></span>
-            <span>Доставка: <span style={{ color: "rgba(255,255,255,0.8)" }}>{codShip > 0 ? `€${codShip.toFixed(2)}` : "безплатна"}</span></span>
+            <span>Стока: <span style={{ color: "rgba(255,255,255,0.8)" }}>{money(codSub!)}</span></span>
+            <span>Доставка: <span style={{ color: "rgba(255,255,255,0.8)" }}>{codShip > 0 ? money(codShip) : "безплатна"}</span></span>
           </div>
         )}
         {paidCard ? (
-          <PaidCardCollectLine zero="0" paidAmount={`€${cod.toFixed(2)}`} paidAt={order.paid_at ? fmtDate(order.paid_at) : null} />
+          <PaidCardCollectLine zero="0" paidAmount={totalLabel} paidAt={order.paid_at ? fmtDate(order.paid_at) : null} />
         ) : (
-          <div style={{ color: "#fff", fontWeight: 500 }}>€{cod.toFixed(2)}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · {isCard(order) ? "карта, още не е платено" : "наложен платеж"}</span></div>
+          <div style={{ color: "#fff", fontWeight: 500 }}>{totalLabel}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · {isCard(order) ? "карта, още не е платено" : "наложен платеж"}</span></div>
         )}
         {order.promo_code && (
           <div style={{ marginTop: 4, fontSize: 12, color: "#C0DD97" }}>
             ◈ Промо код: <span style={{ fontFamily: "monospace", color: "#fff", letterSpacing: "0.04em" }}>{order.promo_code}</span>
-            {order.promo_discount ? <span style={{ color: "rgba(255,255,255,0.5)" }}> · отстъпка −€{Number(order.promo_discount).toFixed(2)}</span> : null}
+            {order.promo_discount ? <span style={{ color: "rgba(255,255,255,0.5)" }}> · отстъпка −{money(Number(order.promo_discount))}</span> : null}
           </div>
         )}
         {order.status === "new" && !excluded && hoursOpen !== null && (
@@ -318,6 +328,7 @@ export function OrderCard({
         </div>
       ) : (
         <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", marginTop: 14, paddingTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
+          {ro && <div style={{ color: "rgba(255,213,0,0.65)", fontSize: 11 }}>🇷🇴 Всяко действие тук праща имейл на румънски на клиента ({order.email || "няма имейл"}).</div>}
           {cancelStep === "closed" && order.status === "new" && (
             <>
               <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>Резултат от обаждането</div>
@@ -334,12 +345,13 @@ export function OrderCard({
             <>
               <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>Пакетиране и изпращане</div>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <input value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder="Тракинг номер от Еконт…" style={{ flex: 1, minWidth: 150, background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 13 }} />
-                <button disabled={pending} onClick={() => run(() => shipOrder(order.id, tracking))} style={primaryBtn}>Маркирай изпратена</button>
+                <input value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder={ro ? "AWB номер на румънския куриер…" : "Тракинг номер от Еконт…"} style={{ flex: 1, minWidth: 150, background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 13 }} />
+                {ro && <input value={trackUrl} onChange={(e) => setTrackUrl(e.target.value)} placeholder="Линк за проследяване https://… (по желание)" style={{ flex: 1, minWidth: 150, background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 13 }} />}
+                <button disabled={pending} onClick={() => run(() => (ro ? shipRoOrder(order.id, tracking, trackUrl) : shipOrder(order.id, tracking)))} style={primaryBtn}>Маркирай изпратена</button>
                 <button onClick={() => setCancelStep("category")} style={outlineBtn("#A32D2D", "#F09595")}>Откажи</button>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                <span style={{ color: "#FAC775", fontSize: 11 }}>⚠ без тракинг не може да стане изпратена</span>
+                <span style={{ color: "#FAC775", fontSize: 11 }}>{ro ? "⚠ без AWB не може да стане изпратена · AWB се въвежда ръчно" : "⚠ без тракинг не може да стане изпратена"}</span>
                 {fakeLink}
               </div>
             </>
@@ -348,9 +360,9 @@ export function OrderCard({
           {cancelStep === "closed" && order.status === "shipped" && (
             <>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>Тракинг {order.tracking_number} · чака Еконт да потвърди взимане</span>
+                <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>{ro ? `AWB ${order.tracking_number} · следи се ръчно (няма автоматична проверка при румънския куриер)` : `Тракинг ${order.tracking_number} · чака Еконт да потвърди взимане`}</span>
                 <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button disabled={pending} onClick={() => run(() => markCompleted(order.id))} style={outlineBtn("rgba(255,255,255,0.2)", "rgba(255,255,255,0.6)")}>Ръчно завършена</button>
+                  <button disabled={pending} onClick={() => run(() => markCompleted(order.id))} style={ro ? primaryBtn : outlineBtn("rgba(255,255,255,0.2)", "rgba(255,255,255,0.6)")}>{ro ? "Доставена" : "Ръчно завършена"}</button>
                   <button disabled={pending} onClick={() => run(() => markReturned(order.id))} style={outlineBtn("#A32D2D", "#F09595")}>Върната / невзета</button>
                 </span>
               </div>
@@ -359,7 +371,7 @@ export function OrderCard({
 
           {cancelStep === "closed" && order.status === "returning" && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ color: "#FAC775", fontSize: 12 }}>⏳ Чака да я получа обратно от Еконт</span>
+              <span style={{ color: "#FAC775", fontSize: 12 }}>⏳ Чака да я получа обратно от {ro ? "куриера" : "Еконт"}</span>
               <button disabled={pending} onClick={() => run(() => markRestocked(order.id))} style={primaryBtn}>Взех пратката</button>
             </div>
           )}
@@ -377,7 +389,7 @@ export function OrderCard({
               {cancelStep === "category" && (
                 <>
                   <span style={{ color: "#F09595", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>Причина за отказ</span>
-                  {paidCard && <span style={{ color: "#FAC775", fontSize: 12 }}>⚠ Платена с карта - след отказа върни сумата от Stripe (автоматично връщане няма).</span>}
+                  {paidCard && <span style={{ color: "#FAC775", fontSize: 12 }}>⚠ Платена с карта - отказът връща сумата автоматично през Stripe{ro ? " и праща на клиента имейл на румънски" : ""}.</span>}
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button onClick={() => setCancelStep("refuse")} style={pillBtn}>Отказа по телефон</button>
                     <button onClick={() => doCancel("unreachable", "не вдига 3+ опита")} style={pillBtn}>Не вдига 3+ опита</button>

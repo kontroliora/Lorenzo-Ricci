@@ -1,5 +1,7 @@
+// mail-policy: order_confirmation, card_paid
 import { Resend } from "resend";
 import { createHash } from "crypto";
+import { mayEmail, type MailKind, type MailLang } from "./mail-policy";
 
 // Order notifications shared by /api/order (cash on delivery) and the Stripe webhook (card orders, after payment):
 // the team e-mail, the customer confirmation e-mail and the Meta Conversions API Purchase. Moved here unchanged from
@@ -294,7 +296,15 @@ export async function sendAdminEmail(subject: string, html: string): Promise<voi
   console.log("[Resend] Admin email sent");
 }
 
-export async function sendCustomerEmail(to: string, html: string, subject = "Вашата поръчка е получена - Lorenzo Ricci"): Promise<void> {
+/**
+ * The customer's e-mail. `policy` is the language rule (CLAUDE.md, lib/mail-policy.ts): the kind of mail, the RECIPIENT's language and
+ * the language of the template. The templates here are Bulgarian: a Romanian recipient is never mailed one (the call simply does nothing).
+ */
+export async function sendCustomerEmail(
+  to: string, html: string, subject = "Вашата поръчка е получена - Lorenzo Ricci",
+  policy: { kind: MailKind; lang: MailLang } = { kind: "order_confirmation", lang: "bg" },
+): Promise<void> {
+  if (!mayEmail(policy.kind, policy.lang, "bg")) return;
   const resend = getResend();
   if (!resend) return;
   const { error } = await resend.emails.send({

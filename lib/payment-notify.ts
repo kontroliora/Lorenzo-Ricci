@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "./supabase-admin";
 import type { OrderRow } from "./payment-orders";
+import { langOf } from "./mail-policy";
 import { buildAdminEmail, buildCustomerEmail, sendAdminEmail, sendCustomerEmail, sendCapiPurchase } from "./order-notify";
 import { buildRoAdminEmail, buildRoCustomerEmail, roPaidSubject, type RoOrderEmailData } from "./ro/emails";
 import { RO_ADMIN_RECIPIENTS, sendMail, sendCapiPurchase as sendRoCapiPurchase } from "./ro/order-notify";
@@ -39,7 +40,7 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
     const names = ["team e-mail", ...(email ? ["customer e-mail"] : []), "Meta Purchase"];
     const r = await Promise.allSettled([
       within(sendMail({ from: "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>", to: RO_ADMIN_RECIPIENTS, subject: `💳🇷🇴 Платена поръчка (Румъния) - ${name} - ${order.order_ref}`, html: buildRoAdminEmail(data, undefined, { paidByCard: true }) }), "team e-mail"),
-      ...(email ? [within(sendMail({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [email], subject: roPaidSubject, html: buildRoCustomerEmail(data, { paidByCard: true }) }), "customer e-mail")] : []),
+      ...(email ? [within(sendMail({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [email], subject: roPaidSubject, html: buildRoCustomerEmail(data, { paidByCard: true }) }, "card_paid"), "customer e-mail")] : []),
       within(sendRoCapiPurchase({ ...data, skus: paidLines.map((i) => String(i.sku ?? "")).filter(Boolean) }, ctx), "Meta Purchase"),
     ]);
     const failed: string[] = [];
@@ -59,7 +60,7 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
   const names = ["team e-mail", ...(email ? ["customer e-mail"] : []), "Meta Purchase"];
   const r = await Promise.allSettled([
     within(sendAdminEmail(`💳 Платена поръчка - ${name}`, buildAdminEmail(orderObj, null, { paidByCard: true })), "team e-mail"),
-    ...(email ? [within(sendCustomerEmail(email, buildCustomerEmail(orderObj, { paidByCard: true }), "Плащането е получено - Lorenzo Ricci"), "customer e-mail")] : []),
+    ...(email ? [within(sendCustomerEmail(email, buildCustomerEmail(orderObj, { paidByCard: true }), "Плащането е получено - Lorenzo Ricci", { kind: "card_paid", lang: langOf(order) }), "customer e-mail")] : []),
     within(sendCapiPurchase({ ...orderObj, items: paidLines }, order.order_ref, Number(order.total ?? 0), ctx), "Meta Purchase"),
   ]);
   const failed: string[] = [];

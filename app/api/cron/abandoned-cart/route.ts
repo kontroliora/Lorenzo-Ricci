@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { buildRecoveryEmail, type RecoverySession } from "@/lib/recovery-email";
+import { buildRoRecoveryEmail, roRecoverySubject, type RoRecoverySession } from "@/lib/ro/recovery-email";
+import { langOf, mayEmail } from "@/lib/mail-policy";
+
+// mail-policy: abandoned_cart
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,9 +41,10 @@ export async function GET(req: NextRequest) {
   const idleCutoff = new Date(Date.now() -            60 * 60 * 1000).toISOString(); // >1 h idle
   const ageCutoff  = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(); // <7 days old
 
-  const { data: sessions, error } = await supabase
+  // `lang` (supabase/lang_columns.sql) says which site the cart came from; without the column every cart is a Bulgarian one, as before.
+  const baseQuery = (cols: string) => supabase
     .from("cart_sessions")
-    .select("session_id, email, name, phone, items, subtotal, updated_at")
+    .select(cols)
     .eq("status", "pending")
     .not("recovery_consent", "is", false) // GDPR: skip explicit opt-outs (unticked box); true/null still send
     .is("recovery_sent_at", null)
@@ -47,6 +52,10 @@ export async function GET(req: NextRequest) {
     .lt("updated_at", idleCutoff)
     .gt("updated_at", ageCutoff)
     .limit(50);
+  let { data: sessions, error } = await baseQuery("session_id, email, name, phone, items, subtotal, updated_at, recovery_consent, lang");
+  if (error && /lang/i.test(error.message)) {
+    ({ data: sessions, error } = await baseQuery("session_id, email, name, phone, items, subtotal, updated_at, recovery_consent"));
+  }
 
   if (error) {
     console.error("[AbandonedCart] Query error:", error.message);
@@ -61,15 +70,21 @@ export async function GET(req: NextRequest) {
   const resend = new Resend(resendKey);
   let sent = 0;
 
-  for (const session of sessions as RecoverySession[]) {
+  for (const session of sessions as unknown as (RecoverySession & { lang?: string | null; recovery_consent?: boolean | null })[]) {
     // Skip empty carts — nothing to recover.
     if (!Array.isArray(session.items) || session.items.length === 0) continue;
+    // The reminder is in the language of the site the cart came from. Romanian carts additionally need the explicit consent
+    // (the /ro checkout only stores a cart when it was given); anything without a version in the recipient's language is not sent.
+    const lang = langOf(session);
+    const ro = lang === "ro";
+    if (!mayEmail("abandoned_cart", lang, ro ? "ro" : "bg")) continue;
+    if (ro && session.recovery_consent !== true) continue;
     try {
       const { error: emailError } = await resend.emails.send({
         from:    "Lorenzo Ricci <info@lorenzo-ricci.com>",
         to:      session.email,
-        subject: "Вашата количка ви очаква — Lorenzo Ricci",
-        html:    buildRecoveryEmail(session),
+        subject: ro ? roRecoverySubject : "Вашата количка ви очаква — Lorenzo Ricci",
+        html:    ro ? buildRoRecoveryEmail(session as unknown as RoRecoverySession) : buildRecoveryEmail(session),
       });
 
       if (emailError) {

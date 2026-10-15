@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 const VALID_DAYS = 14;
 
@@ -19,8 +20,10 @@ function expiryFor(subscribedAtISO: string): string | null {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json() as { email?: string };
+    const { email, lang } = await req.json() as { email?: string; lang?: string };
     const clean = (email ?? "").trim().toLowerCase();
+    // The language of the site the person subscribed on (/ro sends "ro"): stored so every e-mail goes in their language.
+    const siteLang = lang === "ro" ? "ro" : "bg";
 
     if (!clean || !clean.includes("@")) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
@@ -38,6 +41,13 @@ export async function POST(req: NextRequest) {
     if (error || !row) throw error ?? new Error("newsletter_get_or_create returned no row");
 
     if (row.out_is_new) console.log("[Newsletter] New subscriber, code:", row.out_promo_code);
+
+    // New subscribers start as 'bg' (column default); a signup on /ro marks them 'ro' (also an existing one: the latest choice wins).
+    // Needs supabase/lang_columns.sql; until it has run the update fails harmlessly and the subscriber stays as before.
+    if (siteLang === "ro") {
+      const { error: langErr } = await supabaseAdmin().from("newsletter_subscribers").update({ lang: "ro" }).eq("email", clean);
+      if (langErr) console.warn("[Newsletter] could not store lang (run supabase/lang_columns.sql):", langErr.message);
+    }
 
     return NextResponse.json({
       success: true,

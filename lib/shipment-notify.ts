@@ -1,8 +1,10 @@
 // Shared shipment-email passes, used by BOTH the daily cron and the "Обнови"
 // admin action (so Email 1 goes out the moment tracking is reconciled, not up
 // to 24h later). Every email is idempotent via the *_sent_at columns.
+// mail-policy: shipment_shipped, shipment_reminder
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
+import { langOf, mayEmail } from "@/lib/mail-policy";
 import { getRawStatuses, analyzeShipment } from "./econt";
 import {
   buildShippedEmail, buildReminderOfficeEmail, buildReminderDoorEmail,
@@ -85,6 +87,8 @@ export async function sendShipConfirmations(sb: SupabaseClient): Promise<{ sent:
   const nowIso = new Date().toISOString();
   let sent = 0;
   for (const o of orders) {
+    // Both e-mails of this file are the BULGARIAN template: never to a Romanian order (language from the reference/lang signals).
+    if (!mayEmail("shipment_shipped", langOf(o), "bg")) continue;
     const raw = statuses.get(clean(o.tracking_number));
     if (!raw) continue;
     const a = analyzeShipment(raw);
@@ -106,7 +110,7 @@ export async function sendReminders(sb: SupabaseClient): Promise<{ sent: number;
   const resend = getResend();
   if (!resend) return { sent: 0, scanned: 0 };
   const { data, error } = await readOrders((cols) => sb.from("orders").select(cols)
-    .eq("status", "shipped").not("tracking_number", "is", null).not("email", "is", null)
+    .eq("status", "shipped").eq("is_international", false).not("tracking_number", "is", null).not("email", "is", null)
     .is("reminder_sent_at", null) as unknown as Q);
   if (error) throw new Error(error.message);
   const orders = (data ?? []) as OrderRow[];
@@ -117,6 +121,7 @@ export async function sendReminders(sb: SupabaseClient): Promise<{ sent: number;
   const nowIso = new Date(now).toISOString();
   let sent = 0;
   for (const o of orders) {
+    if (!mayEmail("shipment_reminder", langOf(o), "bg")) continue;
     const raw = statuses.get(clean(o.tracking_number));
     if (!raw) continue;
     const a = analyzeShipment(raw);

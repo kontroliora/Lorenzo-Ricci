@@ -11,9 +11,12 @@ import { RO_COUNTIES } from "@/lib/ro/counties";
 import { CARD_PAYMENTS_ENABLED, PENDING_PAYMENT } from "@/lib/payments";
 import { returnOrigin, startCardPayment } from "@/lib/payment-orders";
 import { SITE_URL } from "@/lib/site";
+import { mayEmail } from "@/lib/mail-policy";
+import { RO_CURRENCY } from "@/lib/ro/config";
 import { buildRoCustomerEmail, buildRoAdminEmail, roCustomerSubject, type RoOrderEmailData } from "@/lib/ro/emails";
 import { sendMail, sendCapiPurchase, RO_ADMIN_RECIPIENTS } from "@/lib/ro/order-notify";
 
+// mail-policy: order_confirmation
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -27,8 +30,9 @@ export const dynamic = "force-dynamic";
 //   3. stock is reserved with the same atomic reserve_wallet_stock (all-or-nothing under a row lock);
 //   4. the order is inserted BEFORE the e-mails; if the insert fails the stock is put back and the customer is told;
 //   5. a repeated orderRef is answered with success without reserving or inserting twice.
-// The order is stored with is_international = true and ship_country = 'RO': it stays out of the Bulgarian board and
-// out of every Econt cron, and appears in the panel tab "Румъния". Amounts in `total`/`subtotal`/`shipping_cost` are lei.
+// The order is stored with is_international = true and ship_country = 'RO': is_international is the switch every Bulgarian-only
+// automation checks (Econt crons, Econt e-mails), so none of them touches it; the order shows in the normal Поръчки list
+// (badge 🇷🇴 RO, filter Румъния, see lib/market.ts). Amounts in `total`/`subtotal`/`shipping_cost` are lei.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MAX_QTY = 10;
@@ -138,7 +142,7 @@ export async function POST(req: NextRequest) {
     // ── 5. Save the order (BEFORE the e-mails). A failed insert gives the stock back and tells the customer. ──
     const orderItems = lines.map((l) => ({ sku: l.sku, slug: l.slug, name: l.name, quantity: l.quantity, qty: l.quantity, price: l.ron, currency: "lei" }));
     const notes = str(cu.notes, 500);
-    const { error: insErr } = await sb.from("orders").insert({
+    const orderRow = {
       ...(isCard ? { status: PENDING_PAYMENT, payment_method: "card", payment_status: "pending", payment_currency: "RON" } : {}),
       order_ref: ref,
       name,
@@ -158,7 +162,11 @@ export async function POST(req: NextRequest) {
       notes: previewMarked(notes),
       is_international: true,
       ship_country: "RO",
-    });
+    };
+    // lang = 'ro' (supabase/lang_columns.sql) marks the order Romanian for every later e-mail; the Romanian signals (ship_country,
+    // the LRRO- reference) work without it, so an order is never lost because the column has not been added yet.
+    let { error: insErr } = await sb.from("orders").insert({ ...orderRow, lang: "ro" });
+    if (insErr && /lang/i.test(insErr.message)) ({ error: insErr } = await sb.from("orders").insert(orderRow));
     if (insErr) {
       console.error("[order-ro] insert failed:", insErr.message);
       const { error: restockErr } = await sb.rpc("restock_wallet_stock", { p_items: reserveItems });
@@ -167,6 +175,9 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 5b. Card: open the Stripe session. E-mails, Meta Purchase and the panel only come after the webhook says PAID. ──
+    // The saved cart of this visit (abandoned-cart reminder, only exists with the customer's consent): cash on delivery closes it right
+    // here; a card order closes it when the payment is confirmed (the webhook reads cart_session from the session metadata).
+    const cartSession = typeof body.sessionId === "string" ? body.sessionId.slice(0, 80) : "";
     const capiCtx = {
       ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("x-real-ip") ?? undefined,
       userAgent: req.headers.get("user-agent") ?? undefined,
@@ -185,6 +196,7 @@ export async function POST(req: NextRequest) {
         origin: returnOrigin(req.nextUrl.origin),
         heldItems: orderItems,
         metadata: {
+          ...(cartSession ? { cart_session: cartSession } : {}),
           ...(capiCtx.fbp ? { fbp: capiCtx.fbp.slice(0, 120) } : {}),
           ...(capiCtx.fbc ? { fbc: capiCtx.fbc.slice(0, 200) } : {}),
           ...(capiCtx.ip ? { client_ip: capiCtx.ip.slice(0, 64) } : {}),
@@ -195,11 +207,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, paymentMethod: "card", orderRef: ref, checkoutUrl: started.url });
     }
 
+    if (cartSession) {
+      await sb.from("cart_sessions").update({ status: "converted", converted_at: new Date().toISOString() }).eq("session_id", cartSession).eq("status", "pending");
+    }
+
     // ── 6. E-mails + Meta Purchase (awaited: Vercel kills un-awaited work). Best effort: the order is already saved. ──
     const data: RoOrderEmailData = { orderRef: ref, customer: { name, phone, email, county, city, address, postCode, notes }, items: orderItems, subtotal, discount, shippingCost, total };
     const results = await Promise.allSettled([
       sendMail({ from: "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>", to: RO_ADMIN_RECIPIENTS, subject: `🇷🇴 Нова поръчка (Румъния) - ${name} - ${ref}`, html: buildRoAdminEmail(data) }),
-      sendMail({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [email], subject: roCustomerSubject, html: buildRoCustomerEmail(data) }),
+      // the customer's confirmation is Romanian (mail-policy: order_confirmation); the team e-mail above is internal
+      mayEmail("order_confirmation", "ro", "ro")
+        ? sendMail({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [email], subject: roCustomerSubject, html: buildRoCustomerEmail(data) }, "order_confirmation")
+        : Promise.resolve(),
       sendCapiPurchase({ ...data, skus: lines.map((l) => l.sku) }, capiCtx),
     ]);
     results.forEach((r, i) => { if (r.status === "rejected") console.error(`[order-ro] ${["admin e-mail", "customer e-mail", "CAPI Purchase"][i]} failed:`, r.reason); });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { langOf, mayEmail } from "@/lib/mail-policy";
 import { supabase } from "@/lib/supabase";
 import { buildAdminEmail, buildCustomerEmail, sendAdminEmail, sendCustomerEmail, sendCapiPurchase, type CapiContext } from "@/lib/order-notify";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -300,8 +301,10 @@ export async function POST(req: NextRequest) {
 
     await Promise.allSettled([
       sendAdminEmail(subject, buildAdminEmail(savedOrder)),
-      ...(customerAddress
-        ? [sendCustomerEmail(customerAddress, buildCustomerEmail(savedOrder))]
+      // The customer's confirmation is the BULGARIAN template: it only goes to a Bulgarian recipient (a Romanian order has its own
+      // route, /api/order-ro, with a Romanian e-mail). Never a Bulgarian text to a Romanian.
+      ...(customerAddress && mayEmail("order_confirmation", langOf({ order_ref: String(order.orderRef ?? "") }), "bg")
+        ? [sendCustomerEmail(customerAddress, buildCustomerEmail(savedOrder), undefined, { kind: "order_confirmation", lang: langOf({ order_ref: String(order.orderRef ?? "") }) })]
         : []),
       // Meta's Purchase value is the server-validated amount, not the browser's number.
       sendCapiPurchase(order, String(order.orderRef ?? ""), pricing.total, capiCtx),

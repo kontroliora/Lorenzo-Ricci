@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
+// mail-policy: internal
+
 const ADMIN_EMAIL = "dserbezov7@gmail.com";
 
 export async function POST(req: NextRequest) {

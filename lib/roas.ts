@@ -12,9 +12,10 @@ export const UNCOLLECTED_DELIVERY_COST = 10;
 export type SpendEntry = { id: string; period_start: string; period_end: string; amount: number; note: string | null };
 export type StatusBucket = { count: number; total: number };
 
-/** Romanian orders (ship_country = 'RO') are in LEI: they are kept out of the euro numbers above and summed here, in lei. */
+/** Romanian orders (ship_country = 'RO') are placed in LEI. Their own block, in lei (totals) with the euro equivalent at the owner's
+ *  rate; the same orders are ALSO inside the euro totals of RoasData (lei / rate), so the headline numbers cover both markets. */
 export type RoRoas = {
-  rate: number;                  // lei per euro used for the "about EUR" notes (lib/ro/config EUR_RON)
+  rate: number;                  // lei per euro used for the conversion (lib/ro/config EUR_RON = 5.25)
   count: number;
   gross: number;                 // every placed order, lei
   delivered: StatusBucket;       // completed
@@ -42,7 +43,8 @@ export type RoasData = {
   potentialRoas: number | null;  // (real + inMotion + pending) / spend
   exaggerationPct: number | null;// how much Meta overstates vs real (gross→real)
   cancelRate: number;            // cancelled count / total, %
-  ro: RoRoas | null;             // Romanian orders in the window, in lei (null when there are none)
+  ro: RoRoas | null;             // Romanian orders in the window, in lei (null when there are none) - separate row, also counted in the euro totals
+  bg: { all: StatusBucket; delivered: StatusBucket; inMotion: StatusBucket; pending: StatusBucket; lost: StatusBucket }; // Bulgarian orders only, euro: the other half of the split
 };
 
 type OrderRow = {
@@ -110,24 +112,27 @@ async function computeRoasCore(startISO: string, endISO: string): Promise<RoasDa
     const q = await sb.from("orders").select(cols).gte("created_at", startISO).lte("created_at", endISO);
     if (!q.error) { rows = (q.data ?? []) as unknown as OrderRow[]; classified = extra.includes("return_kind"); break; }
   }
+  // Romanian orders are placed in lei. The headline numbers are in euro for BOTH markets (lei / EUR_RON); the Romanian orders also get
+  // their own row in lei (below), and `bg` keeps the Bulgarian-only euro split.
   // Test/fake orders and unpaid card attempts (pending_payment, or cancelled with payment_status expired/failed) are not
   // sales: they never count toward Meta's gross, the cancel rate, or any bucket. A PAID card order counts like any other.
   const real0 = rows.filter((r) => !r.excluded_from_stock && !isUnpaidCardAttempt(r));
-  // Romanian orders are in lei: never mixed into the euro figures (they get their own block below).
-  const orders = real0.filter((r) => r.ship_country !== "RO");
+  const bgOrders = real0.filter((r) => r.ship_country !== "RO");
   const roOrders = real0.filter((r) => r.ship_country === "RO");
+  const eurOf = (r: OrderRow) => (r.ship_country === "RO" ? (Number(r.total) || 0) / EUR_RON : Number(r.total) || 0);
+  const orders = real0;
 
   const byStatus: Record<string, StatusBucket> = {};
   for (const r of orders) {
     const k = r.status ?? "?";
     (byStatus[k] ??= { count: 0, total: 0 });
     byStatus[k].count++;
-    byStatus[k].total += Number(r.total) || 0;
+    byStatus[k].total += eurOf(r);
   }
   const B = (k: string): StatusBucket => byStatus[k] ?? { count: 0, total: 0 };
   for (const k of Object.keys(byStatus)) byStatus[k].total = round2(byStatus[k].total);
 
-  const gross = round2(orders.reduce((s, r) => s + (Number(r.total) || 0), 0));
+  const gross = round2(orders.reduce((s, r) => s + eurOf(r), 0));
   const real = B("completed").total;
   const inMotion = B("shipped").total;
   const pending = round2(B("new").total + B("confirmed").total);
@@ -141,7 +146,7 @@ async function computeRoasCore(startISO: string, endISO: string): Promise<RoasDa
 
   const isRet = (s: string) => s === "returning" || s === "restocked" || s === "returned";
   const uncollectedCount = classified
-    ? orders.filter((r) => isRet(r.status) && r.return_kind === "uncollected").length
+    ? bgOrders.filter((r) => isRet(r.status) && r.return_kind === "uncollected").length // Econt classification: Bulgarian orders only
     : 0;
 
   // Pro-rate each spend entry by the fraction of its days that fall in the window.
@@ -164,6 +169,17 @@ async function computeRoasCore(startISO: string, endISO: string): Promise<RoasDa
   const roSum = (pred: (s: string) => boolean): StatusBucket => {
     const m = roOrders.filter((r) => pred(r.status ?? "?"));
     return { count: m.length, total: round2(m.reduce((s, r) => s + (Number(r.total) || 0), 0)) };
+  };
+  const bgBucket = (pred: (st: string) => boolean): StatusBucket => {
+    const m = bgOrders.filter((r) => pred(r.status ?? "?"));
+    return { count: m.length, total: round2(m.reduce((sum, r) => sum + (Number(r.total) || 0), 0)) };
+  };
+  const bg = {
+    all: bgBucket(() => true),
+    delivered: bgBucket((st) => st === "completed"),
+    inMotion: bgBucket((st) => st === "shipped"),
+    pending: bgBucket((st) => st === "new" || st === "confirmed"),
+    lost: bgBucket((st) => st === "cancelled" || isRet(st)),
   };
   const ro: RoRoas | null = roOrders.length === 0 ? null : {
     rate: EUR_RON,
@@ -195,5 +211,6 @@ async function computeRoasCore(startISO: string, endISO: string): Promise<RoasDa
     exaggerationPct,
     cancelRate,
     ro,
+    bg,
   };
 }

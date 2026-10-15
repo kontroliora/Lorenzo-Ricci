@@ -28,6 +28,8 @@ interface RoCartStore {
   clear: () => void;
   /** Rewrite or drop every line (null = drop). Used to refresh stale price snapshots from the catalog. */
   reprice: (fn: (line: RoCartLine) => RoCartLine | null) => void;
+  /** Replace the whole cart (a restored abandoned cart) and open the drawer. */
+  restore: (lines: RoCartLine[]) => void;
   open: () => void;
   close: () => void;
 }
@@ -55,6 +57,7 @@ export const useRoCart = create<RoCartStore>()(
         })),
       clear: () => set({ items: [] }),
       reprice: (fn) => set((s) => ({ items: s.items.map(fn).filter((l): l is RoCartLine => l !== null) })),
+      restore: (lines) => set({ items: lines, isOpen: true }),
       open: () => set({ isOpen: true }),
       close: () => set({ isOpen: false }),
     }),

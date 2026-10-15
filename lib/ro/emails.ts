@@ -1,6 +1,7 @@
 // Romania market: e-mails. Customer mails are in Romanian, the team mail stays in Bulgarian (the team reads it).
 // Pure builders: no sending here (app/api/order-ro/route.ts and the panel action send them).
 import { fmtRON, RO_DELIVERY_DAYS, RO_COURIER_LABEL, RO_RETURN_DAYS } from "./config";
+import { emailHead, emailHeaderRow } from "@/lib/email-layout";
 
 export type RoOrderLine = { name?: string; sku?: string; quantity?: number; price?: number };
 export type RoOrderEmailData = {
@@ -20,13 +21,14 @@ export const roCustomerSubject = "Comanda dumneavoastră a fost primită - Loren
 export const roPaidSubject = "Plata a fost primită - Lorenzo Ricci";
 export const roShippedSubject = (ref: string) => `Comanda ${ref} a fost expediată`;
 
+// Dark-mode safe shell (lib/email-layout.ts): the header is the opaque PNG with the white wordmark baked in.
 function shell(title: string, bodyHtml: string, ref: string): string {
   return `<!DOCTYPE html>
-<html lang="ro"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title></head>
+<html lang="ro">${emailHead(esc(title))}
 <body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:40px 16px"><tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;max-width:560px;width:100%">
-  <tr><td style="background:${NAVY};padding:36px 40px;text-align:center"><img src="https://lorenzo-ricci.com/email-logo.png" alt="Lorenzo Ricci" width="200" style="max-width:200px;height:auto;display:block;margin:0 auto"></td></tr>
+  ${emailHeaderRow(560)}
   <tr><td style="padding:40px 40px 0">${bodyHtml}</td></tr>
   <tr><td style="padding:32px 40px 40px;text-align:center"><div style="border-top:1px solid #e8dfc8;padding-top:28px">
     <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:13px;color:${NAVY};letter-spacing:.08em">LORENZO RICCI</p>
@@ -93,6 +95,66 @@ export function buildRoShippedEmail(d: { orderRef: string; firstName: string; it
     <p style="margin:24px 0 28px;color:#666;font-size:13px;line-height:1.7">Vă rugăm să aveți suma pregătită la livrare. Întrebări: info@lorenzo-ricci.com.</p>`, d.orderRef);
 }
 
+// ── Customer: status e-mails sent from the panel (Romanian only; see lib/ro/panel-mail.ts) ──────────────────────────────────
+export const roConfirmedSubject = (ref: string) => `Comanda ${ref} a fost confirmată`;
+export const roCancelledSubject = (ref: string) => `Comanda ${ref} a fost anulată`;
+export const roDeliveredSubject = (ref: string) => `Comanda ${ref} a fost livrată`;
+export const roReturnedSubject = (ref: string) => `Comanda ${ref} - coletul s-a întors la noi`;
+
+const greet = (firstName: string) => `<p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Bună ziua, ${esc(firstName || "client")},</p>`;
+const para = (html: string, bottom = 24) => `<p style="margin:0 0 ${bottom}px;color:#666;font-size:14px;line-height:1.7">${html}</p>`;
+const strongRef = (ref: string) => `<strong style="color:#1a1a1a">${esc(ref)}</strong>`;
+const contactLine = `Întrebări: <a href="mailto:info@lorenzo-ricci.com" style="color:${NAVY}">info@lorenzo-ricci.com</a>.`;
+
+type StatusMailBase = { orderRef: string; firstName: string };
+
+// Staff pressed "Потвърждава": the order is confirmed and goes to packing.
+export function buildRoConfirmedEmail(d: StatusMailBase & { items: RoOrderLine[]; total: number }): string {
+  return shell("Comanda a fost confirmată", `
+    ${greet(d.firstName)}
+    ${para(`Comanda dumneavoastră ${strongRef(d.orderRef)} a fost confirmată și o pregătim pentru expediere. Veți primi un nou e-mail cu numărul AWB imediat ce coletul pleacă. Livrarea durează de regulă ${esc(RO_DELIVERY_DAYS)} zile lucrătoare de la expediere.`)}
+    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#444">
+      <tr><td style="padding:4px 0;width:190px;color:#888">Suma de plătit la livrare</td><td style="padding:4px 0;color:#1a1a1a">${esc(fmtRON(d.total))} (ramburs)</td></tr>
+    </table>
+    <div style="border-top:1px solid #e8dfc8;margin:26px 0"></div>
+    <table width="100%" cellpadding="0" cellspacing="0"><tbody>${itemRows(d.items)}</tbody></table>
+    <p style="margin:24px 0 28px;color:#666;font-size:13px;line-height:1.7">${contactLine}</p>`, d.orderRef);
+}
+
+export type RoCancelCategory = "refused" | "unreachable" | "wrong_number" | "other";
+// Staff cancelled the order. The Bulgarian free-text reason is never shown: the text depends on the category only.
+// refundLabel (e.g. "735 lei"): the card payment is being refunded (card orders, Stripe branch); without it nothing was paid.
+export function buildRoCancelledEmail(d: StatusMailBase & { category?: RoCancelCategory | string; refundLabel?: string }): string {
+  const why =
+    d.category === "refused" ? `Conform solicitării dumneavoastră, comanda ${strongRef(d.orderRef)} a fost anulată.`
+    : d.category === "unreachable" || d.category === "wrong_number" ? `Nu am reușit să vă contactăm pentru confirmarea comenzii ${strongRef(d.orderRef)}, de aceea a fost anulată.`
+    : `Din păcate a trebuit să anulăm comanda ${strongRef(d.orderRef)}.`;
+  const money = d.refundLabel
+    ? `Suma plătită cu cardul (${esc(d.refundLabel)}) vă este rambursată automat, în același cont. Banii apar de regulă în 5-10 zile lucrătoare, în funcție de banca dumneavoastră.`
+    : "Nu se datorează nicio sumă.";
+  return shell("Comanda a fost anulată", `
+    ${greet(d.firstName)}
+    ${para(`${why} ${money}`)}
+    ${para(`Dacă doriți totuși produsele, puteți plasa oricând o nouă comandă pe <a href="https://lorenzo-ricci.com/ro" style="color:${NAVY}">lorenzo-ricci.com/ro</a>. ${contactLine}`, 28)}`, d.orderRef);
+}
+
+// Staff marked the parcel delivered ("Доставена").
+export function buildRoDeliveredEmail(d: StatusMailBase): string {
+  return shell("Comanda a fost livrată", `
+    ${greet(d.firstName)}
+    ${para(`Comanda dumneavoastră ${strongRef(d.orderRef)} a fost livrată. Vă mulțumim că ați ales Lorenzo Ricci!`)}
+    ${para(`Pentru ceasuri oferim 5 ani garanție comercială. Aveți dreptul de retragere în ${RO_RETURN_DAYS} zile de la primirea coletului: <a href="https://lorenzo-ricci.com/ro/politici/retur" style="color:${NAVY}">Politica de retur</a>. Dacă ceva nu este în regulă cu comanda, scrieți-ne și rezolvăm.`, 24)}
+    ${para(contactLine, 28)}`, d.orderRef);
+}
+
+// Staff marked the parcel returned / not collected ("Върната").
+export function buildRoReturnedEmail(d: StatusMailBase): string {
+  return shell("Coletul s-a întors la noi", `
+    ${greet(d.firstName)}
+    ${para(`Coletul comenzii ${strongRef(d.orderRef)} nu a putut fi livrat și se întoarce la noi, de aceea comanda a fost închisă. Nu se datorează nicio sumă.`)}
+    ${para(`Dacă a intervenit o problemă sau doriți să primiți totuși produsele, scrieți-ne sau plasați o nouă comandă pe <a href="https://lorenzo-ricci.com/ro" style="color:${NAVY}">lorenzo-ricci.com/ro</a>. ${contactLine}`, 28)}`, d.orderRef);
+}
+
 // ── Team: new Romanian order (Bulgarian, like the existing order e-mail) ─────────
 export function buildRoAdminEmail(o: RoOrderEmailData, alert?: string, opts: { paidByCard?: boolean } = {}): string {
   const rows = o.items.map((i) => `<tr><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb">${esc(i.name)}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-family:monospace;font-size:12px">${esc(i.sku)}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center">${i.quantity ?? 1}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right">${esc(fmtRON(Number(i.price ?? 0)))}</td></tr>`).join("");
@@ -102,7 +164,7 @@ export function buildRoAdminEmail(o: RoOrderEmailData, alert?: string, opts: { p
    <div style="background:${NAVY};padding:20px 28px;color:#fff"><strong style="letter-spacing:.2em">LORENZO RICCI</strong> <span style="opacity:.6;margin-left:10px">🇷🇴 Нова поръчка от Румъния · ${esc(o.orderRef)}</span></div>
    <div style="padding:28px">
     ${alert ? `<div style="background:#b91c1c;color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:16px">⚠️ ${esc(alert)}</div>` : ""}${opts.paidByCard ? `<div style="background:#047857;color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:16px">💳 ПЛАТЕНА С КАРТА - куриерът събира 0 лей (НЕ слагай наложен платеж).</div>` : ""}
-    <p style="margin:0 0 14px;font-size:13px;color:#555">Сумите са в <strong>леи (RON)</strong>. Доставка с румънски куриер (НЕ Еконт). Поръчката е в раздел „Румъния" на панела.</p>
+    <p style="margin:0 0 14px;font-size:13px;color:#555">Сумите са в <strong>леи (RON)</strong>. Доставка с румънски куриер (НЕ Еконт). Поръчката е в „Поръчки" на панела (значка 🇷🇴 RO, филтър „Румъния").</p>
     <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:22px">
      <tr style="background:#f3f4f6"><td style="padding:8px 12px;font-weight:600;width:150px">Имена</td><td style="padding:8px 12px">${esc(c.name)}</td></tr>
      <tr><td style="padding:8px 12px;font-weight:600">Телефон</td><td style="padding:8px 12px"><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></td></tr>

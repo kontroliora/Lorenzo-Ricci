@@ -1,6 +1,8 @@
+// mail-policy: order_confirmation, card_paid
 import { Resend } from "resend";
 import { createHash } from "crypto";
 import { RO_CURRENCY } from "./config";
+import { mayEmail, type MailKind } from "../mail-policy";
 import type { RoOrderEmailData } from "./emails";
 
 // Romanian order notifications shared by /api/order-ro (ramburs) and the Stripe webhook (card orders, once paid).
@@ -11,7 +13,9 @@ const str = (v: unknown, max = 300) => String(v ?? "").trim().slice(0, max);
 
 export type RoCapiContext = { ip?: string; userAgent?: string; fbc?: string; fbp?: string };
 
-export async function sendMail(opts: { from: string; to: string[]; subject: string; html: string }): Promise<void> {
+/** `kind` = a CUSTOMER e-mail (Romanian templates, language rule in lib/mail-policy.ts); leave it out for the Bulgarian team e-mail. */
+export async function sendMail(opts: { from: string; to: string[]; subject: string; html: string }, kind?: MailKind): Promise<void> {
+  if (kind && !mayEmail(kind, "ro", "ro")) return;
   const key = process.env.RESEND_API_KEY;
   if (!key) { console.warn("[order-ro] RESEND_API_KEY not set - skipping e-mail"); return; }
   const { error } = await new Resend(key).emails.send(opts);

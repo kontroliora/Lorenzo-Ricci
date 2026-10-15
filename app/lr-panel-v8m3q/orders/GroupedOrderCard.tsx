@@ -3,6 +3,7 @@ import { useState, useTransition } from "react";
 import type { AdminOrder, CustomerHistory } from "@/lib/orders";
 import { confirmOrders, cancelOrders, markNoAnswerOrders } from "./actions";
 import { OrderItemsList } from "./OrderItemsList";
+import { isRoOrder, fmtLei, fmtLeiWithEuro } from "@/lib/market";
 import { PaymentBadge } from "./PaymentUi";
 
 function fmtDT(iso: string): string {
@@ -32,11 +33,12 @@ const backLink: React.CSSProperties = {
 // Merged view of 2+ NEW orders from the same customer with an IDENTICAL address.
 // Actions apply to every order in the group at once. Nothing is merged in the DB.
 export function GroupedOrderCard({
-  orders, history, onSplit,
+  orders, history, onSplit, onNotice,
 }: {
   orders: AdminOrder[];
   history?: CustomerHistory;
   onSplit: () => void;
+  onNotice?: (msg: string) => void;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
@@ -45,6 +47,8 @@ export function GroupedOrderCard({
 
   const sorted = [...orders].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
   const last = sorted[sorted.length - 1]; // name + address come from the most recent order
+  const ro = isRoOrder(last); // a group is never mixed: all Romanian or all Bulgarian (OrdersBoard.groupByCustomer)
+  const money = (n: number) => (ro ? fmtLei(n) : `€${n.toFixed(2)}`);
   const ids = sorted.map((o) => o.id);
   const n = sorted.length;
   const total = sorted.reduce((s, o) => s + Number(o.total ?? 0), 0);
@@ -65,7 +69,7 @@ export function GroupedOrderCard({
   const run = (fn: () => Promise<string | null>) =>
     start(async () => {
       setError("");
-      try { const e = await fn(); if (e) setError(e); }
+      try { const e = await fn(); if (e) { setError(e); onNotice?.(e); } }
       catch (e) { setError(e instanceof Error ? e.message : "Възникна грешка. Опитай пак."); }
     });
   const doCancel = (category: string, reason: string) =>
@@ -93,6 +97,7 @@ export function GroupedOrderCard({
         <div>
           <div style={{ color: "#fff", fontSize: 15, fontWeight: 500, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             {last.name || "—"}
+            {ro && <span title="Поръчки от Румъния" style={{ background: "rgba(0,43,127,0.35)", border: "0.5px solid rgba(255,206,0,0.55)", color: "#FFCE00", fontSize: 10, letterSpacing: "0.12em", padding: "2px 8px", borderRadius: 20, whiteSpace: "nowrap" }}>🇷🇴 RO</span>}
             <span style={{ background: "rgba(93,202,165,0.15)", color: "#5DCAA5", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", padding: "3px 9px", borderRadius: 20, border: "0.5px solid rgba(93,202,165,0.4)" }}>◈ {n} поръчки</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
@@ -110,14 +115,14 @@ export function GroupedOrderCard({
       {/* Details */}
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
         <OrderItemsList items={allItems} />
-        <div style={{ color: "#fff" }}>{last.shipping_method || (last.courier === "home" ? "Еконт до адрес" : "Еконт до офис")} — {last.address || "—"}{last.city ? `, ${last.city}` : ""}</div>
+        <div style={{ color: "#fff" }}>{ro ? "Куриер до адрес (Румъния)" : (last.shipping_method || (last.courier === "home" ? "Еконт до адрес" : "Еконт до офис"))} — {last.address || "—"}{last.city ? `, ${last.city}` : ""}</div>
         {groupSub != null && (
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2, display: "flex", gap: 14, flexWrap: "wrap" }}>
-            <span>Стока: <span style={{ color: "rgba(255,255,255,0.8)" }}>€{groupSub.toFixed(2)}</span></span>
-            <span>Доставка: <span style={{ color: "rgba(255,255,255,0.8)" }}>{groupShip > 0 ? `€${groupShip.toFixed(2)}` : "безплатна"}</span></span>
+            <span>Стока: <span style={{ color: "rgba(255,255,255,0.8)" }}>{money(groupSub)}</span></span>
+            <span>Доставка: <span style={{ color: "rgba(255,255,255,0.8)" }}>{groupShip > 0 ? money(groupShip) : "безплатна"}</span></span>
           </div>
         )}
-        <div style={{ color: "#fff", fontWeight: 500 }}>€{total.toFixed(2)}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · обща сума от {n}-те · наложен платеж</span></div>
+        <div style={{ color: "#fff", fontWeight: 500 }}>{ro ? fmtLeiWithEuro(total) : `€${total.toFixed(2)}`}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · обща сума от {n}-те · наложен платеж</span></div>
         {promoCodes.length > 0 && (
           <div style={{ marginTop: 4, fontSize: 12, color: "#C0DD97" }}>
             ◈ Промо {promoCodes.length > 1 ? "кодове" : "код"}: <span style={{ fontFamily: "monospace", color: "#fff", letterSpacing: "0.04em" }}>{promoCodes.join(" · ")}</span>
