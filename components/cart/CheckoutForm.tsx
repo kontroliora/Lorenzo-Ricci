@@ -10,6 +10,10 @@ import { requiresPrepayment, PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY, type PaymentMethod } from "@/lib/payments";
 import { saveCardCartSnapshot } from "@/lib/card-cart-snapshot";
 import { newOrderRef } from "@/lib/order-ref";
+import {
+  BrandMark, CoCheck, CoField, CoRadioCard, CoSection, CoSubmit, CoSummary, CoTrust, IconHome, IconOffice, PaymentMarks, SecureNote, coInput,
+  type SummaryLine, type SummaryRow,
+} from "@/components/checkout/ui";
 
 // ─── Shipping options ────────────────────────────────────────────────────────
 const SHIPPING_OPTIONS = [
@@ -18,11 +22,6 @@ const SHIPPING_OPTIONS = [
 ] as const;
 
 const FREE_SHIPPING_THRESHOLD = 60;
-
-const PAYMENT_OPTIONS = [
-  { id: "cod",  label: "Наложен платеж",   subtitle: "Плащате при получаване" },
-  { id: "card", label: "Плащане с карта",  subtitle: "Visa, Mastercard, Apple Pay, Google Pay · Безплатна доставка" },
-] as const;
 
 // Same contact as the product-page Viber fallback (ProductInfo.tsx) - kept as a
 // local literal here since prepayment orders are an interim, manual-only path.
@@ -175,7 +174,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   const grandTotal       = total + shippingCost;
   const isHomeAddress    = shippingId === "home-address";
 
-  const addressLabel       = isHomeAddress ? "Адрес за доставка *" : "Адрес на офис / Автомат *";
+  const addressLabel       = isHomeAddress ? "Адрес за доставка" : "Адрес на офис или автомат";
   const addressPlaceholder =
     shippingId === "econt-office" ? "Еконт офис или автомат..." :
     "Вашият точен адрес...";
@@ -317,395 +316,273 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   // ── Success screen ──────────────────────────────────────────────────────────
   if (submitted) {
     return (
-      <div className="flex flex-col items-center text-center gap-6 py-8">
-        <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <div className="flex flex-col items-center gap-6 py-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#B7E0C4] bg-[#E7F5EC]">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15803D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
 
         <div>
-          <h3 className="font-serif text-2xl text-white mb-1.5">Поръчката е получена!</h3>
-          <p className="font-sans text-[10px] text-white/35 tracking-[0.22em] uppercase">
-            Номер: {orderRef}
-          </p>
+          <h3 className="font-sans text-2xl font-semibold text-[#1A1A1A]">Поръчката е получена!</h3>
+          <p className="mt-1 font-sans text-sm text-[#5F5B52]">Номер: {orderRef}</p>
         </div>
 
-        <div className="w-full bg-white/5 border border-white/8 p-4 flex flex-col gap-2.5">
-          <div className="flex justify-between text-sm">
-            <span className="font-sans text-white/50">Сума за плащане</span>
-            <span className="font-serif text-white">€{submittedTotal.toFixed(2)}</span>
+        <div className="flex w-full flex-col gap-2.5 rounded-[8px] border border-[#E4E0D7] bg-[#F7F6F2] p-4 text-left">
+          <div className="flex justify-between font-sans text-sm">
+            <span className="text-[#5F5B52]">Сума за плащане</span>
+            <span className="font-semibold text-[#1A1A1A]">€{submittedTotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="font-sans text-white/40">Начин на плащане</span>
-            <span className="font-sans text-white/60">Наложен платеж</span>
+          <div className="flex justify-between font-sans text-sm">
+            <span className="text-[#5F5B52]">Начин на плащане</span>
+            <span className="text-[#1A1A1A]">Наложен платеж</span>
           </div>
           {gifted.gifts.map((g) => (
-            <div key={`${g.forName}-${g.name}`} className="flex justify-between text-xs">
-              <span className="font-sans text-emerald-400/80">Подарък към {g.forName}</span>
-              <span className="font-sans text-emerald-400/80">{g.name} × {g.qty}</span>
+            <div key={`${g.forName}-${g.name}`} className="flex justify-between font-sans text-sm">
+              <span className="text-[#15803D]">Подарък към {g.forName}</span>
+              <span className="text-[#15803D]">{g.name} × {g.qty}</span>
             </div>
           ))}
         </div>
 
         {gifted.notes.length > 0 && (
-          <div className="w-full bg-amber-500/10 border border-amber-500/20 p-3 text-left flex flex-col gap-1.5">
+          <div className="flex w-full flex-col gap-1.5 rounded-[8px] border border-[#EBD9A8] bg-[#FBF5E3] p-3 text-left">
             {gifted.notes.map((n) => (
-              <p key={n} className="font-sans text-xs text-amber-200/80 leading-relaxed">{n}</p>
+              <p key={n} className="font-sans text-[13px] leading-relaxed text-[#6B5517]">{n}</p>
             ))}
           </div>
         )}
 
         {form.email ? (
-          <p className="font-sans text-xs text-white/45 leading-relaxed">
-            Изпратихме потвърждение на{" "}
-            <span className="text-white/70">{form.email}</span>
+          <p className="font-sans text-sm leading-relaxed text-[#4A463E]">
+            Изпратихме потвърждение на <span className="font-medium text-[#1A1A1A]">{form.email}</span>
           </p>
         ) : (
-          <p className="font-sans text-xs text-white/45 leading-relaxed">
-            Ще се свържем с вас на{" "}
-            <span className="text-white/70">{form.phone}</span> в рамките на 24ч.
+          <p className="font-sans text-sm leading-relaxed text-[#4A463E]">
+            Ще се свържем с вас на <span className="font-medium text-[#1A1A1A]">{form.phone}</span> в рамките на 24ч.
           </p>
         )}
 
-        <p className="font-sans text-[10px] text-white/25 tracking-wide">
-          Плащате при получаване · 30 дни лесна замяна
-        </p>
+        <p className="font-sans text-xs text-[#6F6B61]">Плащате при получаване · 30 дни лесна замяна</p>
       </div>
     );
   }
 
+  // ── Order summary rows (everything is computed above; this only formats it) ─
+  const summaryLines: SummaryLine[] = items.flatMap(({ product, quantity }) => {
+    const gift = giftLines.find((g) => g.clutchSlug === product.slug);
+    const onSale = typeof product.originalPrice === "number" && product.originalPrice > product.price;
+    const line: SummaryLine = {
+      key: product.id,
+      image: product.coverImage.src,
+      imageAlt: product.coverImage.alt,
+      name: product.name,
+      quantity,
+      price: `${product.currency}${(product.price * quantity).toFixed(2)}`,
+      compareAt: onSale ? `${product.currency}${((product.originalPrice as number) * quantity).toFixed(2)}` : undefined,
+    };
+    return gift
+      ? [line, { key: `gift-${product.id}`, name: `Подарък: ${giftDisplayName(gift.giftSlug)}`, quantity: gift.qty, price: "Подарък", gift: true }]
+      : [line];
+  });
+  const summaryRows: SummaryRow[] = [
+    ...activeBundles.map(({ label, discount }) => ({ key: `bundle-${label}`, label: `${label} -10%`, value: `-€${discount.toFixed(2)}`, tone: "discount" as const })),
+    ...(promoCode && promoDiscount > 0
+      ? [{ key: "promo", label: `Промо ${promoCode} -${Math.round(promoRate * 100)}%`, value: `-€${promoDiscount.toFixed(2)}`, tone: "discount" as const }]
+      : []),
+    { key: "shipping", label: "Доставка", value: freeShipping ? "Безплатна" : `€${shippingCost.toFixed(2)}`, tone: freeShipping ? ("free" as const) : undefined },
+  ];
+  const inputProps = (key: string) => ({
+    id: `bg-${key}`,
+    "aria-invalid": errors[key] ? true : undefined,
+    "aria-describedby": errors[key] ? `bg-${key}-err` : undefined,
+  });
+
   // ── Form ────────────────────────────────────────────────────────────────────
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-7" noValidate>
+      {/* ── Order summary: first thing in the panel ─────────────────────────── */}
+      <CoSummary
+        lines={summaryLines}
+        rows={summaryRows}
+        totalLabel="Общо"
+        total={`€${grandTotal.toFixed(2)}`}
+        toggleLabel="Покажи поръчката"
+        hideLabel="Скрий поръчката"
+      />
+
       <div>
-        <h3 className="font-serif text-xl text-white mb-1">{needsPrepayment ? "Поръчка с предплащане" : "Данни за доставка"}</h3>
-        <p className="font-sans text-xs text-white/40 tracking-wide">
+        <h3 className="font-sans text-xl font-semibold text-[#1A1A1A]">{needsPrepayment ? "Поръчка с предплащане" : "Данни за доставка"}</h3>
+        <p className="mt-1 font-sans text-sm text-[#5F5B52]">
           {needsPrepayment ? "Урежда се директно с нас" : isCardPay ? "Плащане с карта - Безплатна доставка" : "Плащате при получаване - Наложен платеж"}
         </p>
-      </div>
-
-      {/* ── Order summary ─────────────────────────────────────────────────── */}
-      <div className="bg-white/5 border border-white/8 p-4 flex flex-col gap-2">
-        {items.map(({ product, quantity }) => {
-          const gift = giftLines.find((g) => g.clutchSlug === product.slug);
-          return (
-            <Fragment key={product.id}>
-              <div className="flex justify-between text-xs">
-                <span className="font-sans text-white/60 tracking-wide">{product.name} × {quantity}</span>
-                <span className="font-serif text-white">{product.currency}{(product.price * quantity).toFixed(2)}</span>
-              </div>
-              {gift && (
-                <div className="flex justify-between text-xs">
-                  <span className="font-sans text-emerald-400/80 tracking-wide">+ Подарък: {giftDisplayName(gift.giftSlug)} × {gift.qty}</span>
-                  <span className="font-sans text-emerald-400/80">Подарък</span>
-                </div>
-              )}
-            </Fragment>
-          );
-        })}
-
-        {activeBundles.map(({ label, discount }) => (
-          <div key={label} className="flex justify-between text-xs">
-            <span className="font-sans text-navy-light tracking-wide">◈ {label} -10%</span>
-            <span className="font-sans text-navy-light">-€{discount.toFixed(2)}</span>
-          </div>
-        ))}
-
-        {promoCode && promoDiscount > 0 && (
-          <div className="flex justify-between text-xs">
-            <span className="font-sans text-emerald-400/70 tracking-wide">◈ Промо {promoCode} -{Math.round(promoRate * 100)}%</span>
-            <span className="font-sans text-emerald-400/70">-€{promoDiscount.toFixed(2)}</span>
-          </div>
-        )}
-
-        <div className="h-px bg-white/8 my-1" />
-
-        {/* Shipping line */}
-        <div className="flex justify-between text-xs">
-          <span className="font-sans text-white/60 tracking-wide">Доставка</span>
-          {freeShipping ? (
-            <span className="font-sans text-green-400 tracking-wide font-medium">БЕЗПЛАТНА</span>
-          ) : (
-            <span className="font-serif text-white">€{shippingCost.toFixed(2)}</span>
-          )}
-        </div>
-
-        <div className="h-px bg-white/8 my-1" />
-
-        <div className="flex justify-between text-sm">
-          <span className="font-sans font-medium text-white tracking-wide">Общо</span>
-          <span className="font-serif text-white text-base">€{grandTotal.toFixed(2)}</span>
-        </div>
       </div>
 
       {/* ── Form fields — none for a prepayment-only cart: those orders are arranged
              over Viber/phone, so only the note below is shown (owner, 2026-09-28). ── */}
       {!needsPrepayment && (
       <div className="flex flex-col gap-5">
-        <Field id="field-name" label="Две имена *" error={errors.name}>
+        <CoField id="field-name" htmlFor="bg-name" label="Две имена" error={errors.name} errorId="bg-name-err">
           <input type="text" placeholder="Иван Иванов" value={form.name}
             onChange={(e) => { setForm((f) => ({ ...f, name: e.target.value })); clearError("name"); }}
-            className="input-luxury" autoComplete="name"
-            style={errors.name ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
-        </Field>
+            className={coInput(!!errors.name)} autoComplete="name" {...inputProps("name")} />
+        </CoField>
 
-        <Field id="field-phone" label="Телефон *" error={errors.phone}>
+        <CoField id="field-phone" htmlFor="bg-phone" label="Телефон" error={errors.phone} errorId="bg-phone-err">
           <input type="tel" placeholder="0888 123 456" value={form.phone}
             onChange={(e) => { setForm((f) => ({ ...f, phone: e.target.value })); clearError("phone"); }}
-            className="input-luxury" autoComplete="tel" inputMode="tel"
-            style={errors.phone ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
-        </Field>
-        <label className="flex items-start gap-2.5 cursor-pointer -mt-2">
-          <input
-            type="checkbox"
-            checked={form.smsMarketingConsent}
-            onChange={(e) => setForm((f) => ({ ...f, smsMarketingConsent: e.target.checked }))}
-            className="mt-0.5 flex-shrink-0 w-3.5 h-3.5 accent-white cursor-pointer"
-          />
-          <span className="font-sans text-[10px] text-white/40 leading-relaxed tracking-wide">
+            className={coInput(!!errors.phone)} autoComplete="tel" inputMode="tel" {...inputProps("phone")} />
+        </CoField>
+        <div className="-mt-2">
+          <CoCheck checked={form.smsMarketingConsent} onChange={(v) => setForm((f) => ({ ...f, smsMarketingConsent: v }))}>
             Искам да получавам ексклузивни оферти по SMS
-          </span>
-        </label>
+          </CoCheck>
+        </div>
 
-        <Field id="field-email" label="Имейл *" error={errors.email}>
+        <CoField id="field-email" htmlFor="bg-email" label="Имейл" error={errors.email} errorId="bg-email-err">
           <input type="email" placeholder="your@email.com" value={form.email}
             onChange={(e) => { setForm((f) => ({ ...f, email: e.target.value })); clearError("email"); }}
-            className="input-luxury" autoComplete="email" inputMode="email"
-            style={errors.email ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
-        </Field>
-        <label className="flex items-start gap-2.5 cursor-pointer -mt-2">
-          <input
-            type="checkbox"
-            checked={form.emailMarketingConsent}
-            onChange={(e) => setForm((f) => ({ ...f, emailMarketingConsent: e.target.checked }))}
-            className="mt-0.5 flex-shrink-0 w-3.5 h-3.5 accent-white cursor-pointer"
-          />
-          <span className="font-sans text-[10px] text-white/40 leading-relaxed tracking-wide">
+            className={coInput(!!errors.email)} autoComplete="email" inputMode="email" {...inputProps("email")} />
+        </CoField>
+        <div className="-mt-2">
+          <CoCheck checked={form.emailMarketingConsent} onChange={(v) => setForm((f) => ({ ...f, emailMarketingConsent: v }))}>
             Искам да получавам оферти и новини по имейл
-          </span>
-        </label>
+          </CoCheck>
+        </div>
 
-        <Field id="field-city" label="Град *" error={errors.city}>
+        <CoField id="field-city" htmlFor="bg-city" label="Град" error={errors.city} errorId="bg-city-err">
           <input type="text" placeholder="София" value={form.city}
             onChange={(e) => { setForm((f) => ({ ...f, city: e.target.value })); clearError("city"); }}
-            className="input-luxury" autoComplete="address-level2"
-            style={errors.city ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
-        </Field>
+            className={coInput(!!errors.city)} autoComplete="address-level2" {...inputProps("city")} />
+        </CoField>
 
         {/* ── Payment method radio cards (only while the card option is switched on) ── */}
         {CARD_PAYMENTS_ENABLED && (
-        <div className="flex flex-col gap-1.5">
-          <span className="font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-white/40">
-            Начин на плащане
-          </span>
-
-          <div className="border border-white/10 overflow-hidden mt-1">
-            {PAYMENT_OPTIONS.map((option) => {
-              const isSelected = paymentMethod === option.id;
-              return (
-                <label
-                  key={option.id}
-                  className={`flex items-center gap-3 p-4 border-b border-white/8 last:border-b-0 cursor-pointer transition-colors duration-200 ${
-                    isSelected ? "bg-white/8" : "hover:bg-white/4"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value={option.id}
-                    checked={isSelected}
-                    onChange={() => { setPaymentMethod(option.id); setSubmitError(""); }}
-                    className="sr-only"
-                  />
-                  {/* Custom radio circle */}
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
-                    isSelected ? "border-white" : "border-white/25"
-                  }`}>
-                    {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className={`font-sans text-xs tracking-wide transition-colors duration-200 ${
-                      isSelected ? "text-white" : "text-white/55"
-                    }`}>
-                      {option.label}
-                    </span>
-                    <span className="font-sans text-[10px] text-white/35 tracking-wide leading-snug">
-                      {option.subtitle}
-                    </span>
-                  </div>
-                </label>
-              );
-            })}
+        <CoSection title="Начин на плащане">
+          <div className="flex flex-col gap-2.5">
+            <CoRadioCard
+              name="paymentMethod" value="cod" selected={paymentMethod === "cod"}
+              onSelect={() => { setPaymentMethod("cod"); setSubmitError(""); }}
+              title="Наложен платеж" subtitle="Плащате при получаване. Прегледай преди да платиш."
+            />
+            <CoRadioCard
+              name="paymentMethod" value="card" selected={paymentMethod === "card"}
+              onSelect={() => { setPaymentMethod("card"); setSubmitError(""); }}
+              title="Плащане с карта" subtitle="Безплатна доставка"
+            >
+              <PaymentMarks label="Приемани карти и портфейли" />
+              {paymentMethod === "card" && (
+                <SecureNote>Плащането се обработва сигурно от Stripe. Не съхраняваме данни за карти.</SecureNote>
+              )}
+            </CoRadioCard>
           </div>
-        </div>
+        </CoSection>
         )}
 
         {/* ── Shipping method radio cards (hidden for prepayment-required orders) ── */}
         {!needsPrepayment && (
-        <div className="flex flex-col gap-1.5">
-          <span className="font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-white/40">
-            Начин на доставка
-          </span>
-
-          <div className="border border-white/10 overflow-hidden mt-1">
-            {SHIPPING_OPTIONS.map((option) => {
-              const isSelected = shippingId === option.id;
-              return (
-                <label
-                  key={option.id}
-                  className={`flex items-center justify-between p-4 border-b border-white/8 last:border-b-0 cursor-pointer transition-colors duration-200 ${
-                    isSelected ? "bg-white/8" : "hover:bg-white/4"
-                  }`}
-                >
-                  {/* Left: radio + label */}
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="shippingMethod"
-                      value={option.id}
-                      checked={isSelected}
-                      onChange={() => {
-                        setShippingId(option.id);
-                        if (option.id !== "home-address") { setForm((f) => ({ ...f, postCode: "" })); clearError("postCode"); }
-                      }}
-                      className="sr-only"
-                    />
-                    {/* Custom radio circle */}
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
-                      isSelected ? "border-white" : "border-white/25"
-                    }`}>
-                      {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
-                    </div>
-                    <span className={`font-sans text-xs tracking-wide transition-colors duration-200 ${
-                      isSelected ? "text-white" : "text-white/55"
-                    }`}>
-                      {option.label}
-                    </span>
-                  </div>
-
-                  {/* Right: price */}
-                  <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                    {freeShipping ? (
-                      <>
-                        <span className="font-sans text-[11px] text-white/25 line-through">{option.price.toFixed(2)} €</span>
-                        <span className="font-sans text-[11px] text-green-400 font-medium">0.00 €</span>
-                      </>
-                    ) : (
-                      <span className={`font-serif text-sm transition-colors duration-200 ${isSelected ? "text-white" : "text-white/55"}`}>
-                        {option.price.toFixed(2)} €
-                      </span>
-                    )}
-                  </div>
-                </label>
-              );
-            })}
+        <CoSection title="Начин на доставка" aside={<BrandMark name="econt" height={18} />}>
+          <div className="flex flex-col gap-2.5">
+            {SHIPPING_OPTIONS.map((option) => (
+              <CoRadioCard
+                key={option.id}
+                name="shippingMethod" value={option.id} selected={shippingId === option.id}
+                onSelect={() => {
+                  setShippingId(option.id);
+                  if (option.id !== "home-address") { setForm((f) => ({ ...f, postCode: "" })); clearError("postCode"); }
+                }}
+                icon={option.id === "econt-office" ? <IconOffice /> : <IconHome />}
+                title={option.id === "econt-office" ? "До офис или автомат на Еконт" : "До адрес с Еконт"}
+                subtitle="Срок: до 2 работни дни"
+                right={freeShipping ? (
+                  <span className="flex flex-col items-end leading-tight">
+                    <span className="text-[#15803D]">Безплатна</span>
+                    <span className="text-xs font-normal text-[#6F6B61] line-through">€{option.price.toFixed(2)}</span>
+                  </span>
+                ) : `€${option.price.toFixed(2)}`}
+              />
+            ))}
           </div>
-        </div>
+        </CoSection>
         )}
 
         {/* ── Address field (dynamic label) ────────────────────────────── */}
-        <Field id="field-officeAddress" label={addressLabel} error={errors.officeAddress}>
+        <CoField id="field-officeAddress" htmlFor="bg-officeAddress" label={addressLabel} error={errors.officeAddress} errorId="bg-officeAddress-err">
           <input
             type="text"
             placeholder={addressPlaceholder}
             value={form.officeAddress}
             onChange={(e) => { setForm((f) => ({ ...f, officeAddress: e.target.value })); clearError("officeAddress"); }}
-            className="input-luxury"
-            style={errors.officeAddress ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined}
+            className={coInput(!!errors.officeAddress)}
             autoComplete={isHomeAddress ? "street-address" : "off"}
+            {...inputProps("officeAddress")}
           />
-        </Field>
+        </CoField>
 
         {isHomeAddress && (
-          <Field id="field-postCode" label="Пощенски код *" error={errors.postCode}>
+          <CoField id="field-postCode" htmlFor="bg-postCode" label="Пощенски код" error={errors.postCode} errorId="bg-postCode-err">
             <input type="text" placeholder="1000" value={form.postCode}
               onChange={(e) => { setForm((f) => ({ ...f, postCode: e.target.value })); clearError("postCode"); }}
-              className="input-luxury" autoComplete="postal-code" inputMode="numeric"
-              style={errors.postCode ? { borderBottomColor: "rgba(239,68,68,0.65)" } : undefined} />
-          </Field>
+              className={coInput(!!errors.postCode)} autoComplete="postal-code" inputMode="numeric" {...inputProps("postCode")} />
+          </CoField>
         )}
 
-        <Field label="Бележка (незадължително)" error={undefined}>
+        <CoField htmlFor="bg-notes" label="Бележка" optional>
           <textarea
+            id="bg-notes"
             placeholder="Специални инструкции..."
             value={form.notes}
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             rows={2}
-            className="input-luxury resize-none"
+            className={`${coInput(false)} resize-none py-3`}
           />
-        </Field>
+        </CoField>
       </div>
       )}
 
       {submitError && (
-        <p className="font-sans text-xs text-red-400 text-center leading-relaxed border border-red-400/20 bg-red-400/5 px-4 py-3">
+        <p role="alert" className="rounded-[6px] border border-[#F2C4BE] bg-[#FDF3F2] px-4 py-3 text-center font-sans text-[13px] leading-relaxed text-[#B42318]">
           {submitError}
         </p>
       )}
 
       {needsPrepayment ? (
-        <div className="flex flex-col gap-3 border border-white/15 bg-white/[0.03] px-5 py-5 text-center">
-          <p className="font-sans text-xs text-white/70 leading-relaxed">
+        <div className="flex flex-col gap-3 rounded-[8px] border border-[#D9D5CC] bg-[#F7F6F2] px-5 py-5 text-center">
+          <p className="font-sans text-sm leading-relaxed text-[#4A463E]">
             Продукти на цена от €{PREPAYMENT_THRESHOLD_EUR} нагоре се поръчват с предплащане и се уреждат директно с нас -
             наложен платеж не е наличен за тази поръчка.
           </p>
           <a
             href={PREPAYMENT_VIBER_LINK}
             onClick={handleViberContactClick}
-            className="btn-primary w-full justify-center"
+            className="flex h-14 w-full items-center justify-center rounded-[6px] bg-[#0F2850] px-6 font-sans text-base font-medium text-white transition-colors hover:bg-[#163A6E]"
           >
             Свържете се по Viber
           </a>
-          <p className="font-sans text-[11px] text-white/40">
-            или на телефон <span className="text-white/60">{PREPAYMENT_PHONE}</span>
+          <p className="font-sans text-xs text-[#6F6B61]">
+            или на телефон <span className="font-medium text-[#1A1A1A]">{PREPAYMENT_PHONE}</span>
           </p>
         </div>
       ) : (
-      <button type="submit" disabled={submitting} className="btn-primary w-full justify-center mt-2">
-        {submitting ? (
-          <span className="flex items-center gap-2">
-            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            {isCardPay ? "Пренасочване към плащане..." : "Обработване..."}
-          </span>
-        ) : isCardPay ? (
-          `Плати с карта - €${grandTotal.toFixed(2)}`
-        ) : (
-          `Потвърди поръчката - €${grandTotal.toFixed(2)}`
-        )}
-      </button>
-      )}
+        <div className="flex flex-col gap-5">
+          <CoSubmit busy={submitting} busyLabel={isCardPay ? "Пренасочване към плащане..." : "Обработване..."}>
+            {isCardPay ? `Плати €${grandTotal.toFixed(2)}` : `Завърши поръчката · €${grandTotal.toFixed(2)}`}
+          </CoSubmit>
 
-      {!needsPrepayment && isCardPay && (
-        <div className="flex flex-col gap-2 -mt-3">
-          <p className="font-sans text-xs text-center text-white/55 tracking-wide leading-relaxed border border-green-400/25 bg-green-400/5 px-4 py-3">
-            <span className="text-green-400 font-medium">Безплатна доставка при плащане с карта.</span>{" "}
-            Плащането е през Stripe - данните на картата не минават през нашия сайт.
-          </p>
-          <p className="font-sans text-[10px] text-center text-white/25 tracking-wide leading-relaxed">
-            30 дни лесна замяна.
-          </p>
+          <CoTrust
+            points={isCardPay
+              ? ["5 години гаранция", "30 дни замяна*"]
+              : ["5 години гаранция", "30 дни замяна*", "Преглед преди плащане"]}
+            note="* За стоки на редовна цена."
+            links={[
+              { href: "/policies/shipping", label: "Доставка" },
+              { href: "/policies/returns", label: "Връщане" },
+              { href: "/policies/privacy", label: "Поверителност" },
+            ]}
+          />
         </div>
-      )}
-
-      {!needsPrepayment && !isCardPay && (
-        <p className="font-sans text-[10px] text-center text-white/25 tracking-wide leading-relaxed">
-          Плащате при получаване. Имате право на преглед и тест преди да заплатите.
-          <br />30 дни лесна замяна.
-        </p>
       )}
     </form>
   );
 }
 
-function Field({ label, error, id, children }: { label: string; error?: string; id?: string; children: React.ReactNode }) {
-  return (
-    <div id={id} className="flex flex-col gap-1.5">
-      <label className="font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-white/40">
-        {label}
-      </label>
-      {children}
-      {error && <p className="font-sans text-[10px] text-red-400 tracking-wide">{error}</p>}
-    </div>
-  );
-}

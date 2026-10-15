@@ -132,13 +132,26 @@ export function CartDrawer() {
       {/* Drawer */}
       <div
         ref={drawerRef}
-        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] bg-charcoal-deep z-[80] flex flex-col shadow-2xl transition-transform duration-400 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] ${showCheckout ? "bg-white" : "bg-charcoal-deep"} z-[80] flex flex-col shadow-2xl transition-transform duration-400 ease-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         role="dialog"
         aria-label="Количка"
       >
-        {/* Header */}
+        {/* Header - checkout step: light, with the way back to the cart in it */}
+        {showCheckout ? (
+          <div className="flex items-center justify-between border-b border-[#E4E0D7] bg-white px-5 py-4">
+            <button
+              onClick={() => setShowCheckout(false)}
+              className="flex items-center gap-2 font-sans text-sm font-medium text-[#4A463E] transition-colors hover:text-[#1A1A1A]"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M8.5 2.5 4 7l4.5 4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              Количка
+            </button>
+            <h2 className="font-sans text-base font-semibold text-[#1A1A1A]">Поръчка</h2>
+            <button onClick={closeCart} aria-label="Затвори" className="text-2xl leading-none text-[#6F6B61] transition-colors hover:text-[#1A1A1A]">×</button>
+          </div>
+        ) : (
         <div className="flex items-center justify-between px-6 py-5 border-b border-white/8">
           <div>
             <h2 className="font-serif text-xl text-white">Количка</h2>
@@ -156,14 +169,15 @@ export function CartDrawer() {
             ×
           </button>
         </div>
+        )}
 
-        {/* Free shipping progress */}
-        {items.length > 0 && (
+        {/* Free shipping progress (cart step only) */}
+        {items.length > 0 && !showCheckout && (
           <FreeShippingRing progress={progress} remaining={remaining} reached={reached} />
         )}
 
-        {/* Countdown timer */}
-        {items.length > 0 && (
+        {/* Countdown timer - decorative (nothing is reserved by it), so it is not shown in the checkout step */}
+        {items.length > 0 && !showCheckout && (
           <div className={`px-6 py-2.5 flex items-center gap-3 border-b border-white/8 transition-colors duration-500 ${timeLeft === 0 ? "bg-red-950/30" : "bg-amber-950/20"}`}>
             <svg
               width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -190,13 +204,7 @@ export function CartDrawer() {
         )}
 
         {showCheckout ? (
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            <button
-              onClick={() => setShowCheckout(false)}
-              className="flex items-center gap-2 text-white/40 hover:text-white transition-colors text-xs tracking-widest uppercase mb-6"
-            >
-              ← Обратно към количката
-            </button>
+          <div className="flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6 sm:py-6">
             <CheckoutForm
               items={items}
               total={total}

@@ -14,6 +14,10 @@ import {
 import { trackFbEvent } from "@/lib/fbq";
 import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY, type PaymentMethod } from "@/lib/payments";
 import { newOrderRef } from "@/lib/order-ref";
+import {
+  CoCheck, CoField, CoRadioCard, CoSection, CoSubmit, CoSummary, CoTrust, IconHome, PaymentMarks, SecureNote, coInput,
+  type SummaryLine, type SummaryRow,
+} from "@/components/checkout/ui";
 import { PREPAYMENT_THRESHOLD_TEXT, bundleLineLabel } from "./shared";
 
 // Romania checkout (cash on delivery / ramburs, or card through Stripe Checkout while the card option is switched on).
@@ -76,8 +80,6 @@ type FormState = {
   emailMarketingConsent: boolean;
   termsAccepted: boolean;
 };
-
-const ERR_BORDER = { borderBottomColor: "rgba(239,68,68,0.65)" } as const;
 
 export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   const clearCart = useRoCart((s) => s.clear);
@@ -174,7 +176,6 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
     id: `ro-${key}`,
     "aria-invalid": errors[key] ? true : undefined,
     "aria-describedby": errors[key] ? `ro-${key}-err` : undefined,
-    style: errors[key] ? ERR_BORDER : undefined,
   });
 
   // ── Validation ─────────────────────────────────────────────────────────────
@@ -331,148 +332,116 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   // ── Success screen ─────────────────────────────────────────────────────────
   if (submitted) {
     return (
-      <div className="flex flex-col items-center text-center gap-6 py-8">
-        <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <div className="flex flex-col items-center gap-6 py-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#B7E0C4] bg-[#E7F5EC]">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15803D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
 
         <div>
-          <h3 className="font-serif text-2xl text-white mb-1.5">Comanda a fost primită!</h3>
-          <p className="font-sans text-[10px] text-white/35 tracking-[0.22em] uppercase">
-            Număr comandă: {orderRef}
-          </p>
+          <h3 className="font-sans text-2xl font-semibold text-[#1A1A1A]">Comanda a fost primită!</h3>
+          <p className="mt-1 font-sans text-sm text-[#5F5B52]">Număr comandă: {orderRef}</p>
         </div>
 
-        <div className="w-full bg-white/5 border border-white/8 p-4 flex flex-col gap-2.5">
-          <div className="flex justify-between text-sm">
-            <span className="font-sans text-white/50">Sumă de plată</span>
-            <span className="font-serif text-white">{fmtRON(submittedTotal)}</span>
+        <div className="flex w-full flex-col gap-2.5 rounded-[8px] border border-[#E4E0D7] bg-[#F7F6F2] p-4 text-left">
+          <div className="flex justify-between font-sans text-sm">
+            <span className="text-[#5F5B52]">Sumă de plată</span>
+            <span className="font-semibold text-[#1A1A1A]">{fmtRON(submittedTotal)}</span>
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="font-sans text-white/40">Metodă de plată</span>
-            <span className="font-sans text-white/60">Plata la livrare</span>
+          <div className="flex justify-between font-sans text-sm">
+            <span className="text-[#5F5B52]">Metodă de plată</span>
+            <span className="text-[#1A1A1A]">Plata la livrare</span>
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="font-sans text-white/40">Livrare estimată</span>
-            <span className="font-sans text-white/60">{RO_DELIVERY_DAYS} zile lucrătoare de la expediere</span>
+          <div className="flex justify-between gap-4 font-sans text-sm">
+            <span className="text-[#5F5B52]">Livrare estimată</span>
+            <span className="text-right text-[#1A1A1A]">{RO_DELIVERY_DAYS} zile lucrătoare de la expediere</span>
           </div>
         </div>
 
-        <p className="font-sans text-xs text-white/45 leading-relaxed">
-          Am trimis confirmarea la{" "}
-          <span className="text-white/70 break-all">{submittedEmail}</span>
+        <p className="font-sans text-sm leading-relaxed text-[#4A463E]">
+          Am trimis confirmarea la <span className="break-all font-medium text-[#1A1A1A]">{submittedEmail}</span>
         </p>
 
-        <p className="font-sans text-[10px] text-white/25 tracking-wide">
-          Plătiți la primirea coletului · Retur în {RO_RETURN_DAYS} zile conform legii
-        </p>
+        <p className="font-sans text-xs text-[#6F6B61]">Plătiți la primirea coletului · Retur în {RO_RETURN_DAYS} zile conform legii</p>
       </div>
     );
   }
 
+  // ── Order summary rows (everything is computed above; this only formats it) ─
+  const summaryLines: SummaryLine[] = items.map((i) => ({
+    key: i.slug,
+    image: i.image,
+    imageAlt: i.imageAlt,
+    name: i.name,
+    quantity: i.quantity,
+    price: fmtRON(i.ron * i.quantity),
+    compareAt: i.originalRon != null && i.originalRon > i.ron ? fmtRON(i.originalRon * i.quantity) : undefined,
+  }));
+  const summaryRows: SummaryRow[] = [
+    ...bundles.map(({ id, label, discount }) => ({ key: `bundle-${id}`, label: bundleLineLabel(label), value: `-${fmtRON(discount)}`, tone: "discount" as const })),
+    { key: "shipping", label: "Livrare", value: freeShipping ? "Gratuită" : fmtRON(shippingCost), tone: freeShipping ? ("free" as const) : undefined },
+    ...(!isCardPay && RO_COD_FEE_RON > 0 ? [{ key: "cod-fee", label: "Taxă ramburs", value: fmtRON(RO_COD_FEE_RON) }] : []),
+  ];
+  const OPT = "(opțional)";
+
   // ── Form ───────────────────────────────────────────────────────────────────
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-7" noValidate>
+      {/* ── Order summary: first thing in the panel ─────────────────────────── */}
+      <CoSummary
+        lines={summaryLines}
+        rows={summaryRows}
+        totalLabel={needsPrepayment ? "Total" : "Total de plată"}
+        total={fmtRON(grandTotal)}
+        toggleLabel="Afișați comanda"
+        hideLabel="Ascundeți comanda"
+      />
+
       <div>
-        <h3 className="font-serif text-xl text-white mb-1">{needsPrepayment ? "Comandă cu plată în avans" : "Date pentru livrare"}</h3>
-        <p className="font-sans text-xs text-white/40 tracking-wide">
+        <h3 className="font-sans text-xl font-semibold text-[#1A1A1A]">{needsPrepayment ? "Comandă cu plată în avans" : "Date pentru livrare"}</h3>
+        <p className="mt-1 font-sans text-sm text-[#5F5B52]">
           {needsPrepayment ? "Se stabilește direct cu noi" : isCardPay ? "Plata cu cardul - livrare gratuită" : "Plătiți la livrare - ramburs"}
         </p>
-      </div>
-
-      {/* ── Order summary ─────────────────────────────────────────────────── */}
-      <div className="bg-white/5 border border-white/8 p-4 flex flex-col gap-2">
-        {items.map((i) => (
-          <div key={i.slug} className="flex justify-between gap-3 text-xs">
-            <span className="font-sans text-white/60 tracking-wide">{i.name} × {i.quantity}</span>
-            <span className="font-serif text-white whitespace-nowrap">{fmtRON(i.ron * i.quantity)}</span>
-          </div>
-        ))}
-
-        {bundles.map(({ id, label, discount }) => (
-          <div key={id} className="flex justify-between gap-3 text-xs">
-            <span className="font-sans text-navy-light tracking-wide">◈ {bundleLineLabel(label)}</span>
-            <span className="font-sans text-navy-light whitespace-nowrap">-{fmtRON(discount)}</span>
-          </div>
-        ))}
-
-        <div className="h-px bg-white/8 my-1" />
-
-        <div className="flex justify-between text-xs">
-          <span className="font-sans text-white/60 tracking-wide">Livrare</span>
-          {freeShipping ? (
-            <span className="font-sans text-green-400 tracking-wide font-medium">GRATUITĂ</span>
-          ) : (
-            <span className="font-serif text-white">{fmtRON(shippingCost)}</span>
-          )}
-        </div>
-
-        {!isCardPay && RO_COD_FEE_RON > 0 && (
-          <div className="flex justify-between text-xs">
-            <span className="font-sans text-white/60 tracking-wide">Taxă ramburs</span>
-            <span className="font-serif text-white">{fmtRON(RO_COD_FEE_RON)}</span>
-          </div>
-        )}
-
-        <div className="h-px bg-white/8 my-1" />
-
-        <div className="flex justify-between text-sm">
-          <span className="font-sans font-medium text-white tracking-wide">{needsPrepayment ? "Total" : "Total de plată"}</span>
-          <span className="font-serif text-white text-base">{fmtRON(grandTotal)}</span>
-        </div>
       </div>
 
       {/* ── Fields (none for an advance-payment cart: those orders are arranged over Viber / phone / e-mail) ── */}
       {!needsPrepayment && (<>
       <div className="flex flex-col gap-5">
-        <Field id="name" label="Nume complet *" error={errors.name}>
+        <CoField id="field-name" htmlFor="ro-name" label="Nume complet" error={errors.name} errorId="ro-name-err">
           <input type="text" placeholder="Ion Popescu" value={form.name} maxLength={100}
             onChange={(e) => { set("name", e.target.value); clearError("name"); }}
-            className="input-luxury" autoComplete="name" {...fieldProps("name")} />
-        </Field>
+            className={coInput(!!errors.name)} autoComplete="name" {...fieldProps("name")} />
+        </CoField>
 
-        <Field id="phone" label="Telefon *" error={errors.phone}>
+        <CoField id="field-phone" htmlFor="ro-phone" label="Telefon" error={errors.phone} errorId="ro-phone-err">
           <input type="tel" placeholder="07xx xxx xxx" value={form.phone} maxLength={20}
             onChange={(e) => { set("phone", e.target.value); clearError("phone"); }}
-            className="input-luxury" autoComplete="tel" inputMode="tel" {...fieldProps("phone")} />
-        </Field>
-        <label className="flex items-start gap-2.5 cursor-pointer -mt-2">
-          <input
-            type="checkbox"
-            checked={form.smsMarketingConsent}
-            onChange={(e) => set("smsMarketingConsent", e.target.checked)}
-            className="mt-0.5 flex-shrink-0 w-3.5 h-3.5 accent-white cursor-pointer"
-          />
-          <span className="font-sans text-[10px] text-white/40 leading-relaxed tracking-wide">
+            className={coInput(!!errors.phone)} autoComplete="tel" inputMode="tel" {...fieldProps("phone")} />
+        </CoField>
+        <div className="-mt-2">
+          <CoCheck checked={form.smsMarketingConsent} onChange={(v) => set("smsMarketingConsent", v)}>
             Vreau să primesc oferte exclusive prin SMS (opțional)
-          </span>
-        </label>
+          </CoCheck>
+        </div>
 
-        <Field id="email" label="E-mail *" error={errors.email}>
+        <CoField id="field-email" htmlFor="ro-email" label="E-mail" error={errors.email} errorId="ro-email-err">
           <input type="email" placeholder="adresa@email.ro" value={form.email} maxLength={120}
             onChange={(e) => { set("email", e.target.value); clearError("email"); }}
-            className="input-luxury" autoComplete="email" inputMode="email" {...fieldProps("email")} />
-        </Field>
-        <label className="flex items-start gap-2.5 cursor-pointer -mt-2">
-          <input
-            type="checkbox"
-            checked={form.emailMarketingConsent}
-            onChange={(e) => set("emailMarketingConsent", e.target.checked)}
-            className="mt-0.5 flex-shrink-0 w-3.5 h-3.5 accent-white cursor-pointer"
-          />
-          <span className="font-sans text-[10px] text-white/40 leading-relaxed tracking-wide">
+            className={coInput(!!errors.email)} autoComplete="email" inputMode="email" {...fieldProps("email")} />
+        </CoField>
+        <div className="-mt-2">
+          <CoCheck checked={form.emailMarketingConsent} onChange={(v) => set("emailMarketingConsent", v)}>
             Vreau să primesc oferte, noutăți și un memento prin e-mail dacă nu finalizez comanda (opțional)
-          </span>
-        </label>
+          </CoCheck>
+        </div>
 
-        <Field id="county" label="Județ *" error={errors.county}>
+        <CoField id="field-county" htmlFor="ro-county" label="Județ" error={errors.county} errorId="ro-county-err">
           <div className="relative">
             <select
               value={form.county}
               onChange={(e) => { set("county", e.target.value); clearError("county"); }}
-              className={`input-luxury appearance-none pr-6 cursor-pointer [color-scheme:dark] [&>option]:bg-charcoal-deep [&>option]:text-white ${form.county ? "" : "text-white/30"}`}
+              className={`${coInput(!!errors.county)} cursor-pointer appearance-none pr-10 ${form.county ? "" : "text-[#77736A]"}`}
               autoComplete="address-level1"
               {...fieldProps("county")}
             >
@@ -480,176 +449,149 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
               {RO_COUNTIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
             <svg
-              width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
               strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-              className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-white/40"
+              className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#6F6B61]"
             >
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </div>
-        </Field>
+        </CoField>
 
-        <Field id="city" label="Localitate *" error={errors.city}>
+        <CoField id="field-city" htmlFor="ro-city" label="Localitate" error={errors.city} errorId="ro-city-err">
           <input type="text" placeholder="Cluj-Napoca" value={form.city} maxLength={80}
             onChange={(e) => { set("city", e.target.value); clearError("city"); }}
-            className="input-luxury" autoComplete="address-level2" {...fieldProps("city")} />
-        </Field>
+            className={coInput(!!errors.city)} autoComplete="address-level2" {...fieldProps("city")} />
+        </CoField>
 
-        <Field id="address" label="Adresă (stradă, număr, bloc/scară/apartament) *" error={errors.address}>
+        <CoField id="field-address" htmlFor="ro-address" label="Adresă (stradă, număr, bloc/scară/apartament)" error={errors.address} errorId="ro-address-err">
           <input type="text" placeholder="Str. Exemplu 12, bl. A3, sc. 2, ap. 14" value={form.address} maxLength={200}
             onChange={(e) => { set("address", e.target.value); clearError("address"); }}
-            className="input-luxury" autoComplete="street-address" {...fieldProps("address")} />
-        </Field>
+            className={coInput(!!errors.address)} autoComplete="street-address" {...fieldProps("address")} />
+        </CoField>
 
-        <Field id="postCode" label="Cod poștal (opțional)" error={errors.postCode}>
+        <CoField id="field-postCode" htmlFor="ro-postCode" label="Cod poștal" optional optionalText={OPT} error={errors.postCode} errorId="ro-postCode-err">
           <input type="text" placeholder="400001" value={form.postCode} maxLength={10}
             onChange={(e) => { set("postCode", e.target.value); clearError("postCode"); }}
-            className="input-luxury" autoComplete="postal-code" inputMode="numeric" {...fieldProps("postCode")} />
-        </Field>
+            className={coInput(!!errors.postCode)} autoComplete="postal-code" inputMode="numeric" {...fieldProps("postCode")} />
+        </CoField>
 
-        <Field id="notes" label="Observații (opțional)">
+        <CoField id="field-notes" htmlFor="ro-notes" label="Observații" optional optionalText={OPT}>
           <textarea
+            id="ro-notes"
             placeholder="Instrucțiuni speciale pentru curier..."
             value={form.notes}
             onChange={(e) => set("notes", e.target.value)}
             rows={2}
             maxLength={500}
-            className="input-luxury resize-none"
-            id="ro-notes"
+            className={`${coInput(false)} resize-none py-3`}
           />
-        </Field>
+        </CoField>
       </div>
 
       {/* ── Delivery (single option, shown as the selected card) ──────────── */}
-      <div className="flex flex-col gap-1.5">
-        <span className="font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-white/40">
-          Mod de livrare
-        </span>
-        <div className="border border-white/10 overflow-hidden mt-1">
-          <div className="flex items-center justify-between p-4 bg-white/8">
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 rounded-full border-2 border-white flex items-center justify-center flex-shrink-0" aria-hidden="true">
-                <div className="w-2 h-2 rounded-full bg-white" />
-              </div>
-              <span className="font-sans text-xs tracking-wide text-white">{SHIPPING_LABEL}</span>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-              {freeShipping ? (
-                <>
-                  <span className="font-sans text-[11px] text-white/25 line-through">{fmtRON(RO_SHIPPING_FEE_RON)}</span>
-                  <span className="font-sans text-[11px] text-green-400 font-medium">GRATUITĂ</span>
-                </>
-              ) : (
-                <span className="font-serif text-sm text-white">{fmtRON(shippingCost)}</span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <CoSection title="Mod de livrare">
+        <CoRadioCard
+          name="ro-delivery" value="home" selected onSelect={() => {}}
+          icon={<IconHome />}
+          title={SHIPPING_LABEL}
+          subtitle={`Termen: ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere`}
+          right={freeShipping ? (
+            <span className="flex flex-col items-end leading-tight">
+              <span className="text-[#15803D]">Gratuită</span>
+              <span className="text-xs font-normal text-[#6F6B61] line-through">{fmtRON(RO_SHIPPING_FEE_RON)}</span>
+            </span>
+          ) : fmtRON(shippingCost)}
+        />
+      </CoSection>
 
       {/* ── Payment: ramburs (default) or card (only while the card option is switched on) ── */}
       {CARD_PAYMENTS_ENABLED ? (
-        <div className="flex flex-col gap-1.5">
-          <span id="ro-pay-label" className="font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-white/40">
-            Metodă de plată
-          </span>
-          <div role="radiogroup" aria-labelledby="ro-pay-label" className="flex flex-col gap-2 mt-1">
-            <PayOption
-              id="ro-pay-cod"
-              checked={!isCardPay}
-              disabled={submitting}
-              onSelect={() => setPayMethod("cod")}
+        <CoSection title="Metodă de plată">
+          <div role="radiogroup" aria-label="Metodă de plată" className="flex flex-col gap-2.5">
+            <CoRadioCard
+              name="ro-payment" value="cod" selected={!isCardPay}
+              onSelect={() => { if (!submitting) setPayMethod("cod"); }}
               title="Plata la livrare (ramburs)"
               subtitle="Plătiți curierului la primirea coletului"
-              amount={fmtRON(codTotal)}
+              right={fmtRON(codTotal)}
             />
-            <PayOption
-              id="ro-pay-card"
-              checked={isCardPay}
-              disabled={submitting}
-              onSelect={() => setPayMethod("card")}
+            <CoRadioCard
+              name="ro-payment" value="card" selected={isCardPay}
+              onSelect={() => { if (!submitting) setPayMethod("card"); }}
               title="Plata cu cardul"
-              subtitle="Visa, Mastercard, Apple Pay, Google Pay · Livrare gratuită"
-              amount={fmtRON(cardTotal)}
-            />
+              subtitle="Livrare gratuită"
+              right={fmtRON(cardTotal)}
+            >
+              <PaymentMarks label="Carduri și portofele acceptate" />
+              {isCardPay && (
+                <SecureNote>Plata este procesată în siguranță de Stripe. Nu stocăm datele cardului.</SecureNote>
+              )}
+            </CoRadioCard>
           </div>
-        </div>
+        </CoSection>
       ) : (
-        <div className="flex flex-col gap-1.5">
-          <span className="font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-white/40">
-            Metodă de plată
-          </span>
-          <div className="border border-white/10 overflow-hidden mt-1">
-            <div className="p-4 bg-white/8 flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded-full border-2 border-white flex items-center justify-center flex-shrink-0" aria-hidden="true">
-                    <div className="w-2 h-2 rounded-full bg-white" />
-                  </div>
-                  <span className="font-sans text-xs tracking-wide text-white">Plata la livrare (ramburs)</span>
-                </div>
-                <span className="font-serif text-sm text-white flex-shrink-0 ml-3">{fmtRON(grandTotal)}</span>
-              </div>
-              <p className="font-sans text-[10px] text-white/40 tracking-wide leading-relaxed pl-7">
-                Plătiți curierului suma de {fmtRON(grandTotal)} la primirea coletului.
-              </p>
-            </div>
-          </div>
-        </div>
+        <CoSection title="Metodă de plată">
+          <CoRadioCard
+            name="ro-payment" value="cod" selected onSelect={() => {}}
+            title="Plata la livrare (ramburs)"
+            subtitle={`Plătiți curierului suma de ${fmtRON(grandTotal)} la primirea coletului.`}
+            right={fmtRON(grandTotal)}
+          />
+        </CoSection>
       )}
 
       {/* ── Required consent: terms + privacy (unchecked by default) ──────── */}
       <div id="field-terms" className="flex flex-col gap-1.5">
-        <label className="flex items-start gap-2.5 cursor-pointer">
-          <input
-            id="ro-terms"
-            type="checkbox"
-            checked={form.termsAccepted}
-            onChange={(e) => { set("termsAccepted", e.target.checked); clearError("terms"); }}
-            aria-invalid={errors.terms ? true : undefined}
-            aria-describedby={errors.terms ? "ro-terms-err" : undefined}
-            className="mt-0.5 flex-shrink-0 w-3.5 h-3.5 accent-white cursor-pointer"
-          />
-          <span className="font-sans text-[11px] text-white/55 leading-relaxed tracking-wide">
-            Am citit și sunt de acord cu{" "}
-            <a
-              href="/ro/politici/termeni"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-white/80 underline underline-offset-2 hover:text-white"
-            >
-              Termenii și condițiile
-            </a>{" "}
-            și cu{" "}
-            <a
-              href="/ro/politici/confidentialitate"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-white/80 underline underline-offset-2 hover:text-white"
-            >
-              Politica de confidențialitate
-            </a>{" "}
-            *
-          </span>
-        </label>
+        <CoCheck
+          id="ro-terms"
+          checked={form.termsAccepted}
+          onChange={(v) => { set("termsAccepted", v); clearError("terms"); }}
+          invalid={!!errors.terms}
+          describedBy={errors.terms ? "ro-terms-err" : undefined}
+        >
+          Am citit și sunt de acord cu{" "}
+          <a
+            href="/ro/politici/termeni"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="font-medium text-[#1A1A1A] underline underline-offset-2"
+          >
+            Termenii și condițiile
+          </a>{" "}
+          și cu{" "}
+          <a
+            href="/ro/politici/confidentialitate"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="font-medium text-[#1A1A1A] underline underline-offset-2"
+          >
+            Politica de confidențialitate
+          </a>
+        </CoCheck>
         {errors.terms && (
-          <p id="ro-terms-err" role="alert" className="font-sans text-[10px] text-red-400 tracking-wide">{errors.terms}</p>
+          <p id="ro-terms-err" role="alert" className="flex items-start gap-1.5 font-sans text-[13px] text-[#B42318]">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden className="mt-[3px] flex-shrink-0">
+              <circle cx="8" cy="8" r="7" stroke="#B42318" strokeWidth="1.5" /><path d="M8 4.5v4" stroke="#B42318" strokeWidth="1.5" strokeLinecap="round" /><circle cx="8" cy="11" r="0.9" fill="#B42318" />
+            </svg>
+            <span>{errors.terms}</span>
+          </p>
         )}
       </div>
       </>)}
 
       {submitError && (
-        <div role="alert" className="font-sans text-xs text-red-400 text-center leading-relaxed border border-red-400/20 bg-red-400/5 px-4 py-3 flex flex-col items-center gap-2">
+        <div role="alert" className="flex flex-col items-center gap-2 rounded-[6px] border border-[#F2C4BE] bg-[#FDF3F2] px-4 py-3 text-center font-sans text-[13px] leading-relaxed text-[#B42318]">
           <p>{submitError}</p>
           {reloadHint && (
             <>
-              <p className="text-red-300/80">{reloadHint}</p>
+              <p className="text-[#8E2A20]">{reloadHint}</p>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="font-sans text-[10px] tracking-widest uppercase border border-red-400/40 px-4 py-2 text-red-300 hover:bg-red-400/10 transition-colors"
+                className="rounded-[6px] border border-[#B42318]/40 px-4 py-2 font-sans text-xs font-medium text-[#B42318] transition-colors hover:bg-[#B42318]/10"
               >
                 Reîncărcați pagina
               </button>
@@ -659,101 +601,49 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       )}
 
       {needsPrepayment ? (
-        <div className="flex flex-col gap-3 border border-white/15 bg-white/[0.03] px-5 py-5 text-center">
-          <p className="font-sans text-xs text-white/70 leading-relaxed">
+        <div className="flex flex-col gap-3 rounded-[8px] border border-[#D9D5CC] bg-[#F7F6F2] px-5 py-5 text-center">
+          <p className="font-sans text-sm leading-relaxed text-[#4A463E]">
             Produsele cu prețul de la {PREPAYMENT_THRESHOLD_TEXT} în sus se comandă cu plată în avans, stabilită direct cu noi -
             plata la livrare (ramburs) nu este disponibilă pentru această comandă. Vă rugăm să ne contactați pentru a finaliza comanda.
           </p>
           <a
             href={PREPAYMENT_VIBER_LINK}
             onClick={handleViberContactClick}
-            className="btn-primary w-full justify-center"
+            className="flex h-14 w-full items-center justify-center rounded-[6px] bg-[#0F2850] px-6 font-sans text-base font-medium text-white transition-colors hover:bg-[#163A6E]"
           >
             Contactați-ne pe Viber
           </a>
-          <p className="font-sans text-[11px] text-white/40">
-            sau la telefon <span className="text-white/60">{PREPAYMENT_PHONE}</span>
+          <p className="font-sans text-xs text-[#6F6B61]">
+            sau la telefon <span className="font-medium text-[#1A1A1A]">{PREPAYMENT_PHONE}</span>
           </p>
-          <p className="font-sans text-[11px] text-white/40">
+          <p className="font-sans text-xs text-[#6F6B61]">
             sau prin e-mail la{" "}
-            <a href={`mailto:${PREPAYMENT_EMAIL}`} className="text-white/60 underline underline-offset-2 hover:text-white">
+            <a href={`mailto:${PREPAYMENT_EMAIL}`} className="font-medium text-[#1A1A1A] underline underline-offset-2">
               {PREPAYMENT_EMAIL}
             </a>
           </p>
         </div>
       ) : (
-        <>
-          <button type="submit" disabled={submitting} className="btn-primary w-full justify-center mt-2">
-            {submitting ? (
-              <span className="flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                {redirecting ? "Vă redirecționăm către plată..." : isCardPay ? "Se pregătește plata..." : "Se trimite comanda..."}
-              </span>
-            ) : isCardPay ? (
-              `Plătiți cu cardul - ${fmtRON(grandTotal)}`
-            ) : (
-              `Comandă cu obligație de plată - ${fmtRON(grandTotal)}`
-            )}
-          </button>
+        <div className="flex flex-col gap-5">
+          <CoSubmit busy={submitting} busyLabel={redirecting ? "Vă redirecționăm către plată..." : isCardPay ? "Se pregătește plata..." : "Se trimite comanda..."}>
+            {isCardPay ? `Plătiți ${fmtRON(grandTotal)}` : `Finalizați comanda · ${fmtRON(grandTotal)}`}
+          </CoSubmit>
 
-          {isCardPay ? (
-            <div className="flex flex-col gap-2 -mt-3">
-              <p className="font-sans text-[11px] text-center text-white/60 tracking-wide leading-relaxed">
-                Livrare gratuită la plata cu cardul. Plata se face prin Stripe - datele cardului nu trec prin site-ul nostru.
-              </p>
-              <p className="font-sans text-[10px] text-center text-white/25 tracking-wide leading-relaxed">
-                Retur în {RO_RETURN_DAYS} zile conform legii.
-              </p>
-            </div>
-          ) : (
-            <p className="font-sans text-[10px] text-center text-white/25 tracking-wide leading-relaxed">
-              Plătiți la primirea coletului.
-              {RO_INSPECT_BEFORE_PAY && " Puteți deschide și verifica coletul înainte de a plăti curierului."}
-              <br />Retur în {RO_RETURN_DAYS} zile conform legii.
-            </p>
-          )}
-        </>
+          <CoTrust
+            points={[
+              "5 ani garanție la ceasuri",
+              `Retur în ${RO_RETURN_DAYS} zile`,
+              ...(!isCardPay && RO_INSPECT_BEFORE_PAY ? ["Inspecție înainte de plată"] : []),
+            ]}
+            links={[
+              { href: "/ro/politici/termeni", label: "Termeni" },
+              { href: "/ro/politici/retur", label: "Retur" },
+              { href: "/ro/politici/livrare", label: "Livrare" },
+              { href: "/ro/politici/confidentialitate", label: "Confidențialitate" },
+            ]}
+          />
+        </div>
       )}
     </form>
-  );
-}
-
-function PayOption({ id, checked, disabled, onSelect, title, subtitle, amount }: {
-  id: string; checked: boolean; disabled: boolean; onSelect: () => void; title: string; subtitle: string; amount: string;
-}) {
-  return (
-    <label
-      htmlFor={id}
-      className={`flex flex-col gap-1.5 p-4 border transition-colors has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-white/50 ${
-        checked ? "border-white/40 bg-white/8" : "border-white/10 hover:bg-white/5"
-      } ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
-    >
-      <input id={id} type="radio" name="ro-payment" checked={checked} disabled={disabled} onChange={onSelect} className="sr-only" />
-      <span className="flex items-center justify-between">
-        <span className="flex items-center gap-3">
-          <span
-            className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${checked ? "border-white" : "border-white/30"}`}
-            aria-hidden="true"
-          >
-            {checked && <span className="block w-2 h-2 rounded-full bg-white" />}
-          </span>
-          <span className={`font-sans text-xs tracking-wide ${checked ? "text-white" : "text-white/70"}`}>{title}</span>
-        </span>
-        <span className="font-serif text-sm text-white flex-shrink-0 ml-3">{amount}</span>
-      </span>
-      <span className="block font-sans text-[10px] text-white/40 tracking-wide leading-relaxed pl-7">{subtitle}</span>
-    </label>
-  );
-}
-
-function Field({ id, label, error, children }: { id: string; label: string; error?: string; children: React.ReactNode }) {
-  return (
-    <div id={`field-${id}`} className="flex flex-col gap-1.5">
-      <label htmlFor={`ro-${id}`} className="font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-white/40">
-        {label}
-      </label>
-      {children}
-      {error && <p id={`ro-${id}-err`} role="alert" className="font-sans text-[10px] text-red-400 tracking-wide">{error}</p>}
-    </div>
   );
 }

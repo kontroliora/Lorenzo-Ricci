@@ -86,7 +86,7 @@ export function RoCartDrawer() {
       <div
         ref={drawerRef}
         tabIndex={-1}
-        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] bg-charcoal-deep z-[80] flex flex-col shadow-2xl outline-none transition-transform duration-400 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] ${showCheckout ? "bg-white" : "bg-charcoal-deep"} z-[80] flex flex-col shadow-2xl outline-none transition-transform duration-400 ease-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         role="dialog"
@@ -95,7 +95,20 @@ export function RoCartDrawer() {
         aria-hidden={!isOpen}
         inert={!isOpen}
       >
-        {/* Header */}
+        {/* Header - checkout step: light, with the way back to the cart in it */}
+        {showCheckout ? (
+          <div className="flex items-center justify-between border-b border-[#E4E0D7] bg-white px-5 py-4">
+            <button
+              onClick={() => setShowCheckout(false)}
+              className="flex items-center gap-2 font-sans text-sm font-medium text-[#4A463E] transition-colors hover:text-[#1A1A1A]"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M8.5 2.5 4 7l4.5 4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              Coș
+            </button>
+            <h2 className="font-sans text-base font-semibold text-[#1A1A1A]">Comandă</h2>
+            <button onClick={close} aria-label="Închide" className="text-2xl leading-none text-[#6F6B61] transition-colors hover:text-[#1A1A1A]">×</button>
+          </div>
+        ) : (
         <div className="flex items-center justify-between px-6 py-5 border-b border-white/8">
           <div>
             <h2 className="font-serif text-xl text-white">Coș de cumpărături</h2>
@@ -113,6 +126,7 @@ export function RoCartDrawer() {
             ×
           </button>
         </div>
+        )}
 
         {/* Free delivery progress */}
         {items.length > 0 && !showCheckout && (
@@ -120,13 +134,7 @@ export function RoCartDrawer() {
         )}
 
         {showCheckout ? (
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            <button
-              onClick={() => setShowCheckout(false)}
-              className="flex items-center gap-2 text-white/40 hover:text-white transition-colors text-xs tracking-widest uppercase mb-6"
-            >
-              ← Înapoi la coș
-            </button>
+          <div className="flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6 sm:py-6">
             <RoCheckoutForm
               items={items}
               onSuccess={() => {
