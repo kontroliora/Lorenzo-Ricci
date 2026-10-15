@@ -176,7 +176,35 @@ export function CartDrawer() {
           <FreeShippingRing progress={progress} remaining={remaining} reached={reached} />
         )}
 
-        {/* Countdown timer - decorative (nothing is reserved by it), so it is not shown in the checkout step */}
+        {/* Countdown timer in the checkout step (owner decision, 2026-10-15): the same running countdown as in the cart, in a slim
+            light bar right under the header - always visible, and never over the order summary. */}
+        {items.length > 0 && showCheckout && (
+          <div className={`flex items-center gap-2.5 border-b px-5 py-2.5 ${timeLeft === 0 ? "border-[#F2C4BE] bg-[#FDF3F2]" : "border-[#F0DDB0] bg-[#FFF8E6]"}`}>
+            <svg
+              width="15" height="15" viewBox="0 0 24 24" fill="none"
+              stroke={timeLeft === 0 ? "#B42318" : "#8A5A00"}
+              strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+              className="flex-shrink-0"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            {timeLeft > 0 ? (
+              <p className="font-sans text-[13px] font-normal leading-snug text-[#5C4A12]">
+                Вашата количка ще се пази още{" "}
+                <span className="font-semibold text-[#8A5A00]">{timerMM}:{timerSS}</span>{" "}
+                минути.
+              </p>
+            ) : (
+              <p className="font-sans text-[13px] font-normal leading-snug text-[#B42318]">
+                Времето за резервация изтече.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Countdown timer (cart step) */}
         {items.length > 0 && !showCheckout && (
           <div className={`px-6 py-2.5 flex items-center gap-3 border-b border-white/8 transition-colors duration-500 ${timeLeft === 0 ? "bg-red-950/30" : "bg-amber-950/20"}`}>
             <svg

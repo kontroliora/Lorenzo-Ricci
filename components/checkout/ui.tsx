@@ -142,8 +142,9 @@ export const IconLock = ({ size = 14 }: { size?: number }) => (
 );
 
 // ── Brand marks ─────────────────────────────────────────────────────────────
-// The OFFICIAL logo files live in /public/brand/<name>.svg (Econt, Visa, Mastercard, Apple Pay, Google Pay), in their original colours,
-// exactly as supplied by the brand kits - never redrawn here. Until a file exists the mark shows its plain name as a neutral label.
+// The logo files live in /public/brand/<name>.svg (sources in public/brand/SOURCES.txt): the Econt logo exactly as published by Econt,
+// the card / wallet marks from simple-icons in their brand colour. Never redrawn here. If a file is missing the mark shows its plain
+// name as a neutral label.
 export type BrandName = "econt" | "visa" | "mastercard" | "apple-pay" | "google-pay";
 const BRAND_LABEL: Record<BrandName, string> = { econt: "Еконт", visa: "Visa", mastercard: "Mastercard", "apple-pay": "Apple Pay", "google-pay": "Google Pay" };
 
@@ -153,14 +154,23 @@ export function BrandMark({ name, height = 20 }: { name: BrandName; height?: num
   if (missing) {
     return <span className="inline-flex items-center rounded-[4px] border border-[#D9D5CC] bg-white px-2 py-0.5 font-sans text-[11px] font-medium text-[#4A463E]" style={{ height }}>{label}</span>;
   }
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={`/brand/${name}.svg`} alt={label} height={height} style={{ height, width: "auto" }} onError={() => setMissing(true)} />;
+  if (name === "econt") {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src="/brand/econt.svg" alt={label} height={height} style={{ height, width: "auto" }} onError={() => setMissing(true)} />;
+  }
+  // Payment marks: one uniform badge (white, hairline border) so glyphs of different shapes line up; the glyph is scaled to fit inside.
+  return (
+    <span className="inline-flex h-8 w-[54px] items-center justify-center rounded-[4px] border border-[#D9D5CC] bg-white">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`/brand/${name}.svg`} alt={label} width={38} height={18} style={{ objectFit: "contain" }} onError={() => setMissing(true)} />
+    </span>
+  );
 }
 
 export function PaymentMarks({ label }: { label: string }) {
   return (
     <div className="flex flex-wrap items-center gap-2" aria-label={label}>
-      {(["visa", "mastercard", "apple-pay", "google-pay"] as const).map((n) => <BrandMark key={n} name={n} height={22} />)}
+      {(["visa", "mastercard", "apple-pay", "google-pay"] as const).map((n) => <BrandMark key={n} name={n} />)}
     </div>
   );
 }

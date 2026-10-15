@@ -1,0 +1,8 @@
+Brand marks used in the checkout panel (components/checkout/ui.tsx BrandMark).
+
+econt.svg        Official Econt logo, as published by Econt: https://www.econt.com/images/main/econt-logo-en.svg (fetched 2026-10-15).
+                 Brand guide: https://static-content.econt.com/cms/pages/documents/home/Econt_logo_guide_en.pdf
+visa.svg         \
+mastercard.svg    } simple-icons 16.35.0 (CC0-1.0, https://simpleicons.org), npm package "simple-icons": the single-colour glyphs,
+apple-pay.svg     } cropped to their drawing area and filled with the brand colour from simple-icons' data
+google-pay.svg   /  (Visa #1A1F71, Mastercard #EB001B, Apple Pay #000000, Google Pay #4285F4). They are acceptance marks only.
