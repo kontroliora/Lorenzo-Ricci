@@ -4,6 +4,9 @@ import { OrderCard } from "./OrderCard";
 import { GroupedOrderCard } from "./GroupedOrderCard";
 import { CreateOrderForm } from "./CreateOrderForm";
 import { MatchPanel } from "./MatchPanel";
+import { AbandonedCartsView } from "./AbandonedCarts";
+import { cartSection, type AbandonedCart } from "@/lib/abandoned-carts";
+import type { StuckSummary } from "@/lib/checkout-events";
 import { PaymentFilters } from "./PaymentUi";
 import { checkEcontStatuses } from "./actions";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
@@ -117,17 +120,21 @@ const MARKETS: { key: MarketFilter; label: string }[] = [
 ];
 
 export function OrdersBoard({
-  orders, histories, log, nowMs, initialMarket = "all",
+  orders, histories, log, nowMs, initialMarket = "all", carts = [], stuck = null, stripeKey = "none",
 }: {
   orders: AdminOrder[];
   histories: Record<string, CustomerHistory>;
   log: Record<number, StatusLogRow[]>;
   nowMs: number;
   initialMarket?: MarketFilter;
+  carts?: AbandonedCart[];   // saved carts with a phone and no order (Bulgaria): the "Изоставени колички" view
+  stuck?: StuckSummary | null;            // where customers got stuck in the checkout in the last 24 h (table checkout_events), shown with the carts
+  stripeKey?: "live" | "test" | "none";   // mode of the site's Stripe key (not the key): what a card order's cancel will do
 }) {
   const [tab, setTab] = useState<Tab>("new");
   const [market, setMarket] = useState<MarketFilter>(initialMarket);
   const [showPending, setShowPending] = useState(false);   // the "Чакат плащане" chip view (unpaid card attempts)
+  const [showCarts, setShowCarts] = useState(false);       // the "Изоставени колички" chip view (Bulgaria only)
   const [showDead, setShowDead] = useState(false);
   const [payMethod, setPayMethod] = useState<PayMethodFilter>("all");
   const [payState, setPayState] = useState<PayStateFilter>("all");
@@ -165,7 +172,11 @@ export function OrdersBoard({
   const real = salesOrders.filter((o) => matchesPayment(o, payMethod, payState));
   const fake = orders.filter((o) => o.excluded_from_stock && inMarket(o));
   const marketCount = (m: MarketFilter) => orders.filter((o) => !o.excluded_from_stock && notLead(o) && !isUnpaidCardAttempt(o) && (m === "all" || marketOf(o) === m)).length;
-  const openTab = (t: Tab) => { setTab(t); setShowPending(false); };
+  const openTab = (t: Tab) => { setTab(t); setShowPending(false); setShowCarts(false); };
+  // Abandoned carts are Bulgarian: the view and its chip disappear under the Romania filter.
+  const cartsOpen = showCarts && market !== "ro";
+  const cartsRecent = carts.filter((c) => cartSection(c.updatedAt, now) === "recent").length;
+  const cartsMissed = carts.filter((c) => cartSection(c.updatedAt, now) === "missed").length;
 
   const count = (t: Tab) => real.filter((o) => inTab(o, t)).length;
   const stuckCount = real.filter((o) => o.status === "new" && ageH(o) > 24).length;
@@ -186,7 +197,7 @@ export function OrdersBoard({
   const matches = searching ? real.filter((o) => orderMatches(o, query)) : [];
 
   const card = (o: AdminOrder) => (
-    <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} now={now} onNotice={setNotice} />
+    <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} now={now} onNotice={setNotice} stripeKey={stripeKey} />
   );
 
   // Render a same-customer cluster: single → normal card; 2+ identical address →
@@ -295,7 +306,7 @@ export function OrdersBoard({
               + Създай поръчка
             </button>
             {TABS.map((t) => {
-              const active = !showPending && tab === t.key;
+              const active = !showPending && !cartsOpen && tab === t.key;
               const c = count(t.key);
               return (
                 <button
@@ -318,7 +329,7 @@ export function OrdersBoard({
             {/* Unpaid card attempts: not orders, read-only, shown only here */}
             {(openAttempts.length > 0 || deadAttempts.length > 0 || showPending) && (
               <button
-                onClick={() => setShowPending(true)}
+                onClick={() => { setShowPending(true); setShowCarts(false); }}
                 aria-current={showPending ? "page" : undefined}
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 6,
@@ -329,6 +340,23 @@ export function OrdersBoard({
                 }}
               >
                 Чакат плащане · {openAttempts.length}
+              </button>
+            )}
+            {/* Saved carts with a phone and no order: to be phoned (Bulgaria only) */}
+            {market !== "ro" && (cartsRecent > 0 || cartsMissed > 0 || cartsOpen) && (
+              <button
+                onClick={() => { setShowCarts(true); setShowPending(false); }}
+                aria-current={cartsOpen ? "page" : undefined}
+                data-testid="carts-chip"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  background: cartsOpen ? "rgba(133,183,235,0.14)" : "transparent",
+                  border: `${cartsOpen ? "1px" : "0.5px"} dashed ${cartsOpen ? "#85B7EB" : "rgba(255,255,255,0.25)"}`,
+                  borderRadius: 20, padding: "5px 12px", cursor: "pointer",
+                  fontSize: 11, color: cartsOpen ? "#85B7EB" : "rgba(255,255,255,0.5)",
+                }}
+              >
+                Изоставени колички · {cartsRecent}{cartsMissed > 0 ? ` (+${cartsMissed})` : ""}
               </button>
             )}
           </div>
@@ -349,7 +377,9 @@ export function OrdersBoard({
           </>
         ) : (
           <>
-            {showPending ? (
+            {cartsOpen ? (
+              <AbandonedCartsView carts={carts} now={now} onNotice={setNotice} stuck={stuck} />
+            ) : showPending ? (
               <>
                 <SectionHeader label={`Чакат плащане · ${openAttempts.length}`} color="#FAC775" />
                 <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, margin: 0 }}>
@@ -414,7 +444,7 @@ export function OrdersBoard({
             )}
 
             {/* Fake / test orders — kept out of the working tabs, revealable */}
-            {!showPending && fake.length > 0 && (
+            {!showPending && !cartsOpen && fake.length > 0 && (
               <div className="mt-4 pt-4 border-t border-white/6">
                 <button
                   onClick={() => setShowFake((s) => !s)}

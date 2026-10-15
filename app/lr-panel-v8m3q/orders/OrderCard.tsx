@@ -19,6 +19,7 @@ import { callTimer, sofiaHHMM, formatAttemptList, formatAttemptAudit } from "@/l
 import { OrderItemsList } from "./OrderItemsList";
 import { isRoOrder, fmtLei, fmtLeiWithEuro } from "@/lib/market";
 import { PaymentBadge, PaidCardCollectLine } from "./PaymentUi";
+import { refundPlan } from "@/lib/stripe-mode";
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
   new:       { label: "Нова · за обаждане", bg: "#412402", fg: "#FAC775" },
@@ -65,13 +66,14 @@ const backLink: React.CSSProperties = {
 };
 
 export function OrderCard({
-  order, history, log, now, onNotice,
+  order, history, log, now, onNotice, stripeKey = "none",
 }: {
   order: AdminOrder;
   history?: CustomerHistory;
   log?: StatusLogRow[];
   now: number;
   onNotice?: (msg: string) => void; // board-level banner: the card may leave the tab (and unmount) right after the action
+  stripeKey?: "live" | "test" | "none"; // mode of the site's Stripe key: decides whether cancelling a card order refunds it
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
@@ -127,6 +129,8 @@ export function OrderCard({
   const deadAttempt = isDeadCardAttempt(order);   // card checkout that expired / failed unpaid
   const readOnly = pendingPay || deadAttempt;
   const paidCard = isPaidCard(order);
+  // A test card payment (Stripe test mode / no Stripe key here) is cancelled without a refund and without an e-mail to the customer.
+  const testPay = paidCard && refundPlan(order.stripe_session_id, stripeKey === "live" ? "sk_live_x" : stripeKey === "test" ? "sk_test_x" : "").action === "skip";
   const badge = deadAttempt ? DEAD_ATTEMPT_BADGE : (STATUS_BADGE[order.status] ?? STATUS_BADGE.new);
   const excluded = order.excluded_from_stock;
   const digits = (order.phone ?? "").replace(/[^\d+]/g, "");
@@ -389,7 +393,9 @@ export function OrderCard({
               {cancelStep === "category" && (
                 <>
                   <span style={{ color: "#F09595", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>Причина за отказ</span>
-                  {paidCard && <span style={{ color: "#FAC775", fontSize: 12 }}>⚠ Платена с карта - отказът връща сумата автоматично през Stripe{ro ? " и праща на клиента имейл на румънски" : ""}.</span>}
+                  {paidCard && (testPay
+                    ? <span style={{ color: "#FAC775", fontSize: 12 }}>⚠ Тестово плащане с карта (Stripe test mode) - отказът НЕ връща пари през Stripe и НЕ праща имейл на клиента.</span>
+                    : <span style={{ color: "#FAC775", fontSize: 12 }}>⚠ Платена с карта - отказът връща сумата автоматично през Stripe{ro ? " и праща на клиента имейл на румънски" : ""}.</span>)}
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button onClick={() => setCancelStep("refuse")} style={pillBtn}>Отказа по телефон</button>
                     <button onClick={() => doCancel("unreachable", "не вдига 3+ опита")} style={pillBtn}>Не вдига 3+ опита</button>

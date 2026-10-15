@@ -9,6 +9,7 @@ import { isRoOrder } from "@/lib/market";
 import { sendRoPanelMail, type RoPanelMail } from "@/lib/ro/panel-mail";
 import { getStripe } from "@/lib/stripe";
 import { isPaidCard } from "@/lib/payments";
+import { refundPlan, isMissingStripeObject } from "@/lib/stripe-mode";
 import { fmtRON } from "@/lib/ro/config";
 
 const ORDERS_PATH = "/lr-panel-v8m3q/orders";
@@ -48,7 +49,7 @@ const HOLDS_STOCK = (status: string) => (RESERVING_STATUSES as readonly string[]
 // never for a Bulgarian order. A mail problem never undoes the status change: it is returned as a warning text for the card. ─────
 type Snap = {
   id: number; status: string; items: OrderItem[]; ship_country: string | null; order_ref: string | null; total?: number | null;
-  payment_method?: string | null; payment_status?: string | null; stripe_payment_intent?: string | null;
+  payment_method?: string | null; payment_status?: string | null; stripe_payment_intent?: string | null; stripe_session_id?: string | null;
 };
 
 async function snapshot(supabase: Awaited<ReturnType<typeof createClient>>, ids: number[]): Promise<Snap[]> {
@@ -116,24 +117,41 @@ export async function cancelOrder(id: number, category: string, reason: string):
 //      so a webhook that got there first can never cause a second restock.
 // A Romanian customer then gets the Romanian cancellation e-mail that says the card payment is being refunded.
 async function cancelPaidCardOrder(
-  supabase: Awaited<ReturnType<typeof createClient>>, b: Snap, patch: Record<string, unknown>, category: string,
+  supabase: Awaited<ReturnType<typeof createClient>>, b: Snap, patchIn: Record<string, unknown>, category: string,
 ): Promise<string | null> {
+  let patch = patchIn;
+  // A TEST payment (Stripe test mode: session id cs_test_..., or no Stripe key on this site, or a live key that cannot see a test payment)
+  // has no money to give back: it is cancelled without asking Stripe and WITHOUT an e-mail to the customer. A LIVE payment that cannot be
+  // refunded from here is never cancelled silently (lib/stripe-mode.ts).
+  let testPayment = false;
   if (b.payment_status !== "refunded") {
-    const pi = String(b.stripe_payment_intent ?? "");
-    if (!pi) return "Платена с карта, но липсва номер на плащането в Stripe: върни сумата ръчно от Stripe и после откажи поръчката.";
-    try {
-      await getStripe().refunds.create({ payment_intent: pi }, { idempotencyKey: `panel-refund-${b.order_ref ?? b.id}-${pi}` });
-    } catch (e) {
-      console.error("[orders] Stripe refund failed:", e instanceof Error ? e.message : e);
-      return `Връщането на парите през Stripe не успя (${e instanceof Error ? e.message : "грешка"}): поръчката НЕ е отказана. Опитай пак или върни сумата от Stripe.`;
+    const plan = refundPlan(b.stripe_session_id, process.env.STRIPE_SECRET_KEY);
+    if (plan.action === "refuse") return plan.message;
+    if (plan.action === "skip") testPayment = true;
+    else {
+      const pi = String(b.stripe_payment_intent ?? "");
+      if (!pi) return "Платена с карта, но липсва номер на плащането в Stripe: върни сумата ръчно от Stripe и после откажи поръчката.";
+      try {
+        await getStripe().refunds.create({ payment_intent: pi }, { idempotencyKey: `panel-refund-${b.order_ref ?? b.id}-${pi}` });
+      } catch (e) {
+        if (isMissingStripeObject(e)) testPayment = true;   // Stripe has no such payment for this key: it was a test payment
+        else {
+          console.error("[orders] Stripe refund failed:", e instanceof Error ? e.message : e);
+          return `Връщането на парите през Stripe не успя (${e instanceof Error ? e.message : "грешка"}): поръчката НЕ е отказана. Опитай пак или върни сумата от Stripe.`;
+        }
+      }
+      if (!testPayment) {
+        const marked = await supabase.from("orders").update({ payment_status: "refunded" }).eq("id", b.id).neq("payment_status", "refunded");
+        if (marked.error) console.error("[orders] refund mark failed (the refund itself went through):", marked.error.message);
+      }
     }
-    const marked = await supabase.from("orders").update({ payment_status: "refunded" }).eq("id", b.id).neq("payment_status", "refunded");
-    if (marked.error) console.error("[orders] refund mark failed (the refund itself went through):", marked.error.message);
   }
+  if (testPayment) patch = { ...patch, cancel_reason: [patch.cancel_reason, "тестово плащане: без връщане на пари, без имейл"].filter(Boolean).join(" · ") };
   const done = await supabase.from("orders").update(patch).eq("id", b.id).in("status", ["new", "confirmed"]).select("id, items");
   if (done.error) { console.error("[orders] cancel after refund failed:", done.error.message); return `Сумата е върната, но отказът не се записа (${done.error.message}). Натисни Откажи отново.`; }
   if (done.data?.length) await restockOrderItems(supabase, (done.data[0] as { items: OrderItem[] }).items);
   revalidatePath(ORDERS_PATH);
+  if (testPayment) return null;   // a test order: the customer (a Romanian test address too) gets no e-mail
   return notifyRo(supabase, [b], (st) => st === "cancelled", { kind: "order_cancelled", category, refundLabel: fmtRON(Number(b.total ?? 0)) });
 }
 

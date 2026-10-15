@@ -1,6 +1,11 @@
 import { AdminNav } from "@/components/admin/AdminNav";
 import { logout } from "../actions";
 import { getOrders, getCustomerHistories, getStatusLog } from "@/lib/orders";
+import { getAbandonedCarts } from "@/lib/abandoned-carts-server";
+import type { AbandonedCart } from "@/lib/abandoned-carts";
+import { modeOfKey } from "@/lib/stripe-mode";
+import { getStuckSummary } from "@/lib/checkout-events-server";
+import type { StuckSummary } from "@/lib/checkout-events";
 import { OrdersBoard } from "./OrdersBoard";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +19,14 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const histories = await getCustomerHistories(orders.map((o) => o.phone ?? "").filter(Boolean));
   const log = await getStatusLog(orders.map((o) => o.id));
   const nowMs = Date.now();
+  // Only the MODE of the site's Stripe key goes to the browser (never the key): the cancel dialog says whether a card order will be refunded.
+  const rawKey = (process.env.STRIPE_SECRET_KEY ?? "").trim();
+  const stripeKey: "live" | "test" | "none" = !rawKey ? "none" : modeOfKey(rawKey) === "live" ? "live" : "test";
+  // "Изоставени колички": a problem reading them must never take the orders page down.
+  let carts: AbandonedCart[] = [];
+  try { carts = await getAbandonedCarts(nowMs); } catch (e) { console.error("[orders] abandoned carts unavailable:", e instanceof Error ? e.message : e); }
+  let stuck: StuckSummary | null = null;
+  try { stuck = await getStuckSummary(nowMs); } catch { /* the summary is optional */ }
 
   return (
     <div className="min-h-screen bg-[#0a0e1f] text-white">
@@ -34,7 +47,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       <AdminNav />
 
       {/* Summary counters + filterable list */}
-      <OrdersBoard orders={orders} histories={histories} log={log} nowMs={nowMs} initialMarket={initialMarket} />
+      <OrdersBoard orders={orders} histories={histories} log={log} nowMs={nowMs} initialMarket={initialMarket} carts={carts} stuck={stuck} stripeKey={stripeKey} />
     </div>
   );
 }

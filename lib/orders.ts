@@ -55,6 +55,7 @@ export type AdminOrder = {
   payment_status?: string | null;      // 'unpaid' | 'pending' | 'paid' | 'expired' | 'failed' | 'refunded'
   paid_at?: string | null;
   stripe_payment_intent?: string | null;
+  stripe_session_id?: string | null;   // cs_test_... / cs_live_...: tells a test payment from a live one (lib/stripe-mode.ts)
   created_at: string;
 };
 
@@ -80,7 +81,7 @@ const BASE_COLUMNS =
   "id, order_ref, name, phone, email, city, post_code, address, shipping_method, courier, items, total, subtotal, shipping_cost, notes, status, call_state, call_notes, call_attempts, tracking_number, excluded_from_stock, is_international, ship_country, created_at";
 const ORDER_COLUMNS = `${BASE_COLUMNS}, last_attempt_at, call_attempt_times, return_reviewed, is_manual, cancel_category, cancel_reason`;
 // Added by supabase/stripe_payments.sql — the RICHEST tier, so a database without them still reads fine.
-const PAYMENT_COLUMNS = "payment_method, payment_status, paid_at, stripe_payment_intent";
+const PAYMENT_COLUMNS = "payment_method, payment_status, paid_at, stripe_payment_intent, stripe_session_id";
 
 export async function getOrders(limit = 1000): Promise<AdminOrder[]> {
   const supabase = await createClient();
