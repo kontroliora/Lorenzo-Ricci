@@ -12,6 +12,7 @@ export type RoOrderEmailData = {
   discount?: number;       // set discount in lei (0 / undefined: none)
   shippingCost: number;
   total: number;
+  officeDelivery?: boolean; // delivery to an Econt office: customer.address is then the office address
 };
 
 const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -68,8 +69,8 @@ export function buildRoCustomerEmail(o: RoOrderEmailData, opts: { paidByCard?: b
     <div style="border-top:1px solid #e8dfc8;margin:28px 0"></div>
     <p style="margin:0 0 16px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#888">Livrare</p>
     <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#444">
-      <tr><td style="padding:4px 0;width:130px;color:#888">Metodă</td><td style="padding:4px 0">Livrare la domiciliu</td></tr>
-      <tr><td style="padding:4px 0;color:#888">Adresă</td><td style="padding:4px 0">${esc(addressLine(o.customer))}</td></tr>
+      <tr><td style="padding:4px 0;width:130px;color:#888">Metodă</td><td style="padding:4px 0">${o.officeDelivery ? "Livrare la biroul Econt" : "Livrare la domiciliu"}</td></tr>
+      <tr><td style="padding:4px 0;color:#888">${o.officeDelivery ? "Biroul Econt" : "Adresă"}</td><td style="padding:4px 0">${esc(addressLine(o.customer))}</td></tr>
       <tr><td style="padding:4px 0;color:#888">Telefon</td><td style="padding:4px 0">${esc(o.customer.phone)}</td></tr>
     </table>
     <div style="border-top:1px solid #e8dfc8;margin:28px 0"></div>
@@ -164,12 +165,12 @@ export function buildRoAdminEmail(o: RoOrderEmailData, alert?: string, opts: { p
    <div style="background:${NAVY};padding:20px 28px;color:#fff"><strong style="letter-spacing:.2em">LORENZO RICCI</strong> <span style="opacity:.6;margin-left:10px">🇷🇴 Нова поръчка от Румъния · ${esc(o.orderRef)}</span></div>
    <div style="padding:28px">
     ${alert ? `<div style="background:#b91c1c;color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:16px">⚠️ ${esc(alert)}</div>` : ""}${opts.paidByCard ? `<div style="background:#047857;color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:16px">💳 ПЛАТЕНА С КАРТА - куриерът събира 0 лей (НЕ слагай наложен платеж).</div>` : ""}
-    <p style="margin:0 0 14px;font-size:13px;color:#555">Сумите са в <strong>леи (RON)</strong>. Доставка с румънски куриер (НЕ Еконт). Поръчката е в „Поръчки" на панела (значка 🇷🇴 RO, филтър „Румъния").</p>
+    <p style="margin:0 0 14px;font-size:13px;color:#555">Сумите са в <strong>леи (RON)</strong>. ${o.officeDelivery ? "Доставка до ОФИС на Еконт (Румъния) - адресът по-долу е на офиса." : "Доставка с румънски куриер (НЕ Еконт)."} Поръчката е в „Поръчки" на панела (значка 🇷🇴 RO, филтър „Румъния").</p>
     <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:22px">
      <tr style="background:#f3f4f6"><td style="padding:8px 12px;font-weight:600;width:150px">Имена</td><td style="padding:8px 12px">${esc(c.name)}</td></tr>
      <tr><td style="padding:8px 12px;font-weight:600">Телефон</td><td style="padding:8px 12px"><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></td></tr>
      <tr style="background:#f3f4f6"><td style="padding:8px 12px;font-weight:600">Имейл</td><td style="padding:8px 12px">${esc(c.email)}</td></tr>
-     <tr><td style="padding:8px 12px;font-weight:600">Адрес</td><td style="padding:8px 12px">${esc(addressLine(c))}</td></tr>
+     <tr><td style="padding:8px 12px;font-weight:600">${o.officeDelivery ? "Офис на Еконт" : "Адрес"}</td><td style="padding:8px 12px">${esc(addressLine(c))}</td></tr>
      <tr style="background:#f3f4f6"><td style="padding:8px 12px;font-weight:600">Бележка</td><td style="padding:8px 12px">${esc(c.notes || "-")}</td></tr>
     </table>
     <table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:${NAVY};color:#fff"><th style="padding:8px 12px;text-align:left">Продукт</th><th style="padding:8px 12px;text-align:left">SKU</th><th style="padding:8px 12px">Бр.</th><th style="padding:8px 12px;text-align:right">Цена</th></tr></thead><tbody>${rows}</tbody>

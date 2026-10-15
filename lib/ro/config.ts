@@ -19,6 +19,10 @@ export const RO_FREE_SHIPPING_EUR = 60;                                 // same 
 export const RO_FREE_SHIPPING_RON = Math.round(RO_FREE_SHIPPING_EUR * EUR_RON); // 315
 export const RO_SHIPPING_FEE_RON = 46;                                  // flat delivery fee under the threshold
 export const RO_DELIVERY_DAYS = "2-4";                                  // working days after dispatch
+// The two delivery choices at checkout. The strings are the contract with /api/order-ro and are saved as orders.shipping_method;
+// the office choice has the same price as delivery to the address (free from 315 lei, else 46 lei) and a hand-typed office address.
+export const RO_SHIPPING_HOME = "Livrare la domiciliu";
+export const RO_SHIPPING_OFFICE = "Livrare la biroul Econt";
 export const RO_COURIER_LABEL = "curier rapid";                         // generic until the courier is chosen
 export const RO_COD_FEE_RON = 0;                                        // PROVISIONAL: extra ramburs fee charged to the customer
 
