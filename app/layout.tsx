@@ -1,24 +1,28 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-// Self-hosted through next/font: no render-blocking Google Fonts stylesheet, the
-// files are preloaded, and the CSS variables below feed tailwind's font-serif/sans.
-// Headings only: no italic (unused anywhere) and not preloaded, so its ~90 KB
-// never competes with the LCP image on 4G; text paints in the fallback and swaps.
-const playfair = Playfair_Display({
-  subsets: ["latin", "cyrillic"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal"],
+// Self-hosted through next/font/local (app/fonts, see app/fonts/README.txt): nothing is fetched from Google at build or run time,
+// the files are preloaded, and the CSS variables below feed tailwind's font-serif/sans. One file per family covers Latin (incl.
+// Romanian ă ș ț) and Cyrillic.
+// Headings only: no italic (unused anywhere) and not preloaded, so its ~90 KB never competes with the LCP image on 4G;
+// text paints in the fallback and swaps.
+const playfair = localFont({
+  src: "./fonts/PlayfairDisplay-latin-cyrillic.woff2",
+  weight: "400 700",
+  style: "normal",
   variable: "--font-cormorant",
   display: "swap",
   preload: false,
+  adjustFontFallback: "Times New Roman",
 });
-const inter = Inter({
-  subsets: ["latin", "cyrillic"],
-  weight: ["300", "400", "500", "600"],
+const inter = localFont({
+  src: "./fonts/Inter-latin-cyrillic.woff2",
+  weight: "300 600",
+  style: "normal",
   variable: "--font-jost",
   display: "swap",
+  adjustFontFallback: "Arial",
 });
 import { Header } from "@/components/layout/Header";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
