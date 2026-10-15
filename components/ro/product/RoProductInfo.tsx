@@ -287,7 +287,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
       {variants.length > 1 && (
         <div className="flex items-center gap-3">
           <span className="font-sans text-[10px] text-ink-faint tracking-widest uppercase">Culoare:</span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 max-[373px]:flex-wrap">
             {variants.map((v) => (
               <Link
                 key={v.slug}
@@ -455,7 +455,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`font-sans text-[11px] tracking-widest uppercase px-4 py-3 transition-all duration-200 ${
+              className={`font-sans text-[11px] tracking-widest uppercase px-4 py-3 max-[373px]:px-2.5 max-[373px]:tracking-wider max-[349px]:px-2 max-[349px]:text-[10px] transition-all duration-200 ${
                 activeTab === tab
                   ? "text-charcoal border-b-2 border-navy -mb-px"
                   : "text-ink-faint hover:text-ink-soft"
