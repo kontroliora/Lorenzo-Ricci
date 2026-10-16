@@ -8,6 +8,7 @@ import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
 import { displayPrice, requiresPrepayment } from "@/lib/price";
 import { CodBox, CodLine } from "@/components/product/CodNote";
+import { DeliveryDate } from "@/components/product/DeliveryDate";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { GiftOffer } from "@/components/product/GiftOffer";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
@@ -332,6 +333,8 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       {effectiveInStock && !requiresPrepayment(product) && (
         <CodBox title="Наложен платеж · Преглед преди плащане" sub="Плащате на куриера при получаване, след като прегледате пратката." />
       )}
+      {/* Delivery date by working days (lib/delivery-date.ts) */}
+      {effectiveInStock && !requiresPrepayment(product) && <DeliveryDate market="bg" />}
 
       {/* Clutches: the free gift cardholder (renders nothing for any other product) */}
       <GiftOffer clutchSlug={product.slug} />
