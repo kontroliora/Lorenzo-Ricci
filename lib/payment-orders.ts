@@ -130,7 +130,8 @@ const readOrder = async (sb: SupabaseClient, ref: string): Promise<OrderRow | nu
 };
 
 /**
- * Stripe says the money arrived. pending_payment -> new + paid, once. A payment that arrives after the order expired
+ * Stripe says the money arrived. pending_payment -> confirmed + paid, once. A card order is paid in advance: nobody has to phone the
+ * customer to confirm it, so it goes straight to "За изпълнение" (status confirmed, call_state confirmed), never to "За обаждане". A payment that arrives after the order expired
  * (stock already released) re-reserves the stock; if that is impossible the payment is refunded. A database error on the
  * way THROWS (the webhook answers 500 and Stripe retries): money is only ever refunded for a real shortfall.
  */
@@ -142,7 +143,7 @@ export async function markOrderPaid(sb: SupabaseClient, ref: string, info: { pay
 
   const nowIso = new Date().toISOString();
   const patch = {
-    status: "new", payment_status: "paid", paid_at: nowIso,
+    status: "confirmed", call_state: "confirmed", payment_status: "paid", paid_at: nowIso,
     ...(info.paymentIntent ? { stripe_payment_intent: info.paymentIntent } : {}),
     ...(info.sessionId ? { stripe_session_id: info.sessionId } : {}),
   };

@@ -10,7 +10,7 @@ import type { StuckSummary } from "@/lib/checkout-events";
 import { PaymentFilters } from "./PaymentUi";
 import { checkEcontStatuses } from "./actions";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
-import { isReturn, isPendingPayment, isUnpaidCardAttempt, matchesPayment, type PayMethodFilter, type PayStateFilter } from "@/lib/order-status";
+import { boardStatus, isReturn, isPendingPayment, isUnpaidCardAttempt, matchesPayment, type PayMethodFilter, type PayStateFilter } from "@/lib/order-status";
 import { isCard } from "@/lib/payments";
 import { isRoOrder, marketOf, type Market } from "@/lib/market";
 import { activeWindow, nextWindow, callTimer } from "@/lib/callSchedule";
@@ -120,7 +120,7 @@ const MARKETS: { key: MarketFilter; label: string }[] = [
 ];
 
 export function OrdersBoard({
-  orders, histories, log, nowMs, initialMarket = "all", carts = [], stuck = null, stripeKey = "none",
+  orders: ordersRaw, histories, log, nowMs, initialMarket = "all", carts = [], stuck = null, stripeKey = "none",
 }: {
   orders: AdminOrder[];
   histories: Record<string, CustomerHistory>;
@@ -131,6 +131,8 @@ export function OrdersBoard({
   stuck?: StuckSummary | null;            // where customers got stuck in the checkout in the last 24 h (table checkout_events), shown with the carts
   stripeKey?: "live" | "test" | "none";   // mode of the site's Stripe key (not the key): what a card order's cancel will do
 }) {
+  // A PAID card order needs no confirmation call: it is shown under "За изпълнение" (also when its row still says "new"), never under "За обаждане".
+  const orders = ordersRaw.map(boardStatus);
   const [tab, setTab] = useState<Tab>("new");
   const [market, setMarket] = useState<MarketFilter>(initialMarket);
   const [showPending, setShowPending] = useState(false);   // the "Чакат плащане" chip view (unpaid card attempts)

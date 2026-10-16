@@ -20,7 +20,8 @@
 //    the payment is being confirmed and that an e-mail follows. "expired": the payment was not completed.
 // 4. Database (supabase/stripe_payments.sql): orders.payment_method 'cod'|'card', orders.payment_status
 //    'unpaid'|'pending'|'paid'|'expired'|'failed'|'refunded', orders.paid_at, orders.status 'pending_payment' while a card
-//    payment is open (stock reserved, order hidden from the fulfilment board and from every Econt flow).
+//    payment is open (stock reserved, order hidden from the fulfilment board and from every Econt flow). When the money arrives the
+//    order becomes 'confirmed' + 'paid' (no call needed: it shows under "За изпълнение" with the "Карта · платено" badge, never under "За обаждане").
 // 5. Courier: a paid card order is collected as 0 (nothing is collected on delivery).
 
 /**

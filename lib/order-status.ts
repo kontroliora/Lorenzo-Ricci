@@ -51,3 +51,11 @@ export function matchesPayment(o: PayFields, method: PayMethodFilter, state: Pay
   if (state === "unpaid" && isPaidCard(o)) return false;
   return true;
 }
+
+/**
+ * Board status of an order. A card order that is PAID needs no confirmation call, so it belongs under "За изпълнение" (confirmed) even if its
+ * row still says "new" (paid before the webhook set "confirmed" itself). Only the board's tab / buttons use this; the database row is untouched.
+ */
+export function boardStatus<T extends { status: string; payment_method?: string | null; payment_status?: string | null }>(o: T): T {
+  return o.status === "new" && isPaidCard(o) ? { ...o, status: "confirmed" } : o;
+}

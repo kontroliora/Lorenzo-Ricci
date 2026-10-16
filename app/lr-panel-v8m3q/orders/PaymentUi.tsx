@@ -26,7 +26,7 @@ export function PaymentBadge({ order }: { order: PayOrder }) {
   return (
     <>
       {paid ? (
-        <span style={{ ...pill, background: "#173404", color: "#97C459", border: "0.5px solid #97C459", fontWeight: 500 }}>ПЛАТЕНО С КАРТА</span>
+        <span data-testid="card-paid-badge" style={{ ...pill, textTransform: "uppercase", background: "#173404", color: "#97C459", border: "0.5px solid #97C459", fontWeight: 500 }}>Карта · платено</span>
       ) : card ? (
         <span style={{ ...pill, textTransform: "uppercase", background: "rgba(250,199,117,0.12)", color: "#FAC775", border: "0.5px solid rgba(250,199,117,0.4)" }}>
           Карта · {CARD_STATE_LABEL[order.payment_status ?? ""] ?? "неплатено"}
