@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStripe } from "@/lib/stripe";
 import { toMinor } from "@/lib/payments";
+import { modeOfKey } from "@/lib/stripe-mode";
 import { ANY_ORDER_REF_RE } from "@/lib/order-ref";
 import { markOrderPaid, markOrderRefunded, expireOrder } from "@/lib/payment-orders";
 import { notifyPaidOnce, alertTeam } from "@/lib/payment-notify";
@@ -14,7 +15,7 @@ export const maxDuration = 30;
 // Stripe webhook: the ONLY thing that turns a card order into a paid one.
 //   - the signature is verified against STRIPE_WEBHOOK_SECRET on the RAW body (anything else is rejected with 400);
 //   - checkout.session.completed (paid) / checkout.session.async_payment_succeeded
-//       -> pending_payment becomes new + paid, ONCE (one conditional UPDATE); then the notifications (e-mails, Meta
+//       -> pending_payment becomes confirmed + paid (no call needed: it goes to "За изпълнение"), ONCE (one conditional UPDATE); then the notifications (e-mails, Meta
 //          Purchase) are claimed and sent ONCE (notifyPaidOnce: a retry or the sweep finishes them if this call dies);
 //   - checkout.session.expired / async_payment_failed -> the order is cancelled and its stock (and promo code) goes back;
 //   - charge.refunded -> a full refund cancels an order that has not shipped (stock back); partial refunds alert the team;
@@ -76,7 +77,8 @@ export async function POST(req: NextRequest) {
   }
 
   // A test-mode event must never touch a live shop (or the other way round).
-  const liveKey = (process.env.STRIPE_SECRET_KEY ?? "").trim().startsWith("sk_live_");
+  // sk_live_ (secret key) AND rk_live_ (restricted key) are live keys: checking only "sk_live_" would ignore every live event of a restricted key.
+  const liveKey = modeOfKey(process.env.STRIPE_SECRET_KEY) === "live";
   if (event.livemode !== liveKey) {
     console.warn(`[stripe-webhook] ignoring ${event.type}: event livemode=${event.livemode} but the key is ${liveKey ? "live" : "test"}`);
     return NextResponse.json({ received: true, result: "ignored (livemode mismatch)" });

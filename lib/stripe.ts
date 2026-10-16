@@ -2,7 +2,8 @@ import Stripe from "stripe";
 import { STRIPE_SESSION_TTL_SECONDS, toMinor } from "./payments";
 
 // Server-only Stripe client + the one place that builds a Checkout Session.
-// Env: STRIPE_SECRET_KEY (sk_test_... while testing, sk_live_... later), STRIPE_WEBHOOK_SECRET (whsec_...).
+// Env: STRIPE_SECRET_KEY (sk_test_... while testing; sk_live_... or a restricted rk_live_... later), STRIPE_WEBHOOK_SECRET (whsec_...).
+// A restricted key needs: Checkout Sessions (write), Coupons (write), Refunds (write), PaymentIntents (read), Charges (read).
 // Hosted Stripe Checkout: card, Apple Pay and Google Pay are offered automatically on devices that support them (switch
 // them on in Dashboard -> Settings -> Payment methods); 3-D Secure is handled by Stripe.
 
