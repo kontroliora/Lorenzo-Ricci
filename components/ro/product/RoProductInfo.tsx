@@ -23,6 +23,7 @@ import {
   RO_COURIER_LABEL,
 } from "@/lib/ro/config";
 import { RoStickyCartBar } from "@/components/ro/product/RoStickyCartBar";
+import { CodBox, CodLine } from "@/components/product/CodNote";
 import { roCartLine } from "@/components/ro/product/cart-line";
 import { hasCyrillic, roReviewsCount, roRatingText } from "@/components/ro/product/ro-text";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
@@ -347,6 +348,11 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         )}
       </div>
 
+      {/* Plata la livrare (ramburs), said under the price (not for a prepayment product) */}
+      {effectiveInStock && !prepay && (
+        <CodBox title="Plata la livrare (ramburs)" sub="Plătiți curierului la primirea coletului - fără plată în avans." />
+      )}
+
       {/* Stock indicator - the number AVAILABLE (free to order). Shown only below the low-stock threshold; above
           it nothing is revealed (we don't disclose how much we hold). Premium and restrained - a quiet nudge,
           never a loud "HURRY". */}
@@ -409,6 +415,8 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           ? "✓ ADĂUGAT ÎN COȘ"
           : "ADAUGĂ ÎN COȘ"}
       </button>
+
+      {effectiveInStock && !prepay && <CodLine text="Fără plată în avans · Livrare cu Econt · Plătiți la livrare" />}
 
       {/* Phones: the natural-variation note goes under the button (see above). */}
       {product.materialNote && (

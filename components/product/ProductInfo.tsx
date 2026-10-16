@@ -6,7 +6,8 @@ import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
-import { displayPrice } from "@/lib/price";
+import { displayPrice, requiresPrepayment } from "@/lib/price";
+import { CodBox, CodLine } from "@/components/product/CodNote";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { GiftOffer } from "@/components/product/GiftOffer";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
@@ -327,6 +328,11 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         )}
       </div>
 
+      {/* Cash on delivery + inspection before paying: said under the price (not for a prepayment product) */}
+      {effectiveInStock && !requiresPrepayment(product) && (
+        <CodBox title="Наложен платеж · Преглед преди плащане" sub="Плащате на куриера при получаване, след като прегледате пратката." />
+      )}
+
       {/* Clutches: the free gift cardholder (renders nothing for any other product) */}
       <GiftOffer clutchSlug={product.slug} />
 
@@ -394,6 +400,8 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           ? "✓ ДОБАВЕНО В КОЛИЧКАТА"
           : "ДОБАВИ В КОЛИЧКАТА"}
       </button>
+
+      {effectiveInStock && !requiresPrepayment(product) && <CodLine text="Без предплащане · Доставка с Еконт · Плащате при получаване" />}
 
       {/* Phones: the natural-variation note goes under the button (see above). */}
       {product.materialNote && (
