@@ -506,31 +506,6 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
           </CoCheck>
         </div>
 
-        {/* ── Payment method radio cards (only while the card option is switched on) ── */}
-        {CARD_PAYMENTS_ENABLED && (
-        <CoSection title="Начин на плащане">
-          <div className="flex flex-col gap-2.5">
-            <CoRadioCard
-              name="paymentMethod" value="cod" selected={paymentMethod === "cod"}
-              onSelect={() => { setPaymentMethod("cod"); setSubmitError(""); }}
-              title="Наложен платеж" subtitle="Плащате при получаване. Прегледай преди да платиш."
-            />
-            <CoRadioCard
-              name="paymentMethod" value="card" selected={paymentMethod === "card"}
-              onSelect={() => { setPaymentMethod("card"); setSubmitError(""); }}
-              title="Плащане с карта"
-              subtitle={promoDiscount > 0 ? "Безплатна доставка · отстъпката за карта не се комбинира с промо код" : `Безплатна доставка · −5% от стоката (до €${CARD_DISCOUNT_CAP_EUR})`}
-              right={promoDiscount > 0 ? undefined : <span data-testid="card-discount-badge" className="text-[#4ADE80]">−5%</span>}
-            >
-              <PaymentMarks label="Приемани карти и портфейли" />
-              {paymentMethod === "card" && (
-                <SecureNote>Плащането се обработва сигурно от Stripe. Не съхраняваме данни за карти.</SecureNote>
-              )}
-            </CoRadioCard>
-          </div>
-        </CoSection>
-        )}
-
         {/* ── Shipping method radio cards (hidden for prepayment-required orders) ── */}
         {!needsPrepayment && (
         <CoSection title="Начин на доставка" aside={<BrandMark name="econt" height={18} />}>
@@ -636,6 +611,31 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
             className={`${coInput(false)} resize-none py-3`}
           />
         </CoField>
+
+        {/* ── Payment method radio cards (only while the card option is switched on). They sit right above the order button, like in the Romanian checkout: a customer who scrolls down to the button must see that paying by card (−5%) is possible. ── */}
+        {CARD_PAYMENTS_ENABLED && (
+        <CoSection title="Начин на плащане">
+          <div className="flex flex-col gap-2.5">
+            <CoRadioCard
+              name="paymentMethod" value="cod" selected={paymentMethod === "cod"}
+              onSelect={() => { setPaymentMethod("cod"); setSubmitError(""); }}
+              title="Наложен платеж" subtitle="Плащате при получаване. Прегледай преди да платиш."
+            />
+            <CoRadioCard
+              name="paymentMethod" value="card" selected={paymentMethod === "card"}
+              onSelect={() => { setPaymentMethod("card"); setSubmitError(""); }}
+              title="Плащане с карта"
+              subtitle={promoDiscount > 0 ? "Безплатна доставка · отстъпката за карта не се комбинира с промо код" : `Безплатна доставка · −5% от стоката (до €${CARD_DISCOUNT_CAP_EUR})`}
+              right={promoDiscount > 0 ? undefined : <span data-testid="card-discount-badge" className="text-[#4ADE80]">−5%</span>}
+            >
+              <PaymentMarks label="Приемани карти и портфейли" />
+              {paymentMethod === "card" && (
+                <SecureNote>Плащането се обработва сигурно от Stripe. Не съхраняваме данни за карти.</SecureNote>
+              )}
+            </CoRadioCard>
+          </div>
+        </CoSection>
+        )}
       </div>
       )}
 
