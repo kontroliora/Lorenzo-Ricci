@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
       const product = getProductBySlug(slug);
       return product ? applyOverride(product, overrides) : undefined;
     };
-    const pricing = validateOrderPricing(order, findProductWithOverride, { promoRate, card: order.paymentMethod === "card" });
+    const pricing = validateOrderPricing(order, findProductWithOverride, { promoRate, card: order.paymentMethod === "card" && CARD_PAYMENTS_ENABLED });
     if (!pricing.ok) {
       console.warn("[Order] price check failed:", pricing.reason);
       return NextResponse.json(
