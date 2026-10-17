@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useTransition } from "react";
+import { isRoOfficeMethod } from "@/lib/ro/config";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
 import { isReturn, isPendingPayment, isDeadCardAttempt } from "@/lib/order-status";
 import { isCard, isPaidCard } from "@/lib/payments";
@@ -214,7 +215,7 @@ export function OrderCard({
       {/* Details */}
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
         <OrderItemsList items={order.items ?? []} />
-        <div style={{ color: "#fff" }}>{ro ? (order.shipping_method === "Livrare la biroul Econt" ? "Офис на Еконт (Румъния)" : "Куриер до адрес (Румъния)") : (order.shipping_method || (order.courier === "home" ? "Еконт до адрес" : "Еконт до офис"))} — {order.address || "—"}{order.city ? `, ${order.city}` : ""}{ro && order.post_code ? `, ${order.post_code}` : ""}</div>
+        <div style={{ color: "#fff" }}>{ro ? (isRoOfficeMethod(order.shipping_method) ? "Locker / офис на Speedy (Румъния)" : "Куриер до адрес (Румъния)") : (order.shipping_method || (order.courier === "home" ? "Еконт до адрес" : "Еконт до офис"))} — {order.address || "—"}{order.city ? `, ${order.city}` : ""}{ro && order.post_code ? `, ${order.post_code}` : ""}</div>
         {ro && order.email && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{order.email}</div>}
         {showBreakdown && (
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2, display: "flex", gap: 14, flexWrap: "wrap" }}>

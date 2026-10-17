@@ -13,7 +13,7 @@ export type RoOrderEmailData = {
   cardDiscount?: number;   // 5% for paying by card (max 130 lei), lei; undefined / 0: none
   shippingCost: number;
   total: number;
-  officeDelivery?: boolean; // delivery to an Econt office: customer.address is then the office address
+  officeDelivery?: boolean; // delivery to a Speedy locker / office: customer.address is then its address
 };
 
 const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -71,8 +71,8 @@ export function buildRoCustomerEmail(o: RoOrderEmailData, opts: { paidByCard?: b
     <div style="border-top:1px solid #e8dfc8;margin:28px 0"></div>
     <p style="margin:0 0 16px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#888">Livrare</p>
     <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#444">
-      <tr><td style="padding:4px 0;width:130px;color:#888">Metodă</td><td style="padding:4px 0">${o.officeDelivery ? "Livrare la biroul Econt" : "Livrare la domiciliu"}</td></tr>
-      <tr><td style="padding:4px 0;color:#888">${o.officeDelivery ? "Biroul Econt" : "Adresă"}</td><td style="padding:4px 0">${esc(addressLine(o.customer))}</td></tr>
+      <tr><td style="padding:4px 0;width:130px;color:#888">Metodă</td><td style="padding:4px 0">${o.officeDelivery ? "Livrare la locker / birou Speedy" : "Livrare la domiciliu"}</td></tr>
+      <tr><td style="padding:4px 0;color:#888">${o.officeDelivery ? "Locker / birou Speedy" : "Adresă"}</td><td style="padding:4px 0">${esc(addressLine(o.customer))}</td></tr>
       <tr><td style="padding:4px 0;color:#888">Telefon</td><td style="padding:4px 0">${esc(o.customer.phone)}</td></tr>
     </table>
     <div style="border-top:1px solid #e8dfc8;margin:28px 0"></div>

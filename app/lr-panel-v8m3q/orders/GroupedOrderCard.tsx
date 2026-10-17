@@ -1,5 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
+import { isRoOfficeMethod } from "@/lib/ro/config";
 import type { AdminOrder, CustomerHistory } from "@/lib/orders";
 import { confirmOrders, cancelOrders, markNoAnswerOrders } from "./actions";
 import { OrderItemsList } from "./OrderItemsList";
@@ -115,7 +116,7 @@ export function GroupedOrderCard({
       {/* Details */}
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
         <OrderItemsList items={allItems} />
-        <div style={{ color: "#fff" }}>{ro ? (last.shipping_method === "Livrare la biroul Econt" ? "Офис на Еконт (Румъния)" : "Куриер до адрес (Румъния)") : (last.shipping_method || (last.courier === "home" ? "Еконт до адрес" : "Еконт до офис"))} — {last.address || "—"}{last.city ? `, ${last.city}` : ""}</div>
+        <div style={{ color: "#fff" }}>{ro ? (isRoOfficeMethod(last.shipping_method) ? "Locker / офис на Speedy (Румъния)" : "Куриер до адрес (Румъния)") : (last.shipping_method || (last.courier === "home" ? "Еконт до адрес" : "Еконт до офис"))} — {last.address || "—"}{last.city ? `, ${last.city}` : ""}</div>
         {groupSub != null && (
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2, display: "flex", gap: 14, flexWrap: "wrap" }}>
             <span>Стока: <span style={{ color: "rgba(255,255,255,0.8)" }}>{money(groupSub)}</span></span>

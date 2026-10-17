@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getProductBySlug } from "@/lib/products";
 import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
 import { checkOrderable } from "@/lib/order-availability";
-import { ronOf, ronOriginalOf, RO_SHIPPING_HOME, RO_SHIPPING_OFFICE } from "@/lib/ro/config";
+import { ronOf, ronOriginalOf, RO_SHIPPING_HOME, RO_SHIPPING_OFFICE, isRoOfficeMethod } from "@/lib/ro/config";
 import { roName } from "@/lib/ro/names-ro";
 import { roAmounts } from "@/lib/ro/pricing";
 import { previewMarked, previewOrdersAllowed } from "@/lib/deploy-env";
@@ -68,19 +68,19 @@ export async function POST(req: NextRequest) {
     const email = str(cu.email, 160).toLowerCase();
     const county = str(cu.county, 60);
     const city = str(cu.city, 100);
-    // Delivery: to the address (default, as before) or to an Econt office - same price, the customer types the office address.
-    const office = str((body.shipping as Record<string, unknown> | undefined)?.method, 60) === RO_SHIPPING_OFFICE;
+    // Delivery: to the address (default, as before) or to a Speedy locker / office - same price, the customer types its address.
+    const office = isRoOfficeMethod(str((body.shipping as Record<string, unknown> | undefined)?.method, 60));
     const address = str(cu.address, 240);
     const officeAddress = str(cu.officeAddress, 240);
     const postCode = office ? "" : str(cu.postCode, 12).replace(/\s+/g, "");
     if (name.length < 2) return fail(400, "bad_customer", "Vă rugăm să introduceți numele complet.");
     if (!phone) return fail(400, "bad_customer", "Vă rugăm să introduceți un număr de telefon mobil valid (ex. 07xx xxx xxx).");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(400, "bad_customer", "Vă rugăm să introduceți o adresă de e-mail validă.");
-    // Delivery to an address needs județ, localitate and address; an Econt office needs only its typed address (it names the city).
+    // Delivery to an address needs județ, localitate and address; a Speedy locker / office needs only its typed address (it names the city).
     if (!office) {
       if (!RO_COUNTIES.includes(county)) return fail(400, "bad_customer", "Vă rugăm să alegeți județul.");
       if (city.length < 2 || address.length < 5) return fail(400, "bad_customer", "Vă rugăm să completați localitatea și adresa de livrare.");
-    } else if (officeAddress.length < 5) return fail(400, "bad_customer", "Vă rugăm să introduceți adresa biroului Econt.");
+    } else if (officeAddress.length < 5) return fail(400, "bad_customer", "Vă rugăm să introduceți adresa lockerului sau a biroului Speedy.");
     if (postCode && !/^\d{6}$/.test(postCode)) return fail(400, "bad_customer", "Codul poștal trebuie să aibă 6 cifre.");
 
     const rawItems = Array.isArray(body.items) ? (body.items as Record<string, unknown>[]) : [];

@@ -36,7 +36,7 @@ const SHIPPING_LABEL = "Livrare la domiciliu cu curierul"; // what the customer 
 type Delivery = "home" | "office";
 
 // What the customer is told is missing (the field names in the red summary above the button).
-const FIELD_LABEL_RO: Record<string, string> = { name: "Nume complet", phone: "Telefon", email: "E-mail", county: "Județ", city: "Localitate", address: "Adresă", postCode: "Cod poștal", officeAddress: "Adresa biroului Econt" };
+const FIELD_LABEL_RO: Record<string, string> = { name: "Nume complet", phone: "Telefon", email: "E-mail", county: "Județ", city: "Localitate", address: "Adresă", postCode: "Cod poștal", officeAddress: "Adresa lockerului sau a biroului Speedy" };
 
 // Same contact as the Bulgarian checkout's prepayment flow (components/cart/CheckoutForm.tsx): the Viber link and number.
 const PREPAYMENT_VIBER_LINK = "viber://chat?number=%2B359888081811";
@@ -81,7 +81,7 @@ type FormState = {
   county: string;
   city: string;
   address: string;
-  officeAddress: string;   // Econt office (delivery to the office): typed by hand
+  officeAddress: string;   // Speedy locker / office (delivery to a pick-up point): typed by hand
   postCode: string;
   notes: string;
   smsMarketingConsent: boolean;
@@ -198,14 +198,14 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
     if (!email) errs.email = "Introduceți adresa de e-mail.";
     else if (!EMAIL_RE.test(email)) errs.email = "Adresa de e-mail nu este validă.";
     if (delivery === "home") {
-      // delivery to an address: județ, localitate, address, post code. An Econt office needs none of them: its typed address says it all.
+      // delivery to an address: județ, localitate, address, post code. A Speedy locker / office needs none of them: its typed address says it all.
       if (!RO_COUNTIES.includes(form.county)) errs.county = "Alegeți județul.";
       if (form.city.trim().length < 2) errs.city = "Introduceți localitatea.";
       if (form.address.trim().length < 5) errs.address = "Introduceți adresa completă (stradă, număr, bloc/scară/apartament).";
       const postCode = form.postCode.replace(/\s/g, "");
       if (postCode && !/^\d{6}$/.test(postCode)) errs.postCode = "Codul poștal are 6 cifre.";
     } else if (form.officeAddress.trim().length < 5) {
-      errs.officeAddress = "Introduceți adresa biroului Econt.";
+      errs.officeAddress = "Introduceți adresa lockerului sau a biroului Speedy.";
     }
     return errs;
   };
@@ -486,8 +486,8 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
             name="ro-delivery" value="office" selected={delivery === "office"}
             onSelect={() => { setDelivery("office"); setErrors({}); setFormSummary(""); }}
             icon={<IconOffice />}
-            title="Livrare la biroul Econt"
-            subtitle={`Ridicați din birou · ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere`}
+            title="Livrare la locker / birou Speedy"
+            subtitle={`Ridicați de la locker sau birou · ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere`}
             right={freeShipping ? (
             <span className="flex flex-col items-end leading-tight">
               <span className="text-[#4ADE80]">Gratuită</span>
@@ -540,10 +540,10 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
         </CoField>
         </>) : (
         <CoField
-          id="field-officeAddress" htmlFor="ro-officeAddress" label="Adresa biroului Econt" error={errors.officeAddress} errorId="ro-officeAddress-err"
-          hint="ex. Econt București, Bd. Iuliu Maniu 7"
+          id="field-officeAddress" htmlFor="ro-officeAddress" label="Adresa lockerului sau a biroului Speedy" error={errors.officeAddress} errorId="ro-officeAddress-err"
+          hint="ex. Speedy București, Bd. Iuliu Maniu 7"
         >
-          <input type="text" placeholder="Econt București, Bd. Iuliu Maniu 7" value={form.officeAddress} maxLength={200}
+          <input type="text" placeholder="Speedy București, Bd. Iuliu Maniu 7" value={form.officeAddress} maxLength={200}
             onChange={(e) => { set("officeAddress", e.target.value); clearError("officeAddress"); }}
             className={coInput(!!errors.officeAddress)} autoComplete="off" {...fieldProps("officeAddress")} />
         </CoField>

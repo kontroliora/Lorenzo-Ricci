@@ -419,7 +419,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           : "ADAUGĂ ÎN COȘ"}
       </button>
 
-      {effectiveInStock && !prepay && <CodLine text="Fără plată în avans · Livrare cu Econt · Plătiți la livrare" />}
+      {effectiveInStock && !prepay && <CodLine text="Fără plată în avans · Livrare cu Speedy · Plătiți la livrare" />}
 
       {/* Phones: the natural-variation note goes under the button (see above). */}
       {product.materialNote && (

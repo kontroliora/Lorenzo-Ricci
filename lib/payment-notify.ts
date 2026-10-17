@@ -5,7 +5,7 @@ import { langOf } from "./mail-policy";
 import { buildAdminEmail, buildCustomerEmail, sendAdminEmail, sendCustomerEmail, sendCapiPurchase } from "./order-notify";
 import { buildRoAdminEmail, buildRoCustomerEmail, roPaidSubject, type RoOrderEmailData } from "./ro/emails";
 import { RO_ADMIN_RECIPIENTS, sendMail, sendCapiPurchase as sendRoCapiPurchase } from "./ro/order-notify";
-import { RO_SHIPPING_HOME, RO_SHIPPING_OFFICE } from "./ro/config";
+import { RO_SHIPPING_HOME, RO_SHIPPING_OFFICE, isRoOfficeMethod } from "./ro/config";
 
 // What happens ONCE when a card order turns PAID (called only by the call that really moved the order): the customer's
 // "paid by card" e-mail, the team e-mail, the Meta Purchase (event id = order reference, the browser sends the twin from
@@ -38,7 +38,7 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
       cardDiscount: Number(order.card_discount ?? 0) || undefined,
       shippingCost: Number(order.shipping_cost ?? 0),
       total: Number(order.total ?? 0),
-      officeDelivery: order.shipping_method === RO_SHIPPING_OFFICE,
+      officeDelivery: isRoOfficeMethod(order.shipping_method),
     };
     const names = ["team e-mail", ...(email ? ["customer e-mail"] : []), "Meta Purchase"];
     const r = await Promise.allSettled([

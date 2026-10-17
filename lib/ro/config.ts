@@ -22,11 +22,14 @@ export const RO_DELIVERY_DAYS = "2-4";                                  // worki
 // The two delivery choices at checkout. The strings are the contract with /api/order-ro and are saved as orders.shipping_method;
 // the office choice has the same price as delivery to the address (free from 315 lei, else 46 lei) and a hand-typed office address.
 export const RO_SHIPPING_HOME = "Livrare la domiciliu";
-export const RO_SHIPPING_OFFICE = "Livrare la biroul Econt";
-export const RO_COURIER_LABEL = "curier rapid";                         // generic until the courier is chosen
+export const RO_SHIPPING_OFFICE = "Livrare la locker sau biroul Speedy";
+/** The same choice as the Romanian shop saved it while the courier was still Econt: such orders (and a stale checkout tab) still count as "office". */
+export const RO_SHIPPING_OFFICE_LEGACY = "Livrare la biroul Econt";
+export const isRoOfficeMethod = (m: unknown): boolean => m === RO_SHIPPING_OFFICE || m === RO_SHIPPING_OFFICE_LEGACY;
+export const RO_COURIER_LABEL = "Speedy";                                   // the courier of the Romanian shop (owner, 17.10.2026)
 export const RO_COD_FEE_RON = 0;                                        // PROVISIONAL: extra ramburs fee charged to the customer
 
-// PROVISIONAL: may the customer open and check the parcel before paying the courier? In Bulgaria Econt allows it
+// PROVISIONAL: may the customer open and check the parcel before paying the courier? In Bulgaria Econt allows it (the Romanian courier is Speedy: ask Speedy)
 // ("преглед и тест"). Do NOT promise it in Romania until the chosen courier confirms it in writing; copy shows the
 // "inspect before paying" promise only when this is true.
 export const RO_INSPECT_BEFORE_PAY = false;

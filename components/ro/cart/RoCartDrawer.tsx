@@ -297,7 +297,7 @@ export function RoCartDrawer() {
                   "Plata în avans, stabilită direct cu noi"
                 ) : (
                   <>
-                    Plata la livrare · Livrare cu Econt
+                    Plata la livrare · Livrare cu Speedy
                     {RO_INSPECT_BEFORE_PAY ? " · Puteți verifica coletul înainte de plată" : ` · Retur în ${RO_RETURN_DAYS} zile`}
                   </>
                 )}
