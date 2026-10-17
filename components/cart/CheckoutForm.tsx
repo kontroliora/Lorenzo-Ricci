@@ -2,6 +2,7 @@
 import { Fragment, useState, useRef, useEffect } from "react";
 import type { CartItem } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
+import { BG_FREE_SHIPPING_EUR, BG_SHIPPING_HOME_EUR, BG_SHIPPING_OFFICE_EUR } from "@/lib/shipping-rules";
 import { cardDiscountEur, cardDiscountIsCapped, CARD_DISCOUNT_CAP_EUR } from "@/lib/card-discount";
 import { calcBundleDiscount } from "@/lib/bundles";
 import { giftDisplayName } from "@/lib/gifts";
@@ -24,11 +25,11 @@ import { officeLabel } from "@/lib/econt-label";
 const FIELD_LABEL_BG: Record<string, string> = { name: "Две имена", phone: "Телефон", email: "Имейл", city: "Град", address: "Адрес", postCode: "Пощенски код", officeAddress: "Офис на Еконт" };
 
 const SHIPPING_OPTIONS = [
-  { id: "econt-office",  label: "Доставка чрез Еконт до офис",  courier: "econt", price: 4.25 },
-  { id: "home-address",  label: "Доставка чрез Еконт до адрес", courier: "home",  price: 5.45 },
+  { id: "econt-office",  label: "Доставка чрез Еконт до офис",  courier: "econt", price: BG_SHIPPING_OFFICE_EUR },
+  { id: "home-address",  label: "Доставка чрез Еконт до адрес", courier: "home",  price: BG_SHIPPING_HOME_EUR },
 ] as const;
 
-const FREE_SHIPPING_THRESHOLD = 60;
+const FREE_SHIPPING_THRESHOLD = BG_FREE_SHIPPING_EUR;
 
 // Same contact as the product-page Viber fallback (ProductInfo.tsx) - kept as a
 // local literal here since prepayment orders are an interim, manual-only path.
@@ -179,7 +180,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   // Paying by card always ships free, whatever the order size.
   const isCardPay        = paymentMethod === "card" && !needsPrepayment;
   // Threshold is checked on the pre-promo amount so a discount code never adds shipping.
-  const freeShipping     = isCardPay || (total + promoDiscount) >= FREE_SHIPPING_THRESHOLD;
+  const freeShipping     = (total + promoDiscount) >= FREE_SHIPPING_THRESHOLD;
   const selectedOption   = SHIPPING_OPTIONS.find((o) => o.id === shippingId)!;
   const shippingCost     = freeShipping ? 0 : selectedOption.price;
   // Paying by card: 5% off the goods (max €25), never together with a promo code. The server recomputes it (lib/card-discount.ts).
@@ -625,7 +626,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
               name="paymentMethod" value="card" selected={paymentMethod === "card"}
               onSelect={() => { setPaymentMethod("card"); setSubmitError(""); }}
               title="Плащане с карта"
-              subtitle={promoDiscount > 0 ? "Безплатна доставка · отстъпката за карта не се комбинира с промо код" : `Безплатна доставка · −5% от стоката (до €${CARD_DISCOUNT_CAP_EUR})`}
+              subtitle={promoDiscount > 0 ? "Отстъпката за карта не се комбинира с промо код" : `−5% от стоката (до €${CARD_DISCOUNT_CAP_EUR})`}
               right={promoDiscount > 0 ? undefined : <span data-testid="card-discount-badge" className="text-[#4ADE80]">−5%</span>}
             >
               <PaymentMarks label="Приемани карти и портфейли" />

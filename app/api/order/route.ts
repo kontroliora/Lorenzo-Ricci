@@ -155,12 +155,6 @@ export async function POST(req: NextRequest) {
     if (isCard && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(customerAddress)) {
       return NextResponse.json({ success: false, code: "bad_email", error: "Моля, въведете валиден имейл адрес за плащане с карта." }, { status: 400 });
     }
-    if (isCard && (Number(((order.shipping ?? {}) as Record<string, unknown>).cost ?? 0) !== 0 || pricing.shippingCost !== 0)) {
-      return NextResponse.json(
-        { success: false, code: "price_mismatch", error: "Цените са обновени, моля презаредете страницата" },
-        { status: 409 },
-      );
-    }
 
     // ── CATALOG GATES - a product switched off in lib/products.ts (inStock: false)
     //    is never orderable, and a prepayment item can't use this cash-on-delivery
@@ -286,7 +280,7 @@ export async function POST(req: NextRequest) {
         courier:                 String(customer.courier       ?? ""),
         items:                   savedOrder.items ?? [],
         subtotal:                pricing.subtotal,
-        shipping_cost:           0,
+        shipping_cost:           pricing.shippingCost,
         total:                   pricing.total,
         ...(pricing.cardDiscount > 0 ? { card_discount: pricing.cardDiscount } : {}),
         sms_marketing_consent:   Boolean(customer.smsMarketingConsent),
@@ -319,6 +313,11 @@ export async function POST(req: NextRequest) {
           unitPrice: product.price,
           image: new URL(product.coverImage.src, SITE_URL).href,
         });
+      }
+      // delivery is a line of its own on the Stripe page (same price as for cash on delivery: free from EUR 60, else 4.25 / 5.45)
+      if (pricing.shippingCost > 0) {
+        const home = String(((order.shipping ?? {}) as Record<string, unknown>).courier ?? "") === "home";
+        cardLines.push({ name: home ? "Доставка до адрес с Еконт" : "Доставка до офис или автомат на Еконт", sku: "SHIPPING", quantity: 1, unitPrice: pricing.shippingCost });
       }
       const started = await startCardPayment({
         sb: sbAdmin,

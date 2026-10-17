@@ -29,8 +29,8 @@ export function getStripe(): Stripe {
 export type CardLine = { name: string; sku: string; quantity: number; unitPrice: number; image?: string };
 
 /**
- * One Checkout Session for one order. `lines` and their sum are the SERVER-derived amounts of the order (free delivery:
- * no shipping line); the caller has already reserved the stock and saved the order as pending_payment.
+ * One Checkout Session for one order. `lines` and their sum are the SERVER-derived amounts of the order (delivery is a line of its own
+ * when it is not free, the same price as for cash on delivery); the caller has already reserved the stock and saved the order as pending_payment.
  */
 export async function createCardSession(args: {
   orderRef: string;

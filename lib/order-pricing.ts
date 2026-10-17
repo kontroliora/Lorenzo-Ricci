@@ -1,6 +1,7 @@
 import type { CartItem, Product } from "./types";
 import { calcBundleDiscount, promoBase } from "./bundles";
 import { cardDiscountEur } from "./card-discount";
+import { bgShippingCost } from "./shipping-rules";
 
 // Server-side price check for /api/order.
 //
@@ -21,6 +22,8 @@ import { cardDiscountEur } from "./card-discount";
 // Shipping is only checked for being non-negative. Everything must add up exactly:
 //   catalogSubtotal − discount − promoDiscount = subtotal
 //   subtotal − cardDiscount + shipping.cost    = total
+// Shipping is re-derived too (lib/shipping-rules.ts: free from EUR 60 on the goods before promo / card discount, else 4.25 office / 5.45 address),
+// the same for cash on delivery and for card.
 // Anything else fails, and the caller answers 409 so the customer reloads.
 
 const EPS = 0.01; // one cent — the client's own amounts are 2-decimal, float noise is ~1e-14
@@ -112,6 +115,10 @@ export function validateOrderPricing(
   const shipping = (order.shipping ?? {}) as Record<string, unknown>;
   const shippingCost = num(shipping.cost);
   if (shippingCost === null || shippingCost < 0) return { ok: false, reason: "bad shipping cost" };
+  const expectedShipping = bgShippingCost(catalogSubtotal - bundleDiscount, shipping.courier);
+  if (Math.abs(shippingCost - expectedShipping) > EPS) {
+    return { ok: false, reason: `shipping mismatch: client ${String(shipping.cost)}, expected ${expectedShipping} (${String(shipping.courier)})` };
+  }
 
   const total = num(order.total);
   if (total === null || Math.abs(subtotal - expectedCard + shippingCost - total) > EPS) {
@@ -123,7 +130,7 @@ export function validateOrderPricing(
     catalogSubtotal: round2(catalogSubtotal),
     subtotal: round2(catalogSubtotal - bundleDiscount - promoDiscount),
     cardDiscount: round2(expectedCard),
-    shippingCost: round2(shippingCost),
-    total: round2(catalogSubtotal - bundleDiscount - promoDiscount - expectedCard + shippingCost),
+    shippingCost: round2(expectedShipping),
+    total: round2(catalogSubtotal - bundleDiscount - promoDiscount - expectedCard + expectedShipping),
   };
 }

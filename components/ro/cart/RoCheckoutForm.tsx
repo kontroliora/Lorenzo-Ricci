@@ -575,7 +575,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
               name="ro-payment" value="card" selected={isCardPay}
               onSelect={() => { if (!submitting) setPayMethod("card"); }}
               title="Plata cu cardul"
-              subtitle={`Livrare gratuită · −5% din valoarea produselor (maxim ${CARD_DISCOUNT_CAP_RON} lei)`}
+              subtitle={`−5% din valoarea produselor (maxim ${CARD_DISCOUNT_CAP_RON} lei)`}
               right={<span className="flex flex-col items-end leading-tight"><span data-testid="card-discount-badge" className="text-xs text-[#4ADE80]">−5%</span><span>{fmtRON(cardTotal)}</span></span>}
             >
               <PaymentMarks label="Carduri și portofele acceptate" />

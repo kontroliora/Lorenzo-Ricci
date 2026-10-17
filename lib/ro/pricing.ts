@@ -36,14 +36,14 @@ export function roBundleDiscount(lines: BundleLine[]): { totalDiscount: number; 
 
 /**
  * Every amount of an order, from its lines. `goods` is after set discounts; delivery is judged on `goods`.
- * A CARD order pays 5% less on the goods (max 130 lei, lib/card-discount.ts) and has free delivery and no ramburs fee:
- * total = goods - cardDiscount. (Romania has no promo codes, so the card discount never meets one.)
+ * A CARD order pays 5% less on the goods (max 130 lei, lib/card-discount.ts) and no ramburs fee; delivery follows the general rule (free from
+ * 315 lei on the goods before the card discount, else 46 lei): total = goods - cardDiscount + shipping. (Romania has no promo codes, so the card discount never meets one.)
  */
 export function roAmounts(lines: BundleLine[], opts: { card?: boolean } = {}): { subtotal: number; discount: number; goods: number; cardDiscount: number; shipping: number; total: number; bundles: { id: string; label: string; discount: number }[] } {
   const subtotal = roSubtotal(lines);
   const { totalDiscount, active } = roBundleDiscount(lines);
   const goods = subtotal - totalDiscount;
-  const shipping = opts.card ? 0 : roShippingCost(goods);
+  const shipping = roShippingCost(goods);
   const cardDiscount = opts.card ? cardDiscountRon(goods) : 0;
   return { subtotal, discount: totalDiscount, goods, cardDiscount, shipping, total: goods - cardDiscount + shipping + (opts.card ? 0 : RO_COD_FEE_RON), bundles: active };
 }

@@ -4,7 +4,8 @@
 //
 // 1. Order request: POST /api/order (Bulgaria, EUR) and POST /api/order-ro (Romania, lei) accept an extra field
 //      "paymentMethod": "cod" | "card"        (missing = "cod", behaviour unchanged)
-//    Card orders have free delivery: the client sends shipping.cost = 0 and total = subtotal; the server enforces it.
+//    Card orders pay the same delivery as cash on delivery (BG lib/shipping-rules.ts, RO lib/ro/pricing.ts) and get 5% off the goods
+//    (lib/card-discount.ts): the client sends shipping.cost, cardDiscount and total, the server recomputes all three and refuses any other number.
 // 2. Card response: 200 { success: true, paymentMethod: "card", orderRef, checkoutUrl }  -> the browser must NOT clear the
 //    cart or fire Purchase; it stores sessionStorage "lr_pending_order" = orderRef and goes to checkoutUrl
 //    (window.location.assign). Errors keep the existing shape { success: false, code?, error } (409 price/stock, 503 ...).

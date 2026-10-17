@@ -201,7 +201,11 @@ export async function POST(req: NextRequest) {
         sb,
         orderRef: ref,
         market: "ro",
-        lines: lines.map((l) => ({ name: l.name, sku: l.sku, quantity: l.quantity, unitPrice: l.ron, image: new URL(getProductBySlug(l.slug)!.coverImage.src, SITE_URL).href })),
+        lines: [
+          ...lines.map((l) => ({ name: l.name, sku: l.sku, quantity: l.quantity, unitPrice: l.ron, image: new URL(getProductBySlug(l.slug)!.coverImage.src, SITE_URL).href })),
+          // delivery is a line of its own on the Stripe page (same price as for ramburs: free from 315 lei, else 46 lei)
+          ...(shippingCost > 0 ? [{ name: office ? "Livrare la locker / birou Speedy" : "Livrare la domiciliu (Speedy)", sku: "SHIPPING", quantity: 1, unitPrice: shippingCost }] : []),
+        ],
         expectedTotal: total,
         discount: discount + cardDiscount,   // set discount + card discount on one Stripe coupon
         discountLabel: cardDiscount > 0 && discount === 0 ? "Reducere 5% la plata cu cardul" : undefined,

@@ -545,7 +545,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
               ) : (
                 <p>
                   {CARD_PAYMENTS_ENABLED
-                    ? <><strong className="text-charcoal font-normal">Plată cu cardul</strong> (−5% reducere, maximum 130 lei, livrare gratuită) sau <strong className="text-charcoal font-normal">ramburs</strong> - achitați comanda curierului, la primirea coletului.</>
+                    ? <><strong className="text-charcoal font-normal">Plată cu cardul</strong> (−5% reducere din valoarea produselor, maximum 130 lei) sau <strong className="text-charcoal font-normal">ramburs</strong> - achitați comanda curierului, la primirea coletului.</>
                     : <><strong className="text-charcoal font-normal">Plată ramburs</strong> - achitați comanda curierului, la primirea coletului.</>}
                 </p>
               )}

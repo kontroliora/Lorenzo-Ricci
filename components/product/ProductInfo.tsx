@@ -549,7 +549,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
               <p><strong className="text-charcoal font-normal">Безплатна доставка</strong> за поръчки над €60</p>
               <p>Доставяме с <strong className="text-charcoal font-normal">Еконт</strong> в цяла България</p>
               <p>Обработваме до 14:00 ч. - изпращаме същия ден. Доставка <strong className="text-charcoal font-normal">на следващия работен ден</strong>.</p>
-              {CARD_PAYMENTS_ENABLED && <p><strong className="text-charcoal font-normal">Плащане с карта</strong> - −5% отстъпка (до €25) и безплатна доставка.</p>}
+              {CARD_PAYMENTS_ENABLED && <p><strong className="text-charcoal font-normal">Плащане с карта</strong> - −5% отстъпка от стоката (до €25).</p>}
               <p><strong className="text-charcoal font-normal">Преглед и тест преди плащане</strong>{CARD_PAYMENTS_ENABLED ? " при наложен платеж" : ""} - право да откажете на място.</p>
               <p><strong className="text-charcoal font-normal">30 дни лесна замяна</strong> - пишете на info@lorenzo-ricci.com</p>
             </div>
