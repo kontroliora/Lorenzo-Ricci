@@ -35,6 +35,7 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
       subtotal: Number(order.subtotal ?? 0),
       // the order stores goods AFTER the set discount; the discount itself is what the lines add up to above that
       discount: Math.max(0, items.reduce((s, i) => s + Number(i.price ?? 0) * Number(i.quantity ?? i.qty ?? 1), 0) - Number(order.subtotal ?? 0)),
+      cardDiscount: Number(order.card_discount ?? 0) || undefined,
       shippingCost: Number(order.shipping_cost ?? 0),
       total: Number(order.total ?? 0),
       officeDelivery: order.shipping_method === RO_SHIPPING_OFFICE,
@@ -58,6 +59,7 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
     items,
     total: Number(order.total ?? 0),
     subtotal: Number(order.subtotal ?? 0),
+    cardDiscount: Number(order.card_discount ?? 0) || 0,
   };
   const names = ["team e-mail", ...(email ? ["customer e-mail"] : []), "Meta Purchase"];
   const r = await Promise.allSettled([

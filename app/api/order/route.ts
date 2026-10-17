@@ -26,6 +26,13 @@ async function insertOrderRow(sb: OrderInsertClient, row: Record<string, unknown
   if (res.error && "econt_office_code" in row && /econt_office_code|schema cache|column/i.test(res.error.message)) {
     const { econt_office_code: _dropped, ...rest } = row;
     void _dropped;
+    row = rest;
+    res = await sb.from("orders").insert(rest);
+  }
+  // card_discount (supabase/orders_card_discount.sql) not added yet: the order is still taken (subtotal / total carry the amounts)
+  if (res.error && "card_discount" in row && /card_discount|schema cache|column/i.test(res.error.message)) {
+    const { card_discount: _cd, ...rest } = row;
+    void _cd;
     res = await sb.from("orders").insert(rest);
   }
   return res;
@@ -129,7 +136,7 @@ export async function POST(req: NextRequest) {
       const product = getProductBySlug(slug);
       return product ? applyOverride(product, overrides) : undefined;
     };
-    const pricing = validateOrderPricing(order, findProductWithOverride, { promoRate });
+    const pricing = validateOrderPricing(order, findProductWithOverride, { promoRate, card: order.paymentMethod === "card" });
     if (!pricing.ok) {
       console.warn("[Order] price check failed:", pricing.reason);
       return NextResponse.json(
@@ -281,6 +288,7 @@ export async function POST(req: NextRequest) {
         subtotal:                pricing.subtotal,
         shipping_cost:           0,
         total:                   pricing.total,
+        ...(pricing.cardDiscount > 0 ? { card_discount: pricing.cardDiscount } : {}),
         sms_marketing_consent:   Boolean(customer.smsMarketingConsent),
         email_marketing_consent: Boolean(customer.emailMarketingConsent),
         notes:                   previewMarked(String(customer.notes         ?? "")),
@@ -318,7 +326,8 @@ export async function POST(req: NextRequest) {
         market: "bg",
         lines: cardLines,
         expectedTotal: pricing.total,
-        discount: Math.round((pricing.catalogSubtotal - pricing.subtotal) * 100) / 100,
+        discount: Math.round((pricing.catalogSubtotal - pricing.subtotal + pricing.cardDiscount) * 100) / 100,   // set + promo + card discount on one coupon
+        discountLabel: pricing.cardDiscount > 0 && pricing.catalogSubtotal === pricing.subtotal ? "Отстъпка 5% за плащане с карта" : undefined,
         customerEmail: customerAddress || undefined,
         origin: returnOrigin(req.nextUrl.origin),
         heldItems: savedOrder.items,

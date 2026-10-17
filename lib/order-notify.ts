@@ -111,6 +111,7 @@ export function buildAdminEmail(order: Record<string, unknown>, alertMessage?: s
         </thead>
         <tbody>${items}</tbody>
         <tfoot>
+          ${Number(order.cardDiscount ?? 0) > 0 ? `<tr><td colspan="3" style="padding:10px 12px;color:#047857">Отстъпка за плащане с карта (-5%)</td><td style="padding:10px 12px;text-align:right;color:#047857">-€${Number(order.cardDiscount).toFixed(2)}</td></tr>` : ""}
           <tr style="background:#f3f4f6;font-weight:700">
             <td colspan="3" style="padding:10px 12px">${opts.paidByCard ? "ОБЩО (платено с карта)" : "ОБЩО"}</td>
             <td style="padding:10px 12px;text-align:right">€${Number(order.total ?? 0).toFixed(2)}</td>
@@ -186,6 +187,7 @@ export function buildCustomerEmail(order: Record<string, unknown>, opts: { paidB
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tbody>${items}</tbody>
                 <tfoot>
+                  ${Number(order.cardDiscount ?? 0) > 0 ? `<tr><td colspan="2" style="padding:12px 0 0;font-size:12px;color:#888">Отстъпка за плащане с карта (-5%)</td><td style="padding:12px 0 0;text-align:right;font-size:14px;color:#047857">-€${Number(order.cardDiscount).toFixed(2)}</td></tr>` : ""}
                   <tr>
                     <td colspan="2" style="padding:14px 0 0;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#888">${opts.paidByCard ? "Платено с карта" : "Сума за плащане при доставка"}</td>
                     <td style="padding:14px 0 0;text-align:right;font-family:'Georgia',serif;font-size:20px;color:#0a0e1f;font-weight:700">€${Number(order.total ?? 0).toFixed(2)}</td>

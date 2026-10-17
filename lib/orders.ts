@@ -45,6 +45,7 @@ export type AdminOrder = {
   cancel_reason?: string | null;
   promo_code?: string | null;      // undefined until the orders_promo migration runs
   promo_discount?: number | null;
+  card_discount?: number | null;     // 5% off for paying by card (supabase/orders_card_discount.sql); undefined until that migration runs
   return_kind?: string | null;         // 'uncollected' | 'refused' | null — until orders_return_kind migration
   return_dwell_days?: number | null;   // calendar days at the final office before returning
   returning_at?: string | null;        // when the parcel started coming back (set by cron/manual, going forward)
@@ -89,6 +90,7 @@ export async function getOrders(limit = 1000): Promise<AdminOrder[]> {
   // run yet: payment columns → promo columns → extended columns → base. A missing
   // column must never blank the whole panel.
   const tiers = [
+    `${ORDER_COLUMNS}, promo_code, promo_discount, return_kind, return_dwell_days, returning_at, restocked_at, restocked_source, ${PAYMENT_COLUMNS}, card_discount`,
     `${ORDER_COLUMNS}, promo_code, promo_discount, return_kind, return_dwell_days, returning_at, restocked_at, restocked_source, ${PAYMENT_COLUMNS}`,
     `${ORDER_COLUMNS}, promo_code, promo_discount, return_kind, return_dwell_days, returning_at, restocked_at, restocked_source`,
     `${ORDER_COLUMNS}, promo_code, promo_discount, return_kind, return_dwell_days`,

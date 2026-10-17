@@ -83,7 +83,8 @@ export async function startCardPayment(args: {
   market: "bg" | "ro";
   lines: CardLine[];
   expectedTotal: number;      // major units, = what the server computed for the order
-  discount?: number;          // major units, order-level (bundle + promo)
+  discount?: number;          // major units, order-level (set + promo + card discount)
+  discountLabel?: string;     // the name of that discount line on the Stripe page (default "Отстъпка" / "Reducere")
   customerEmail?: string;
   origin: string;
   metadata?: Record<string, string>;
@@ -93,7 +94,7 @@ export async function startCardPayment(args: {
   const currency = ro ? "ron" : "eur";
   const ref = encodeURIComponent(args.orderRef);
   try {
-    const couponId = args.discount && args.discount > 0 ? await createOrderCoupon(args.discount, currency, ro ? "Reducere" : "Отстъпка") : undefined;
+    const couponId = args.discount && args.discount > 0 ? await createOrderCoupon(args.discount, currency, args.discountLabel ?? (ro ? "Reducere" : "Отстъпка")) : undefined;
     const session = await createCardSession({
       orderRef: args.orderRef,
       currency,

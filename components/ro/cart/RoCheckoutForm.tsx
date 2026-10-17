@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRoCart, type RoCartLine } from "@/lib/ro/store";
 import { roAmounts } from "@/lib/ro/pricing";
+import { CARD_DISCOUNT_CAP_RON, cardDiscountIsCapped } from "@/lib/card-discount";
 import { RO_COUNTIES } from "@/lib/ro/counties";
 import {
   RO_COD_FEE_RON,
@@ -141,7 +142,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   // ── Derived values (the only money maths: lib/ro/pricing.ts roAmounts) ─────
   const needsPrepayment = items.some((i) => i.prepay);
   const isCardPay = CARD_PAYMENTS_ENABLED && payMethod === "card" && !needsPrepayment;
-  const { shipping: shippingCost, total: grandTotal, bundles } = roAmounts(items, { card: isCardPay });
+  const { shipping: shippingCost, total: grandTotal, bundles, cardDiscount, goods: goodsAfterSets } = roAmounts(items, { card: isCardPay });
   const codTotal = roAmounts(items).total;
   const cardTotal = roAmounts(items, { card: true }).total;
   // Abandoned-cart reminder (Romanian e-mail): the cart is saved ONLY while the customer has ticked the e-mail consent box (unticked
@@ -274,7 +275,8 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       items: lines.map((i) => ({ slug: i.slug, sku: i.sku, name: i.name, quantity: i.quantity, price: i.ron })),
       discount: amounts.discount,                              // set discount in lei (0 if none)
       shipping: { method: delivery === "office" ? RO_SHIPPING_OFFICE : RO_SHIPPING_HOME, cost: amounts.shipping },
-      subtotal: amounts.goods,                                 // goods AFTER the set discount
+      subtotal: amounts.goods,                                 // goods AFTER the set discount (before the card discount)
+      cardDiscount: amounts.cardDiscount,                      // 5% for paying by card (max 130 lei); 0 for ramburs
       total: amounts.total,
       paymentMethod: method,
       timestamp: new Date().toISOString(),
@@ -405,6 +407,9 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   }));
   const summaryRows: SummaryRow[] = [
     ...bundles.map(({ id, label, discount }) => ({ key: `bundle-${id}`, label: bundleLineLabel(label), value: `-${fmtRON(discount)}`, tone: "discount" as const })),
+    ...(cardDiscount > 0
+      ? [{ key: "card-discount", label: `−5% la plata cu cardul${cardDiscountIsCapped(goodsAfterSets, "RON") ? ` (maxim ${CARD_DISCOUNT_CAP_RON} lei)` : ""}`, value: `-${fmtRON(cardDiscount)}`, tone: "discount" as const }]
+      : []),
     { key: "shipping", label: "Livrare", value: freeShipping ? "Gratuită" : fmtRON(shippingCost), tone: freeShipping ? ("free" as const) : undefined },
     ...(!isCardPay && RO_COD_FEE_RON > 0 ? [{ key: "cod-fee", label: "Taxă ramburs", value: fmtRON(RO_COD_FEE_RON) }] : []),
   ];
@@ -572,8 +577,8 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
               name="ro-payment" value="card" selected={isCardPay}
               onSelect={() => { if (!submitting) setPayMethod("card"); }}
               title="Plata cu cardul"
-              subtitle="Livrare gratuită"
-              right={fmtRON(cardTotal)}
+              subtitle={`Livrare gratuită · −5% din valoarea produselor (maxim ${CARD_DISCOUNT_CAP_RON} lei)`}
+              right={<span className="flex flex-col items-end leading-tight"><span data-testid="card-discount-badge" className="text-xs text-[#4ADE80]">−5%</span><span>{fmtRON(cardTotal)}</span></span>}
             >
               <PaymentMarks label="Carduri și portofele acceptate" />
               {isCardPay && (

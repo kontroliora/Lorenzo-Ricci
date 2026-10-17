@@ -2,6 +2,7 @@
 import { Fragment, useState, useRef, useEffect } from "react";
 import type { CartItem } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
+import { cardDiscountEur, cardDiscountIsCapped, CARD_DISCOUNT_CAP_EUR } from "@/lib/card-discount";
 import { calcBundleDiscount } from "@/lib/bundles";
 import { giftDisplayName } from "@/lib/gifts";
 import { useGiftLines } from "@/lib/use-gifts";
@@ -181,7 +182,9 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   const freeShipping     = isCardPay || (total + promoDiscount) >= FREE_SHIPPING_THRESHOLD;
   const selectedOption   = SHIPPING_OPTIONS.find((o) => o.id === shippingId)!;
   const shippingCost     = freeShipping ? 0 : selectedOption.price;
-  const grandTotal       = total + shippingCost;
+  // Paying by card: 5% off the goods (max €25), never together with a promo code. The server recomputes it (lib/card-discount.ts).
+  const cardDiscount     = isCardPay ? cardDiscountEur(total, promoDiscount) : 0;
+  const grandTotal       = total - cardDiscount + shippingCost;
   const isHomeAddress    = shippingId === "home-address";
   // "До офис или автомат на Еконт": pick from Econt's official list. While it loads a placeholder shows; if it cannot be loaded
   // the old manual field is shown instead (and the order is saved with the typed text, no office code).
@@ -277,6 +280,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       promoCode:    promoCode || undefined,
       promoDiscount: promoDiscount || 0,
       subtotal:     total,
+      cardDiscount: cardDiscount || 0,
       shipping:     { method: selectedOption.label, courier: selectedOption.courier, cost: shippingCost },
       total:        grandTotal,
       paymentMethod: isCardPay ? "card" : "cod",
@@ -433,6 +437,9 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     ...(promoCode && promoDiscount > 0
       ? [{ key: "promo", label: `Промо ${promoCode} -${Math.round(promoRate * 100)}%`, value: `-€${promoDiscount.toFixed(2)}`, tone: "discount" as const }]
       : []),
+    ...(cardDiscount > 0
+      ? [{ key: "card-discount", label: `−5% при плащане с карта${cardDiscountIsCapped(total, "EUR") ? ` (максимум €${CARD_DISCOUNT_CAP_EUR})` : ""}`, value: `-€${cardDiscount.toFixed(2)}`, tone: "discount" as const }]
+      : []),
     { key: "shipping", label: "Доставка", value: freeShipping ? "Безплатна" : `€${shippingCost.toFixed(2)}`, tone: freeShipping ? ("free" as const) : undefined },
   ];
   const inputProps = (key: string) => ({
@@ -513,7 +520,9 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
             <CoRadioCard
               name="paymentMethod" value="card" selected={paymentMethod === "card"}
               onSelect={() => { setPaymentMethod("card"); setSubmitError(""); }}
-              title="Плащане с карта" subtitle="Безплатна доставка"
+              title="Плащане с карта"
+              subtitle={promoDiscount > 0 ? "Безплатна доставка · отстъпката за карта не се комбинира с промо код" : `Безплатна доставка · −5% от стоката (до €${CARD_DISCOUNT_CAP_EUR})`}
+              right={promoDiscount > 0 ? undefined : <span data-testid="card-discount-badge" className="text-[#4ADE80]">−5%</span>}
             >
               <PaymentMarks label="Приемани карти и портфейли" />
               {paymentMethod === "card" && (

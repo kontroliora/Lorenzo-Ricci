@@ -1,5 +1,6 @@
 import type { CartItem, Product } from "./types";
 import { calcBundleDiscount, promoBase } from "./bundles";
+import { cardDiscountEur } from "./card-discount";
 
 // Server-side price check for /api/order.
 //
@@ -15,9 +16,11 @@ import { calcBundleDiscount, promoBase } from "./bundles";
 //     discounts (promoBase) — sale items never get a promo discount (no stacking). The
 //     caller looks the rate up in the database (lib/promo.ts) and passes it in; a promo
 //     discount without a valid rate fails.
+//   • `cardDiscount` (5% of the goods after the set discounts, max €25, card orders only, never with a promo code) is re-derived from
+//     lib/card-discount.ts: the browser's number must match, and a cash-on-delivery order must carry none.
 // Shipping is only checked for being non-negative. Everything must add up exactly:
 //   catalogSubtotal − discount − promoDiscount = subtotal
-//   subtotal + shipping.cost                   = total
+//   subtotal − cardDiscount + shipping.cost    = total
 // Anything else fails, and the caller answers 409 so the customer reloads.
 
 const EPS = 0.01; // one cent — the client's own amounts are 2-decimal, float noise is ~1e-14
@@ -27,7 +30,8 @@ export type OrderPricing =
   | {
       ok: true;
       catalogSubtotal: number; // Σ catalog price × qty, before any discount
-      subtotal: number;        // goods after bundle + promo discounts
+      subtotal: number;        // goods after bundle + promo discounts (before the card discount)
+      cardDiscount: number;    // 5% off for paying by card (0 for cash on delivery / with a promo code)
       shippingCost: number;
       total: number;           // amount to collect — the value to report to Meta
     }
@@ -42,7 +46,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 export function validateOrderPricing(
   order: Record<string, unknown>,
   findProduct: (slug: string) => Product | undefined,
-  opts: { promoRate?: number | null } = {},
+  opts: { promoRate?: number | null; card?: boolean } = {},
 ): OrderPricing {
   const items = order.items;
   if (!Array.isArray(items) || items.length === 0) return { ok: false, reason: "no items" };
@@ -93,6 +97,13 @@ export function validateOrderPricing(
     }
   }
 
+  // Card discount — only for a card order, only without a promo code, always the server's own figure.
+  const expectedCard = opts.card ? cardDiscountEur(catalogSubtotal - expectedSet, promoDiscount) : 0;
+  const cardDiscount = order.cardDiscount == null ? 0 : num(order.cardDiscount);
+  if (cardDiscount === null || cardDiscount < 0 || Math.abs(cardDiscount - expectedCard) > ROUNDING) {
+    return { ok: false, reason: `card discount mismatch: client ${String(order.cardDiscount)}, expected ${expectedCard}` };
+  }
+
   const subtotal = num(order.subtotal);
   if (subtotal === null || Math.abs(catalogSubtotal - bundleDiscount - promoDiscount - subtotal) > EPS) {
     return { ok: false, reason: `subtotal mismatch: client ${String(order.subtotal)}, catalog-based ${round2(catalogSubtotal - bundleDiscount - promoDiscount)}` };
@@ -103,15 +114,16 @@ export function validateOrderPricing(
   if (shippingCost === null || shippingCost < 0) return { ok: false, reason: "bad shipping cost" };
 
   const total = num(order.total);
-  if (total === null || Math.abs(subtotal + shippingCost - total) > EPS) {
-    return { ok: false, reason: `total mismatch: client ${String(order.total)}, expected ${round2(subtotal + shippingCost)}` };
+  if (total === null || Math.abs(subtotal - expectedCard + shippingCost - total) > EPS) {
+    return { ok: false, reason: `total mismatch: client ${String(order.total)}, expected ${round2(subtotal - expectedCard + shippingCost)}` };
   }
 
   return {
     ok: true,
     catalogSubtotal: round2(catalogSubtotal),
     subtotal: round2(catalogSubtotal - bundleDiscount - promoDiscount),
+    cardDiscount: round2(expectedCard),
     shippingCost: round2(shippingCost),
-    total: round2(catalogSubtotal - bundleDiscount - promoDiscount + shippingCost),
+    total: round2(catalogSubtotal - bundleDiscount - promoDiscount - expectedCard + shippingCost),
   };
 }

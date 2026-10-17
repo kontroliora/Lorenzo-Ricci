@@ -142,7 +142,8 @@ export function OrderCard({
   const cod = Number(order.total ?? 0);
   const codSub = order.subtotal != null ? Number(order.subtotal) : null;
   const codShip = Number(order.shipping_cost ?? 0);
-  const showBreakdown = codSub != null && codSub > 0 && Math.abs(codSub + codShip - cod) < 0.01;
+  const cardOff = Number(order.card_discount ?? 0);   // 5% for paying by card (max €25 / 130 lei): subtotal - card discount + delivery = total
+  const showBreakdown = codSub != null && codSub > 0 && Math.abs(codSub - cardOff + codShip - cod) < 0.01;
   // Money: euro for Bulgaria, lei for Romania (with the euro equivalent next to the total).
   const money = (n: number) => (ro ? fmtLei(n) : `€${n.toFixed(2)}`);
   const totalLabel = ro ? fmtLeiWithEuro(cod) : `€${cod.toFixed(2)}`;
@@ -218,6 +219,7 @@ export function OrderCard({
         {showBreakdown && (
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2, display: "flex", gap: 14, flexWrap: "wrap" }}>
             <span>Стока: <span style={{ color: "rgba(255,255,255,0.8)" }}>{money(codSub!)}</span></span>
+            {cardOff > 0 && <span>Отстъпка карта −5%: <span style={{ color: "#97C459" }}>−{money(cardOff)}</span></span>}
             <span>Доставка: <span style={{ color: "rgba(255,255,255,0.8)" }}>{codShip > 0 ? money(codShip) : "безплатна"}</span></span>
           </div>
         )}

@@ -122,10 +122,10 @@ export async function POST(req: NextRequest) {
     if (isCard && !CARD_PAYMENTS_ENABLED) return fail(503, "unavailable", "Plata cu cardul nu este disponibilă momentan. Vă rugăm să alegeți plata la livrare.");
     // Every amount comes from ONE function (lib/ro/pricing.ts, shared with the cart): lines at the current lei prices, set
     // discounts, delivery judged on the amount after discounts. The browser's numbers must match to the leu.
-    const { discount, goods: subtotal, shipping: shippingCost, total } = roAmounts(lines, { card: isCard });
+    const { discount, goods: subtotal, cardDiscount, shipping: shippingCost, total } = roAmounts(lines, { card: isCard });
     const sh = (body.shipping ?? {}) as Record<string, unknown>;
-    if (Number(body.subtotal) !== subtotal || Number(body.discount ?? 0) !== discount || Number(sh.cost) !== shippingCost || Number(body.total) !== total) {
-      console.warn(`[order-ro] total mismatch: client ${String(body.subtotal)}/${String(body.discount)}/${String(sh.cost)}/${String(body.total)}, server ${subtotal}/${discount}/${shippingCost}/${total}`);
+    if (Number(body.subtotal) !== subtotal || Number(body.discount ?? 0) !== discount || Number(body.cardDiscount ?? 0) !== cardDiscount || Number(sh.cost) !== shippingCost || Number(body.total) !== total) {
+      console.warn(`[order-ro] total mismatch: client ${String(body.subtotal)}/${String(body.discount)}/${String(body.cardDiscount)}/${String(sh.cost)}/${String(body.total)}, server ${subtotal}/${discount}/${cardDiscount}/${shippingCost}/${total}`);
       return fail(409, "price_mismatch", "Prețurile au fost actualizate, vă rugăm să reîncărcați pagina.");
     }
 
@@ -162,6 +162,7 @@ export async function POST(req: NextRequest) {
       subtotal,
       shipping_cost: shippingCost,
       total,
+      ...(cardDiscount > 0 ? { card_discount: cardDiscount } : {}),
       sms_marketing_consent: cu.smsMarketingConsent === true,
       email_marketing_consent: cu.emailMarketingConsent === true,
       notes: previewMarked(notes),
@@ -172,6 +173,12 @@ export async function POST(req: NextRequest) {
     // the LRRO- reference) work without it, so an order is never lost because the column has not been added yet.
     let { error: insErr } = await sb.from("orders").insert({ ...orderRow, lang: "ro" });
     if (insErr && /lang/i.test(insErr.message)) ({ error: insErr } = await sb.from("orders").insert(orderRow));
+    // card_discount (supabase/orders_card_discount.sql) not added yet: take the order anyway (subtotal / total carry the amounts)
+    if (insErr && "card_discount" in orderRow && /card_discount|schema cache|column/i.test(insErr.message)) {
+      const { card_discount: _cd, ...noCd } = orderRow; void _cd;
+      ({ error: insErr } = await sb.from("orders").insert({ ...noCd, lang: "ro" }));
+      if (insErr && /lang/i.test(insErr.message)) ({ error: insErr } = await sb.from("orders").insert(noCd));
+    }
     if (insErr) {
       console.error("[order-ro] insert failed:", insErr.message);
       const { error: restockErr } = await sb.rpc("restock_wallet_stock", { p_items: reserveItems });
@@ -196,7 +203,8 @@ export async function POST(req: NextRequest) {
         market: "ro",
         lines: lines.map((l) => ({ name: l.name, sku: l.sku, quantity: l.quantity, unitPrice: l.ron, image: new URL(getProductBySlug(l.slug)!.coverImage.src, SITE_URL).href })),
         expectedTotal: total,
-        discount,
+        discount: discount + cardDiscount,   // set discount + card discount on one Stripe coupon
+        discountLabel: cardDiscount > 0 && discount === 0 ? "Reducere 5% la plata cu cardul" : undefined,
         customerEmail: email,
         origin: returnOrigin(req.nextUrl.origin),
         heldItems: orderItems,

@@ -10,6 +10,7 @@ export type RoOrderEmailData = {
   items: RoOrderLine[];
   subtotal: number;        // goods after set discounts
   discount?: number;       // set discount in lei (0 / undefined: none)
+  cardDiscount?: number;   // 5% for paying by card (max 130 lei), lei; undefined / 0: none
   shippingCost: number;
   total: number;
   officeDelivery?: boolean; // delivery to an Econt office: customer.address is then the office address
@@ -62,6 +63,7 @@ export function buildRoCustomerEmail(o: RoOrderEmailData, opts: { paidByCard?: b
     <table width="100%" cellpadding="0" cellspacing="0"><tbody>${itemRows(o.items)}</tbody>
       <tfoot>
         ${o.discount ? `<tr><td colspan="2" style="padding:12px 0 0;font-size:12px;color:#888">Reducere set</td><td style="padding:12px 0 0;text-align:right;font-size:14px;color:#047857">-${esc(fmtRON(o.discount))}</td></tr>` : ""}
+        ${o.cardDiscount ? `<tr><td colspan="2" style="padding:12px 0 0;font-size:12px;color:#888">Reducere 5% la plata cu cardul</td><td style="padding:12px 0 0;text-align:right;font-size:14px;color:#047857">-${esc(fmtRON(o.cardDiscount))}</td></tr>` : ""}
         <tr><td colspan="2" style="padding:12px 0 0;font-size:12px;color:#888">Livrare</td><td style="padding:12px 0 0;text-align:right;font-size:14px;color:#1a1a1a">${o.shippingCost === 0 ? "Gratuită" : esc(fmtRON(o.shippingCost))}</td></tr>
         <tr><td colspan="2" style="padding:14px 0 0;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#888">${opts.paidByCard ? "Plătit cu cardul" : "Suma de plătit la livrare"}</td><td style="padding:14px 0 0;text-align:right;font-family:Georgia,serif;font-size:20px;color:${NAVY};font-weight:700">${esc(fmtRON(o.total))}</td></tr>
       </tfoot>
@@ -174,7 +176,7 @@ export function buildRoAdminEmail(o: RoOrderEmailData, alert?: string, opts: { p
      <tr style="background:#f3f4f6"><td style="padding:8px 12px;font-weight:600">Бележка</td><td style="padding:8px 12px">${esc(c.notes || "-")}</td></tr>
     </table>
     <table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:${NAVY};color:#fff"><th style="padding:8px 12px;text-align:left">Продукт</th><th style="padding:8px 12px;text-align:left">SKU</th><th style="padding:8px 12px">Бр.</th><th style="padding:8px 12px;text-align:right">Цена</th></tr></thead><tbody>${rows}</tbody>
-     <tfoot>${o.discount ? `<tr><td colspan="3" style="padding:8px 12px;color:#047857">Отстъпка за комплект</td><td style="padding:8px 12px;text-align:right;color:#047857">-${esc(fmtRON(o.discount))}</td></tr>` : ""}<tr><td colspan="3" style="padding:8px 12px;color:#555">Доставка</td><td style="padding:8px 12px;text-align:right">${o.shippingCost === 0 ? "безплатна" : esc(fmtRON(o.shippingCost))}</td></tr>
+     <tfoot>${o.discount ? `<tr><td colspan="3" style="padding:8px 12px;color:#047857">Отстъпка за комплект</td><td style="padding:8px 12px;text-align:right;color:#047857">-${esc(fmtRON(o.discount))}</td></tr>` : ""}${o.cardDiscount ? `<tr><td colspan="3" style="padding:8px 12px;color:#047857">Отстъпка за плащане с карта (-5%)</td><td style="padding:8px 12px;text-align:right;color:#047857">-${esc(fmtRON(o.cardDiscount))}</td></tr>` : ""}<tr><td colspan="3" style="padding:8px 12px;color:#555">Доставка</td><td style="padding:8px 12px;text-align:right">${o.shippingCost === 0 ? "безплатна" : esc(fmtRON(o.shippingCost))}</td></tr>
      <tr style="background:#f3f4f6;font-weight:700"><td colspan="3" style="padding:10px 12px">${opts.paidByCard ? "ОБЩО (платено с карта)" : "ОБЩО (наложен платеж)"}</td><td style="padding:10px 12px;text-align:right">${esc(fmtRON(o.total))}</td></tr></tfoot></table>
    </div></div></body></html>`;
 }
