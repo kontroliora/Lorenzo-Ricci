@@ -1,3 +1,4 @@
+import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import Link from "next/link";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import Image from "next/image";
@@ -75,7 +76,7 @@ export function Footer() {
             { title: "5 г. търговска гаранция", sub: "на часовниците" },
             { title: "Доживотна гаранция",  sub: "на бижутата" },
             { title: "Следващ работен ден", sub: "Еконт" },
-            { title: "Преглед преди плащане", sub: "Наложен платеж" },
+            CARD_PAYMENTS_ENABLED ? { title: "Карта или наложен платеж", sub: "−5% при плащане с карта" } : { title: "Преглед преди плащане", sub: "Наложен платеж" },
           ]).map(({ title, sub }) => (
             <div key={title} className="flex flex-col gap-1.5">
               <div className="w-4 h-px bg-navy/30 mb-1" />

@@ -1,4 +1,5 @@
 "use client";
+import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -289,17 +290,18 @@ export function RoCartDrawer() {
               {!needsPrepayment && <div className="mb-3"><DeliveryDate market="ro" tone="dark" /></div>}
 
               <button onClick={startCheckout} className="btn-primary w-full text-center justify-center">
-                {needsPrepayment ? "Continuă comanda - plată în avans" : "Comandă acum - plată la livrare"}
+                {needsPrepayment ? "Continuă comanda - plată în avans" : CARD_PAYMENTS_ENABLED ? "Comandă acum" : "Comandă acum - plată la livrare"}
               </button>
 
               <p className="text-center font-sans text-[13px] leading-snug text-[#C9C9C9] mt-3">
                 {needsPrepayment ? (
                   "Plata în avans, stabilită direct cu noi"
                 ) : (
+                  CARD_PAYMENTS_ENABLED ? "Card sau ramburs · Livrare cu Speedy" : (
                   <>
                     Plata la livrare · Livrare cu Speedy
                     {RO_INSPECT_BEFORE_PAY ? " · Puteți verifica coletul înainte de plată" : ` · Retur în ${RO_RETURN_DAYS} zile`}
-                  </>
+                  </>)
                 )}
               </p>
             </div>

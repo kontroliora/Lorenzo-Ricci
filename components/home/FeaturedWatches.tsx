@@ -1,4 +1,5 @@
 "use client";
+import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -42,7 +43,7 @@ export function FeaturedWatches() {
             {[
               { label: "Безплатна доставка", sub: "За поръчки над €60" },
               { label: "5 Години Гаранция",  sub: "Търговска · на всеки механизъм" },
-              { label: "Преглед преди плащане", sub: "Наложен платеж" },
+              CARD_PAYMENTS_ENABLED ? { label: "Карта или наложен платеж", sub: "−5% при плащане с карта" } : { label: "Преглед преди плащане", sub: "Наложен платеж" },
             ].map(({ label, sub }) => (
               <div key={label} className="px-2 sm:px-6 py-2">
                 <p className="font-sans text-[9px] sm:text-xs font-medium tracking-[0.1em] sm:tracking-[0.18em] uppercase text-charcoal mb-1">

@@ -471,9 +471,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
 
       <div>
         <h3 className="font-serif text-xl text-white">{needsPrepayment ? "Поръчка с предплащане" : "Данни за доставка"}</h3>
-        <p className="mt-1 font-sans text-sm text-[#B0B0B0]">
-          {needsPrepayment ? "Урежда се директно с нас" : isCardPay ? "Плащане с карта - Безплатна доставка" : "Плащате при получаване - Наложен платеж"}
-        </p>
+        {needsPrepayment && <p className="mt-1 font-sans text-sm text-[#B0B0B0]">Урежда се директно с нас</p>}
       </div>
 
       {/* ── Form fields — none for a prepayment-only cart: those orders are arranged

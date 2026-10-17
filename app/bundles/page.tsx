@@ -1,3 +1,4 @@
+import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import type { Metadata } from "next";
 import { BUNDLES, bundleHasSaleItem } from "@/lib/bundles";
 import { getProductBySlug } from "@/lib/products";
@@ -73,7 +74,7 @@ export default async function BundlesPage() {
         <div className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-0 border border-border">
           {[
             { title: "Автоматична отстъпка",  sub: "Прилага се директно в количката" },
-            { title: "Наложен платеж",         sub: "Плащате при получаване" },
+            CARD_PAYMENTS_ENABLED ? { title: "Карта или наложен платеж", sub: "−5% при плащане с карта" } : { title: "Наложен платеж", sub: "Плащате при получаване" },
             { title: "Доживотна гаранция",     sub: "На всички бижута" },
           ].map(({ title, sub }, i) => (
             <div

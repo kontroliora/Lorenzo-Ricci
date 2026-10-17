@@ -1,4 +1,5 @@
 "use client";
+import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -48,7 +49,9 @@ export function RoFeaturedWatches({ watches }: { watches: Product[] }) {
             {[
               { label: "Livrare gratuită", sub: `Pentru comenzi de peste ${fmtRON(RO_FREE_SHIPPING_RON)}` },
               { label: "5 ani garanție", sub: "Comercială · pentru fiecare mecanism" },
-              RO_INSPECT_BEFORE_PAY
+              CARD_PAYMENTS_ENABLED
+                ? { label: "Card sau ramburs", sub: "−5% la plata cu cardul" }
+                : RO_INSPECT_BEFORE_PAY
                 ? { label: "Verifici înainte de plată", sub: "Plata la livrare (ramburs)" }
                 : { label: "Plata la livrare", sub: "Ramburs, la primirea coletului" },
             ].map(({ label, sub }) => (

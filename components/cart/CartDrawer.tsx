@@ -1,4 +1,5 @@
 "use client";
+import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { Fragment, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useCartStore } from "@/lib/store";
@@ -448,11 +449,11 @@ export function CartDrawer() {
                 }}
                 className="btn-primary w-full text-center justify-center"
               >
-                Поръчай сега - Наложен платеж
+                {CARD_PAYMENTS_ENABLED ? "Поръчай сега" : "Поръчай сега - Наложен платеж"}
               </button>
 
               <p className="text-center font-sans text-[13px] leading-snug text-[#C9C9C9] mt-3">
-                Наложен платеж · Доставка с Еконт · Преглед преди плащане
+                {CARD_PAYMENTS_ENABLED ? "Карта или наложен платеж · Доставка с Еконт" : "Наложен платеж · Доставка с Еконт · Преглед преди плащане"}
               </p>
             </div>
           </>

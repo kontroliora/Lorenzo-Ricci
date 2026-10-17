@@ -1,3 +1,4 @@
+import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 export interface RecoveryCartItem {
   name:        string;
   sku?:        string;
@@ -149,8 +150,8 @@ export function buildRecoveryEmail(session: RecoverySession): string {
                      style="border-top:1px solid #ede8de;border-bottom:1px solid #ede8de">
                 <tr>
                   <td align="center" style="padding:22px 8px;width:33.33%;border-right:1px solid #ede8de">
-                    <p style="margin:0 0 4px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#0a0e1f">Наложен платеж</p>
-                    <p style="margin:0;font-size:11px;color:#9c9489;line-height:1.5">Плащате при доставка</p>
+                    <p style="margin:0 0 4px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#0a0e1f">${CARD_PAYMENTS_ENABLED ? "Карта или наложен платеж" : "Наложен платеж"}</p>
+                    <p style="margin:0;font-size:11px;color:#9c9489;line-height:1.5">${CARD_PAYMENTS_ENABLED ? "−5% при плащане с карта" : "Плащате при доставка"}</p>
                   </td>
                   <td align="center" style="padding:22px 8px;width:33.33%;border-right:1px solid #ede8de">
                     <p style="margin:0 0 4px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#0a0e1f">Доставка</p>

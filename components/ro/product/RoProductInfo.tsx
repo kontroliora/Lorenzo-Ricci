@@ -24,7 +24,7 @@ import {
 } from "@/lib/ro/config";
 import { RoStickyCartBar } from "@/components/ro/product/RoStickyCartBar";
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
-import { CodBox, CodLine } from "@/components/product/CodNote";
+import { PayLine, CodLine } from "@/components/product/CodNote";
 import { DeliveryDate } from "@/components/product/DeliveryDate";
 import { roCartLine } from "@/components/ro/product/cart-line";
 import { hasCyrillic, roReviewsCount, roRatingText } from "@/components/ro/product/ro-text";
@@ -260,7 +260,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
     { label: `Livrare în ${RO_DELIVERY_DAYS} zile lucrătoare`, Icon: Truck },
     prepay
       ? { label: "Plată în avans, stabilită direct cu noi", Icon: Banknote }
-      : { label: "Plată ramburs, la livrare",               Icon: Banknote },
+      : { label: CARD_PAYMENTS_ENABLED ? "Card sau ramburs" : "Plată ramburs, la livrare", Icon: Banknote },
     ...(RO_INSPECT_BEFORE_PAY ? [{ label: "Verificarea coletului înainte de plată", Icon: Eye }] : []),
   ];
   const odd = trust.length % 2 === 1;
@@ -352,7 +352,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
 
       {/* Plata la livrare (ramburs), said under the price (not for a prepayment product) */}
       {effectiveInStock && !prepay && (
-        <CodBox title="Plata la livrare" sub="Plătiți curierului la primire." cardText={CARD_PAYMENTS_ENABLED ? "Sau cu cardul — 5% reducere" : undefined} marksLabel="Visa, Mastercard, Apple Pay, Google Pay" />
+        <PayLine text={CARD_PAYMENTS_ENABLED ? "Plată cu cardul (−5%) sau ramburs" : "Plata la livrare (ramburs)"} marks={CARD_PAYMENTS_ENABLED} />
       )}
       {/* Delivery date by working days (lib/delivery-date.ts) */}
       {effectiveInStock && !prepay && <DeliveryDate market="ro" />}
@@ -420,7 +420,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           : "ADAUGĂ ÎN COȘ"}
       </button>
 
-      {effectiveInStock && !prepay && <CodLine text="Fără plată în avans · Livrare cu Speedy · Plătiți la livrare" />}
+      {effectiveInStock && !prepay && <CodLine text={CARD_PAYMENTS_ENABLED ? "Card sau ramburs · Livrare cu Speedy" : "Fără plată în avans · Livrare cu Speedy · Plătiți la livrare"} />}
 
       {/* Phones: the natural-variation note goes under the button (see above). */}
       {product.materialNote && (
@@ -544,8 +544,9 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
                 </p>
               ) : (
                 <p>
-                  <strong className="text-charcoal font-normal">Plată ramburs</strong> - achitați comanda curierului, la primirea
-                  coletului.
+                  {CARD_PAYMENTS_ENABLED
+                    ? <><strong className="text-charcoal font-normal">Plată cu cardul</strong> (−5% reducere, maximum 130 lei, livrare gratuită) sau <strong className="text-charcoal font-normal">ramburs</strong> - achitați comanda curierului, la primirea coletului.</>
+                    : <><strong className="text-charcoal font-normal">Plată ramburs</strong> - achitați comanda curierului, la primirea coletului.</>}
                 </p>
               )}
               {RO_INSPECT_BEFORE_PAY && (

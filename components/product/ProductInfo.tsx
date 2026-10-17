@@ -7,7 +7,7 @@ import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
 import { displayPrice, requiresPrepayment } from "@/lib/price";
-import { CodBox, CodLine } from "@/components/product/CodNote";
+import { PayLine, CodLine } from "@/components/product/CodNote";
 import { DeliveryDate } from "@/components/product/DeliveryDate";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
@@ -332,7 +332,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
 
       {/* Cash on delivery + inspection before paying: said under the price (not for a prepayment product) */}
       {effectiveInStock && !requiresPrepayment(product) && (
-        <CodBox title="Наложен платеж · Преглед преди плащане" sub="Плащате на куриера, след като прегледате пратката." cardText={CARD_PAYMENTS_ENABLED ? "Или с карта — 5% отстъпка" : undefined} marksLabel="Visa, Mastercard, Apple Pay, Google Pay" />
+        <PayLine text={CARD_PAYMENTS_ENABLED ? "Плащане с карта (−5%) или наложен платеж" : "Наложен платеж"} marks={CARD_PAYMENTS_ENABLED} />
       )}
       {/* Delivery date by working days (lib/delivery-date.ts) */}
       {effectiveInStock && !requiresPrepayment(product) && <DeliveryDate market="bg" />}
@@ -405,7 +405,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           : "ДОБАВИ В КОЛИЧКАТА"}
       </button>
 
-      {effectiveInStock && !requiresPrepayment(product) && <CodLine text="Без предплащане · Доставка с Еконт · Плащате при получаване" />}
+      {effectiveInStock && !requiresPrepayment(product) && <CodLine text={CARD_PAYMENTS_ENABLED ? "Карта или наложен платеж · Доставка с Еконт" : "Без предплащане · Доставка с Еконт · Плащате при получаване"} />}
 
       {/* Phones: the natural-variation note goes under the button (see above). */}
       {product.materialNote && (
@@ -549,7 +549,8 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
               <p><strong className="text-charcoal font-normal">Безплатна доставка</strong> за поръчки над €60</p>
               <p>Доставяме с <strong className="text-charcoal font-normal">Еконт</strong> в цяла България</p>
               <p>Обработваме до 14:00 ч. - изпращаме същия ден. Доставка <strong className="text-charcoal font-normal">на следващия работен ден</strong>.</p>
-              <p><strong className="text-charcoal font-normal">Преглед и тест преди плащане</strong> - право да откажете на място.</p>
+              {CARD_PAYMENTS_ENABLED && <p><strong className="text-charcoal font-normal">Плащане с карта</strong> - −5% отстъпка (до €25) и безплатна доставка.</p>}
+              <p><strong className="text-charcoal font-normal">Преглед и тест преди плащане</strong>{CARD_PAYMENTS_ENABLED ? " при наложен платеж" : ""} - право да откажете на място.</p>
               <p><strong className="text-charcoal font-normal">30 дни лесна замяна</strong> - пишете на info@lorenzo-ricci.com</p>
             </div>
           )}

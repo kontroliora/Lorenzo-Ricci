@@ -1,3 +1,4 @@
+import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -42,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = getProductBySlug(slug);
   if (!product) return {};
   // Matches the checkout: prepayment items are arranged directly with us (no specific method promised).
-  const paymentNote = requiresPrepayment(product) ? "Поръчка с предплащане." : "Наложен платеж.";
+  const paymentNote = requiresPrepayment(product) ? "Поръчка с предплащане." : CARD_PAYMENTS_ENABLED ? "Плащане с карта (−5%) или наложен платеж." : "Наложен платеж.";
   return {
     title: product.name,
     description: `${product.name} - ${product.shortDescription}. ${product.currency}${product.price}. ${product.warranty ? `${product.warranty}. ` : ""}Безплатна доставка над €60. ${paymentNote}`,

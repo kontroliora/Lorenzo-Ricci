@@ -430,9 +430,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
 
       <div>
         <h3 className="font-serif text-xl text-white">{needsPrepayment ? "Comandă cu plată în avans" : "Date pentru livrare"}</h3>
-        <p className="mt-1 font-sans text-sm text-[#B0B0B0]">
-          {needsPrepayment ? "Se stabilește direct cu noi" : isCardPay ? "Plata cu cardul - livrare gratuită" : "Plătiți la livrare - ramburs"}
-        </p>
+        {needsPrepayment && <p className="mt-1 font-sans text-sm text-[#B0B0B0]">Se stabilește direct cu noi</p>}
       </div>
 
       {/* ── Fields (none for an advance-payment cart: those orders are arranged over Viber / phone / e-mail) ── */}
