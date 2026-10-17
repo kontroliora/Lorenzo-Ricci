@@ -140,7 +140,7 @@ function buildRecoveryEmail(opts: {
               <tr>
                 <td style="padding:14px 0;">
                   <span style="font-family:Arial,sans-serif;font-size:11px;color:#c4bdb6;">&#9672;</span>&nbsp;&nbsp;
-                  <span style="font-family:Arial,sans-serif;font-size:12px;color:#9ca3af;font-weight:300;">Доставка в рамките на 2 работни дни</span>
+                  <span style="font-family:Arial,sans-serif;font-size:12px;color:#9ca3af;font-weight:300;">Доставка на следващия работен ден</span>
                 </td>
               </tr>
             </table>

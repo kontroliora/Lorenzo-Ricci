@@ -176,8 +176,8 @@ export function buildCustomerEmail(order: Record<string, unknown>, opts: { paidB
             <td style="padding:40px 40px 0">
               <p style="margin:0 0 6px;font-family:'Georgia',serif;font-size:22px;color:#0a0e1f">Благодарим Ви, ${firstName}!</p>
               <p style="margin:0 0 28px;color:#666;font-size:14px;line-height:1.6">${opts.paidByCard
-                ? "Плащането Ви с карта е получено, благодарим Ви! Подготвяме поръчката за изпращане. Доставката се извършва чрез куриер в рамките на 1 до 2 работни дни. Не се дължи плащане при доставка."
-                : "Получихме Вашата поръчка. Наш представител ще се свърже с Вас по телефона за потвърждение. Доставката се извършва чрез куриер в рамките на 1 до 2 работни дни."}</p>
+                ? "Плащането Ви с карта е получено, благодарим Ви! Подготвяме поръчката за изпращане. Доставката се извършва чрез куриер на следващия работен ден след изпращане. Не се дължи плащане при доставка."
+                : "Получихме Вашата поръчка. Наш представител ще се свърже с Вас по телефона за потвърждение. Доставката се извършва чрез куриер на следващия работен ден след изпращане."}</p>
 
               <!-- Divider -->
               <div style="border-top:1px solid #e8dfc8;margin-bottom:28px"></div>
@@ -230,7 +230,7 @@ export function buildCustomerEmail(order: Record<string, unknown>, opts: { paidB
                   <td align="center" style="padding:0 8px;font-size:12px;color:#666;line-height:1.5">
                     <p style="margin:0 0 4px;font-size:18px">📦</p>
                     <strong style="display:block;color:#0a0e1f;font-size:11px;letter-spacing:.1em;text-transform:uppercase">Доставка</strong>
-                    <span style="font-size:12px">До 2 работни дни · Преглед преди плащане</span>
+                    <span style="font-size:12px">Следващ работен ден · Преглед преди плащане</span>
                   </td>
                   <td align="center" style="padding:0 8px;font-size:12px;color:#666;line-height:1.5">
                     <p style="margin:0 0 4px;font-size:18px">🔄</p>

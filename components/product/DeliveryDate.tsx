@@ -4,7 +4,7 @@ import { Truck } from "lucide-react";
 import { deliveryEstimate, deliveryText, type DeliveryEstimate, type DeliveryMarket } from "@/lib/delivery-date";
 import { RO_DELIVERY_DAYS } from "@/lib/ro/config";
 
-// "Получавате до вт, 21 окт" on the product page and in the cart. The date depends on the visitor's clock (cut-off, weekend), so it is worked out in the
+// BG "Получавате до вт, 21 окт" / RO "Primiți între miercuri, 21 oct și vineri, 23 oct" on the product page and in the cart. The date depends on the visitor's clock (cut-off, weekend), so it is worked out in the
 // browser after the page has loaded: the static page never shows yesterday's date. Space is reserved, so nothing jumps when it appears.
 export function DeliveryDate({ market, tone = "light" }: { market: DeliveryMarket; tone?: "light" | "dark" }) {
   const [est, setEst] = useState<DeliveryEstimate | null>(null);
@@ -18,7 +18,7 @@ export function DeliveryDate({ market, tone = "light" }: { market: DeliveryMarke
   const dark = tone === "dark";
   const sub = market === "bg" ? est?.cutoffText : `Termen estimat: ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere`;
   return (
-    <div data-testid="delivery-date" className="min-h-[46px]">
+    <div data-testid="delivery-date" className={market === "ro" ? "min-h-[62px] sm:min-h-[46px]" : "min-h-[46px]"}>   {/* RO: the range text wraps to two lines on a phone */}
       {est && (
         <div className="flex items-start gap-3">
           <Truck className={`mt-0.5 h-5 w-5 flex-shrink-0 ${dark ? "text-[#D4AF37]" : "text-navy"}`} strokeWidth={1.5} aria-hidden />

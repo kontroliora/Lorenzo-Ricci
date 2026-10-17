@@ -453,7 +453,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
             href: product.category === "watches" || product.category === "jewellery" ? "/warranty/jewelry" : undefined,
           },
           { label: "30 дни замяна",              Icon: RefreshCw, href: undefined },
-          { label: "Доставка до 2 работни дни",  Icon: Truck,     href: undefined },
+          { label: "Доставка на следващия работен ден",  Icon: Truck,     href: undefined },
           { label: "Преглед и тест",              Icon: Eye,       href: undefined },
         ].map(({ label, Icon, href }, i) => {
           const inner = (
@@ -548,7 +548,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
             <div className="flex flex-col gap-4 text-sm font-light text-ink-soft leading-relaxed tracking-wide">
               <p><strong className="text-charcoal font-normal">Безплатна доставка</strong> за поръчки над €60</p>
               <p>Доставяме с <strong className="text-charcoal font-normal">Еконт</strong> в цяла България</p>
-              <p>Обработваме до 14:00 ч. - изпращаме същия ден. Доставка до <strong className="text-charcoal font-normal">2 работни дни</strong>.</p>
+              <p>Обработваме до 14:00 ч. - изпращаме същия ден. Доставка <strong className="text-charcoal font-normal">на следващия работен ден</strong>.</p>
               <p><strong className="text-charcoal font-normal">Преглед и тест преди плащане</strong> - право да откажете на място.</p>
               <p><strong className="text-charcoal font-normal">30 дни лесна замяна</strong> - пишете на info@lorenzo-ricci.com</p>
             </div>

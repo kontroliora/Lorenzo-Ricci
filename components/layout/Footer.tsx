@@ -74,7 +74,7 @@ export function Footer() {
           {([
             { title: "5 г. търговска гаранция", sub: "на часовниците" },
             { title: "Доживотна гаранция",  sub: "на бижутата" },
-            { title: "До 2 работни дни",    sub: "Еконт" },
+            { title: "Следващ работен ден", sub: "Еконт" },
             { title: "Преглед преди плащане", sub: "Наложен платеж" },
           ]).map(({ title, sub }) => (
             <div key={title} className="flex flex-col gap-1.5">

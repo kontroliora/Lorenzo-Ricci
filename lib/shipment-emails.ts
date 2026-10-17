@@ -112,7 +112,7 @@ export function buildShippedEmail(d: ShipmentEmailData): string {
     <tr><td style="padding:4px 0;width:150px;color:#888">Тракинг номер</td><td style="padding:4px 0;color:#1a1a1a;font-family:Georgia,serif">${d.tracking}</td></tr>
   </table>
   ${trackButton(d)}
-  <p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7">Очаквано време на доставка: <strong style="color:#1a1a1a">1-2 работни дни</strong>.</p>`);
+  <p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7">Очаквано време на доставка: <strong style="color:#1a1a1a">следващия работен ден</strong>.</p>`);
 }
 
 // ── EMAIL 2, CASE A - office delivery, waiting at final office ───────────────

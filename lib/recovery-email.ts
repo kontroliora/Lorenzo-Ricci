@@ -154,7 +154,7 @@ export function buildRecoveryEmail(session: RecoverySession): string {
                   </td>
                   <td align="center" style="padding:22px 8px;width:33.33%;border-right:1px solid #ede8de">
                     <p style="margin:0 0 4px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#0a0e1f">Доставка</p>
-                    <p style="margin:0;font-size:11px;color:#9c9489;line-height:1.5">До 2 работни дни</p>
+                    <p style="margin:0;font-size:11px;color:#9c9489;line-height:1.5">Следващ работен ден</p>
                   </td>
                   <td align="center" style="padding:22px 8px;width:33.33%">
                     <p style="margin:0 0 4px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#0a0e1f">Замяна</p>

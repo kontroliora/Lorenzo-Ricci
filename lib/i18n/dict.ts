@@ -11,10 +11,10 @@ const bg = {
   // ── Announcement bar ──
   "ann.shipping":        "Безплатна доставка за поръчки над €60",
   "ann.warranty":        "5 години търговска гаранция на часовниците · Доживотна на бижутата",
-  "ann.delivery":        "Доставка до 2 работни дни · Преглед и тест преди плащане",
+  "ann.delivery":        "Доставка на следващия работен ден · Преглед и тест преди плащане",
   "ann.shipping.short":  "Безплатна доставка над €60",
   "ann.warranty.short":  "Гаранция 5 год. · Доживотна за бижута",
-  "ann.delivery.short":  "Доставка до 2 работни дни",
+  "ann.delivery.short":  "Доставка на следващия работен ден",
 
   // ── Navigation ──
   "nav.home":     "Начало",
@@ -42,7 +42,7 @@ const bg = {
   "trust.onWatches":       "на часовниците",
   "trust.warrantyLife":    "Доживотна гаранция",
   "trust.onJewellery":     "на бижутата",
-  "trust.days2":           "До 2 работни дни",
+  "trust.days2":           "Следващ работен ден",
   "trust.courier":         "Еконт",
   "trust.inspect":         "Преглед преди плащане",
   "trust.cod":             "Наложен платеж",

@@ -550,7 +550,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
                 }}
                 icon={option.id === "econt-office" ? <IconOffice /> : <IconHome />}
                 title={option.id === "econt-office" ? "До офис или автомат на Еконт" : "До адрес с Еконт"}
-                subtitle="Срок: до 2 работни дни"
+                subtitle="Срок: следващия работен ден"
                 right={freeShipping ? (
                   <span className="flex flex-col items-end leading-tight">
                     <span className="text-[#4ADE80]">Безплатна</span>

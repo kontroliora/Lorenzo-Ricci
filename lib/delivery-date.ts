@@ -2,9 +2,10 @@
 // Pure (no React, no server imports): the product page, the cart and the tests use the same function. Clock = Europe/Sofia.
 //
 // BG (policy, app/policies/shipping): an order received by 14:00 on a working day is dispatched the same day, otherwise on the next working day;
-//   Econt delivers in 1-2 working days after dispatch -> the date shown is dispatch + 2 working days (the latest of the 1-2).
+//   Econt delivers on the NEXT working day after dispatch -> the date shown is dispatch + 1 working day (owner, 17.10.2026; Saturday -> dispatched Monday
+//   -> Tuesday).
 // RO (app/ro/politici/livrare): shipped from Bulgaria, 2-4 working days after dispatch; the policy promises no same-day dispatch, so dispatch is
-//   the NEXT working day and the date is dispatch + 4 working days.
+//   the NEXT working day and the customer is told a RANGE: dispatch + 2 .. dispatch + 4 working days ("Primiți între X și Y").
 // A working day is Monday-Friday and not a public holiday: for BG only the Bulgarian ones, for RO the Bulgarian (dispatch) and the Romanian (delivery)
 // ones together. The holiday tables below run to the end of 2027 (checked by hand, not from an official feed): extend and re-check them every year
 // (the unit test fails once the current year is past HOLIDAYS_KNOWN_UNTIL).
@@ -12,7 +13,8 @@
 export type DeliveryMarket = "bg" | "ro";
 
 export const BG_CUTOFF_HOUR = 14;           // same-day dispatch for orders received before this hour (Sofia time) on a working day
-export const BG_DELIVERY_DAYS = 2;          // working days after dispatch (the upper end of 1-2)
+export const BG_DELIVERY_DAYS = 1;          // working days after dispatch: Econt delivers the next working day
+export const RO_DELIVERY_DAYS_MIN = 2;      // working days after dispatch (the lower end of 2-4)
 export const RO_DELIVERY_DAYS_MAX = 4;      // working days after dispatch (the upper end of 2-4)
 export const HOLIDAYS_KNOWN_UNTIL = "2027-12-31";
 
@@ -58,6 +60,7 @@ const addWorking = (day: Day, n: number, market: DeliveryMarket): Day => { let x
 export type DeliveryEstimate = {
   market: DeliveryMarket;
   date: Day;                 // the latest arrival day
+  dateFrom: Day | null;      // RO: the earliest arrival day (the range starts here); BG: null
   weekday: number;           // 0 = Sunday
   dispatch: Day;             // the day the parcel leaves
   sameDayDispatch: boolean;  // it leaves today (BG, working day, before the cut-off)
@@ -69,7 +72,8 @@ export function deliveryEstimate(nowMs: number, market: DeliveryMarket): Deliver
   const sameDay = market === "bg" && isWorking(today, market) && minutes < BG_CUTOFF_HOUR * 60;
   const dispatch = sameDay ? today : nextWorking(today, market);
   const date = addWorking(dispatch, market === "bg" ? BG_DELIVERY_DAYS : RO_DELIVERY_DAYS_MAX, market);
-  return { market, date, weekday: weekdayOf(date), dispatch, sameDayDispatch: sameDay, cutoffText: market === "bg" ? `Поръчки до ${BG_CUTOFF_HOUR}:00 в работен ден се изпращат същия ден` : null };
+  const dateFrom = market === "ro" ? addWorking(dispatch, RO_DELIVERY_DAYS_MIN, market) : null;
+  return { market, date, dateFrom, weekday: weekdayOf(date), dispatch, sameDayDispatch: sameDay, cutoffText: market === "bg" ? `Поръчки до ${BG_CUTOFF_HOUR}:00 в работен ден се изпращат същия ден` : null };
 }
 
 const BG_WD = ["нд", "пн", "вт", "ср", "чт", "пт", "сб"];
@@ -77,10 +81,10 @@ const BG_MON = ["ян", "фев", "мар", "апр", "май", "юни", "юл�
 const RO_WD = ["duminică", "luni", "marți", "miercuri", "joi", "vineri", "sâmbătă"];
 const RO_MON = ["ian", "feb", "mar", "apr", "mai", "iun", "iul", "aug", "sep", "oct", "nov", "dec"];
 
-/** "Получавате до вт, 21 окт" / "Primiți până marți, 21 oct" */
+/** BG: "Получавате до вт, 21 окт" (the next working day after dispatch); RO: "Primiți între miercuri, 21 oct și vineri, 23 oct" (2-4 working days after dispatch) */
 export function deliveryText(est: DeliveryEstimate): string {
-  const { date, weekday, market } = est;
-  return market === "bg"
-    ? `Получавате до ${BG_WD[weekday]}, ${date.d} ${BG_MON[date.m - 1]}`
-    : `Primiți până ${RO_WD[weekday]}, ${date.d} ${RO_MON[date.m - 1]}`;
+  const { date, dateFrom, weekday, market } = est;
+  if (market === "bg") return `Получавате до ${BG_WD[weekday]}, ${date.d} ${BG_MON[date.m - 1]}`;
+  const from = dateFrom ?? date;
+  return `Primiți între ${RO_WD[weekdayOf(from)]}, ${from.d} ${RO_MON[from.m - 1]} și ${RO_WD[weekday]}, ${date.d} ${RO_MON[date.m - 1]}`;
 }

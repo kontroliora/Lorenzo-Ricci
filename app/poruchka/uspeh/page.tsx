@@ -152,7 +152,7 @@ function PaidView({ orderRef, paid }: { orderRef: string; paid: Paid }) {
         Изпратихме потвърждение на вашия имейл.
       </p>
       <p className="font-sans text-sm text-ink-soft leading-relaxed mt-2">
-        Доставка до 2 работни дни. Не се плаща нищо при доставка.
+        Доставка на следващия работен ден. Не се плаща нищо при доставка.
       </p>
 
       <Link href="/" className="btn-primary w-full mt-8">Продължи пазаруването</Link>

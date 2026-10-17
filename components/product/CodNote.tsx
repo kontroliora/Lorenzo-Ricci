@@ -11,9 +11,9 @@ function PayMarks({ label }: { label: string }) {
   return (
     <span data-testid="card-marks" aria-label={label} className="flex items-center gap-[3px]">
       {MARKS.map(([file, alt]) => (
-        <span key={file} className="inline-flex h-[17px] w-[25px] items-center justify-center rounded-[3px] border border-charcoal/10 bg-white">
+        <span key={file} className="inline-flex h-[16px] w-[22px] items-center justify-center rounded-[3px] border border-charcoal/10 bg-white">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`/brand/${file}.svg`} alt={alt} width={18} height={8} style={{ objectFit: "contain", height: 8, width: 18 }} />
+          <img src={`/brand/${file}.svg`} alt={alt} width={16} height={7} style={{ objectFit: "contain", height: 7, width: 16 }} />
         </span>
       ))}
     </span>
@@ -33,7 +33,7 @@ export function CodBox({ title, sub, cardText, marksLabel }: { title: string; su
       {cardText && (
         <div data-testid="cod-box-card" className="flex items-center gap-3 border-t border-navy/15 pt-2.5">
           <CreditCard className="h-5 w-5 flex-shrink-0 text-navy" strokeWidth={1.5} aria-hidden />
-          <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-1.5 gap-y-1.5">
             <span className="font-sans text-[13px] font-medium leading-snug text-charcoal">{cardText}</span>
             <PayMarks label={marksLabel ?? "Visa, Mastercard, Apple Pay, Google Pay"} />
           </div>
