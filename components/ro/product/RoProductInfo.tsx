@@ -23,6 +23,7 @@ import {
   RO_COURIER_LABEL,
 } from "@/lib/ro/config";
 import { RoStickyCartBar } from "@/components/ro/product/RoStickyCartBar";
+import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { CodBox, CodLine } from "@/components/product/CodNote";
 import { DeliveryDate } from "@/components/product/DeliveryDate";
 import { roCartLine } from "@/components/ro/product/cart-line";
@@ -351,7 +352,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
 
       {/* Plata la livrare (ramburs), said under the price (not for a prepayment product) */}
       {effectiveInStock && !prepay && (
-        <CodBox title="Plata la livrare (ramburs)" sub="Plătiți curierului la primirea coletului - fără plată în avans." />
+        <CodBox title="Plata la livrare" sub="Plătiți curierului la primire." cardText={CARD_PAYMENTS_ENABLED ? "Sau cu cardul — 5% reducere" : undefined} marksLabel="Visa, Mastercard, Apple Pay, Google Pay" />
       )}
       {/* Delivery date by working days (lib/delivery-date.ts) */}
       {effectiveInStock && !prepay && <DeliveryDate market="ro" />}

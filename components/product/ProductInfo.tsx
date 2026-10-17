@@ -10,6 +10,7 @@ import { displayPrice, requiresPrepayment } from "@/lib/price";
 import { CodBox, CodLine } from "@/components/product/CodNote";
 import { DeliveryDate } from "@/components/product/DeliveryDate";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
+import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { GiftOffer } from "@/components/product/GiftOffer";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { getProductBySlug } from "@/lib/products";
@@ -331,7 +332,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
 
       {/* Cash on delivery + inspection before paying: said under the price (not for a prepayment product) */}
       {effectiveInStock && !requiresPrepayment(product) && (
-        <CodBox title="Наложен платеж · Преглед преди плащане" sub="Плащате на куриера при получаване, след като прегледате пратката." />
+        <CodBox title="Наложен платеж · Преглед преди плащане" sub="Плащате на куриера, след като прегледате пратката." cardText={CARD_PAYMENTS_ENABLED ? "Или с карта — 5% отстъпка" : undefined} marksLabel="Visa, Mastercard, Apple Pay, Google Pay" />
       )}
       {/* Delivery date by working days (lib/delivery-date.ts) */}
       {effectiveInStock && !requiresPrepayment(product) && <DeliveryDate market="bg" />}
