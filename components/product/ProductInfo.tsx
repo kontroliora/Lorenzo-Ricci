@@ -271,7 +271,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       {variants && (
           <div className="flex items-center gap-3">
             <span className="font-sans text-[10px] text-ink-faint tracking-widest uppercase">Цвят:</span>
-            <div className="flex items-center gap-2 max-[373px]:flex-wrap [@media(pointer:coarse)]:gap-0">
+            <div className="flex flex-wrap items-center gap-2 min-w-0 [@media(pointer:coarse)]:gap-0">
               {variants.map((v) => (
                 <Link
                   key={v.slug}
