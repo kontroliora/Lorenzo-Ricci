@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { rememberMatchKeys } from "@/lib/fbq";
 
 // The -10% newsletter offer. It must never get in the way of a first-time visitor (ad traffic):
 //  - never on the first page view of a visit (a second page is the earliest);
@@ -145,6 +146,7 @@ export function NewsletterPopup() {
       setAlreadySubscribed(Boolean(data.alreadySubscribed));
       setCodeUsed(Boolean(data.used));
       markShown();
+      void rememberMatchKeys({ email: clean }, "bg");
     } catch {
       setError("Нещо се обърка. Моля, опитайте отново.");
     } finally {

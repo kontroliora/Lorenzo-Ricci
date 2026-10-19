@@ -195,6 +195,8 @@ export async function POST(req: NextRequest) {
       userAgent: req.headers.get("user-agent") ?? undefined,
       fbc: req.cookies.get("_fbc")?.value,
       fbp: req.cookies.get("_fbp")?.value,
+      externalId: req.cookies.get("lr_xid")?.value,
+      sourceUrl: req.headers.get("referer") ?? undefined,
     };
     if (isCard) {
       const started = await startCardPayment({
@@ -218,6 +220,7 @@ export async function POST(req: NextRequest) {
           ...(capiCtx.fbc ? { fbc: capiCtx.fbc.slice(0, 200) } : {}),
           ...(capiCtx.ip ? { client_ip: capiCtx.ip.slice(0, 64) } : {}),
           ...(capiCtx.userAgent ? { client_ua: capiCtx.userAgent.slice(0, 450) } : {}),
+          ...(capiCtx.externalId ? { xid: capiCtx.externalId.slice(0, 100) } : {}),
         },
       });
       if (!started.ok) return fail(503, "unavailable", "Plata cu cardul nu este disponibilă momentan. Vă rugăm să alegeți plata la livrare sau să reîncercați.");

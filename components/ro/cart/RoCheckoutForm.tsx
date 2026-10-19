@@ -14,7 +14,7 @@ import {
   RO_SHIPPING_OFFICE,
   fmtRON,
 } from "@/lib/ro/config";
-import { trackFbEvent } from "@/lib/fbq";
+import { trackFbEvent, rememberMatchKeys } from "@/lib/fbq";
 import { logCheckoutFailure } from "@/lib/checkout-log";
 import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY, type PaymentMethod } from "@/lib/payments";
 import { newOrderRef } from "@/lib/order-ref";
@@ -125,6 +125,12 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
 
   // A pending auto-close must not outlive the form (e.g. the customer closed the drawer or reopened it meanwhile).
   useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
+
+  // Meta matching: keep the SHA-256 of a whole e-mail / mobile number (never the plain value) for the next ad events.
+  useEffect(() => {
+    const t = setTimeout(() => { void rememberMatchKeys({ email: form.email, phone: form.phone }, "ro"); }, 800);
+    return () => clearTimeout(t);
+  }, [form.email, form.phone]);
 
   // Coming back from the Stripe page with the browser's back button can restore this page frozen in the redirecting
   // state; unlock the form so the customer can retry or switch to ramburs.

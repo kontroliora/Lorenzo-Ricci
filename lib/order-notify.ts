@@ -1,6 +1,6 @@
 // mail-policy: order_confirmation, card_paid
 import { Resend } from "resend";
-import { createHash } from "crypto";
+import { buildUserData, eventSourceUrl, mayPostPurchase, sendCapiEvents, type CapiContext } from "@/lib/meta-capi";
 import { mayEmail, type MailKind, type MailLang } from "./mail-policy";
 
 // Order notifications shared by /api/order (cash on delivery) and the Stripe webhook (card orders, after payment):
@@ -325,93 +325,50 @@ export async function sendCustomerEmail(
 // ─────────────────────────────────────────────────────────────
 // 5.  Meta Conversions API (server-side Purchase event)
 // ─────────────────────────────────────────────────────────────
-const META_PIXEL_ID = "661480326560209";
+export type { CapiContext };
 
-function sha256(value: string): string {
-  return createHash("sha256").update(value.trim().toLowerCase()).digest("hex");
-}
-
-export type CapiContext = {
-  ip?:        string;
-  userAgent?: string;
-  fbc?:       string;
-  fbp?:       string;
-};
-
+// Browser Purchase and this server Purchase share event_id = order reference, so Meta counts the sale once.
 export async function sendCapiPurchase(
   order: Record<string, unknown>,
   orderRef: string,
   total: number,
   ctx: CapiContext = {}
 ): Promise<void> {
-  const token = process.env.META_CAPI_ACCESS_TOKEN;
-  if (!token) {
+  if (!process.env.META_CAPI_ACCESS_TOKEN) {
     console.warn("[CAPI] META_CAPI_ACCESS_TOKEN not set - skipping");
     return;
   }
-  if (process.env.VERCEL_ENV !== "production") { console.warn("[CAPI] not a production deployment - Purchase not sent to Meta"); return; }
+  if (!mayPostPurchase()) { console.warn("[CAPI] not a production deployment - Purchase not sent to Meta"); return; }
 
   const customer = (order.customer ?? {}) as Record<string, unknown>;
   const items    = (order.items    ?? []) as Array<{ sku?: string; quantity?: number }>;
 
-  const nameParts = String(customer.name ?? "").trim().split(" ");
-  const firstName = nameParts[0] ?? "";
-  const lastName  = nameParts.slice(1).join(" ");
+  const nameParts = String(customer.name ?? "").trim().split(/\s+/);
+  const userData = buildUserData("bg", ctx, {
+    email:     String(customer.email ?? ""),
+    phone:     String(customer.phone ?? ""),   // 0888... is normalised to 359888... before hashing
+    firstName: nameParts[0] ?? "",
+    lastName:  nameParts.slice(1).join(" "),
+    city:      String(customer.city ?? ""),
+    zip:       String(customer.postCode ?? ""),
+  });
 
-  const userData: Record<string, unknown> = { country: [sha256("bg")] };
-  const email = String(customer.email ?? "").trim();
-  const phone = String(customer.phone ?? "").replace(/\D/g, "");
-  if (email)     userData.em = [sha256(email)];
-  if (phone)     userData.ph = [sha256(phone)];
-  if (firstName) userData.fn = [sha256(firstName.toLowerCase())];
-  if (lastName)  userData.ln = [sha256(lastName.toLowerCase())];
+  const result = await sendCapiEvents([{
+    event_name:       "Purchase",
+    event_time:       Math.floor(Date.now() / 1000),
+    event_id:         orderRef,            // deduplicates with browser pixel eventID
+    event_source_url: eventSourceUrl(ctx.sourceUrl, "/"),
+    action_source:    "website",
+    user_data:        userData,
+    custom_data: {
+      value:        total,
+      currency:     "EUR",
+      content_ids:  items.map((i) => i.sku ?? "").filter(Boolean),
+      content_type: "product",
+      order_id:     orderRef,
+    },
+  }]);
 
-  // Enhanced matching parameters
-  if (ctx.ip)        userData.client_ip_address = ctx.ip;
-  if (ctx.userAgent) userData.client_user_agent = ctx.userAgent;
-  if (ctx.fbc)       userData.fbc = ctx.fbc;
-  if (ctx.fbp)       userData.fbp = ctx.fbp;
-
-  // City + zipcode (hashed per Meta spec)
-  const city = String(customer.city     ?? "").trim().toLowerCase().replace(/\s+/g, "");
-  const zip  = String(customer.postCode ?? "").trim().replace(/\s+/g, "").toLowerCase();
-  if (city) userData.ct = [sha256(city)];
-  if (zip)  userData.zp = [sha256(zip)];
-
-  const payload = {
-    data: [{
-      event_name:       "Purchase",
-      event_time:       Math.floor(Date.now() / 1000),
-      event_id:         orderRef,            // deduplicates with browser pixel eventID
-      event_source_url: "https://lorenzo-ricci.com",
-      action_source:    "website",
-      user_data:        userData,
-      custom_data: {
-        value:        total,
-        currency:     "EUR",
-        content_ids:  items.map((i) => i.sku ?? "").filter(Boolean),
-        content_type: "product",
-        order_id:     orderRef,
-      },
-    }],
-    access_token: token,
-  };
-
-  const res = await fetch(
-    `https://graph.facebook.com/v18.0/${META_PIXEL_ID}/events`,
-    {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(payload),
-      signal:  AbortSignal.timeout(5000),
-    }
-  );
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`CAPI ${res.status}: ${text.slice(0, 200)}`);
-  }
-
-  const result = await res.json();
-  console.log("[CAPI] Purchase sent:", JSON.stringify(result));
+  if (!result.ok) throw new Error(`CAPI ${result.status}: ${JSON.stringify(result.body).slice(0, 200)}`);
+  console.log("[CAPI] Purchase sent:", JSON.stringify(result.body));
 }

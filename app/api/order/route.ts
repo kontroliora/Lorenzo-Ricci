@@ -70,6 +70,8 @@ export async function POST(req: NextRequest) {
       userAgent: req.headers.get("user-agent") ?? undefined,
       fbc:       req.cookies.get("_fbc")?.value ?? undefined,
       fbp:       req.cookies.get("_fbp")?.value ?? undefined,
+      externalId: req.cookies.get("lr_xid")?.value ?? undefined,   // random id of this browser (first-party cookie), sent hashed
+      sourceUrl:  req.headers.get("referer") ?? undefined,         // the page the order was placed on (validated in meta-capi)
     };
 
     const order    = await req.json() as Record<string, unknown>;
@@ -336,6 +338,7 @@ export async function POST(req: NextRequest) {
           ...(capiCtx.fbc ? { fbc: capiCtx.fbc.slice(0, 200) } : {}),
           ...(capiCtx.ip ? { client_ip: capiCtx.ip.slice(0, 64) } : {}),
           ...(capiCtx.userAgent ? { client_ua: capiCtx.userAgent.slice(0, 450) } : {}),
+          ...(capiCtx.externalId ? { xid: capiCtx.externalId.slice(0, 100) } : {}),
         },
       });
       if (!started.ok) return cardUnavailable();

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { GRAPH_VERSION } from "@/lib/meta-capi";
 import { createHash } from "crypto";
 import { Resend } from "resend";
 import { langOf, mayEmail } from "@/lib/mail-policy";
@@ -82,7 +83,7 @@ async function sendCapiLead(
     access_token: token,
   };
 
-  const res = await fetch(`https://graph.facebook.com/v18.0/${META_PIXEL_ID}/events`, {
+  const res = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${META_PIXEL_ID}/events`, {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload), signal: AbortSignal.timeout(5000),
   });

@@ -7,7 +7,7 @@ import { cardDiscountEur, cardDiscountIsCapped, CARD_DISCOUNT_CAP_EUR } from "@/
 import { calcBundleDiscount } from "@/lib/bundles";
 import { giftDisplayName } from "@/lib/gifts";
 import { useGiftLines } from "@/lib/use-gifts";
-import { trackFbEvent } from "@/lib/fbq";
+import { trackFbEvent, rememberMatchKeys } from "@/lib/fbq";
 import { logCheckoutFailure } from "@/lib/checkout-log";
 import { requiresPrepayment, PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY, type PaymentMethod } from "@/lib/payments";
@@ -114,6 +114,12 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     quantity:   i.quantity,
     coverImage: i.product.coverImage,
   }));
+
+  // Meta matching: keep the SHA-256 of a whole e-mail / mobile number (never the plain value) for the next ad events.
+  useEffect(() => {
+    const t = setTimeout(() => { void rememberMatchKeys({ email: form.email, phone: form.phone }, "bg"); }, 800);
+    return () => clearTimeout(t);
+  }, [form.email, form.phone]);
 
   // Phone-first capture: fires as soon as phone has ≥10 digits, even before email.
   // Captured regardless of consent - the customer's real consent value is sent

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { SITE_ORIGIN } from "./meta-capi";
 import { supabaseAdmin } from "./supabase-admin";
 import type { OrderRow } from "./payment-orders";
 import { langOf } from "./mail-policy";
@@ -23,7 +24,13 @@ const within = <T,>(p: Promise<T>, name: string): Promise<T> =>
 export async function notifyPaid(order: OrderRow, meta: Record<string, string> = {}): Promise<string[]> {
   const items = (Array.isArray(order.items) ? order.items : []) as Line[];
   const paidLines = items.filter((i) => !i.gift);
-  const ctx = { ip: meta.client_ip, userAgent: meta.client_ua, fbc: meta.fbc, fbp: meta.fbp };
+  // The paid card order is confirmed on the success page (where the browser Purchase fires): that is the event's page.
+  const isRo = order.ship_country === "RO";
+  const ctx = {
+    ip: meta.client_ip, userAgent: meta.client_ua, fbc: meta.fbc, fbp: meta.fbp,
+    externalId: meta.xid,
+    sourceUrl: SITE_ORIGIN + (isRo ? "/ro/comanda/finalizata" : "/poruchka/uspeh"),
+  };
   const name = String(order.name ?? "");
   const email = String(order.email ?? "");
 
