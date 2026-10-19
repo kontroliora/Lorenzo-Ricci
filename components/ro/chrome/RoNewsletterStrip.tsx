@@ -52,7 +52,7 @@ export function RoNewsletterStrip() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Adresa dumneavoastră de e-mail"
                   aria-label="Adresa de e-mail"
-                  className="flex-1 bg-transparent border border-white/20 px-4 py-3 font-sans text-sm font-light text-white placeholder:text-white/30 tracking-wide focus:outline-none focus:border-white/50"
+                  className="flex-1 bg-transparent border border-white/20 px-4 py-3 font-sans text-base font-light text-white placeholder:text-white/30 tracking-wide focus:outline-none focus:border-white/50"
                 />
                 <button
                   type="submit"

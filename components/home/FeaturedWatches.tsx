@@ -221,7 +221,7 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
                     <button
                       onClick={(e) => { e.stopPropagation(); setIsNight((v) => !v); }}
                       aria-label={isNight ? "Дневна снимка" : "Нощна снимка"}
-                      className="absolute top-2.5 right-2.5 z-30 w-8 h-8 rounded-full bg-white/85 backdrop-blur-sm border border-border flex items-center justify-center shadow-sm transition-colors hover:bg-white"
+                      className="absolute top-2.5 right-2.5 z-30 w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 rounded-full bg-white/85 backdrop-blur-sm border border-border flex items-center justify-center shadow-sm transition-colors hover:bg-white"
                     >
                       {isNight ? (
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-amber-500">
@@ -274,11 +274,11 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
           <button
             onClick={goPrev}
             aria-label="Предишен"
-            className="w-8 h-8 rounded-full border border-navy/40 flex items-center justify-center text-navy text-xl leading-none transition-all active:scale-90"
+            className="w-11 h-11 rounded-full border border-navy/40 flex items-center justify-center text-navy text-xl leading-none transition-all active:scale-90"
           >
             ‹
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             {watches.map((_, i) => (
               <button
                 key={i}
@@ -288,16 +288,20 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
                   else goPrev();
                 }}
                 aria-label={`Часовник ${i + 1}`}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === activeIndex ? "w-5 bg-navy" : "w-1.5 bg-navy/25"
-                }`}
-              />
+                className="h-11 min-w-[28px] px-[11px] flex items-center justify-center"
+              >
+                <span
+                  className={`block h-1.5 rounded-full transition-all duration-300 ${
+                    i === activeIndex ? "w-5 bg-navy" : "w-1.5 bg-navy/25"
+                  }`}
+                />
+              </button>
             ))}
           </div>
           <button
             onClick={goNext}
             aria-label="Следващ"
-            className="w-8 h-8 rounded-full border border-navy/40 flex items-center justify-center text-navy text-xl leading-none transition-all active:scale-90"
+            className="w-11 h-11 rounded-full border border-navy/40 flex items-center justify-center text-navy text-xl leading-none transition-all active:scale-90"
           >
             ›
           </button>

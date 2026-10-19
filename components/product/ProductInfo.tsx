@@ -271,7 +271,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       {variants && (
           <div className="flex items-center gap-3">
             <span className="font-sans text-[10px] text-ink-faint tracking-widest uppercase">Цвят:</span>
-            <div className="flex items-center gap-2 max-[373px]:flex-wrap">
+            <div className="flex items-center gap-2 max-[373px]:flex-wrap [@media(pointer:coarse)]:gap-0">
               {variants.map((v) => (
                 <Link
                   key={v.slug}
@@ -280,13 +280,17 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
                   prefetch={true}
                   onTouchStart={() => prefetchMainImage(v.slug)}
                   onMouseEnter={() => prefetchMainImage(v.slug)}
-                  className={`relative w-6 h-6 rounded-full border-2 transition-all duration-200 ${
-                    product.slug === v.slug
-                      ? "border-navy scale-110 shadow-[0_0_0_2px_rgba(15,40,80,0.15)]"
-                      : "border-border hover:border-navy/40"
-                  } ${variantOff(v) ? "opacity-50" : ""}`}
-                  style={{ backgroundColor: v.color }}
+                  aria-label={v.label}
+                  className="flex items-center justify-center w-6 h-6 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11"
                 >
+                  <span
+                    className={`relative block w-6 h-6 rounded-full border-2 transition-all duration-200 ${
+                      product.slug === v.slug
+                        ? "border-navy scale-110 shadow-[0_0_0_2px_rgba(15,40,80,0.15)]"
+                        : "border-border hover:border-navy/40"
+                    } ${variantOff(v) ? "opacity-50" : ""}`}
+                    style={{ backgroundColor: v.color }}
+                  >
                   {/* Diagonal strikethrough for out-of-stock */}
                   {variantOff(v) && (
                     <span
@@ -298,6 +302,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
                       </svg>
                     </span>
                   )}
+                  </span>
                 </Link>
               ))}
             </div>
@@ -310,7 +315,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           <div className="star-rating text-sm">★★★★★</div>
           <a
             href="#reviews"
-            className="font-sans text-xs text-ink-muted tracking-wide hover:text-navy transition-colors"
+            className="font-sans text-xs text-ink-muted tracking-wide hover:text-navy transition-colors [@media(pointer:coarse)]:py-3.5 [@media(pointer:coarse)]:-my-3.5"
           >
             {(reviewSummary[product.slug]?.avg ?? 4.8).toFixed(1)} · {reviewCount} {reviewCount === 1 ? "ревю" : "ревюта"}
           </a>
@@ -481,12 +486,12 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
 
       {/* Tabs */}
       <div>
-        <div className="flex border-b border-border">
+        <div className="flex border-b border-border overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`font-sans text-[11px] tracking-widest uppercase px-4 py-3 max-[373px]:px-2.5 max-[373px]:tracking-wider max-[349px]:px-2 max-[349px]:text-[10px] transition-all duration-200 ${
+              className={`font-sans text-[11px] tracking-widest uppercase px-4 py-3 min-h-[44px] max-[373px]:px-2.5 max-[373px]:tracking-wider max-[349px]:px-2 max-[349px]:text-[10px] transition-all duration-200 ${
                 activeTab === tab
                   ? "text-charcoal border-b-2 border-navy -mb-px"
                   : "text-ink-faint hover:text-ink-soft"

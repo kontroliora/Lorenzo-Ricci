@@ -99,7 +99,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
         <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-3 pointer-events-none">
           <button
             onClick={prev}
-            className="pointer-events-auto w-9 h-9 flex items-center justify-center
+            className="pointer-events-auto w-11 h-11 flex items-center justify-center
               bg-charcoal/60 sm:bg-navy text-white
               hover:bg-charcoal sm:hover:bg-navy/80
               transition-colors duration-200 text-lg leading-none shadow-sm"
@@ -109,7 +109,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
           </button>
           <button
             onClick={next}
-            className="pointer-events-auto w-9 h-9 flex items-center justify-center
+            className="pointer-events-auto w-11 h-11 flex items-center justify-center
               bg-charcoal/60 sm:bg-navy text-white
               hover:bg-charcoal sm:hover:bg-navy/80
               transition-colors duration-200 text-lg leading-none shadow-sm"
@@ -120,15 +120,20 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
         </div>
 
         {/* Dots - mobile only */}
-        <div className="sm:hidden absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+        <div className="sm:hidden absolute bottom-0 left-1/2 -translate-x-1/2 flex">
           {images.map((_, i) => (
             <button
               key={i}
               onClick={() => setActiveIdx(i)}
-              className={`h-1.5 rounded-full transition-all duration-200 ${
-                i === activeIdx ? "bg-navy w-4" : "bg-charcoal/30 w-1.5"
-              }`}
-            />
+              aria-label={`Снимка ${i + 1}`}
+              className="h-11 min-w-[28px] px-[11px] flex items-center justify-center"
+            >
+              <span
+                className={`block h-1.5 rounded-full transition-all duration-200 ${
+                  i === activeIdx ? "bg-navy w-4" : "bg-charcoal/30 w-1.5"
+                }`}
+              />
+            </button>
           ))}
         </div>
       </div>

@@ -140,7 +140,7 @@ export function ProductReviews({ reviews, productSlug }: ProductReviewsProps) {
                     value={formState.name}
                     onChange={(e) => setFormState((f) => ({ ...f, name: e.target.value }))}
                     placeholder="Иван И."
-                    className="w-full border-b border-border bg-transparent font-sans text-sm text-charcoal py-2 placeholder:text-ink-faint focus:outline-none focus:border-navy transition-colors"
+                    className="w-full border-b border-border bg-transparent font-sans text-base text-charcoal py-2 placeholder:text-ink-faint focus:outline-none focus:border-navy transition-colors"
                   />
                 </div>
                 <div>
@@ -150,7 +150,7 @@ export function ProductReviews({ reviews, productSlug }: ProductReviewsProps) {
                     value={formState.title}
                     onChange={(e) => setFormState((f) => ({ ...f, title: e.target.value }))}
                     placeholder="Страхотен продукт!"
-                    className="w-full border-b border-border bg-transparent font-sans text-sm text-charcoal py-2 placeholder:text-ink-faint focus:outline-none focus:border-navy transition-colors"
+                    className="w-full border-b border-border bg-transparent font-sans text-base text-charcoal py-2 placeholder:text-ink-faint focus:outline-none focus:border-navy transition-colors"
                   />
                 </div>
               </div>
@@ -163,7 +163,7 @@ export function ProductReviews({ reviews, productSlug }: ProductReviewsProps) {
                   onChange={(e) => setFormState((f) => ({ ...f, body: e.target.value }))}
                   placeholder="Споделете вашето мнение..."
                   rows={4}
-                  className="w-full border border-border bg-white font-sans text-sm text-charcoal p-3 placeholder:text-ink-faint focus:outline-none focus:border-navy transition-colors resize-none"
+                  className="w-full border border-border bg-white font-sans text-base text-charcoal p-3 placeholder:text-ink-faint focus:outline-none focus:border-navy transition-colors resize-none"
                 />
               </div>
 

@@ -56,12 +56,12 @@ export function NewsletterStrip() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Имейл адрес"
-                className="flex-1 bg-transparent border border-white/20 px-4 py-3 font-sans text-sm font-light text-white placeholder:text-white/30 tracking-wide focus:outline-none focus:border-white/50 transition-colors duration-200"
+                className="flex-1 bg-transparent border border-white/20 px-4 py-3 font-sans text-base font-light text-white placeholder:text-white/30 tracking-wide focus:outline-none focus:border-white/50 transition-colors duration-200"
               />
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="bg-white text-charcoal font-sans text-[11px] font-medium tracking-[0.22em] uppercase px-7 py-3 hover:bg-white/90 transition-colors duration-200 disabled:opacity-60 whitespace-nowrap"
+                className="bg-white text-charcoal font-sans text-[11px] font-medium tracking-[0.22em] uppercase px-7 py-3 min-h-[44px] hover:bg-white/90 transition-colors duration-200 disabled:opacity-60 whitespace-nowrap"
               >
                 {status === "loading" ? "…" : "Абонирайте се"}
               </button>

@@ -170,7 +170,7 @@ export function CartDrawer() {
           <button
             onClick={closeCart}
             aria-label="Затвори"
-            className="text-white/40 hover:text-white transition-colors text-2xl leading-none"
+            className="w-11 h-11 -mr-3 flex items-center justify-center text-white/40 hover:text-white transition-colors text-2xl leading-none"
           >
             ×
           </button>
@@ -298,7 +298,7 @@ export function CartDrawer() {
                       <div className="flex items-center gap-0 border border-white/10">
                         <button
                           onClick={() => updateQuantity(product.id, quantity - 1)}
-                          className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-colors text-lg"
+                          className="w-11 h-11 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-colors text-lg"
                         >
                           −
                         </button>
@@ -308,7 +308,7 @@ export function CartDrawer() {
                         <button
                           onClick={() => updateQuantity(product.id, quantity + 1)}
                           disabled={product.stock != null && quantity >= product.stock}
-                          className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-colors text-lg disabled:opacity-20 disabled:cursor-not-allowed"
+                          className="w-11 h-11 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-colors text-lg disabled:opacity-20 disabled:cursor-not-allowed"
                         >
                           +
                         </button>
@@ -328,7 +328,7 @@ export function CartDrawer() {
                         <button
                           onClick={() => removeItem(product.id)}
                           aria-label="Премахни"
-                          className="text-white/25 hover:text-white transition-colors text-sm"
+                          className="p-3 -m-3 text-white/25 hover:text-white transition-colors text-sm"
                         >
                           ✕
                         </button>
@@ -373,7 +373,7 @@ export function CartDrawer() {
                         onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(""); }}
                         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPromo(); } }}
                         placeholder="Промо код"
-                        className="flex-1 bg-transparent text-white font-sans text-[11px] tracking-widest uppercase px-3 py-2.5 focus:outline-none placeholder:text-white/20 placeholder:normal-case placeholder:tracking-normal"
+                        className="flex-1 min-w-0 bg-transparent text-white font-sans text-base tracking-wider uppercase px-3 py-2.5 focus:outline-none placeholder:text-white/20 placeholder:normal-case placeholder:tracking-normal"
                       />
                       <button
                         type="button"

@@ -13,7 +13,7 @@ import { useState, type ReactNode } from "react";
 
 /** Input / select / textarea look. `invalid` turns the border red (the message itself is shown by CoField). */
 export const coInput = (invalid?: boolean): string =>
-  `block w-full min-h-12 rounded-[6px] bg-[#141414] px-3.5 [color-scheme:dark] font-sans text-[15px] font-normal text-white placeholder:text-[#9A9A9A] border transition-colors focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/25 ${
+  `block w-full min-h-12 rounded-[6px] bg-[#141414] px-3.5 [color-scheme:dark] font-sans text-base font-normal text-white placeholder:text-[#9A9A9A] border transition-colors focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/25 ${
     invalid ? "border-[#F87171] focus:border-[#F87171]" : `border-[#6B6B6B] hover:border-[#8A8A8A] focus:border-[#C9A84C]`
   }`;
 

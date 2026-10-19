@@ -36,11 +36,14 @@ export function StickyCartBar({ product, effectiveInStock }: Props) {
       "--sticky-bar-h",
       visible ? "88px" : "0px"
     );
+    // Room under the page for the bar, so it never covers the last footer line when scrolled to the end
+    document.body.style.paddingBottom = visible ? "calc(88px + env(safe-area-inset-bottom, 0px))" : "";
   }, [visible]);
 
   useEffect(() => {
     return () => {
       document.documentElement.style.setProperty("--sticky-bar-h", "0px");
+      document.body.style.paddingBottom = "";
     };
   }, []);
 
@@ -103,7 +106,7 @@ export function StickyCartBar({ product, effectiveInStock }: Props) {
           <button
             onClick={effectiveInStock ? handleAdd : undefined}
             disabled={!effectiveInStock}
-            className={`flex-shrink-0 ${
+            className={`flex-shrink-0 min-h-[44px] ${
               effectiveInStock
                 ? "btn-primary text-[10px] sm:text-[11px] px-5 sm:px-8 py-3"
                 : "font-sans text-[10px] sm:text-[11px] tracking-[0.22em] uppercase px-5 sm:px-8 py-3 bg-ink-faint/20 text-ink-faint border border-border cursor-not-allowed"

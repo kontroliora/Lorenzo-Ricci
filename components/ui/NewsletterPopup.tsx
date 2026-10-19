@@ -112,7 +112,7 @@ export function NewsletterPopup() {
         <button
           onClick={close}
           aria-label="Затвори"
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-white/30 hover:text-white transition-colors z-10"
+          className="absolute top-2 right-2 w-11 h-11 flex items-center justify-center text-white/30 hover:text-white transition-colors z-10"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -242,7 +242,7 @@ export function NewsletterPopup() {
                 placeholder="Вашият имейл адрес"
                 inputMode="email"
                 autoComplete="email"
-                className="w-full bg-white/5 border border-white/12 text-white font-sans text-sm px-4 py-3.5 focus:outline-none focus:border-white/30 placeholder:text-white/25 transition-colors"
+                className="w-full bg-white/5 border border-white/12 text-white font-sans text-base px-4 py-3.5 focus:outline-none focus:border-white/30 placeholder:text-white/25 transition-colors"
               />
               {error && (
                 <p className="font-sans text-[11px] text-red-400/70 tracking-wide -mt-1">{error}</p>

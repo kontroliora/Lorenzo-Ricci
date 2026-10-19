@@ -30,7 +30,7 @@ export function Footer() {
           {/* Collections */}
           <div>
             <FooterHeading>Колекции</FooterHeading>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 [@media(pointer:coarse)]:gap-0">
               <FooterLink href="/watches">Часовници</FooterLink>
               <FooterLink href="/jewellery">Бижута</FooterLink>
               <FooterLink href="/jewellery#bracelets">Гривни</FooterLink>
@@ -42,7 +42,7 @@ export function Footer() {
           {/* Customer Care */}
           <div>
             <FooterHeading>Обслужване на клиенти</FooterHeading>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 [@media(pointer:coarse)]:gap-0">
               <FooterLink href="/faq">Често задавани въпроси</FooterLink>
               <FooterLink href="/policies/shipping">Доставка и връщане</FooterLink>
               <FooterLink href="/warranty/jewelry">Гаранция и поддръжка</FooterLink>
@@ -52,7 +52,7 @@ export function Footer() {
           {/* Brand & Legal */}
           <div>
             <FooterHeading>Lorenzo Ricci</FooterHeading>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 [@media(pointer:coarse)]:gap-0">
               <FooterLink href="/story">История</FooterLink>
               <FooterLink href="/policies/privacy">Политика за поверителност</FooterLink>
             </div>
@@ -61,8 +61,8 @@ export function Footer() {
           {/* Contact */}
           <div>
             <FooterHeading>Контакт</FooterHeading>
-            <div className="flex flex-col gap-3">
-              <a href="mailto:info@lorenzo-ricci.com" className="font-sans text-xs font-light text-ink-muted hover:text-navy transition-colors duration-300 tracking-wide">
+            <div className="flex flex-col gap-3 [@media(pointer:coarse)]:gap-0">
+              <a href="mailto:info@lorenzo-ricci.com" className="font-sans text-xs font-light text-ink-muted hover:text-navy transition-colors duration-300 tracking-wide [@media(pointer:coarse)]:py-3.5 [@media(pointer:coarse)]:inline-block">
                 info@lorenzo-ricci.com
               </a>
               <p className="font-sans text-xs font-light text-ink-faint tracking-wide leading-relaxed">Пон-Пет, 10:00-18:00</p>
@@ -114,7 +114,7 @@ function FooterHeading({ children }: { children: React.ReactNode }) {
 
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="font-sans text-xs font-light text-ink-muted hover:text-navy transition-colors duration-300 tracking-wide w-fit">
+    <Link href={href} className="font-sans text-xs font-light text-ink-muted hover:text-navy transition-colors duration-300 tracking-wide w-fit [@media(pointer:coarse)]:py-3.5 [@media(pointer:coarse)]:min-w-[44px]">
       {children}
     </Link>
   );
@@ -122,7 +122,7 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
 
 function SocialLink({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="text-ink-faint hover:text-navy transition-colors duration-300">
+    <a href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="inline-flex items-center justify-center [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 text-ink-faint hover:text-navy transition-colors duration-300">
       {children}
     </a>
   );

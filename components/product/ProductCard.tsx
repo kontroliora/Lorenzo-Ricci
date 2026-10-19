@@ -99,7 +99,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
             <button
               onClick={handleNightToggle}
               aria-label={isNight ? "Нощна снимка" : "Дневна снимка"}
-              className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-white/85 backdrop-blur-sm border border-border flex items-center justify-center hover:bg-white transition-colors duration-200 shadow-sm"
+              className="absolute top-3 right-3 z-20 w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 rounded-full bg-white/85 backdrop-blur-sm border border-border flex items-center justify-center hover:bg-white transition-colors duration-200 shadow-sm"
             >
               {isNight ? (
                 /* Sun */
