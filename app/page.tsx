@@ -8,6 +8,7 @@ import { BrandValues } from "@/components/home/BrandValues";
 import { TestimonialsSection } from "@/components/home/TestimonialsSection";
 import { getProductBySlug } from "@/lib/products";
 import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
+import { getSoldOutSlugs } from "@/lib/sold-out";
 // import { InstagramSection } from "@/components/home/InstagramSection";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
@@ -27,11 +28,14 @@ export default async function HomePage() {
     ? applyOverride(rawMilanoAvorio, await getPriceOverrides())
     : undefined;
 
+  // Sold-out products are left out of the home sections (stock-driven; their own pages still say "Изчерпан")
+  const soldOut = await getSoldOutSlugs();
+
   return (
     <>
       <Hero />
-      <FeaturedWatches />
-      <WalletsSection />
+      <FeaturedWatches soldOut={soldOut} />
+      <WalletsSection soldOut={soldOut} />
       {milanoAvorio && <MilanoAvorioFlagship product={milanoAvorio} />}
       <JewellerySection />
       <EditorialJewellery />

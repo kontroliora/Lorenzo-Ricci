@@ -1501,8 +1501,8 @@ export function getNecklaces(): Product[] {
   return products.filter((p) => p.subcategory === "necklace");
 }
 
-export function getRelatedProducts(product: Product, limit = 4): Product[] {
+export function getRelatedProducts(product: Product, limit = 4, exclude?: ReadonlySet<string>): Product[] {
   return products
-    .filter((p) => p.id !== product.id && p.category === product.category)
+    .filter((p) => p.id !== product.id && p.category === product.category && !exclude?.has(p.slug))
     .slice(0, limit);
 }

@@ -7,12 +7,12 @@ import { getProductBySlug } from "@/lib/products";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
 
-type LeatherItem = { id: string; slug: string; name: string; sub: string; src: string; soldOut?: boolean };
+type LeatherItem = { id: string; slug: string; name: string; sub: string; src: string };
 
 const WALLETS: LeatherItem[] = [
   { id: "alabastro", slug: "wallet-alabastro",    name: 'Lorenzo Ricci "Alabastro"', sub: "Бял портфейл от крокодилска кожа",    src: `/Products/wallets/Alabastro/portfeil-alabastro-byal-krokodiilska-kozha.webp` },
   { id: "rubino",    slug: "wallet-rubino",       name: 'Lorenzo Ricci "Rubino"',    sub: "Червен портфейл от крокодилска кожа", src: `/Products/wallets/Rubino/portfeil-rubino-cherven-krokodiilska-kozha.webp` },
-  { id: "smeraldo",  slug: "wallet-smeraldo",     name: 'Lorenzo Ricci "Smeraldo"',  sub: "Зелен портфейл от крокодилска кожа",  src: `/Products/wallets/Smeraldo/portfeil-smeraldo-zelen-krokodiilska-kozha.webp`, soldOut: true },
+  { id: "smeraldo",  slug: "wallet-smeraldo",     name: 'Lorenzo Ricci "Smeraldo"',  sub: "Зелен портфейл от крокодилска кожа",  src: `/Products/wallets/Smeraldo/portfeil-smeraldo-zelen-krokodiilska-kozha.webp` },
 ];
 
 const CARDHOLDERS: LeatherItem[] = [
@@ -82,10 +82,11 @@ function LeatherCard({ item, sold, sizes }: { item: LeatherItem; sold: boolean; 
   );
 }
 
-export function WalletsSection() {
+export function WalletsSection({ soldOut = [] }: { soldOut?: string[] }) {
   const featuresRef = useReveal();
-  // Live stock (wallet_inventory) → shows "Изчерпан" without hardcoding it. One
-  // batched call; a static soldOut flag stays as a fallback if the fetch fails.
+  // Sold-out items are left out of this section. The server passes the list (lib/sold-out.ts: catalogue switch + live
+  // wallet_inventory, regenerated at most every 5 minutes); the browser re-checks the live stock once (one batched call)
+  // so a piece that sold out since the page was built disappears too. Their own pages still say "Изчерпан".
   const [outOfStock, setOutOfStock] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -102,10 +103,11 @@ export function WalletsSection() {
     return () => { cancelled = true; };
   }, []);
 
-  // Sold out = static flag, live stock at 0, or switched off in lib/products.ts
-  // (inStock: false - the owner's single on/off switch).
   const isSold = (item: LeatherItem) =>
-    Boolean(item.soldOut || outOfStock[item.slug] || getProductBySlug(item.slug)?.inStock === false);
+    soldOut.includes(item.slug) || Boolean(outOfStock[item.slug]) || getProductBySlug(item.slug)?.inStock === false;
+  const wallets = WALLETS.filter((i) => !isSold(i));
+  const cardholders = CARDHOLDERS.filter((i) => !isSold(i));
+  const clutches = CLUTCHES.filter((i) => !isSold(i));
 
   return (
     <section className="py-28 sm:py-40 bg-white border-y border-border">
@@ -122,43 +124,43 @@ export function WalletsSection() {
         </div>
 
         {/* Wallets row */}
-        <div className="mb-6 sm:mb-10">
+        {wallets.length > 0 && <div className="mb-6 sm:mb-10">
           <div className="flex items-center gap-4 mb-3 sm:mb-5">
             <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Портфейли</p>
             <div className="flex-1 h-px bg-border" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-            {WALLETS.map((w) => (
-              <LeatherCard key={w.id} item={w} sold={isSold(w)} sizes="(max-width: 640px) 50vw, 33vw" />
+            {wallets.map((w) => (
+              <LeatherCard key={w.id} item={w} sold={false} sizes="(max-width: 640px) 50vw, 33vw" />
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* Cardholders row */}
-        <div className="mb-8 sm:mb-16">
+        {cardholders.length > 0 && <div className="mb-8 sm:mb-16">
           <div className="flex items-center gap-4 mb-3 sm:mb-5">
             <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Кардхолдъри</p>
             <div className="flex-1 h-px bg-border" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-            {CARDHOLDERS.map((c) => (
-              <LeatherCard key={c.id} item={c} sold={isSold(c)} sizes="(max-width: 640px) 50vw, 33vw" />
+            {cardholders.map((c) => (
+              <LeatherCard key={c.id} item={c} sold={false} sizes="(max-width: 640px) 50vw, 33vw" />
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* Clutches row */}
-        <div className="mb-8 sm:mb-16">
+        {clutches.length > 0 && <div className="mb-8 sm:mb-16">
           <div className="flex items-center gap-4 mb-3 sm:mb-5">
             <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Клъчове</p>
             <div className="flex-1 h-px bg-border" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
-            {CLUTCHES.map((c) => (
-              <LeatherCard key={c.id} item={c} sold={isSold(c)} sizes="(max-width: 640px) 50vw, 20vw" />
+            {clutches.map((c) => (
+              <LeatherCard key={c.id} item={c} sold={false} sizes="(max-width: 640px) 50vw, 20vw" />
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* Certificate feature strip */}
         {/* Section-wide strip: it sits under products that don't all share one species

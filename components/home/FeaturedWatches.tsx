@@ -14,28 +14,34 @@ import type { Product } from "@/lib/types";
 // never in the same carousel or row.
 const isYachting = (p: Product) => p.slug.startsWith("yachting-");
 
-export function FeaturedWatches() {
-  const watches = getWatches();
+export function FeaturedWatches({ soldOut = [] }: { soldOut?: string[] }) {
+  const watches = getWatches().filter((w) => !soldOut.includes(w.slug));
+  const yachting = watches.filter(isYachting);
+  const classic = watches.filter((w) => !isYachting(w));
 
   return (
     <section id="yachting" className="py-20 sm:py-40 bg-white">
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
-        <WatchGroup
-          tag="Нова Колекция"
-          title="Yachting"
-          subtitle="Черен · Син · Бял"
-          watches={watches.filter(isYachting)}
-          priority
-        />
-
-        <div className="mt-20 sm:mt-32 pt-20 sm:pt-32 border-t border-border">
+        {yachting.length > 0 && (
           <WatchGroup
-            tag="Часовници"
-            title="Класическа Колекция"
-            subtitle="Сапфирен кристал · Японски механизъм · 5 ATM водоустойчивост"
-            watches={watches.filter((w) => !isYachting(w))}
+            tag="Нова Колекция"
+            title="Yachting"
+            subtitle="Черен · Син · Бял"
+            watches={yachting}
+            priority
           />
-        </div>
+        )}
+
+        {classic.length > 0 && (
+          <div className={yachting.length > 0 ? "mt-20 sm:mt-32 pt-20 sm:pt-32 border-t border-border" : ""}>
+            <WatchGroup
+              tag="Часовници"
+              title="Класическа Колекция"
+              subtitle="Сапфирен кристал · Японски механизъм · 5 ATM водоустойчивост"
+              watches={classic}
+            />
+          </div>
+        )}
 
         {/* Trust strip */}
         <div className="mt-10 sm:mt-16 border-y border-border py-6 sm:py-8">
