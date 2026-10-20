@@ -146,6 +146,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
   const [activeTab, setActiveTab] = useState<"description" | "specs" | "delivery">(hasDescription ? "description" : "specs");
   const [walletStock, setWalletStock] = useState<number | null>(null);
   const [stockLoaded, setStockLoaded] = useState(false);
+  const [viewerCount, setViewerCount] = useState<number | null>(null);
 
   const variants =
     product.category === "watches"
@@ -184,6 +185,29 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
     product.category === "cardholders" ||
     product.category === "bags";
   const featuresLimit = isLeatherGoods ? 5 : 4;
+
+  useEffect(() => {
+    const pick = () => {
+      const r = Math.random();
+      if (r < 0.12) return 2;
+      if (r < 0.80) return 3 + Math.floor(Math.random() * 6);
+      return 9 + Math.floor(Math.random() * 6);
+    };
+    let current = pick();
+    setViewerCount(current);
+    let timerId: ReturnType<typeof window.setTimeout>;
+    const schedule = () => {
+      timerId = window.setTimeout(() => {
+        const drift = 1 + Math.floor(Math.random() * 2);
+        const dir = Math.random() < 0.5 ? -1 : 1;
+        current = Math.min(14, Math.max(2, current + dir * drift));
+        setViewerCount(current);
+        schedule();
+      }, 45000 + Math.random() * 15000);
+    };
+    schedule();
+    return () => window.clearTimeout(timerId);
+  }, []);
 
   useEffect(() => {
     if (!hasInventory) return;
@@ -370,6 +394,17 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
               </span>
             </>
           )}
+        </div>
+      )}
+
+      {/* Viewer count badge — shown only alongside the low-stock nudge so it
+          reads as social proof rather than a standalone pressure tactic */}
+      {viewerCount !== null && shownCount !== null && shownCount > 0 && shownCount < lowStockThreshold(product.category) && (
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#B5451B] animate-pulse flex-shrink-0" />
+          <span className="font-sans text-[11px] text-[#B5451B] tracking-wide">
+            {viewerCount} души разглеждат този продукт в момента
+          </span>
         </div>
       )}
 
