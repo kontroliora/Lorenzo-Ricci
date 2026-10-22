@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { buildRecoveryEmail, type RecoverySession } from "@/lib/recovery-email";
 import { buildRoRecoveryEmail, roRecoverySubject, type RoRecoverySession } from "@/lib/ro/recovery-email";
 import { langOf, mayEmail } from "@/lib/mail-policy";
+import { getSuppressedEmails } from "@/lib/marketing-suppression";
 
 // mail-policy: abandoned_cart
 
@@ -67,15 +68,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, sent: 0 });
   }
 
-  // Cross-check against the newsletter unsubscribe list so an explicit opt-out
-  // there also suppresses abandoned-cart recovery emails.
+  // Marketing suppression: skip anyone who opted out of marketing emails.
   const sessionEmails = sessions.map((s: { email: string }) => s.email.toLowerCase().trim());
-  const { data: unsubRows } = await supabase
-    .from("newsletter_subscribers")
-    .select("email")
-    .in("email", sessionEmails)
-    .not("unsubscribed_at", "is", null);
-  const unsubSet = new Set((unsubRows ?? []).map((r: { email: string }) => r.email.toLowerCase().trim()));
+  const unsubSet = await getSuppressedEmails(sessionEmails);
 
   const resend = new Resend(resendKey);
   let sent = 0;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { langOf, mayEmail } from "@/lib/mail-policy";
+import { getSuppressedEmails } from "@/lib/marketing-suppression";
 
 // mail-policy: abandoned_cart
 import { supabase } from "@/lib/supabase";
@@ -299,9 +300,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ sent: 0, message: "Няма готови сесии за изпращане." });
   }
 
+  // Marketing suppression: skip anyone who opted out of marketing emails.
+  const adminUnsubSet = await getSuppressedEmails(candidates.map((s) => s.email));
+
   const results: Array<{ id: string; email: string; ok: boolean; error?: string }> = [];
 
   for (const session of candidates) {
+    // Marketing suppression gate.
+    if (adminUnsubSet.has(session.email.toLowerCase().trim())) continue;
     // This manual sender only has the Bulgarian template: Romanian carts are mailed by the cron (Romanian template, consent check).
     if (!mayEmail("abandoned_cart", langOf(session as { lang?: string | null }), "bg")) continue;
     try {
