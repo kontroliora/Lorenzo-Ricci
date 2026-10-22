@@ -67,12 +67,27 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, sent: 0 });
   }
 
+  // Cross-check against the newsletter unsubscribe list so an explicit opt-out
+  // there also suppresses abandoned-cart recovery emails.
+  const sessionEmails = sessions.map((s: { email: string }) => s.email.toLowerCase().trim());
+  const { data: unsubRows } = await supabase
+    .from("newsletter_subscribers")
+    .select("email")
+    .in("email", sessionEmails)
+    .not("unsubscribed_at", "is", null);
+  const unsubSet = new Set((unsubRows ?? []).map((r: { email: string }) => r.email.toLowerCase().trim()));
+
   const resend = new Resend(resendKey);
   let sent = 0;
 
   for (const session of sessions as unknown as (RecoverySession & { lang?: string | null; recovery_consent?: boolean | null })[]) {
     // Skip empty carts — nothing to recover.
     if (!Array.isArray(session.items) || session.items.length === 0) continue;
+    // Skip anyone who unsubscribed from marketing via the newsletter list.
+    if (unsubSet.has(session.email.toLowerCase().trim())) {
+      console.log(`[AbandonedCart] Suppressed (unsubscribed) ${session.session_id}`);
+      continue;
+    }
     // The reminder is in the language of the site the cart came from. Romanian carts additionally need the explicit consent
     // (the /ro checkout only stores a cart when it was given); anything without a version in the recipient's language is not sent.
     const lang = langOf(session);
