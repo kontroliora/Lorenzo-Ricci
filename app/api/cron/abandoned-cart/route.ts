@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Marketing suppression: skip anyone who opted out of marketing emails.
-  const sessionEmails = sessions.map((s: { email: string }) => s.email.toLowerCase().trim());
+  const sessionEmails = (sessions as unknown as { email: string }[]).map((s) => s.email.toLowerCase().trim());
   const unsubSet = await getSuppressedEmails(sessionEmails);
 
   const resend = new Resend(resendKey);

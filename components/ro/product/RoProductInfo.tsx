@@ -187,7 +187,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
     };
     let current = pick();
     setViewerCount(current);
-    let timerId: ReturnType<typeof window.setTimeout>;
+    let timerId: number;
     const schedule = () => {
       timerId = window.setTimeout(() => {
         const drift = 1 + Math.floor(Math.random() * 2);

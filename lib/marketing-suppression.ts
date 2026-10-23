@@ -14,7 +14,7 @@
  * It is intentionally separate from the transactional-email path so that a
  * marketing opt-out never blocks a customer from receiving their order details.
  *
- * Standalone campaign scripts (private/email-campaigns/*/send.mjs) cannot import
+ * Standalone campaign scripts (private/email-campaigns/<month>/send.mjs) cannot import
  * TypeScript, so they reproduce the same check inline inside loadSubscribers()
  * with an explicit cross-reference comment. If you change the suppression logic
  * here, update that function too.
