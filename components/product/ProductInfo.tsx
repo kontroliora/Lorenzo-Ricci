@@ -8,7 +8,6 @@ import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
 import { displayPrice, requiresPrepayment } from "@/lib/price";
 import { PayLine, CodLine } from "@/components/product/CodNote";
-import { DeliveryDate } from "@/components/product/DeliveryDate";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { GiftOffer } from "@/components/product/GiftOffer";
@@ -361,14 +360,14 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
 
       {/* Cash on delivery + inspection before paying: said under the price (not for a prepayment product) */}
       {effectiveInStock && !requiresPrepayment(product) && (
-        {CARD_PAYMENTS_ENABLED ? (
+        CARD_PAYMENTS_ENABLED ? (
           <>
             <PayLine text="Карта (5% отстъпка)" marks={true} />
             <PayLine text="Наложен платеж" marks={false} />
           </>
         ) : (
           <PayLine text="Наложен платеж" marks={false} />
-        )}
+        )
       )}
 
       {/* Clutches: the free gift cardholder (renders nothing for any other product) */}
