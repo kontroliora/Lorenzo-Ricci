@@ -8,7 +8,6 @@ import { useCartStore } from "@/lib/store";
 export function Header() {
   const [scrolled, setScrolled]       = useState(false);
   const [menuOpen, setMenuOpen]       = useState(false);
-  const [jewelleryOpen, setJewelleryOpen] = useState(false);
   const { totalItems, openCart } = useCartStore();
   const count = totalItems();
 
@@ -25,7 +24,6 @@ export function Header() {
 
   const closeMobile = () => {
     setMenuOpen(false);
-    setJewelleryOpen(false);
   };
 
   return (
@@ -42,36 +40,7 @@ export function Header() {
             <div className="hidden lg:flex items-center gap-10">
               <NavLink href="/watches">Часовници</NavLink>
 
-              {/* Бижута dropdown */}
-              <div className="relative group">
-                <button className="flex items-center gap-1 font-sans text-xs font-light tracking-[0.18em] uppercase text-ink-muted hover:text-navy transition-colors duration-300 relative [@media(pointer:coarse)]:py-3.5 [@media(pointer:coarse)]:-my-3.5">
-                  Бижута
-                  <svg
-                    width="10" height="10" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" strokeWidth="2"
-                    strokeLinecap="round" strokeLinejoin="round"
-                    className="mt-px transition-transform duration-300 group-hover:rotate-180"
-                  >
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                  {/* Underline on hover */}
-                  <span className="absolute -bottom-1 left-0 w-0 h-px bg-navy transition-all duration-300 group-hover:w-full" />
-                </button>
-
-                {/* Dropdown panel - pt-3 bridges the visual gap so hover isn't lost */}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 w-48 pt-3 opacity-0 pointer-events-none translate-y-1 group-hover:opacity-100 group-hover:pointer-events-auto group-hover:translate-y-0 transition-all duration-200 z-50">
-                  <div className="relative bg-white border border-border shadow-[0_8px_40px_-8px_rgba(15,40,80,0.12)]">
-                    {/* Small caret */}
-                    <div className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white border-l border-t border-border rotate-45" />
-
-                    <div className="py-2">
-                      <DropdownLink href="/jewellery">Всички бижута</DropdownLink>
-                      <div className="mx-4 h-px bg-border my-1" />
-                      <DropdownLink href="/bundles">Комплекти  -10%</DropdownLink>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <NavLink href="/jewellery">Бижута</NavLink>
 
               <NavLink href="/leather-goods">Кожени Изделия</NavLink>
             </div>
@@ -147,36 +116,10 @@ export function Header() {
                 </Link>
               ))}
 
-              {/* Бижута accordion */}
-              <div>
-                <button
-                  onClick={() => setJewelleryOpen((v) => !v)}
-                  className="flex items-center gap-3 py-1 font-serif text-4xl text-white/80 hover:text-white transition-colors duration-300 w-full text-left"
-                >
-                  Бижута
-                  <svg
-                    width="18" height="18" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" strokeWidth="1.5"
-                    strokeLinecap="round" strokeLinejoin="round"
-                    className={`mt-1 transition-transform duration-300 ${jewelleryOpen ? "rotate-180" : ""}`}
-                  >
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </button>
-
-                {jewelleryOpen && (
-                  <div className="mt-2 ml-4 flex flex-col gap-0 border-l border-white/10 pl-5">
-                    <Link href="/jewellery" onClick={closeMobile}
-                      className="py-3.5 min-h-[44px] flex items-center font-sans text-sm font-light tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors duration-300">
-                      Всички бижута
-                    </Link>
-                    <Link href="/bundles" onClick={closeMobile}
-                      className="py-3.5 min-h-[44px] flex items-center font-sans text-sm font-light tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors duration-300">
-                      Комплекти  -10%
-                    </Link>
-                  </div>
-                )}
-              </div>
+              <Link href="/jewellery" onClick={closeMobile}
+                className="py-1 font-serif text-4xl text-white/80 hover:text-white transition-colors duration-300">
+                Бижута
+              </Link>
 
               {/* Rest */}
               {([
@@ -209,15 +152,6 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
       className="font-sans text-xs font-light tracking-[0.18em] uppercase text-ink-muted hover:text-navy transition-colors duration-300 relative group [@media(pointer:coarse)]:py-3.5 [@media(pointer:coarse)]:-my-3.5 [@media(pointer:coarse)]:min-w-[44px]">
       {children}
       <span className="absolute -bottom-1 [@media(pointer:coarse)]:bottom-2.5 left-0 w-0 h-px bg-navy transition-all duration-300 group-hover:w-full" />
-    </Link>
-  );
-}
-
-function DropdownLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link href={href}
-      className="block px-4 py-2.5 [@media(pointer:coarse)]:py-3.5 font-sans text-[11px] font-light tracking-[0.18em] uppercase text-ink-muted hover:text-navy hover:bg-ivory-warm transition-colors duration-200">
-      {children}
     </Link>
   );
 }
