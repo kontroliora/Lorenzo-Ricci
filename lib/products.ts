@@ -23,7 +23,7 @@ export const products: Product[] = [
     category: "watches",
     price: 140,
     currency: "€",
-    badge: "ЛИМИТИРАНА СЕРИЯ",
+    badge: "Нова колекция",
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",
@@ -73,7 +73,7 @@ export const products: Product[] = [
     category: "watches",
     price: 140,
     currency: "€",
-    badge: "ЛИМИТИРАНА СЕРИЯ",
+    badge: "Нова колекция",
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",
@@ -122,7 +122,7 @@ export const products: Product[] = [
     category: "watches",
     price: 140,
     currency: "€",
-    badge: "ЛИМИТИРАНА СЕРИЯ",
+    badge: "Нова колекция",
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",
@@ -170,8 +170,8 @@ export const products: Product[] = [
     sku: "LR-CHRONO-BLK",
     name: "Chrono Black",
     category: "watches",
-    // Autumn sale 2026-09-28 (owner): €279 → €175. originalPrice = €279 (price since 21.09.2026; owner accepts EU Omnibus risk).
-    price: 175,
+    // Clearance 2026-10-23: further reduced to €149 (from €175 on 28.09.2026). originalPrice = €279 (price since 21.09.2026; owner accepts EU Omnibus risk).
+    price: 149,
     originalPrice: 279,
     currency: "€",
     badge: "ЕСЕННО НАМАЛЕНИЕ",
@@ -229,7 +229,7 @@ export const products: Product[] = [
     name: "Golden Eclipse",
     category: "watches",
     // Autumn sale 2026-09-28 (owner): €299 → €175; shown reference = €279 (owner's choice, accepts EU Omnibus risk).
-    price: 175,
+    price: 149,
     originalPrice: 279,
     currency: "€",
     badge: "ЕСЕННО НАМАЛЕНИЕ",
@@ -288,8 +288,8 @@ export const products: Product[] = [
     sku: "LR-POLAR-FROST",
     name: "Polar Frost",
     category: "watches",
-    // Autumn sale 2026-09-28 (owner): €279 → €175. originalPrice = €279 (price since 21.09.2026; owner accepts EU Omnibus risk).
-    price: 175,
+    // Clearance 2026-10-23: further reduced to €149 (from €175 on 28.09.2026). originalPrice = €279 (price since 21.09.2026; owner accepts EU Omnibus risk).
+    price: 149,
     originalPrice: 279,
     currency: "€",
     badge: "ЕСЕННО НАМАЛЕНИЕ",
@@ -692,9 +692,12 @@ export const products: Product[] = [
     sku: "WLT-ALA",
     name: 'Lorenzo Ricci "Alabastro"',
     category: "wallets",
-    price: 178,
+    // Clearance 2026-10-23 (owner): €178 → €149. originalPrice = €178 (price since 21.09.2026; EU Omnibus compliant).
+    price: 149,
+    originalPrice: 178,
     priceAED: 1200,
     currency: "€",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     inStock: true,
     stock: 5,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -729,9 +732,12 @@ export const products: Product[] = [
     sku: "WLT-RUB",
     name: 'Lorenzo Ricci "Rubino"',
     category: "wallets",
-    price: 178,
+    // Clearance 2026-10-23 (owner): €178 → €149. originalPrice = €178 (price since 21.09.2026; EU Omnibus compliant).
+    price: 149,
+    originalPrice: 178,
     priceAED: 1200,
     currency: "€",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     inStock: true,
     stock: 5,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -1159,7 +1165,9 @@ export const products: Product[] = [
     sku: "BAG-MILANO-AVORIO",
     name: 'Lorenzo Ricci "Milano Avorio"',
     category: "bags",
-    price: 4000,
+    // Clearance 2026-10-23 (owner): first reduction to €3790. originalPrice = €4000 (price since launch; EU Omnibus compliant).
+    price: 3790,
+    originalPrice: 4000,
     currency: "€",
     badge: "Единствен екземпляр",
     crocodileSpecies: NILE_CROCODILE,
@@ -1269,9 +1277,9 @@ export const products: Product[] = [
     sku: "CLU-TORINO",
     name: 'Lorenzo Ricci "Torino"',
     category: "bags",
-    // Autumn sale 2026-09-28 (owner): €750 → €499. originalPrice = €750 (owner's choice; accepts EU Omnibus risk).
-    price: 499,
-    originalPrice: 750,
+    // Clearance 2026-10-23: €449 from €749. originalPrice = €749 (was €499 since 28.09; owner accepts EU Omnibus risk).
+    price: 449,
+    originalPrice: 749,
     currency: "€",
     inStock: true,
     badge: "ЕСЕННО НАМАЛЕНИЕ",
@@ -1312,9 +1320,9 @@ export const products: Product[] = [
     sku: "CLU-VERONA",
     name: 'Lorenzo Ricci "Verona"',
     category: "bags",
-    // Autumn sale 2026-09-28 (owner): €750 → €499. originalPrice = €750 (owner's choice; accepts EU Omnibus risk).
-    price: 499,
-    originalPrice: 750,
+    // Clearance 2026-10-23: €449 from €749. originalPrice = €749 (was €499 since 28.09; owner accepts EU Omnibus risk).
+    price: 449,
+    originalPrice: 749,
     currency: "€",
     inStock: true,
     badge: "ЕСЕННО НАМАЛЕНИЕ",
@@ -1355,10 +1363,12 @@ export const products: Product[] = [
     sku: "CLU-TOSCANA",
     name: 'Lorenzo Ricci "Toscana"',
     category: "bags",
-    price: 750,
+    // Clearance 2026-10-23 (owner): €749 → €449. originalPrice = €749 (first sale; price was €750 since launch; owner accepts EU Omnibus risk).
+    price: 449,
+    originalPrice: 749,
     currency: "€",
     inStock: true,
-    badge: "Нова колекция",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     stock: 2,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Тъмнозелен вечерен клъч от крокодилска кожа",
@@ -1399,9 +1409,9 @@ export const products: Product[] = [
     sku: "CLU-PORTOFINO",
     name: 'Lorenzo Ricci "Portofino"',
     category: "bags",
-    // Autumn sale 2026-09-28 (owner): €750 → €499. originalPrice = €750 (owner's choice; accepts EU Omnibus risk).
-    price: 499,
-    originalPrice: 750,
+    // Clearance 2026-10-23: €449 from €749. originalPrice = €749 (was €499 since 28.09; owner accepts EU Omnibus risk).
+    price: 449,
+    originalPrice: 749,
     currency: "€",
     inStock: true,
     badge: "ЕСЕННО НАМАЛЕНИЕ",
@@ -1445,10 +1455,12 @@ export const products: Product[] = [
     sku: "CLU-CAPRI",
     name: 'Lorenzo Ricci "Capri"',
     category: "bags",
-    price: 750,
+    // Clearance 2026-10-23 (owner): €749 → €449. originalPrice = €749 (first sale; price was €750 since launch; owner accepts EU Omnibus risk).
+    price: 449,
+    originalPrice: 749,
     currency: "€",
     inStock: true,
-    badge: "Нова колекция",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     stock: 3,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Тъмносин вечерен клъч от крокодилска кожа",
