@@ -25,7 +25,6 @@ import {
 import { RoStickyCartBar } from "@/components/ro/product/RoStickyCartBar";
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { PayLine, CodLine } from "@/components/product/CodNote";
-import { DeliveryDate } from "@/components/product/DeliveryDate";
 import { roCartLine } from "@/components/ro/product/cart-line";
 import { hasCyrillic, roReviewsCount, roRatingText } from "@/components/ro/product/ro-text";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
@@ -378,8 +377,6 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
       {effectiveInStock && !prepay && (
         <PayLine text={CARD_PAYMENTS_ENABLED ? "Plată cu cardul (−5%) sau ramburs" : "Plata la livrare (ramburs)"} marks={CARD_PAYMENTS_ENABLED} />
       )}
-      {/* Delivery date by working days (lib/delivery-date.ts) */}
-      {effectiveInStock && !prepay && <DeliveryDate market="ro" />}
 
       {/* Stock indicator - the number AVAILABLE (free to order). Shown only below the low-stock threshold; above
           it nothing is revealed (we don't disclose how much we hold). Premium and restrained - a quiet nudge,
