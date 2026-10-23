@@ -177,7 +177,7 @@ export const products: Product[] = [
     name: "Chrono Black",
     category: "watches",
     // Clearance 2026-10-23: further reduced to €149 (from €175 on 28.09.2026). originalPrice = €279 (price since 21.09.2026; owner accepts EU Omnibus risk).
-    price: 149,
+    price: 140,
     originalPrice: 279,
     currency: "€",
     badge: "ЕСЕННО НАМАЛЕНИЕ",
@@ -235,7 +235,7 @@ export const products: Product[] = [
     name: "Golden Eclipse",
     category: "watches",
     // Autumn sale 2026-09-28 (owner): €299 → €175; shown reference = €279 (owner's choice, accepts EU Omnibus risk).
-    price: 149,
+    price: 140,
     originalPrice: 279,
     currency: "€",
     badge: "ЕСЕННО НАМАЛЕНИЕ",
@@ -295,7 +295,7 @@ export const products: Product[] = [
     name: "Polar Frost",
     category: "watches",
     // Clearance 2026-10-23: further reduced to €149 (from €175 on 28.09.2026). originalPrice = €279 (price since 21.09.2026; owner accepts EU Omnibus risk).
-    price: 149,
+    price: 140,
     originalPrice: 279,
     currency: "€",
     badge: "ЕСЕННО НАМАЛЕНИЕ",
@@ -818,9 +818,11 @@ export const products: Product[] = [
     sku: "CRD-AMB",
     name: 'Lorenzo Ricci "Ambra"',
     category: "cardholders",
-    price: 65,
+    price: 44,
+    originalPrice: 65,
     priceAED: 500,
     currency: "€",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     inStock: true,
     stock: 10,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -855,7 +857,7 @@ export const products: Product[] = [
     name: 'Lorenzo Ricci "Bianco"',
     category: "cardholders",
     // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
-    price: 52,
+    price: 39,
     originalPrice: 65,
     priceAED: 500,
     currency: "€",
@@ -894,7 +896,7 @@ export const products: Product[] = [
     name: 'Lorenzo Ricci "Valentina"',
     category: "cardholders",
     // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
-    price: 52,
+    price: 39,
     originalPrice: 65,
     badge: "ЕСЕННО НАМАЛЕНИЕ",
     priceAED: 500,
@@ -932,9 +934,11 @@ export const products: Product[] = [
     sku: "CRD-ZAF",
     name: 'Lorenzo Ricci "Zaffiro"',
     category: "cardholders",
-    price: 65,
+    price: 44,
+    originalPrice: 65,
     priceAED: 500,
     currency: "€",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     inStock: true,
     stock: 15,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -975,7 +979,7 @@ export const products: Product[] = [
     name: 'Lorenzo Ricci "Onice"',
     category: "cardholders",
     // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
-    price: 52,
+    price: 39,
     originalPrice: 65,
     currency: "€",
     inStock: true,
@@ -1010,7 +1014,7 @@ export const products: Product[] = [
     name: 'Lorenzo Ricci "Giada"',
     category: "cardholders",
     // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
-    price: 52,
+    price: 39,
     originalPrice: 65,
     currency: "€",
     inStock: true,
@@ -1045,7 +1049,7 @@ export const products: Product[] = [
     name: 'Lorenzo Ricci "Cremisi"',
     category: "cardholders",
     // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
-    price: 52,
+    price: 39,
     originalPrice: 65,
     currency: "€",
     inStock: true,
@@ -1079,10 +1083,11 @@ export const products: Product[] = [
     sku: "CRD-PER",
     name: 'Lorenzo Ricci "Perla"',
     category: "cardholders",
-    price: 65,
+    price: 44,
+    originalPrice: 65,
     currency: "€",
     inStock: true,
-    badge: "Нова колекция",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     stock: 3,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Сив кардхолдър от крокодилска кожа",
@@ -1113,7 +1118,7 @@ export const products: Product[] = [
     name: 'Lorenzo Ricci "Topazio"',
     category: "cardholders",
     // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
-    price: 52,
+    price: 39,
     originalPrice: 65,
     currency: "€",
     inStock: true,
@@ -1171,9 +1176,7 @@ export const products: Product[] = [
     sku: "BAG-MILANO-AVORIO",
     name: 'Lorenzo Ricci "Milano Avorio"',
     category: "bags",
-    // Clearance 2026-10-23 (owner): first reduction to €3790. originalPrice = €4000 (price since launch; EU Omnibus compliant).
-    price: 3790,
-    originalPrice: 4000,
+    price: 4000,
     currency: "€",
     badge: "Единствен екземпляр",
     crocodileSpecies: NILE_CROCODILE,
@@ -1284,7 +1287,7 @@ export const products: Product[] = [
     name: 'Lorenzo Ricci "Torino"',
     category: "bags",
     // Clearance 2026-10-23: €449 from €749. originalPrice = €749 (was €499 since 28.09; owner accepts EU Omnibus risk).
-    price: 449,
+    price: 349,
     originalPrice: 749,
     currency: "€",
     inStock: true,
@@ -1327,7 +1330,7 @@ export const products: Product[] = [
     name: 'Lorenzo Ricci "Verona"',
     category: "bags",
     // Clearance 2026-10-23: €449 from €749. originalPrice = €749 (was €499 since 28.09; owner accepts EU Omnibus risk).
-    price: 449,
+    price: 349,
     originalPrice: 749,
     currency: "€",
     inStock: true,
@@ -1370,7 +1373,7 @@ export const products: Product[] = [
     name: 'Lorenzo Ricci "Toscana"',
     category: "bags",
     // Clearance 2026-10-23 (owner): €749 → €449. originalPrice = €749 (first sale; price was €750 since launch; owner accepts EU Omnibus risk).
-    price: 449,
+    price: 349,
     originalPrice: 749,
     currency: "€",
     inStock: true,
@@ -1416,7 +1419,7 @@ export const products: Product[] = [
     name: 'Lorenzo Ricci "Portofino"',
     category: "bags",
     // Clearance 2026-10-23: €449 from €749. originalPrice = €749 (was €499 since 28.09; owner accepts EU Omnibus risk).
-    price: 449,
+    price: 349,
     originalPrice: 749,
     currency: "€",
     inStock: true,
@@ -1462,7 +1465,7 @@ export const products: Product[] = [
     name: 'Lorenzo Ricci "Capri"',
     category: "bags",
     // Clearance 2026-10-23 (owner): €749 → €449. originalPrice = €749 (first sale; price was €750 since launch; owner accepts EU Omnibus risk).
-    price: 449,
+    price: 349,
     originalPrice: 749,
     currency: "€",
     inStock: true,
