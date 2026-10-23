@@ -13,7 +13,6 @@ import {
   fmtRON,
 } from "@/lib/ro/config";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
-import { DeliveryDate } from "@/components/product/DeliveryDate";
 import { RoCheckoutForm } from "./RoCheckoutForm";
 import { bundleLineLabel } from "./shared";
 
@@ -286,8 +285,6 @@ export function RoCartDrawer() {
                   <span className="font-serif text-lg text-white">{fmtRON(total)}</span>
                 </div>
               </div>
-
-              {!needsPrepayment && <div className="mb-3"><DeliveryDate market="ro" tone="dark" /></div>}
 
               <button onClick={startCheckout} className="btn-primary w-full text-center justify-center">
                 {needsPrepayment ? "Continuă comanda - plată în avans" : CARD_PAYMENTS_ENABLED ? "Comandă acum" : "Comandă acum - plată la livrare"}

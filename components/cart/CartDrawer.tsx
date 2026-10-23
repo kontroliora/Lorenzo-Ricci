@@ -9,8 +9,7 @@ import { CartCrossSell } from "./CartCrossSell";
 import { CartGiftRow } from "./GiftRow";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 import { promoBase } from "@/lib/bundles";
-import { isOnSale, requiresPrepayment } from "@/lib/price";
-import { DeliveryDate } from "@/components/product/DeliveryDate";
+import { isOnSale } from "@/lib/price";
 
 const CART_TIMEOUT = 15 * 60; // 900 seconds
 
@@ -434,8 +433,6 @@ export function CartDrawer() {
                   </div>
                 </div>
               )}
-
-              {!items.some((i) => requiresPrepayment(i.product)) && <div className="mb-3"><DeliveryDate market="bg" tone="dark" /></div>}
 
               <button
                 onClick={() => {
