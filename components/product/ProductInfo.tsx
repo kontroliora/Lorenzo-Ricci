@@ -361,7 +361,14 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
 
       {/* Cash on delivery + inspection before paying: said under the price (not for a prepayment product) */}
       {effectiveInStock && !requiresPrepayment(product) && (
-        <PayLine text={CARD_PAYMENTS_ENABLED ? "Плащане с карта (−5%) или наложен платеж" : "Наложен платеж"} marks={CARD_PAYMENTS_ENABLED} />
+        {CARD_PAYMENTS_ENABLED ? (
+          <>
+            <PayLine text="Карта (5% отстъпка)" marks={true} />
+            <PayLine text="Наложен платеж" marks={false} />
+          </>
+        ) : (
+          <PayLine text="Наложен платеж" marks={false} />
+        )}
       )}
       {/* Delivery date by working days (lib/delivery-date.ts) */}
       {effectiveInStock && !requiresPrepayment(product) && <DeliveryDate market="bg" />}
