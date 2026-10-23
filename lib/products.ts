@@ -1369,12 +1369,9 @@ export const products: Product[] = [
     sku: "CLU-TOSCANA",
     name: 'Lorenzo Ricci "Toscana"',
     category: "bags",
-    // Clearance 2026-10-23 (owner): €749 → €449. originalPrice = €749 (first sale; price was €750 since launch; owner accepts EU Omnibus risk).
-    price: 349,
-    originalPrice: 749,
+    price: 749,
     currency: "€",
     inStock: true,
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
     stock: 2,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Тъмнозелен вечерен клъч от крокодилска кожа",
@@ -1461,12 +1458,9 @@ export const products: Product[] = [
     sku: "CLU-CAPRI",
     name: 'Lorenzo Ricci "Capri"',
     category: "bags",
-    // Clearance 2026-10-23 (owner): €749 → €449. originalPrice = €749 (first sale; price was €750 since launch; owner accepts EU Omnibus risk).
-    price: 349,
-    originalPrice: 749,
+    price: 749,
     currency: "€",
     inStock: true,
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
     stock: 3,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Тъмносин вечерен клъч от крокодилска кожа",
