@@ -1084,7 +1084,6 @@ export const products: Product[] = [
     price: 65,
     currency: "€",
     inStock: true,
-    badge: "Нова колекция",
     stock: 3,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Сив кардхолдър от крокодилска кожа",
