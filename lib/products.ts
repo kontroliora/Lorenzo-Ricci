@@ -818,9 +818,11 @@ export const products: Product[] = [
     sku: "CRD-AMB",
     name: 'Lorenzo Ricci "Ambra"',
     category: "cardholders",
-    price: 65,
+    price: 44,
+    originalPrice: 65,
     priceAED: 500,
     currency: "€",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     inStock: true,
     stock: 10,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
