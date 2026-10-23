@@ -370,8 +370,6 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           <PayLine text="Наложен платеж" marks={false} />
         )}
       )}
-      {/* Delivery date by working days (lib/delivery-date.ts) */}
-      {effectiveInStock && !requiresPrepayment(product) && <DeliveryDate market="bg" />}
 
       {/* Clutches: the free gift cardholder (renders nothing for any other product) */}
       <GiftOffer clutchSlug={product.slug} />
