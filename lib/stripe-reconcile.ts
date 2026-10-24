@@ -131,7 +131,9 @@ export async function reconcileStripe(sb: SupabaseClient, opts: { days?: number;
       report.cardWithoutPayment.push({ ref: o.order_ref, status: o.status, paymentStatus: o.payment_status });
       continue;
     }
-    if (paid && !(o.stripe_session_id && paidSessions.has(o.stripe_session_id))) {
+    // A session of the OTHER Stripe mode (cs_test_ under a live key: the test orders of 14.10) cannot be checked from here - skip it.
+    const otherMode = !!o.stripe_session_id && (live ? o.stripe_session_id.startsWith("cs_test_") : o.stripe_session_id.startsWith("cs_live_"));
+    if (paid && !otherMode && !(o.stripe_session_id && paidSessions.has(o.stripe_session_id))) {
       let state = "no session id on the order";
       if (o.stripe_session_id) {
         try {
