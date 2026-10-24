@@ -1,0 +1,22 @@
+# Stripe -> orders reconciliation every 15 minutes (the Vercel Hobby plan allows only daily crons; vercel.json runs it once a day too).
+# Needs the repository secret RECONCILE_SECRET (Settings -> Secrets and variables -> Actions); it must equal RECONCILE_SECRET in Vercel.
+# Without the secret the job does nothing.
+name: stripe-reconcile
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Call the reconciliation endpoint
+        env:
+          RECONCILE_SECRET: ${{ secrets.RECONCILE_SECRET }}
+        run: |
+          if [ -z "$RECONCILE_SECRET" ]; then echo "RECONCILE_SECRET is not set - skipping"; exit 0; fi
+          code=$(curl -s -o out.json -w "%{http_code}" --max-time 90 -H "Authorization: Bearer $RECONCILE_SECRET" https://www.lorenzo-ricci.com/api/cron/stripe-reconcile)
+          echo "HTTP $code"
+          python3 -c "import json;d=json.load(open('out.json'));print({k:(len(v) if isinstance(v,list) else v) for k,v in d.items()})" || cat out.json
+          [ "$code" = "200" ]

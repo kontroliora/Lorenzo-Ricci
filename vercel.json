@@ -18,6 +18,10 @@
     {
       "path": "/api/cron/release-pending-payments",
       "schedule": "30 8 * * *"
+    },
+    {
+      "path": "/api/cron/stripe-reconcile?days=30",
+      "schedule": "0 7 * * *"
     }
   ]
 }

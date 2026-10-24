@@ -7,6 +7,8 @@ import { modeOfKey } from "@/lib/stripe-mode";
 import { getStuckSummary } from "@/lib/checkout-events-server";
 import type { StuckSummary } from "@/lib/checkout-events";
 import { OrdersBoard } from "./OrdersBoard";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+import { reconcileBeforePanel } from "@/lib/stripe-reconcile";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +17,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const initialMarket = m === "ro" ? "ro" : m === "bg" ? "bg" : "all";
   // Was 150 — with >150 orders the oldest (stuck new/confirmed) fell off the
   // panel entirely. Raised so every order shows; paginate properly when it grows.
+  // A card payment Stripe has but the board does not (missed webhook) is written first, so nobody ships a paid order as COD.
+  if ((process.env.STRIPE_SECRET_KEY ?? "").trim()) await reconcileBeforePanel(supabaseAdmin());
   const orders = await getOrders(1000);
   const histories = await getCustomerHistories(orders.map((o) => o.phone ?? "").filter(Boolean));
   const log = await getStatusLog(orders.map((o) => o.id));
