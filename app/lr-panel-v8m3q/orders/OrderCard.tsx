@@ -3,7 +3,7 @@ import { useState, useEffect, useTransition } from "react";
 import { isRoOfficeMethod } from "@/lib/ro/config";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
 import { isReturn, isPendingPayment, isDeadCardAttempt } from "@/lib/order-status";
-import { isCard, isPaidCard } from "@/lib/payments";
+import { isPaidCard, hasCardMoney, cardMoneyMissing } from "@/lib/payments";
 import {
   confirmOrder,
   cancelOrder,
@@ -19,7 +19,7 @@ import {
 import { callTimer, sofiaHHMM, formatAttemptList, formatAttemptAudit } from "@/lib/callSchedule";
 import { OrderItemsList } from "./OrderItemsList";
 import { isRoOrder, fmtLei, fmtLeiWithEuro } from "@/lib/market";
-import { PaymentBadge, PaidCardCollectLine } from "./PaymentUi";
+import { PaymentBadge, PaidCardCollectLine, CardMoneyMissingLine } from "./PaymentUi";
 import { refundPlan } from "@/lib/stripe-mode";
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
@@ -129,7 +129,9 @@ export function OrderCard({
   const pendingPay = isPendingPayment(order);
   const deadAttempt = isDeadCardAttempt(order);   // card checkout that expired / failed unpaid
   const readOnly = pendingPay || deadAttempt;
-  const paidCard = isPaidCard(order);
+  const paidCard = isPaidCard(order);           // refund / cancel logic (server side uses the same predicate)
+  const cardMoney = hasCardMoney(order);        // display: Stripe has the money, the courier collects 0
+  const cardMissing = cardMoneyMissing(order);
   // A test card payment (Stripe test mode / no Stripe key here) is cancelled without a refund and without an e-mail to the customer.
   const testPay = paidCard && refundPlan(order.stripe_session_id, stripeKey === "live" ? "sk_live_x" : stripeKey === "test" ? "sk_test_x" : "").action === "skip";
   const badge = deadAttempt ? DEAD_ATTEMPT_BADGE : (STATUS_BADGE[order.status] ?? STATUS_BADGE.new);
@@ -224,10 +226,12 @@ export function OrderCard({
             <span>Доставка: <span style={{ color: "rgba(255,255,255,0.8)" }}>{codShip > 0 ? money(codShip) : "безплатна"}</span></span>
           </div>
         )}
-        {paidCard ? (
+        {cardMoney ? (
           <PaidCardCollectLine zero="0" paidAmount={totalLabel} paidAt={order.paid_at ? fmtDate(order.paid_at) : null} />
+        ) : cardMissing ? (
+          <CardMoneyMissingLine total={totalLabel} />
         ) : (
-          <div style={{ color: "#fff", fontWeight: 500 }}>{totalLabel}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · {isCard(order) ? "карта, още не е платено" : "наложен платеж"}</span></div>
+          <div style={{ color: "#fff", fontWeight: 500 }}>{totalLabel}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · {order.payment_method === "card" ? "карта, още не е платено" : "наложен платеж"}</span></div>
         )}
         {order.promo_code && (
           <div style={{ marginTop: 4, fontSize: 12, color: "#C0DD97" }}>

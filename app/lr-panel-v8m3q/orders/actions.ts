@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { reconcileShippedOrders, matchTrackingNumbers, classifyExistingReturns, markRestocked as markRestockedTx, type MatchResult } from "@/lib/econt";
+import { reconcileShippedOrders, matchTrackingNumbers, classifyExistingReturns, markRestocked as markRestockedTx, econtCodAmount, type MatchResult } from "@/lib/econt";
 import { sendShipConfirmations } from "@/lib/shipment-notify";
 import { RESERVING_STATUSES, isReturn, type OrderItem } from "@/lib/orders";
 import { isRoOrder } from "@/lib/market";
 import { sendRoPanelMail, type RoPanelMail } from "@/lib/ro/panel-mail";
 import { getStripe } from "@/lib/stripe";
-import { isPaidCard } from "@/lib/payments";
+import { isPaidCard, hasCardMoney, cardMoneyMissing } from "@/lib/payments";
 import { refundPlan, isMissingStripeObject } from "@/lib/stripe-mode";
 import { fmtRON } from "@/lib/ro/config";
 
@@ -50,6 +50,7 @@ const HOLDS_STOCK = (status: string) => (RESERVING_STATUSES as readonly string[]
 type Snap = {
   id: number; status: string; items: OrderItem[]; ship_country: string | null; order_ref: string | null; total?: number | null;
   payment_method?: string | null; payment_status?: string | null; stripe_payment_intent?: string | null; stripe_session_id?: string | null;
+  created_at?: string | null;
 };
 
 async function snapshot(supabase: Awaited<ReturnType<typeof createClient>>, ids: number[]): Promise<Snap[]> {
@@ -221,6 +222,21 @@ export async function markNoAnswerOrders(ids: number[]): Promise<string | null> 
   }
 }
 
+// HARD GUARD (24.10.2026): money already taken by Stripe must never be collected a second time by Econt.
+//   - a card order with no paid card payment (inconsistent) is never shipped from here;
+//   - an order with a paid card payment is shipped only on a waybill whose cash-on-delivery amount Econt reports as 0;
+//     a waybill Econt cannot find (or Econt unreachable) blocks too - "not verified" is not "0".
+async function codGuard(snap: Snap | undefined, awb: string): Promise<string | null> {
+  if (!snap) return null;
+  const ref = snap.order_ref ?? `#${snap.id}`;
+  if (cardMoneyMissing(snap)) return `СТОП: поръчка ${ref} е с плащане с карта, но плащане няма. Не изпращай - провери в Stripe.`;
+  if (!hasCardMoney(snap)) return null;
+  const cod = await econtCodAmount(awb, snap.created_at ? new Date(snap.created_at).getTime() : Date.now() - 14 * 86_400_000);
+  if (cod === null) return `СТОП: поръчка ${ref} е ПЛАТЕНА С КАРТА, а не намирам товарителница ${awb} в Еконт и не мога да проверя, че наложеният платеж е 0. Провери номера и опитай пак след минута.`;
+  if (cod > 0.01) return `СТОП: товарителница ${awb} е с наложен платеж ${cod.toFixed(2)}, а поръчка ${ref} е ПЛАТЕНА С КАРТА. Анулирай товарителницата в Еконт и направи нова с наложен платеж 0.`;
+  return null;
+}
+
 // Ship → tracking required. The DB trigger also blocks 'shipped' without it.
 export async function shipOrder(id: number, tracking: string): Promise<string | null> {
   const t = (tracking ?? "").trim();
@@ -229,6 +245,8 @@ export async function shipOrder(id: number, tracking: string): Promise<string | 
   if (!t) return "Въведи тракинг номер от Еконт първо";
   const blocked = refundedBlock(snap ? [snap] : []);
   if (blocked) return blocked;
+  const codBlocked = await codGuard(snap, t);
+  if (codBlocked) return codBlocked;
   return patchOrder(id, { tracking_number: t, status: "shipped" });
 }
 
@@ -360,6 +378,9 @@ export async function matchTracking(): Promise<{ ok: boolean; message: string; r
 
 // Confirm a suggested (uncertain) match → fill the tracking number + mark shipped.
 export async function confirmMatch(orderId: number, awb: string): Promise<string | null> {
+  const [snap] = await snapshot(await createClient(), [orderId]);
+  const blocked = refundedBlock(snap ? [snap] : []) ?? (await codGuard(snap, awb));
+  if (blocked) return blocked;
   return patchOrder(orderId, { tracking_number: awb, status: "shipped" });
 }
 

@@ -86,10 +86,12 @@ const PAYMENT_COLUMNS = "payment_method, payment_status, paid_at, stripe_payment
 
 export async function getOrders(limit = 1000): Promise<AdminOrder[]> {
   const supabase = await createClient();
-  // Try the richest column set first, degrade gracefully if a migration hasn't
-  // run yet: payment columns → promo columns → extended columns → base. A missing
-  // column must never blank the whole panel.
+  // "*" FIRST: it returns whatever columns this database has, so a column the code knows but a migration never added can
+  // never hide the others. (24.10.2026: return_reviewed was never migrated, every named tier below failed on it and the board
+  // fell back to BASE_COLUMNS - no payment_method / payment_status - so paid card orders showed as "Наложен платеж · неплатено".)
+  // The named tiers stay only as a fallback should "*" itself ever fail.
   const tiers = [
+    "*",
     `${ORDER_COLUMNS}, promo_code, promo_discount, return_kind, return_dwell_days, returning_at, restocked_at, restocked_source, ${PAYMENT_COLUMNS}, card_discount`,
     `${ORDER_COLUMNS}, promo_code, promo_discount, return_kind, return_dwell_days, returning_at, restocked_at, restocked_source, ${PAYMENT_COLUMNS}`,
     `${ORDER_COLUMNS}, promo_code, promo_discount, return_kind, return_dwell_days, returning_at, restocked_at, restocked_source`,

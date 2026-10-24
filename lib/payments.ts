@@ -44,6 +44,12 @@ export const STRIPE_SESSION_TTL_SECONDS = (CARD_HOLD_MINUTES + 2) * 60;
 
 export const isCard = (o: { payment_method?: string | null }): boolean => o.payment_method === "card";
 export const isPaidCard = (o: { payment_method?: string | null; payment_status?: string | null }): boolean => isCard(o) && o.payment_status === "paid";
+/** Money already taken by Stripe: paid card order, or ANY order with a paid Stripe payment on it. The courier must collect 0. */
+export const hasCardMoney = (o: { payment_method?: string | null; payment_status?: string | null; stripe_payment_intent?: string | null }): boolean =>
+  isPaidCard(o) || (o.payment_status === "paid" && !!o.stripe_payment_intent);
+/** Inconsistent: a card order that is live (new / confirmed / shipped / completed) but has no paid card payment. Never ship it as COD. */
+export const cardMoneyMissing = (o: { status?: string | null; payment_method?: string | null; payment_status?: string | null; stripe_payment_intent?: string | null }): boolean =>
+  isCard(o) && !hasCardMoney(o) && ["new", "confirmed", "shipped", "completed"].includes(String(o.status ?? ""));
 
 /** Money to Stripe's smallest unit (cents / bani). All amounts in this shop have at most 2 decimals. */
 export const toMinor = (amount: number): number => Math.round(amount * 100);

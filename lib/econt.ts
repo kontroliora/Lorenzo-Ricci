@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { hasCardMoney, cardMoneyMissing } from "./payments";
 
 const BASE = "https://ee.econt.com/services/Shipments/ShipmentService";
 
@@ -412,6 +413,21 @@ export async function getMyAWB(dateFrom: string, dateTo: string, side = "sender"
   return out;
 }
 
+/** Cash-on-delivery amount of one of OUR waybills (getMyAWB, sender side, from 2 days before `sinceMs` to tomorrow).
+ *  null = the waybill is not found or Econt cannot be reached - the caller must treat that as "not verified". */
+export async function econtCodAmount(awb: string, sinceMs: number): Promise<number | null> {
+  const n = (awb ?? "").replace(/\s+/g, "");
+  if (!n) return null;
+  const day = (d: number) => new Date(d).toISOString().slice(0, 10);
+  try {
+    const list = await getMyAWB(day(sinceMs - 2 * 86_400_000), day(Date.now() + 86_400_000), "sender");
+    const hit = list.find((a) => a.shipmentNumber.replace(/\s+/g, "") === n);
+    return hit ? hit.cdAmount : null;
+  } catch {
+    return null;
+  }
+}
+
 export type MatchCandidate = { awb: string; cdAmount: number; status: string; createdDate: number };
 export type MatchResult = {
   scanned: number;
@@ -423,7 +439,7 @@ export async function matchTrackingNumbers(sb: SupabaseClient): Promise<MatchRes
   // payment_method is read when the card-payment migration has run; before it every order is cash on delivery.
   let ordersRes: { data: unknown; error: { message: string } | null } = await sb
     .from("orders")
-    .select("id, order_ref, name, phone, total, subtotal, created_at, payment_method")
+    .select("id, order_ref, name, phone, total, subtotal, created_at, payment_method, payment_status, stripe_payment_intent")
     .eq("status", "confirmed")
     .eq("is_international", false)
     .is("tracking_number", null);
@@ -431,7 +447,7 @@ export async function matchTrackingNumbers(sb: SupabaseClient): Promise<MatchRes
     ordersRes = await sb.from("orders").select("id, order_ref, name, phone, total, subtotal, created_at").eq("status", "confirmed").eq("is_international", false).is("tracking_number", null);
   }
   if (ordersRes.error) throw new Error(ordersRes.error.message);
-  const orders = (ordersRes.data ?? []) as unknown as Array<{ id: number; order_ref: string | null; name: string | null; phone: string | null; total: number | null; subtotal: number | null; created_at: string; payment_method?: string | null }>;
+  const orders = (ordersRes.data ?? []) as unknown as Array<{ id: number; order_ref: string | null; name: string | null; phone: string | null; total: number | null; subtotal: number | null; created_at: string; payment_method?: string | null; payment_status?: string | null; stripe_payment_intent?: string | null }>;
   if (!orders.length) return { scanned: 0, autoFilled: [], pending: [] };
 
   // AWBs already assigned anywhere → never reuse.
@@ -468,9 +484,11 @@ export async function matchTrackingNumbers(sb: SupabaseClient): Promise<MatchRes
     const total = Number(o.total ?? 0);
     const subtotal = Number(o.subtotal ?? 0);
     // A card order is already paid: its waybill must collect NOTHING (cash on delivery 0), not the order total.
-    const amountOk = (v: number) => o.payment_method === "card" ? Math.abs(v) <= 0.01 : Math.abs(v - total) <= 2 || (subtotal > 0 && Math.abs(v - subtotal) <= 2);
+    // A card order WITHOUT a paid payment is never auto-filled (inconsistent data: a person must look at it).
+    const paidByCard = hasCardMoney(o);
+    const amountOk = (v: number) => paidByCard ? Math.abs(v) <= 0.01 : Math.abs(v - total) <= 2 || (subtotal > 0 && Math.abs(v - subtotal) <= 2);
 
-    if (cands.length === 1 && amountOk(cands[0].cdAmount)) {
+    if (cands.length === 1 && !cardMoneyMissing({ ...o, status: "confirmed" }) && amountOk(cands[0].cdAmount)) {
       const awb = cands[0].shipmentNumber;
       claimed.add(awb);
       await sb.from("orders").update({ tracking_number: awb, status: "shipped" }).eq("id", o.id);
