@@ -375,7 +375,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
 
       {/* Plata la livrare (ramburs), said under the price (not for a prepayment product) */}
       {effectiveInStock && !prepay && (
-        <PayLine text={CARD_PAYMENTS_ENABLED ? "Plată cu cardul (−5%) sau ramburs" : "Plata la livrare (ramburs)"} marks={CARD_PAYMENTS_ENABLED} />
+        <PayLine text={CARD_PAYMENTS_ENABLED ? "Plată cu cardul sau ramburs" : "Plata la livrare (ramburs)"} marks={CARD_PAYMENTS_ENABLED} />
       )}
 
       {/* Stock indicator - the number AVAILABLE (free to order). Shown only below the low-stock threshold; above
@@ -575,7 +575,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
               ) : (
                 <p>
                   {CARD_PAYMENTS_ENABLED
-                    ? <><strong className="text-charcoal font-normal">Plată cu cardul</strong> (−5% reducere din valoarea produselor, maximum 130 lei) sau <strong className="text-charcoal font-normal">ramburs</strong> - achitați comanda curierului, la primirea coletului.</>
+                    ? <><strong className="text-charcoal font-normal">Plată cu cardul</strong>, online, sau <strong className="text-charcoal font-normal">ramburs</strong> - achitați comanda curierului, la primirea coletului.</>
                     : <><strong className="text-charcoal font-normal">Plată ramburs</strong> - achitați comanda curierului, la primirea coletului.</>}
                 </p>
               )}

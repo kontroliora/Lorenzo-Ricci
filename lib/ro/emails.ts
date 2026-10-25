@@ -10,7 +10,7 @@ export type RoOrderEmailData = {
   items: RoOrderLine[];
   subtotal: number;        // goods after set discounts
   discount?: number;       // set discount in lei (0 / undefined: none)
-  cardDiscount?: number;   // 5% for paying by card (max 130 lei), lei; undefined / 0: none
+  cardDiscount?: number;   // not used in Romania any more (no card discount since 25.10.2026); kept for the data shape
   shippingCost: number;
   total: number;
   officeDelivery?: boolean; // delivery to a Speedy locker / office: customer.address is then its address
@@ -63,7 +63,6 @@ export function buildRoCustomerEmail(o: RoOrderEmailData, opts: { paidByCard?: b
     <table width="100%" cellpadding="0" cellspacing="0"><tbody>${itemRows(o.items)}</tbody>
       <tfoot>
         ${o.discount ? `<tr><td colspan="2" style="padding:12px 0 0;font-size:12px;color:#888">Reducere set</td><td style="padding:12px 0 0;text-align:right;font-size:14px;color:#047857">-${esc(fmtRON(o.discount))}</td></tr>` : ""}
-        ${o.cardDiscount ? `<tr><td colspan="2" style="padding:12px 0 0;font-size:12px;color:#888">Reducere 5% la plata cu cardul</td><td style="padding:12px 0 0;text-align:right;font-size:14px;color:#047857">-${esc(fmtRON(o.cardDiscount))}</td></tr>` : ""}
         <tr><td colspan="2" style="padding:12px 0 0;font-size:12px;color:#888">Livrare</td><td style="padding:12px 0 0;text-align:right;font-size:14px;color:#1a1a1a">${o.shippingCost === 0 ? "Gratuită" : esc(fmtRON(o.shippingCost))}</td></tr>
         <tr><td colspan="2" style="padding:14px 0 0;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#888">${opts.paidByCard ? "Plătit cu cardul" : "Suma de plătit la livrare"}</td><td style="padding:14px 0 0;text-align:right;font-family:Georgia,serif;font-size:20px;color:${NAVY};font-weight:700">${esc(fmtRON(o.total))}</td></tr>
       </tfoot>

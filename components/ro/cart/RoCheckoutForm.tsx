@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useRoCart, type RoCartLine } from "@/lib/ro/store";
 import { roAmounts } from "@/lib/ro/pricing";
-import { CARD_DISCOUNT_CAP_RON, cardDiscountIsCapped } from "@/lib/card-discount";
 import { RO_COUNTIES } from "@/lib/ro/counties";
 import {
   RO_COD_FEE_RON,
@@ -27,7 +26,7 @@ import { PREPAYMENT_THRESHOLD_TEXT, bundleLineLabel } from "./shared";
 // Romania checkout (cash on delivery / ramburs, or card through Stripe Checkout while the card option is switched on).
 // Port of components/cart/CheckoutForm.tsx: same look, one shipping option, GDPR-clean consent (nothing pre-ticked), no
 // abandoned-cart capture. All money comes from lib/ro/pricing.ts roAmounts, the same function /api/order-ro uses, so the
-// server agrees to the leu. Card orders have free delivery and no ramburs fee (roAmounts {card: true}).
+// server agrees to the leu. Card orders: no card discount in Romania (owner, 25.10.2026), normal delivery rule, no ramburs fee.
 //
 // A cart holding a product that needs advance payment (EUR 1500 and up, line.prepay) gets NO ramburs form: like the
 // Bulgarian checkout, it shows the interim contact flow (Viber / phone / e-mail), the order is arranged with the shop.
@@ -282,7 +281,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       discount: amounts.discount,                              // set discount in lei (0 if none)
       shipping: { method: delivery === "office" ? RO_SHIPPING_OFFICE : RO_SHIPPING_HOME, cost: amounts.shipping },
       subtotal: amounts.goods,                                 // goods AFTER the set discount (before the card discount)
-      cardDiscount: amounts.cardDiscount,                      // 5% for paying by card (max 130 lei); 0 for ramburs
+      cardDiscount: amounts.cardDiscount,                      // always 0: Romania has no card discount (the server checks it)
       total: amounts.total,
       paymentMethod: method,
       timestamp: new Date().toISOString(),
@@ -413,9 +412,6 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   }));
   const summaryRows: SummaryRow[] = [
     ...bundles.map(({ id, label, discount }) => ({ key: `bundle-${id}`, label: bundleLineLabel(label), value: `-${fmtRON(discount)}`, tone: "discount" as const })),
-    ...(cardDiscount > 0
-      ? [{ key: "card-discount", label: `−5% la plata cu cardul${cardDiscountIsCapped(goodsAfterSets, "RON") ? ` (maxim ${CARD_DISCOUNT_CAP_RON} lei)` : ""}`, value: `-${fmtRON(cardDiscount)}`, tone: "discount" as const }]
-      : []),
     { key: "shipping", label: "Livrare", value: freeShipping ? "Gratuită" : fmtRON(shippingCost), tone: freeShipping ? ("free" as const) : undefined },
     ...(!isCardPay && RO_COD_FEE_RON > 0 ? [{ key: "cod-fee", label: "Taxă ramburs", value: fmtRON(RO_COD_FEE_RON) }] : []),
   ];
@@ -581,8 +577,8 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
               name="ro-payment" value="card" selected={isCardPay}
               onSelect={() => { if (!submitting) setPayMethod("card"); }}
               title="Plata cu cardul"
-              subtitle={`−5% din valoarea produselor (maxim ${CARD_DISCOUNT_CAP_RON} lei)`}
-              right={<span className="flex flex-col items-end leading-tight"><span data-testid="card-discount-badge" className="text-xs text-[#4ADE80]">−5%</span><span>{fmtRON(cardTotal)}</span></span>}
+              subtitle="Plată online securizată prin Stripe"
+              right={fmtRON(cardTotal)}
             >
               <PaymentMarks label="Carduri și portofele acceptate" />
               {isCardPay && (

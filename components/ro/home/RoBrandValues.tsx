@@ -16,7 +16,7 @@ const VALUES = [
   {
     title: CARD_PAYMENTS_ENABLED ? "Card sau ramburs" : "Plata la livrare",
     desc: CARD_PAYMENTS_ENABLED
-      ? `Plătiți cu cardul (−5% reducere, maximum 130 lei) sau curierului, la primirea coletului (ramburs). Produsele de la ${PREPAYMENT_FROM} în sus se comandă cu plata în avans.`
+      ? `Plătiți cu cardul, online, sau curierului, la primirea coletului (ramburs). Produsele de la ${PREPAYMENT_FROM} în sus se comandă cu plata în avans.`
       : `${RO_INSPECT_BEFORE_PAY
       ? "Plătiți curierului la primirea coletului, după ce îl verificați (ramburs)."
       : "Plătiți curierului la primirea coletului (ramburs)."} Produsele de la ${PREPAYMENT_FROM} în sus se comandă cu plata în avans.`,

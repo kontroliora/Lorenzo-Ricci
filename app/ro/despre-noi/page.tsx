@@ -174,7 +174,7 @@ export default function DespreNoiPage() {
               { label: "Pe viață", sub: "Garanție comercială, bijuterii" },
               { label: `${RO_RETURN_DAYS} zile`, sub: "Drept legal de retragere" },
               { label: "30 de zile", sub: "Schimb pentru produse la preț întreg" },
-              CARD_PAYMENTS_ENABLED ? { label: "Card sau ramburs", sub: `−5% la plata cu cardul, sub ${PREPAY_RON}` } : { label: "Ramburs", sub: `Plata la livrare, sub ${PREPAY_RON}` },
+              CARD_PAYMENTS_ENABLED ? { label: "Card sau ramburs", sub: `Card online sau ramburs, sub ${PREPAY_RON}` } : { label: "Ramburs", sub: `Plata la livrare, sub ${PREPAY_RON}` },
             ].map(({ label, sub }) => (
               <div key={label} className="flex flex-col items-center gap-1 w-[calc(50%-0.75rem)] sm:w-[calc(33.333%-1rem)]">
                 <p className="font-sans text-sm font-medium tracking-wide" style={{color: "#ffffff"}}>{label}</p>

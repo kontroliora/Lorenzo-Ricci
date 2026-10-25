@@ -74,7 +74,7 @@ export default function LivrarePage() {
         <PolicySection title="Plata">
           <p>
             Pentru produsele cu un preț sub <strong className="text-charcoal font-normal">{PREPAY_RON}</strong>, plata se face <strong className="text-charcoal font-normal">ramburs</strong>: achitați comanda curierului, la livrare.
-            {CARD_PAYMENTS_ENABLED && <>{" "}Puteți plăti și cu cardul, online, prin Stripe, în lei: la plata cu cardul se aplică o reducere de 5% din valoarea produselor (maximum 130 lei); livrarea se plătește după aceleași reguli ca la ramburs; reducerea nu se cumulează cu coduri promoționale.</>}
+            {CARD_PAYMENTS_ENABLED && <>{" "}Puteți plăti și cu cardul, online, prin Stripe, în lei; livrarea se plătește după aceleași reguli ca la ramburs.</>}
             {RO_COD_FEE_RON > 0 && (
               <>
                 {" "}Pentru plata ramburs se percepe o taxă de <strong className="text-charcoal font-normal">{fmtRON(RO_COD_FEE_RON)}</strong>.

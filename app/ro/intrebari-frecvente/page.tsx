@@ -109,7 +109,7 @@ const faqs: { category: string; items: FaqItem[] }[] = [
         a: (
           <>
             Pentru produsele cu un preț sub {PREPAY_RON}, plata se face ramburs: achitați comanda curierului, la livrare.
-            {CARD_PAYMENTS_ENABLED && <>{" "}Puteți plăti și cu cardul, online, prin Stripe, în lei: la plata cu cardul se aplică o reducere de 5% din valoarea produselor (maximum 130 lei); livrarea se plătește după aceleași reguli ca la ramburs; reducerea nu se cumulează cu coduri promoționale.</>}
+            {CARD_PAYMENTS_ENABLED && <>{" "}Puteți plăti și cu cardul, online, prin Stripe, în lei; livrarea se plătește după aceleași reguli ca la ramburs.</>}
             {RO_COD_FEE_RON > 0 && <> Pentru plata ramburs se percepe o taxă de {fmtRON(RO_COD_FEE_RON)}.</>}
             {RO_INSPECT_BEFORE_PAY && <> Aveți dreptul să verificați coletul înainte de plată și să îl refuzați dacă produsul nu corespunde așteptărilor dumneavoastră.</>}
             {" "}Produsele cu un preț de la {PREPAY_RON} în sus (echivalentul a {PREPAY_EUR} EUR) se comandă cu plata în avans, stabilită direct cu noi - pentru acestea plata ramburs nu este disponibilă. Scrieți-ne la info@lorenzo-ricci.com și vom stabili împreună modalitatea de plată.

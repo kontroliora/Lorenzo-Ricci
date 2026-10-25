@@ -116,8 +116,8 @@ export async function POST(req: NextRequest) {
         : `${gate.names.join(", ")} nu se poate comanda cu plata la livrare.`);
     }
 
-    // Card payment: delivery is FREE whatever the size of the order (the browser only displays it, the server enforces it)
-    // and nothing is sent to Meta or the customer until Stripe confirms the payment (webhook).
+    // Card payment: no card discount in Romania (lib/ro/pricing.ts - a request that claims one fails the total check below with 409),
+    // normal delivery rule, and nothing is sent to Meta or the customer until Stripe confirms the payment (webhook).
     const isCard = body.paymentMethod === "card";
     if (isCard && !CARD_PAYMENTS_ENABLED) return fail(503, "unavailable", "Plata cu cardul nu este disponibilă momentan. Vă rugăm să alegeți plata la livrare.");
     // Every amount comes from ONE function (lib/ro/pricing.ts, shared with the cart): lines at the current lei prices, set
@@ -162,7 +162,6 @@ export async function POST(req: NextRequest) {
       subtotal,
       shipping_cost: shippingCost,
       total,
-      ...(cardDiscount > 0 ? { card_discount: cardDiscount } : {}),
       sms_marketing_consent: cu.smsMarketingConsent === true,
       email_marketing_consent: cu.emailMarketingConsent === true,
       notes: previewMarked(notes),
@@ -173,12 +172,6 @@ export async function POST(req: NextRequest) {
     // the LRRO- reference) work without it, so an order is never lost because the column has not been added yet.
     let { error: insErr } = await sb.from("orders").insert({ ...orderRow, lang: "ro" });
     if (insErr && /lang/i.test(insErr.message)) ({ error: insErr } = await sb.from("orders").insert(orderRow));
-    // card_discount (supabase/orders_card_discount.sql) not added yet: take the order anyway (subtotal / total carry the amounts)
-    if (insErr && "card_discount" in orderRow && /card_discount|schema cache|column/i.test(insErr.message)) {
-      const { card_discount: _cd, ...noCd } = orderRow; void _cd;
-      ({ error: insErr } = await sb.from("orders").insert({ ...noCd, lang: "ro" }));
-      if (insErr && /lang/i.test(insErr.message)) ({ error: insErr } = await sb.from("orders").insert(noCd));
-    }
     if (insErr) {
       console.error("[order-ro] insert failed:", insErr.message);
       const { error: restockErr } = await sb.rpc("restock_wallet_stock", { p_items: reserveItems });
@@ -209,8 +202,7 @@ export async function POST(req: NextRequest) {
           ...(shippingCost > 0 ? [{ name: office ? "Livrare la locker / birou Speedy" : "Livrare la domiciliu (Speedy)", sku: "SHIPPING", quantity: 1, unitPrice: shippingCost }] : []),
         ],
         expectedTotal: total,
-        discount: discount + cardDiscount,   // set discount + card discount on one Stripe coupon
-        discountLabel: cardDiscount > 0 && discount === 0 ? "Reducere 5% la plata cu cardul" : undefined,
+        discount,                            // set discounts only (Romania has no card discount)
         customerEmail: email,
         origin: returnOrigin(req.nextUrl.origin),
         heldItems: orderItems,

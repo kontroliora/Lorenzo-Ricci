@@ -145,7 +145,7 @@ export function OrderCard({
   const cod = Number(order.total ?? 0);
   const codSub = order.subtotal != null ? Number(order.subtotal) : null;
   const codShip = Number(order.shipping_cost ?? 0);
-  const cardOff = Number(order.card_discount ?? 0);   // 5% for paying by card (max €25 / 130 lei): subtotal - card discount + delivery = total
+  const cardOff = ro ? 0 : Number(order.card_discount ?? 0);   // Romania has no card discount (25.10.2026)   // 5% for paying by card (max €25 / 130 lei): subtotal - card discount + delivery = total
   const showBreakdown = codSub != null && codSub > 0 && Math.abs(codSub - cardOff + codShip - cod) < 0.01;
   // Money: euro for Bulgaria, lei for Romania (with the euro equivalent next to the total).
   const money = (n: number) => (ro ? fmtLei(n) : `€${n.toFixed(2)}`);

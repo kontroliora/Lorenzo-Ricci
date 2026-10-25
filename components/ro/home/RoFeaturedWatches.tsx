@@ -50,7 +50,7 @@ export function RoFeaturedWatches({ watches }: { watches: Product[] }) {
               { label: "Livrare gratuită", sub: `Pentru comenzi de peste ${fmtRON(RO_FREE_SHIPPING_RON)}` },
               { label: "5 ani garanție", sub: "Comercială · pentru fiecare mecanism" },
               CARD_PAYMENTS_ENABLED
-                ? { label: "Card sau ramburs", sub: "−5% la plata cu cardul" }
+                ? { label: "Card sau ramburs", sub: "Plată online securizată" }
                 : RO_INSPECT_BEFORE_PAY
                 ? { label: "Verifici înainte de plată", sub: "Plata la livrare (ramburs)" }
                 : { label: "Plata la livrare", sub: "Ramburs, la primirea coletului" },

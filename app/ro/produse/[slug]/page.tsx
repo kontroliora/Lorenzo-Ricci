@@ -107,7 +107,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const tagline = product.shortDescription.replace(/[.\s]+$/, "");
   const warranty = product.warranty.replace(/[.\s]+$/, "");
   // Matches the checkout: prepayment items are arranged directly with the shop (no cash on delivery).
-  const paymentNote = roNeedsPrepayment(product) ? "Comandă cu plată în avans." : CARD_PAYMENTS_ENABLED ? "Plată cu cardul (−5%) sau ramburs." : "Plată ramburs.";
+  const paymentNote = roNeedsPrepayment(product) ? "Comandă cu plată în avans." : CARD_PAYMENTS_ENABLED ? "Plată cu cardul sau ramburs." : "Plată ramburs.";
   const description =
     `${product.name}${tagline ? ` - ${tagline}` : ""}. ${fmtRON(ronOf(product))}. ${warranty ? `${warranty}. ` : ""}` +
     `Livrare gratuită de la ${fmtRON(RO_FREE_SHIPPING_RON)}. ${paymentNote}`;

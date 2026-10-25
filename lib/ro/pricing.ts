@@ -3,7 +3,6 @@
 import { BUNDLES } from "@/lib/bundles";
 import { RO_FREE_SHIPPING_RON, RO_SHIPPING_FEE_RON, RO_COD_FEE_RON } from "./config";
 import { RO_BUNDLE_LABEL } from "./bundles-ro";
-import { cardDiscountRon } from "@/lib/card-discount";
 
 export type PricedLine = { ron: number; quantity: number };
 /** A line that can take part in a set: its slug, and whether the product is on sale (a sale item earns no set discount). */
@@ -36,16 +35,18 @@ export function roBundleDiscount(lines: BundleLine[]): { totalDiscount: number; 
 
 /**
  * Every amount of an order, from its lines. `goods` is after set discounts; delivery is judged on `goods`.
- * A CARD order pays 5% less on the goods (max 130 lei, lib/card-discount.ts) and no ramburs fee; delivery follows the general rule (free from
- * 315 lei on the goods before the card discount, else 46 lei): total = goods - cardDiscount + shipping. (Romania has no promo codes, so the card discount never meets one.)
+ * Romania has NO card payment discount (owner, 25.10.2026: card is the Romanian payment method, a discount for it makes no sense) -
+ * cardDiscount is always 0 and stays in the result only so the client and the server keep comparing the same field (a crafted
+ * request that claims one is a total mismatch -> 409). A card order pays no ramburs fee; delivery: free from 315 lei on the goods,
+ * else 46 lei. total = goods + shipping (+ the ramburs fee for cash on delivery). The Bulgarian 5% card discount is untouched (lib/card-discount.ts).
  */
 export function roAmounts(lines: BundleLine[], opts: { card?: boolean } = {}): { subtotal: number; discount: number; goods: number; cardDiscount: number; shipping: number; total: number; bundles: { id: string; label: string; discount: number }[] } {
   const subtotal = roSubtotal(lines);
   const { totalDiscount, active } = roBundleDiscount(lines);
   const goods = subtotal - totalDiscount;
   const shipping = roShippingCost(goods);
-  const cardDiscount = opts.card ? cardDiscountRon(goods) : 0;
-  return { subtotal, discount: totalDiscount, goods, cardDiscount, shipping, total: goods - cardDiscount + shipping + (opts.card ? 0 : RO_COD_FEE_RON), bundles: active };
+  const cardDiscount = 0;   // no card discount in Romania
+  return { subtotal, discount: totalDiscount, goods, cardDiscount, shipping, total: goods + shipping + (opts.card ? 0 : RO_COD_FEE_RON), bundles: active };
 }
 
 /** Free delivery from the threshold up (amount after set discounts), otherwise the flat fee. */
