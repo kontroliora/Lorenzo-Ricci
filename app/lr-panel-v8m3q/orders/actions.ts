@@ -334,7 +334,12 @@ export async function markReturned(id: number): Promise<string | null> {
   }
   if (error) { console.error("[orders] return error:", error.message); return error.message; }
   revalidatePath(ORDERS_PATH);
-  return notifyRo(supabase, before, isReturn, { kind: "order_returned" });
+  const mailWarning = await notifyRo(supabase, before, isReturn, { kind: "order_returned" });
+  // The panel never refunds a SHIPPED card order by itself: the money is returned by hand in Stripe. Say so right here.
+  const paid = before.find((o) => hasCardMoney(o) && o.payment_status !== "refunded");
+  // Only the Romanian customer gets a "returned parcel" e-mail (which promises the refund); a Bulgarian one is not mailed here.
+  const refundNote = paid ? `Платена с карта: върни сумата в Stripe (Payments → плащането → Refund).${isRoOrder(paid) ? " Клиентът е уведомен, че ще получи парите обратно." : ""}` : null;
+  return [refundNote, mailWarning].filter(Boolean).join(" ") || null;
 }
 
 // "Взех пратката" — Koko confirms the returning parcel is physically in hand →

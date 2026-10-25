@@ -53,7 +53,7 @@ export async function sendRoPanelMail(sb: SupabaseClient, orderId: number, mail:
     case "order_confirmed": subject = roConfirmedSubject(ref); html = buildRoConfirmedEmail({ orderRef: ref, firstName, items, total, payment }); break;
     case "order_cancelled": subject = roCancelledSubject(ref); html = buildRoCancelledEmail({ orderRef: ref, firstName, category: mail.category, refundLabel: mail.refundLabel }); break;
     case "order_delivered": subject = roDeliveredSubject(ref); html = buildRoDeliveredEmail({ orderRef: ref, firstName }); break;
-    case "order_returned": subject = roReturnedSubject(ref); html = buildRoReturnedEmail({ orderRef: ref, firstName }); break;
+    case "order_returned": subject = roReturnedSubject(ref); html = buildRoReturnedEmail({ orderRef: ref, firstName, payment, total }); break;
     case "shipment_shipped": subject = roShippedSubject(ref); html = buildRoShippedEmail({ orderRef: ref, firstName, items, total, payment, awb: mail.awb, trackUrl: mail.trackUrl }); break;
   }
 

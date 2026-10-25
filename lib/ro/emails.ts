@@ -158,10 +158,14 @@ export function buildRoDeliveredEmail(d: StatusMailBase): string {
 }
 
 // Staff marked the parcel returned / not collected ("Върната").
-export function buildRoReturnedEmail(d: StatusMailBase): string {
+// payment "card" (paid by card): the amount is refunded to the same card - staff do it in Stripe (the panel reminds them when they
+// mark the parcel returned). Cash on delivery / unpaid: nothing was paid, nothing is owed.
+export function buildRoReturnedEmail(d: StatusMailBase & { payment?: RoPayment; total?: number }): string {
   return shell("Coletul s-a întors la noi", `
     ${greet(d.firstName)}
-    ${para(`Coletul comenzii ${strongRef(d.orderRef)} nu a putut fi livrat și se întoarce la noi, de aceea comanda a fost închisă. Nu se datorează nicio sumă.`)}
+    ${para(`Coletul comenzii ${strongRef(d.orderRef)} nu a putut fi livrat și se întoarce la noi, de aceea comanda a fost închisă. ${d.payment === "card"
+      ? `Suma plătită cu cardul${d.total ? ` (${esc(fmtRON(d.total))})` : ""} vă va fi rambursată integral, în același card. Banii apar de regulă în 5-10 zile lucrătoare de la rambursare, în funcție de banca dumneavoastră.`
+      : "Nu se datorează nicio sumă."}`)}
     ${para(`Dacă a intervenit o problemă sau doriți să primiți totuși produsele, scrieți-ne sau plasați o nouă comandă pe <a href="https://lorenzo-ricci.com/ro" style="color:${NAVY}">lorenzo-ricci.com/ro</a>. ${contactLine}`, 28)}`, d.orderRef);
 }
 
@@ -174,12 +178,12 @@ export function buildRoAdminEmail(o: RoOrderEmailData, alert?: string, opts: { p
    <div style="background:${NAVY};padding:20px 28px;color:#fff"><strong style="letter-spacing:.2em">LORENZO RICCI</strong> <span style="opacity:.6;margin-left:10px">🇷🇴 Нова поръчка от Румъния · ${esc(o.orderRef)}</span></div>
    <div style="padding:28px">
     ${alert ? `<div style="background:#b91c1c;color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:16px">⚠️ ${esc(alert)}</div>` : ""}${opts.paidByCard ? `<div style="background:#047857;color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:16px">💳 ПЛАТЕНА С КАРТА - куриерът събира 0 лей (НЕ слагай наложен платеж).</div>` : ""}
-    <p style="margin:0 0 14px;font-size:13px;color:#555">Сумите са в <strong>леи (RON)</strong>. ${o.officeDelivery ? "Доставка до ОФИС на Еконт (Румъния) - адресът по-долу е на офиса." : "Доставка с румънски куриер (НЕ Еконт)."} Поръчката е в „Поръчки" на панела (значка 🇷🇴 RO, филтър „Румъния").</p>
+    <p style="margin:0 0 14px;font-size:13px;color:#555">Сумите са в <strong>леи (RON)</strong>. ${o.officeDelivery ? "Доставка до АВТОМАТ / ОФИС на Speedy (Румъния) - адресът по-долу е на автомата/офиса." : "Доставка до адрес със Speedy (Румъния, НЕ Еконт)."} Поръчката е в „Поръчки" на панела (значка 🇷🇴 RO, филтър „Румъния").</p>
     <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:22px">
      <tr style="background:#f3f4f6"><td style="padding:8px 12px;font-weight:600;width:150px">Имена</td><td style="padding:8px 12px">${esc(c.name)}</td></tr>
      <tr><td style="padding:8px 12px;font-weight:600">Телефон</td><td style="padding:8px 12px"><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></td></tr>
      <tr style="background:#f3f4f6"><td style="padding:8px 12px;font-weight:600">Имейл</td><td style="padding:8px 12px">${esc(c.email)}</td></tr>
-     <tr><td style="padding:8px 12px;font-weight:600">${o.officeDelivery ? "Офис на Еконт" : "Адрес"}</td><td style="padding:8px 12px">${esc(addressLine(c))}</td></tr>
+     <tr><td style="padding:8px 12px;font-weight:600">${o.officeDelivery ? "Автомат / офис Speedy" : "Адрес"}</td><td style="padding:8px 12px">${esc(addressLine(c))}</td></tr>
      <tr style="background:#f3f4f6"><td style="padding:8px 12px;font-weight:600">Бележка</td><td style="padding:8px 12px">${esc(c.notes || "-")}</td></tr>
     </table>
     <table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:${NAVY};color:#fff"><th style="padding:8px 12px;text-align:left">Продукт</th><th style="padding:8px 12px;text-align:left">SKU</th><th style="padding:8px 12px">Бр.</th><th style="padding:8px 12px;text-align:right">Цена</th></tr></thead><tbody>${rows}</tbody>

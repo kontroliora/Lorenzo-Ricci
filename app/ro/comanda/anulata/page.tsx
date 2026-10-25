@@ -5,6 +5,7 @@ import { ReleaseOnCancel } from "@/components/ro/cart/ReleaseOnCancel";
 
 export const metadata: Metadata = {
   title: "Plata comenzii",
+  description: "Plata cu cardul nu a fost finalizată. Puteți reîncerca plata în siguranță sau ne puteți contacta pentru ajutor.",
   robots: { index: false, follow: false },
 };
 
