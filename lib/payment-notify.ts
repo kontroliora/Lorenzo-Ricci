@@ -20,6 +20,14 @@ const STEP_TIMEOUT_MS = 10_000;
 const within = <T,>(p: Promise<T>, name: string): Promise<T> =>
   Promise.race([p, new Promise<T>((_, rej) => setTimeout(() => rej(new Error(`${name}: timeout after ${STEP_TIMEOUT_MS} ms`)), STEP_TIMEOUT_MS))]);
 
+/** The saved cart of this visit (abandoned-cart reminder) is done: the customer paid, so no reminder may follow. Best effort. */
+async function markCartConverted(cartSession: string | undefined): Promise<void> {
+  if (!cartSession) return;
+  try {
+    await supabaseAdmin().from("cart_sessions").update({ status: "converted", converted_at: new Date().toISOString() }).eq("session_id", cartSession).eq("status", "pending");
+  } catch { /* best effort */ }
+}
+
 /** Runs every step; returns the names of the steps that FAILED (nothing is thrown: the order is already paid). */
 export async function notifyPaid(order: OrderRow, meta: Record<string, string> = {}): Promise<string[]> {
   const items = (Array.isArray(order.items) ? order.items : []) as Line[];
@@ -50,11 +58,12 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
     const names = ["team e-mail", ...(email ? ["customer e-mail"] : []), "Meta Purchase"];
     const r = await Promise.allSettled([
       within(sendMail({ from: "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>", to: RO_ADMIN_RECIPIENTS, subject: `💳🇷🇴 Платена поръчка (Румъния) - ${name} - ${order.order_ref}`, html: buildRoAdminEmail(data, undefined, { paidByCard: true }) }), "team e-mail"),
-      ...(email ? [within(sendMail({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [email], subject: roPaidSubject, html: buildRoCustomerEmail(data, { paidByCard: true }) }, "card_paid"), "customer e-mail")] : []),
+      ...(email ? [within(sendMail({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [email], subject: roPaidSubject, html: buildRoCustomerEmail(data) }, "card_paid"), "customer e-mail")] : []),
       within(sendRoCapiPurchase({ ...data, skus: paidLines.map((i) => String(i.sku ?? "")).filter(Boolean) }, ctx), "Meta Purchase"),
     ]);
     const failed: string[] = [];
     r.forEach((x, i) => { if (x.status === "rejected") { console.error("[payment-notify] RO step failed:", x.reason); failed.push(names[i]); } });
+    await markCartConverted(meta.cart_session);
     return failed;
   }
 
@@ -78,11 +87,7 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
   r.forEach((x, i) => { if (x.status === "rejected") { console.error("[payment-notify] BG step failed:", x.reason); failed.push(names[i]); } });
 
   // The single-use promo code was claimed when the order was created (a card order holds it while it waits for the payment).
-  if (meta.cart_session) {
-    try {
-      await supabaseAdmin().from("cart_sessions").update({ status: "converted", converted_at: new Date().toISOString() }).eq("session_id", meta.cart_session).eq("status", "pending");
-    } catch { /* best effort */ }
-  }
+  await markCartConverted(meta.cart_session);
   return failed;
 }
 

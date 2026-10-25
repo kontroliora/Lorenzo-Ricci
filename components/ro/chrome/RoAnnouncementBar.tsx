@@ -1,12 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { fmtRON, RO_DELIVERY_DAYS, RO_FREE_SHIPPING_RON, RO_INSPECT_BEFORE_PAY } from "@/lib/ro/config";
+import { fmtRON, RO_DELIVERY_DAYS, RO_FREE_SHIPPING_RON } from "@/lib/ro/config";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 
 // Romanian counterpart of components/layout/AnnouncementBar.tsx: same fixed bar, same rotation.
-// Every figure comes from lib/ro/config.ts; the "check the parcel before paying" line only appears when the
-// courier has confirmed it (RO_INSPECT_BEFORE_PAY), as its own message. The warranty lines are the Bulgarian bar's: 5 years on watches,
-// lifetime on jewellery.
+// Every figure comes from lib/ro/config.ts. Romania pays by card only (no ramburs). The warranty lines are the Bulgarian bar's:
+// 5 years on watches, lifetime on jewellery.
 // The BG · RO switch sits at the right end of the bar (from 370px up); it is also in the menu panel and the footer. Never beside
 // the cart icon: there it pushed the logo off-centre on phones (the 2026-09 toggle did).
 const FREE = fmtRON(RO_FREE_SHIPPING_RON);
@@ -15,15 +14,13 @@ const DESKTOP = [
   `Livrare gratuită pentru comenzi de peste ${FREE}`,
   "5 ani garanție comercială la ceasuri",
   "Garanție pe viață la bijuterii",
-  `Livrare în ${RO_DELIVERY_DAYS} zile lucrătoare · Plata la livrare (ramburs)`,
-  ...(RO_INSPECT_BEFORE_PAY ? ["Puteți verifica coletul înainte de plată"] : []),
+  `Livrare în ${RO_DELIVERY_DAYS} zile lucrătoare · Plata securizată cu cardul`,
 ];
 const MOBILE = [
   `Livrare gratuită peste ${FREE}`,
   "Garanție 5 ani la ceasuri",
   "Garanție pe viață la bijuterii",
   `Livrare în ${RO_DELIVERY_DAYS} zile lucrătoare`,
-  ...(RO_INSPECT_BEFORE_PAY ? ["Verificare înainte de plată"] : []),
 ];
 
 export function RoAnnouncementBar() {

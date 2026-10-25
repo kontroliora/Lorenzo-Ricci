@@ -1,25 +1,19 @@
-import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import {
   fmtRON, ronPrice,
-  RO_DELIVERY_DAYS, RO_FREE_SHIPPING_RON, RO_INSPECT_BEFORE_PAY, RO_RETURN_DAYS, RO_SHIPPING_FEE_RON,
+  RO_DELIVERY_DAYS, RO_FREE_SHIPPING_RON, RO_RETURN_DAYS, RO_SHIPPING_FEE_RON,
 } from "@/lib/ro/config";
 
 // Romanian counterpart of components/home/BrandValues.tsx (the brand quote), with the market's trust strip under it.
-// Every figure comes from lib/ro/config.ts; the "check the parcel before paying" promise appears only when the
-// courier has confirmed it (RO_INSPECT_BEFORE_PAY). The store sells the whole catalogue: ceasurile have the 5-year
-// commercial guarantee, the jewellery the lifetime guarantee (as on the Bulgarian site), and the prepayment threshold
-// (no ramburs from EUR 1500 up) is stated next to the cash-on-delivery promise.
+// Every figure comes from lib/ro/config.ts. Romania pays by card only (no ramburs). The store sells the whole catalogue: ceasurile
+// have the 5-year commercial guarantee, the jewellery the lifetime guarantee (as on the Bulgarian site), and the prepayment
+// threshold (EUR 1500 up, arranged with the shop) is stated next to the card payment.
 const PREPAYMENT_FROM = fmtRON(ronPrice(PREPAYMENT_THRESHOLD_EUR));
 
 const VALUES = [
   {
-    title: CARD_PAYMENTS_ENABLED ? "Card sau ramburs" : "Plata la livrare",
-    desc: CARD_PAYMENTS_ENABLED
-      ? `Plătiți cu cardul, online, sau curierului, la primirea coletului (ramburs). Produsele de la ${PREPAYMENT_FROM} în sus se comandă cu plata în avans.`
-      : `${RO_INSPECT_BEFORE_PAY
-      ? "Plătiți curierului la primirea coletului, după ce îl verificați (ramburs)."
-      : "Plătiți curierului la primirea coletului (ramburs)."} Produsele de la ${PREPAYMENT_FROM} în sus se comandă cu plata în avans.`,
+    title: "Plata cu cardul",
+    desc: `Plătiți online, securizat prin Stripe, în lei; nu aveți nimic de plătit la livrare. Produsele de la ${PREPAYMENT_FROM} în sus se comandă cu plata în avans.`,
   },
   {
     title: `Livrare în ${RO_DELIVERY_DAYS} zile lucrătoare`,

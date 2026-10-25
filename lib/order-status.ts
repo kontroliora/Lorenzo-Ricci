@@ -1,7 +1,8 @@
 // Pure order-status constants/helpers — NO server-only deps, so this is safe to
 // import from client components too (unlike lib/orders.ts, which pulls in
 // next/headers via lib/supabase/server and can only be imported server-side).
-import { PENDING_PAYMENT, isCard, isPaidCard } from "./payments";
+import { PENDING_PAYMENT, isCard, isPaidCard, hasCardMoney } from "./payments";
+import { isRoOrder } from "./market";
 
 // Statuses that hold stock. A reservation is held INDEFINITELY until the order is
 // processed manually. Neither `returning` nor `restocked` reserve — a return frees
@@ -54,8 +55,12 @@ export function matchesPayment(o: PayFields, method: PayMethodFilter, state: Pay
 
 /**
  * Board status of an order. A card order that is PAID needs no confirmation call, so it belongs under "За изпълнение" (confirmed) even if its
- * row still says "new" (paid before the webhook set "confirmed" itself). Only the board's tab / buttons use this; the database row is untouched.
+ * row still says "new" (paid before the webhook set "confirmed" itself). A ROMANIAN order without a succeeded card payment never shows under
+ * "За изпълнение" (Romania is card only, 25.10.2026): an unpaid one that says "confirmed" is shown as "new" (red НЕПЛАТЕНА badge, and the
+ * panel actions refuse to confirm or ship it). Only the board's tab / buttons use this; the database row is untouched.
  */
-export function boardStatus<T extends { status: string; payment_method?: string | null; payment_status?: string | null }>(o: T): T {
-  return o.status === "new" && isPaidCard(o) ? { ...o, status: "confirmed" } : o;
+export function boardStatus<T extends { status: string; payment_method?: string | null; payment_status?: string | null; stripe_payment_intent?: string | null; ship_country?: string | null; order_ref?: string | null }>(o: T): T {
+  if (o.status === "new" && isPaidCard(o)) return { ...o, status: "confirmed" };
+  if (o.status === "confirmed" && isRoOrder(o) && !hasCardMoney(o)) return { ...o, status: "new" };
+  return o;
 }

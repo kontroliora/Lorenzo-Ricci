@@ -1,14 +1,11 @@
-import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import { roToBgPath } from "@/lib/ro/route-map";
 import {
-  RO_COD_FEE_RON,
   RO_COURIER_LABEL,
   RO_DELIVERY_DAYS,
   RO_FREE_SHIPPING_RON,
-  RO_INSPECT_BEFORE_PAY,
   RO_RETURN_DAYS,
   RO_SHIPPING_FEE_RON,
   fmtRON,
@@ -17,13 +14,14 @@ import {
 
 const PATH = "/ro/politici/livrare";
 
-// Products priced from EUR 1500 up are sold on advance payment (no cash on delivery), exactly like on the Bulgarian site.
+// Romania pays by card only (owner, 25.10.2026: no cash on delivery / ramburs). Products priced from EUR 1500 up are sold on
+// advance payment arranged with the shop, exactly like on the Bulgarian site. LEGAL TEXT: have it reviewed by a Romanian lawyer.
 const PREPAY_RON = fmtRON(ronPrice(PREPAYMENT_THRESHOLD_EUR));
 const PREPAY_EUR = PREPAYMENT_THRESHOLD_EUR.toLocaleString("ro-RO");
 
 export const metadata: Metadata = {
   title: "Politica de livrare",
-  description: `Livrare gratuită pentru comenzile de peste ${fmtRON(RO_FREE_SHIPPING_RON)} · Plata ramburs, la livrare (în avans pentru produsele de valoare mare) · ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere.`,
+  description: `Livrare gratuită pentru comenzile de peste ${fmtRON(RO_FREE_SHIPPING_RON)} · Plata cu cardul, online (în avans pentru produsele de valoare mare) · ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere.`,
   alternates: {
     canonical: `https://lorenzo-ricci.com${PATH}`,
     languages: {
@@ -73,22 +71,10 @@ export default function LivrarePage() {
 
         <PolicySection title="Plata">
           <p>
-            Pentru produsele cu un preț sub <strong className="text-charcoal font-normal">{PREPAY_RON}</strong>, plata se face <strong className="text-charcoal font-normal">ramburs</strong>: achitați comanda curierului, la livrare.
-            {CARD_PAYMENTS_ENABLED && <>{" "}Puteți plăti și cu cardul, online, prin Stripe, în lei; livrarea se plătește după aceleași reguli ca la ramburs.</>}
-            {RO_COD_FEE_RON > 0 && (
-              <>
-                {" "}Pentru plata ramburs se percepe o taxă de <strong className="text-charcoal font-normal">{fmtRON(RO_COD_FEE_RON)}</strong>.
-              </>
-            )}
-            {RO_INSPECT_BEFORE_PAY && (
-              <>
-                <br /><br />
-                Aveți dreptul să <strong className="text-charcoal font-normal">verificați coletul înainte de plată</strong> și să îl refuzați dacă produsul nu corespunde așteptărilor dumneavoastră.
-              </>
-            )}
+            Pentru produsele cu un preț sub <strong className="text-charcoal font-normal">{PREPAY_RON}</strong>, plata se face <strong className="text-charcoal font-normal">cu cardul</strong>, online, prin Stripe, în lei, la plasarea comenzii. Costul livrării (vezi mai sus) este inclus în suma plătită, așa că nu aveți nimic de plătit curierului la livrare.
           </p>
           <p className="mt-3">
-            Produsele cu un preț de la <strong className="text-charcoal font-normal">{PREPAY_RON}</strong> în sus (echivalentul a {PREPAY_EUR} EUR) se comandă cu <strong className="text-charcoal font-normal">plata în avans</strong>, stabilită direct cu noi; pentru aceste produse plata ramburs nu este disponibilă. Pentru a comanda un astfel de produs, scrieți-ne la{" "}
+            Produsele cu un preț de la <strong className="text-charcoal font-normal">{PREPAY_RON}</strong> în sus (echivalentul a {PREPAY_EUR} EUR) se comandă cu <strong className="text-charcoal font-normal">plata în avans</strong>, stabilită direct cu noi. Pentru a comanda un astfel de produs, scrieți-ne la{" "}
             <a href="mailto:info@lorenzo-ricci.com" className="text-navy hover:underline">info@lorenzo-ricci.com</a>.
           </p>
         </PolicySection>

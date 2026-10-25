@@ -26,7 +26,7 @@ const inter = localFont({
 });
 import { Header } from "@/components/layout/Header";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
-import { Footer } from "@/components/layout/Footer";
+import { BgFooter } from "@/components/layout/BgFooter";
 import { LazyCartDrawer, LazySalesNotification, LazyNewsletterPopup } from "@/components/layout/DeferredChrome";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
@@ -97,7 +97,7 @@ export default async function RootLayout({
           </HideOnAdmin>
           <main>{children}</main>
           <HideOnAdmin>
-            <Footer />
+            <BgFooter />
             <LazyCartDrawer />
             <HideOnTrack>
               <HideOnCart>

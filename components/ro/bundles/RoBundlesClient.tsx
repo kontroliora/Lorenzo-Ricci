@@ -17,7 +17,7 @@ export type RoBundlePiece = {
   ron: number;          // unit price in whole lei
   originalRon?: number; // crossed-out price while on sale (a set never contains a sale item, see the page)
   onSale: boolean;
-  prepay: boolean;      // EUR 1500 and up: no cash on delivery
+  prepay: boolean;      // EUR 1500 and up: advance payment arranged with the shop
   image: string;
   imageAlt: string;
 };

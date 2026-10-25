@@ -1,7 +1,7 @@
 // Romania market: the ONE place that turns lines into money. Pure (no React, no server imports), so the cart UI,
 // the checkout and /api/order-ro compute exactly the same numbers. All amounts are whole-lei numbers (RON).
 import { BUNDLES } from "@/lib/bundles";
-import { RO_FREE_SHIPPING_RON, RO_SHIPPING_FEE_RON, RO_COD_FEE_RON } from "./config";
+import { RO_FREE_SHIPPING_RON, RO_SHIPPING_FEE_RON } from "./config";
 import { RO_BUNDLE_LABEL } from "./bundles-ro";
 
 export type PricedLine = { ron: number; quantity: number };
@@ -37,20 +37,17 @@ export function roBundleDiscount(lines: BundleLine[]): { totalDiscount: number; 
  * Every amount of an order, from its lines. `goods` is after set discounts; delivery is judged on `goods`.
  * Romania has NO card payment discount (owner, 25.10.2026: card is the Romanian payment method, a discount for it makes no sense) -
  * cardDiscount is always 0 and stays in the result only so the client and the server keep comparing the same field (a crafted
- * request that claims one is a total mismatch -> 409). A card order pays no ramburs fee; delivery: free from 315 lei on the goods,
- * else 46 lei. total = goods + shipping (+ the ramburs fee for cash on delivery). The Bulgarian 5% card discount is untouched (lib/card-discount.ts).
+ * request that claims one is a total mismatch -> 409). Romania is card only (no ramburs, no ramburs fee); delivery: free from 315 lei
+ * on the goods, else 46 lei. total = goods + shipping. The Bulgarian 5% card discount is untouched (lib/card-discount.ts).
  */
-export function roAmounts(lines: BundleLine[], opts: { card?: boolean } = {}): { subtotal: number; discount: number; goods: number; cardDiscount: number; shipping: number; total: number; bundles: { id: string; label: string; discount: number }[] } {
+export function roAmounts(lines: BundleLine[]): { subtotal: number; discount: number; goods: number; cardDiscount: number; shipping: number; total: number; bundles: { id: string; label: string; discount: number }[] } {
   const subtotal = roSubtotal(lines);
   const { totalDiscount, active } = roBundleDiscount(lines);
   const goods = subtotal - totalDiscount;
   const shipping = roShippingCost(goods);
   const cardDiscount = 0;   // no card discount in Romania
-  return { subtotal, discount: totalDiscount, goods, cardDiscount, shipping, total: goods + shipping + (opts.card ? 0 : RO_COD_FEE_RON), bundles: active };
+  return { subtotal, discount: totalDiscount, goods, cardDiscount, shipping, total: goods + shipping, bundles: active };
 }
 
 /** Free delivery from the threshold up (amount after set discounts), otherwise the flat fee. */
 export const roShippingCost = (subtotal: number): number => (subtotal >= RO_FREE_SHIPPING_RON ? 0 : RO_SHIPPING_FEE_RON);
-
-/** What the courier collects on delivery (ramburs). */
-export const roTotal = (subtotal: number): number => subtotal + roShippingCost(subtotal) + RO_COD_FEE_RON;

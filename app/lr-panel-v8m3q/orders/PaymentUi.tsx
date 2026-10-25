@@ -2,10 +2,11 @@ import type { CSSProperties } from "react";
 import type { AdminOrder } from "@/lib/orders";
 import { isCard, hasCardMoney, cardMoneyMissing } from "@/lib/payments";
 import type { PayMethodFilter, PayStateFilter } from "@/lib/order-status";
+import { isRoOrder } from "@/lib/market";
 
 // Shared payment UI of the Bulgarian and Romanian boards (card payments next to cash on delivery).
 
-type PayOrder = Pick<AdminOrder, "status" | "payment_method" | "payment_status" | "stripe_payment_intent">;
+type PayOrder = Pick<AdminOrder, "status" | "payment_method" | "payment_status" | "stripe_payment_intent" | "ship_country" | "order_ref">;
 
 const CARD_STATE_LABEL: Record<string, string> = {
   pending: "чака плащане",
@@ -19,17 +20,26 @@ const pill: CSSProperties = {
   fontSize: 10, letterSpacing: "0.12em", padding: "3px 9px", borderRadius: 20, whiteSpace: "nowrap", display: "inline-block",
 };
 
+const redBadge: CSSProperties = { ...pill, fontSize: 11, letterSpacing: "0.06em", padding: "4px 11px", background: "#5C0B0B", color: "#FFD9D9", border: "1px solid #F09595", fontWeight: 700 };
+const greenBadge: CSSProperties = { ...pill, fontSize: 11, letterSpacing: "0.06em", padding: "4px 11px", background: "#1E5C0B", color: "#E4F5CF", border: "1px solid #97C459", fontWeight: 700 };
+
 /** Payment pill + a small paid/unpaid marker for a card header. */
 export function PaymentBadge({ order }: { order: PayOrder }) {
   const paid = hasCardMoney(order);
+  // Romania is card only (25.10.2026): paid by card, or red НЕПЛАТЕНА. Never a cash-on-delivery label.
+  if (isRoOrder(order)) {
+    return paid
+      ? <span data-testid="card-paid-badge" style={greenBadge}>ПЛАТЕНО С КАРТА</span>
+      : <span data-testid="ro-unpaid-badge" style={redBadge}>НЕПЛАТЕНА - не изпращай</span>;
+  }
   const card = isCard(order);
   const missing = cardMoneyMissing(order);
   return (
     <>
       {paid ? (
-        <span data-testid="card-paid-badge" style={{ ...pill, fontSize: 11, letterSpacing: "0.06em", padding: "4px 11px", background: "#1E5C0B", color: "#E4F5CF", border: "1px solid #97C459", fontWeight: 700 }}>ПЛАТЕНО С КАРТА · не събирай наложен платеж</span>
+        <span data-testid="card-paid-badge" style={greenBadge}>ПЛАТЕНО С КАРТА · не събирай наложен платеж</span>
       ) : missing ? (
-        <span data-testid="card-missing-badge" style={{ ...pill, fontSize: 11, letterSpacing: "0.06em", padding: "4px 11px", background: "#5C0B0B", color: "#FFD9D9", border: "1px solid #F09595", fontWeight: 700 }}>⚠ КАРТА, НО НЯМА ПЛАЩАНЕ · не изпращай, провери в Stripe</span>
+        <span data-testid="card-missing-badge" style={redBadge}>⚠ КАРТА, НО НЯМА ПЛАЩАНЕ · не изпращай, провери в Stripe</span>
       ) : card ? (
         <span style={{ ...pill, textTransform: "uppercase", background: "rgba(250,199,117,0.12)", color: "#FAC775", border: "0.5px solid rgba(250,199,117,0.4)" }}>
           Карта · {CARD_STATE_LABEL[order.payment_status ?? ""] ?? "неплатено"}
@@ -50,6 +60,21 @@ export function PaidCardCollectLine({ zero, paidAmount, paidAt }: { zero: string
       <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, marginTop: 2 }}>
         Платено {paidAmount} с карта{paidAt ? ` · ${paidAt}` : ""}
       </div>
+    </div>
+  );
+}
+
+/** Romanian order money line (card only): paid -> the courier collects nothing; otherwise red НЕПЛАТЕНА. Never a cash-on-delivery amount. */
+export function RoPaymentLine({ paid, total, paidAt }: { paid: boolean; total: string; paidAt?: string | null }) {
+  return paid ? (
+    <div data-testid="ro-paid-line" style={{ marginTop: 6, background: "rgba(151,196,89,0.12)", border: "1px solid #97C459", borderRadius: 8, padding: "8px 12px" }}>
+      <div style={{ color: "#C0DD97", fontSize: 14, fontWeight: 600 }}>Платено {total} с карта - куриерът не събира пари</div>
+      {paidAt && <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, marginTop: 2 }}>Платено на {paidAt}</div>}
+    </div>
+  ) : (
+    <div data-testid="ro-unpaid-line" style={{ marginTop: 6, background: "rgba(240,149,149,0.12)", border: "1px solid #F09595", borderRadius: 8, padding: "8px 12px" }}>
+      <div style={{ color: "#FFD9D9", fontSize: 14, fontWeight: 600 }}>НЕПЛАТЕНА - не изпращай ({total})</div>
+      <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, marginTop: 2 }}>Румъния е само с карта: няма успешно плащане в Stripe. Не потвърждавай и не изпращай.</div>
     </div>
   );
 }

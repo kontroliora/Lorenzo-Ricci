@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Award, RefreshCw, Truck, Eye, Banknote, type LucideIcon } from "lucide-react";
+import { Award, RefreshCw, Truck, Banknote, CreditCard, type LucideIcon } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { getProductBySlug } from "@/lib/products";
 import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
@@ -18,12 +18,10 @@ import {
   RO_DELIVERY_DAYS,
   RO_FREE_SHIPPING_RON,
   RO_SHIPPING_FEE_RON,
-  RO_INSPECT_BEFORE_PAY,
   RO_RETURN_DAYS,
   RO_COURIER_LABEL,
 } from "@/lib/ro/config";
 import { RoStickyCartBar } from "@/components/ro/product/RoStickyCartBar";
-import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { PayLine, CodLine } from "@/components/product/CodNote";
 import { roCartLine } from "@/components/ro/product/cart-line";
 import { hasCyrillic, roReviewsCount, roRatingText } from "@/components/ro/product/ro-text";
@@ -256,7 +254,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   }, [product.slug]);
 
   // The cart line carries the sale snapshot (originalRon, onSale: a sale item earns no set discount) and the prepayment flag
-  // (EUR 1500 and up: no cash on delivery; the checkout then shows the prepayment flow instead of the delivery form).
+  // (EUR 1500 and up: not sold through the card checkout; the checkout then shows the prepayment flow instead of the delivery form).
   const handleAdd = () => {
     addItem(roCartLine(product, effectiveStock));
     setAdded(true);
@@ -274,8 +272,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
 
   // Trust strip. Guarantee tile: the product's own (localized) warranty line when it has one (watches: commercial guarantee,
   // jewellery: lifetime guarantee, both explained on the warranty page); leather goods offer none, so that tile stays
-  // craftsmanship. The payment tile never promises cash on delivery for a prepayment product. The parcel-inspection promise only
-  // shows when the chosen courier allows it (RO_INSPECT_BEFORE_PAY).
+  // craftsmanship. Payment tile: card (Romania has no cash on delivery), or advance payment for a prepayment product.
   const warrantyHref = product.category === "watches" || product.category === "jewellery" ? WARRANTY_HREF : undefined;
   const trust: { label: string; Icon: LucideIcon; href?: string }[] = [
     { label: product.warranty.trim() || "Manoperă artizanală", Icon: Award, href: warrantyHref },
@@ -283,8 +280,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
     { label: `Livrare în ${RO_DELIVERY_DAYS} zile lucrătoare`, Icon: Truck },
     prepay
       ? { label: "Plată în avans, stabilită direct cu noi", Icon: Banknote }
-      : { label: CARD_PAYMENTS_ENABLED ? "Card sau ramburs" : "Plată ramburs, la livrare", Icon: Banknote },
-    ...(RO_INSPECT_BEFORE_PAY ? [{ label: "Verificarea coletului înainte de plată", Icon: Eye }] : []),
+      : { label: "Plată securizată cu cardul", Icon: CreditCard },
   ];
   const odd = trust.length % 2 === 1;
   const lastRowStart = odd ? trust.length - 1 : trust.length - 2;
@@ -373,9 +369,9 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         )}
       </div>
 
-      {/* Plata la livrare (ramburs), said under the price (not for a prepayment product) */}
+      {/* Card payment, said under the price (not for a prepayment product) */}
       {effectiveInStock && !prepay && (
-        <PayLine text={CARD_PAYMENTS_ENABLED ? "Plată cu cardul sau ramburs" : "Plata la livrare (ramburs)"} marks={CARD_PAYMENTS_ENABLED} />
+        <PayLine text="Plată securizată cu cardul" marks />
       )}
 
       {/* Stock indicator - the number AVAILABLE (free to order). Shown only below the low-stock threshold; above
@@ -450,7 +446,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           : "ADAUGĂ ÎN COȘ"}
       </button>
 
-      {effectiveInStock && !prepay && <CodLine text={CARD_PAYMENTS_ENABLED ? "Card sau ramburs · Livrare cu Speedy" : "Fără plată în avans · Livrare cu Speedy · Plătiți la livrare"} />}
+      {effectiveInStock && !prepay && <CodLine text="Plata cu cardul, online · Livrare cu Speedy" />}
 
       {/* Phones: the natural-variation note goes under the button (see above). */}
       {product.materialNote && (
@@ -569,20 +565,11 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
               {prepay ? (
                 <p>
                   <strong className="text-charcoal font-normal">Plată în avans</strong> - produsele cu un preț de la{" "}
-                  {fmtRON(PREPAYMENT_THRESHOLD_RON)} în sus se comandă cu plată în avans și se stabilesc direct cu noi. Pentru
-                  acestea nu este disponibilă plata ramburs.
+                  {fmtRON(PREPAYMENT_THRESHOLD_RON)} în sus se comandă cu plată în avans și se stabilesc direct cu noi.
                 </p>
               ) : (
                 <p>
-                  {CARD_PAYMENTS_ENABLED
-                    ? <><strong className="text-charcoal font-normal">Plată cu cardul</strong>, online, sau <strong className="text-charcoal font-normal">ramburs</strong> - achitați comanda curierului, la primirea coletului.</>
-                    : <><strong className="text-charcoal font-normal">Plată ramburs</strong> - achitați comanda curierului, la primirea coletului.</>}
-                </p>
-              )}
-              {RO_INSPECT_BEFORE_PAY && (
-                <p>
-                  <strong className="text-charcoal font-normal">Verificarea coletului înainte de plată</strong> - puteți deschide
-                  coletul și refuza livrarea pe loc.
+                  <strong className="text-charcoal font-normal">Plată cu cardul</strong>, online, securizată prin Stripe, în lei - nu aveți nimic de plătit la livrare.
                 </p>
               )}
               <p>

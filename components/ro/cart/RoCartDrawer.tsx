@@ -1,24 +1,17 @@
 "use client";
-import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRoCart } from "@/lib/ro/store";
 import { roAmounts } from "@/lib/ro/pricing";
-import {
-  RO_COD_FEE_RON,
-  RO_FREE_SHIPPING_RON,
-  RO_INSPECT_BEFORE_PAY,
-  RO_RETURN_DAYS,
-  fmtRON,
-} from "@/lib/ro/config";
+import { RO_FREE_SHIPPING_RON, fmtRON } from "@/lib/ro/config";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 import { RoCheckoutForm } from "./RoCheckoutForm";
 import { bundleLineLabel } from "./shared";
 
-// Romania cart drawer (port of components/cart/CartDrawer.tsx): lei, ramburs, sets with their discount, crossed-out sale
-// prices, free delivery from RO_FREE_SHIPPING_RON (judged on the amount after set discounts). A cart holding a product
-// that needs advance payment (EUR 1500 and up) has no ramburs button: the checkout shows the contact flow instead.
+// Romania cart drawer (port of components/cart/CartDrawer.tsx): lei, card payment only (no ramburs), sets with their discount,
+// crossed-out sale prices, free delivery from RO_FREE_SHIPPING_RON (judged on the amount after set discounts). A cart holding a
+// product that needs advance payment (EUR 1500 and up) has no order button: the checkout shows the contact flow instead.
 // Deliberately without gifts, promo codes, cross-sell and the reservation countdown.
 export function RoCartDrawer() {
   const isOpen = useRoCart((s) => s.isOpen);
@@ -140,13 +133,7 @@ export function RoCartDrawer() {
 
         {showCheckout ? (
           <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
-            <RoCheckoutForm
-              items={items}
-              onSuccess={() => {
-                close();
-                setShowCheckout(false);
-              }}
-            />
+            <RoCheckoutForm items={items} />
           </div>
         ) : items.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
@@ -265,13 +252,6 @@ export function RoCartDrawer() {
                 )}
               </div>
 
-              {RO_COD_FEE_RON > 0 && (
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-sans text-xs text-white/40 tracking-wide">Taxă ramburs</span>
-                  <span className="font-sans text-xs text-white/70 tracking-wide">{fmtRON(RO_COD_FEE_RON)}</span>
-                </div>
-              )}
-
               <div className="mb-4 pt-2 border-t border-white/8">
                 {/* Only when there is a discount: how much the crossed-out prices save, in the site's accent colour */}
                 {savings > 0 && (
@@ -287,19 +267,11 @@ export function RoCartDrawer() {
               </div>
 
               <button onClick={startCheckout} className="btn-primary w-full text-center justify-center">
-                {needsPrepayment ? "Continuă comanda - plată în avans" : CARD_PAYMENTS_ENABLED ? "Comandă acum" : "Comandă acum - plată la livrare"}
+                {needsPrepayment ? "Continuă comanda - plată în avans" : "Comandă acum"}
               </button>
 
               <p className="text-center font-sans text-[13px] leading-snug text-[#C9C9C9] mt-3">
-                {needsPrepayment ? (
-                  "Plata în avans, stabilită direct cu noi"
-                ) : (
-                  CARD_PAYMENTS_ENABLED ? "Card sau ramburs · Livrare cu Speedy" : (
-                  <>
-                    Plata la livrare · Livrare cu Speedy
-                    {RO_INSPECT_BEFORE_PAY ? " · Puteți verifica coletul înainte de plată" : ` · Retur în ${RO_RETURN_DAYS} zile`}
-                  </>)
-                )}
+                {needsPrepayment ? "Plata în avans, stabilită direct cu noi" : "Plata cu cardul, online · Livrare cu Speedy"}
               </p>
             </div>
           </>

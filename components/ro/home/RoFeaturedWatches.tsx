@@ -1,11 +1,10 @@
 "use client";
-import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { RoProductCard } from "@/components/ro/RoProductCard";
 import { useReveal } from "@/lib/useReveal";
-import { fmtRON, RO_FREE_SHIPPING_RON, RO_INSPECT_BEFORE_PAY } from "@/lib/ro/config";
+import { fmtRON, RO_FREE_SHIPPING_RON } from "@/lib/ro/config";
 import { ronOf, ronOriginalOf } from "@/lib/ro/config";
 import type { Product } from "@/lib/types";
 
@@ -49,11 +48,7 @@ export function RoFeaturedWatches({ watches }: { watches: Product[] }) {
             {[
               { label: "Livrare gratuită", sub: `Pentru comenzi de peste ${fmtRON(RO_FREE_SHIPPING_RON)}` },
               { label: "5 ani garanție", sub: "Comercială · pentru fiecare mecanism" },
-              CARD_PAYMENTS_ENABLED
-                ? { label: "Card sau ramburs", sub: "Plată online securizată" }
-                : RO_INSPECT_BEFORE_PAY
-                ? { label: "Verifici înainte de plată", sub: "Plata la livrare (ramburs)" }
-                : { label: "Plata la livrare", sub: "Ramburs, la primirea coletului" },
+              { label: "Plata cu cardul", sub: "Plată online securizată" },
             ].map(({ label, sub }) => (
               <div key={label} className="px-2 sm:px-6 py-2">
                 <p className="font-sans text-[9px] sm:text-xs font-medium tracking-[0.1em] sm:tracking-[0.18em] uppercase text-charcoal mb-1">

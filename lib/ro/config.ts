@@ -10,9 +10,9 @@ export const RO_BASE_PATH = "/ro";
 // Owner's rate: 1 EUR = 5.25 RON. Prices are rounded to whole lei (display and charge), see ronPrice().
 export const EUR_RON = 5.25;
 
-// Romanians see the whole catalogue (owner, 2026-10-14). Cash on delivery ("ramburs") is only for goods under EUR 1500,
-// same rule as Bulgaria (lib/price.ts PREPAYMENT_THRESHOLD_EUR): the bag "Milano Avorio" (EUR 4000) is shown and sold on
-// prepayment, arranged directly with the shop, exactly like on the Bulgarian site.
+// Romanians see the whole catalogue (owner, 2026-10-14). PAYMENT: card only, online through Stripe (owner, 25.10.2026) - there is
+// NO cash on delivery ("ramburs") in Romania; /api/order-ro refuses any other payment method. Goods from EUR 1500 up (lib/price.ts
+// PREPAYMENT_THRESHOLD_EUR, e.g. the bag "Milano Avorio") are sold on advance payment arranged directly with the shop, like in Bulgaria.
 
 // DELIVERY TERMS - confirmed by the owner on 2026-10-14: free from 315 lei (EUR 60 x 5.25), 46 lei below it, 2-4 working days.
 export const RO_FREE_SHIPPING_EUR = 60;                                 // same threshold as Bulgaria
@@ -27,12 +27,6 @@ export const RO_SHIPPING_OFFICE = "Livrare la locker sau biroul Speedy";
 export const RO_SHIPPING_OFFICE_LEGACY = "Livrare la biroul Econt";
 export const isRoOfficeMethod = (m: unknown): boolean => m === RO_SHIPPING_OFFICE || m === RO_SHIPPING_OFFICE_LEGACY;
 export const RO_COURIER_LABEL = "Speedy";                                   // the courier of the Romanian shop (owner, 17.10.2026)
-export const RO_COD_FEE_RON = 0;                                        // PROVISIONAL: extra ramburs fee charged to the customer
-
-// PROVISIONAL: may the customer open and check the parcel before paying the courier? In Bulgaria Econt allows it (the Romanian courier is Speedy: ask Speedy)
-// ("преглед и тест"). Do NOT promise it in Romania until the chosen courier confirms it in writing; copy shows the
-// "inspect before paying" promise only when this is true.
-export const RO_INSPECT_BEFORE_PAY = false;
 export const RO_RETURN_DAYS = 14;                                       // legal right of withdrawal (EU)
 
 export const RO_CURRENCY = "RON";
@@ -43,7 +37,7 @@ export const RO_CURRENCY = "RON";
 /** Every catalogue product is sold in Romania (kept as a function so callers do not change). */
 export const roEligible = (_p?: { category: string; price: number }): boolean => true; // eslint-disable-line @typescript-eslint/no-unused-vars
 
-/** Needs prepayment (EUR 1500 and up): no cash on delivery, the customer arranges payment with the shop. */
+/** Needs prepayment (EUR 1500 and up): not sold through the card checkout, the customer arranges payment with the shop. */
 export const roNeedsPrepayment = (p: { price: number }): boolean => p.price >= PREPAYMENT_THRESHOLD_EUR;
 
 /** Whole lei for a product whose EUR price may already carry a price override (applyOverride). */

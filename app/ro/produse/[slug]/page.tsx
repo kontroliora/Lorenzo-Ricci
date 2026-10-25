@@ -1,4 +1,3 @@
-import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -106,8 +105,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const url = `https://lorenzo-ricci.com/ro/produse/${product.slug}`;
   const tagline = product.shortDescription.replace(/[.\s]+$/, "");
   const warranty = product.warranty.replace(/[.\s]+$/, "");
-  // Matches the checkout: prepayment items are arranged directly with the shop (no cash on delivery).
-  const paymentNote = roNeedsPrepayment(product) ? "Comandă cu plată în avans." : CARD_PAYMENTS_ENABLED ? "Plată cu cardul sau ramburs." : "Plată ramburs.";
+  // Matches the checkout: card only; prepayment items are arranged directly with the shop.
+  const paymentNote = roNeedsPrepayment(product) ? "Comandă cu plată în avans." : "Plată cu cardul, online.";
   const description =
     `${product.name}${tagline ? ` - ${tagline}` : ""}. ${fmtRON(ronOf(product))}. ${warranty ? `${warranty}. ` : ""}` +
     `Livrare gratuită de la ${fmtRON(RO_FREE_SHIPPING_RON)}. ${paymentNote}`;

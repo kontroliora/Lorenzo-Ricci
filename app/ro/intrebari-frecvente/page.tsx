@@ -1,14 +1,11 @@
-import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import { roToBgPath } from "@/lib/ro/route-map";
 import {
-  RO_COD_FEE_RON,
   RO_COURIER_LABEL,
   RO_DELIVERY_DAYS,
   RO_FREE_SHIPPING_RON,
-  RO_INSPECT_BEFORE_PAY,
   RO_RETURN_DAYS,
   RO_SHIPPING_FEE_RON,
   fmtRON,
@@ -17,7 +14,8 @@ import {
 
 const PATH = "/ro/intrebari-frecvente";
 
-// Products priced from EUR 1500 up are sold on advance payment (no cash on delivery), exactly like on the Bulgarian site.
+// Romania pays by card only (no cash on delivery). Products priced from EUR 1500 up are sold on advance payment arranged with the
+// shop, exactly like on the Bulgarian site.
 const PREPAY_RON = fmtRON(ronPrice(PREPAYMENT_THRESHOLD_EUR));
 const PREPAY_EUR = PREPAYMENT_THRESHOLD_EUR.toLocaleString("ro-RO");
 
@@ -102,17 +100,15 @@ const faqs: { category: string; items: FaqItem[] }[] = [
     items: [
       {
         q: "Cum plasez o comandă?",
-        a: "Adăugați produsul în coș, completați datele dumneavoastră (nume, telefon, adresa de livrare) și confirmați comanda. Vă vom contacta pentru confirmare.",
+        a: "Adăugați produsul în coș, completați datele dumneavoastră (nume, telefon, adresa de livrare) și plătiți cu cardul, online, pe pagina securizată Stripe. Imediat după plată primiți confirmarea comenzii pe e-mail.",
       },
       {
         q: "Cum plătesc?",
         a: (
           <>
-            Pentru produsele cu un preț sub {PREPAY_RON}, plata se face ramburs: achitați comanda curierului, la livrare.
-            {CARD_PAYMENTS_ENABLED && <>{" "}Puteți plăti și cu cardul, online, prin Stripe, în lei; livrarea se plătește după aceleași reguli ca la ramburs.</>}
-            {RO_COD_FEE_RON > 0 && <> Pentru plata ramburs se percepe o taxă de {fmtRON(RO_COD_FEE_RON)}.</>}
-            {RO_INSPECT_BEFORE_PAY && <> Aveți dreptul să verificați coletul înainte de plată și să îl refuzați dacă produsul nu corespunde așteptărilor dumneavoastră.</>}
-            {" "}Produsele cu un preț de la {PREPAY_RON} în sus (echivalentul a {PREPAY_EUR} EUR) se comandă cu plata în avans, stabilită direct cu noi - pentru acestea plata ramburs nu este disponibilă. Scrieți-ne la info@lorenzo-ricci.com și vom stabili împreună modalitatea de plată.
+            Pentru produsele cu un preț sub {PREPAY_RON}, plata se face cu cardul, online, prin Stripe, în lei, la plasarea comenzii;
+            prețul livrării este cel afișat în coș. Nu aveți nimic de plătit curierului la livrare.
+            {" "}Produsele cu un preț de la {PREPAY_RON} în sus (echivalentul a {PREPAY_EUR} EUR) se comandă cu plata în avans, stabilită direct cu noi. Scrieți-ne la info@lorenzo-ricci.com și vom stabili împreună modalitatea de plată.
           </>
         ),
       },

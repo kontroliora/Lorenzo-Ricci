@@ -66,6 +66,13 @@ function refundedBlock(snaps: Snap[]): string | null {
   return bad.length ? `Плащането е върнато в Stripe (${bad.map((o) => o.order_ref).join(", ")}): поръчката не може да се потвърди или изпрати.` : null;
 }
 
+// Romania is card only (25.10.2026): a Romanian order goes to "За изпълнение" or out to the courier ONLY with a succeeded card
+// payment (Stripe). An unpaid one (an old ramburs order, or a card order whose payment never arrived) is refused here.
+function roUnpaidBlock(snaps: Snap[]): string | null {
+  const bad = snaps.filter((o) => isRoOrder(o) && !hasCardMoney(o));
+  return bad.length ? `СТОП: румънска поръчка ${bad.map((o) => o.order_ref ?? `#${o.id}`).join(", ")} е НЕПЛАТЕНА (няма успешно плащане с карта). Не потвърждавай и не изпращай.` : null;
+}
+
 async function notifyRo(
   supabase: Awaited<ReturnType<typeof createClient>>, before: Snap[], alreadyThere: (status: string) => boolean, mail: RoPanelMail,
 ): Promise<string | null> {
@@ -82,7 +89,7 @@ async function notifyRo(
 export async function confirmOrder(id: number): Promise<string | null> {
   const supabase = await createClient();
   const before = await snapshot(supabase, [id]);
-  const blocked = refundedBlock(before);
+  const blocked = refundedBlock(before) ?? roUnpaidBlock(before);
   if (blocked) return blocked;
   const err = await patchOrder(id, { status: "confirmed", call_state: "confirmed" });
   if (err) return err;
@@ -181,7 +188,7 @@ export async function confirmOrders(ids: number[]): Promise<string | null> {
   if (!ids.length) return null;
   const supabase = await createClient();
   const before = await snapshot(supabase, ids);
-  const blocked = refundedBlock(before);
+  const blocked = refundedBlock(before) ?? roUnpaidBlock(before);
   if (blocked) return blocked;
   const { error } = await supabase.from("orders")
     .update({ status: "confirmed", call_state: "confirmed" })
@@ -263,7 +270,7 @@ export async function shipRoOrder(id: number, awb: string, trackUrl: string): Pr
   const { data: order, error: readErr } = await supabase.from("orders").select("*").eq("id", id).single();
   if (readErr || !order) return readErr?.message ?? "Поръчката не е намерена";
   if (!isRoOrder(order)) return "Това не е румънска поръчка.";
-  const blocked = refundedBlock([order as Snap]);
+  const blocked = refundedBlock([order as Snap]) ?? roUnpaidBlock([order as Snap]);
   if (blocked) return blocked;
 
   const now = new Date().toISOString();
@@ -379,7 +386,7 @@ export async function matchTracking(): Promise<{ ok: boolean; message: string; r
 // Confirm a suggested (uncertain) match → fill the tracking number + mark shipped.
 export async function confirmMatch(orderId: number, awb: string): Promise<string | null> {
   const [snap] = await snapshot(await createClient(), [orderId]);
-  const blocked = refundedBlock(snap ? [snap] : []) ?? (await codGuard(snap, awb));
+  const blocked = refundedBlock(snap ? [snap] : []) ?? roUnpaidBlock(snap ? [snap] : []) ?? (await codGuard(snap, awb));
   if (blocked) return blocked;
   return patchOrder(orderId, { tracking_number: awb, status: "shipped" });
 }

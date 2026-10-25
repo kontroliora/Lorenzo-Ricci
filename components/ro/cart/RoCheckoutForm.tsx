@@ -1,12 +1,10 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useRoCart, type RoCartLine } from "@/lib/ro/store";
+import type { RoCartLine } from "@/lib/ro/store";
 import { roAmounts } from "@/lib/ro/pricing";
 import { RO_COUNTIES } from "@/lib/ro/counties";
 import {
-  RO_COD_FEE_RON,
   RO_DELIVERY_DAYS,
-  RO_INSPECT_BEFORE_PAY,
   RO_RETURN_DAYS,
   RO_SHIPPING_FEE_RON,
   RO_SHIPPING_HOME,
@@ -15,7 +13,7 @@ import {
 } from "@/lib/ro/config";
 import { trackFbEvent, rememberMatchKeys } from "@/lib/fbq";
 import { logCheckoutFailure } from "@/lib/checkout-log";
-import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY, type PaymentMethod } from "@/lib/payments";
+import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY } from "@/lib/payments";
 import { newOrderRef } from "@/lib/order-ref";
 import {
   CoCheck, CoField, CoLegal, CoRadioCard, CoSection, CoSubmit, CoSummary, CoTrust, IconHome, IconOffice, PaymentMarks, SecureNote, coInput,
@@ -23,12 +21,13 @@ import {
 } from "@/components/checkout/ui";
 import { PREPAYMENT_THRESHOLD_TEXT, bundleLineLabel } from "./shared";
 
-// Romania checkout (cash on delivery / ramburs, or card through Stripe Checkout while the card option is switched on).
-// Port of components/cart/CheckoutForm.tsx: same look, one shipping option, GDPR-clean consent (nothing pre-ticked), no
-// abandoned-cart capture. All money comes from lib/ro/pricing.ts roAmounts, the same function /api/order-ro uses, so the
-// server agrees to the leu. Card orders: no card discount in Romania (owner, 25.10.2026), normal delivery rule, no ramburs fee.
+// Romania checkout: CARD ONLY, through Stripe Checkout (owner, 25.10.2026: no cash on delivery / ramburs in Romania; /api/order-ro
+// refuses anything else). Port of components/cart/CheckoutForm.tsx: same look, GDPR-clean consent (nothing pre-ticked). All money
+// comes from lib/ro/pricing.ts roAmounts, the same function /api/order-ro uses, so the server agrees to the leu; no card discount
+// in Romania. The success screen, the cart clearing and the Purchase event live on the return page (/ro/comanda/finalizata).
+// If the card option is switched off (NEXT_PUBLIC_CARD_PAYMENTS), the form says ordering is unavailable instead of offering a button.
 //
-// A cart holding a product that needs advance payment (EUR 1500 and up, line.prepay) gets NO ramburs form: like the
+// A cart holding a product that needs advance payment (EUR 1500 and up, line.prepay) gets NO order form: like the
 // Bulgarian checkout, it shows the interim contact flow (Viber / phone / e-mail), the order is arranged with the shop.
 
 const SHIPPING_LABEL = "Livrare la domiciliu cu curierul"; // what the customer reads (the API receives RO_SHIPPING_HOME / RO_SHIPPING_OFFICE)
@@ -70,7 +69,6 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 interface RoCheckoutFormProps {
   items: RoCartLine[];
-  onSuccess: () => void;
 }
 
 type FormState = {
@@ -87,9 +85,7 @@ type FormState = {
   emailMarketingConsent: boolean;
 };
 
-export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
-  const clearCart = useRoCart((s) => s.clear);
-
+export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
   // Marketing consents default to UNCHECKED (GDPR). There is no terms checkbox: the agreement is the line under the order button.
   const [form, setForm] = useState<FormState>({
     name: "",
@@ -110,20 +106,10 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [formSummary, setFormSummary] = useState("");   // red line above the button: what stopped the order (never a silent button)
   const [redirecting, setRedirecting] = useState(false);
-  const [payMethod, setPayMethod] = useState<PaymentMethod>("cod");
   const [delivery, setDelivery] = useState<Delivery>("home");
-  const [submitted, setSubmitted] = useState(false);
-  const [orderRef, setOrderRef] = useState("");
-  const [submittedTotal, setSubmittedTotal] = useState(0);
-  const [submittedEmail, setSubmittedEmail] = useState("");
-  const purchaseFired = useRef(false);
   const submittingRef = useRef(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cartSessionRef = useRef("");   // id of the saved cart (abandoned-cart reminder), created on the first capture
   const captureTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // A pending auto-close must not outlive the form (e.g. the customer closed the drawer or reopened it meanwhile).
-  useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
 
   // Meta matching: keep the SHA-256 of a whole e-mail / mobile number (never the plain value) for the next ad events.
   useEffect(() => {
@@ -132,7 +118,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   }, [form.email, form.phone]);
 
   // Coming back from the Stripe page with the browser's back button can restore this page frozen in the redirecting
-  // state; unlock the form so the customer can retry or switch to ramburs.
+  // state; unlock the form so the customer can retry.
   useEffect(() => {
     const onShow = (e: PageTransitionEvent) => {
       if (!e.persisted || !submittingRef.current) return;
@@ -146,10 +132,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
 
   // ── Derived values (the only money maths: lib/ro/pricing.ts roAmounts) ─────
   const needsPrepayment = items.some((i) => i.prepay);
-  const isCardPay = CARD_PAYMENTS_ENABLED && payMethod === "card" && !needsPrepayment;
-  const { shipping: shippingCost, total: grandTotal, bundles, cardDiscount, goods: goodsAfterSets } = roAmounts(items, { card: isCardPay });
-  const codTotal = roAmounts(items).total;
-  const cardTotal = roAmounts(items, { card: true }).total;
+  const { shipping: shippingCost, total: grandTotal, bundles } = roAmounts(items);
   // Abandoned-cart reminder (Romanian e-mail): the cart is saved ONLY while the customer has ticked the e-mail consent box (unticked
   // by default) and the address looks valid; unticking it afterwards withdraws the saved cart. Nothing is saved otherwise.
   const consent = form.emailMarketingConsent;
@@ -218,7 +201,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (submittingRef.current || needsPrepayment) return; // advance-payment carts are arranged with the shop, never posted
+    if (submittingRef.current || needsPrepayment || !CARD_PAYMENTS_ENABLED) return; // advance-payment carts are arranged with the shop, never posted
 
     const errs = validate();
     if (Object.keys(errs).length > 0) {
@@ -255,9 +238,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
     const ref = newOrderRef("LRRO");
     // Snapshot everything the order and the tracking need: the cart is cleared the moment the order is accepted.
     const lines = items.map((i) => ({ ...i }));
-    const method: PaymentMethod = isCardPay ? "card" : "cod";
-    const amounts = roAmounts(lines, { card: method === "card" });
-    const orderTotal = amounts.total;
+    const amounts = roAmounts(lines);
     const phone = normalizeRoPhone(form.phone) as string;
     const email = form.email.trim();
 
@@ -283,7 +264,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       subtotal: amounts.goods,                                 // goods AFTER the set discount (before the card discount)
       cardDiscount: amounts.cardDiscount,                      // always 0: Romania has no card discount (the server checks it)
       total: amounts.total,
-      paymentMethod: method,
+      paymentMethod: "card",                                   // the only payment method in Romania
       timestamp: new Date().toISOString(),
     };
 
@@ -316,89 +297,25 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       if (body?.code === "price_mismatch") fail(serverMsg || PRICE_MISMATCH_ERROR, PRICE_RELOAD_HINT, lg);
       // A stale cart without the advance-payment flag: a reload refreshes the lines and the checkout then shows the contact flow.
       else if (body?.code === "prepayment_required") fail(serverMsg || FALLBACK_ERROR, CART_RELOAD_HINT, lg);
+      // An old page that still sent another payment method: a reload brings the card-only checkout.
+      else if (body?.code === "card_only") fail(serverMsg || FALLBACK_ERROR, CART_RELOAD_HINT, lg);
       else fail(serverMsg || FALLBACK_ERROR, "", lg);
       return;
     }
 
-    // Card: nothing is final until Stripe confirms the payment. No success screen, no cart clearing, no Purchase here:
+    // Nothing is final until Stripe confirms the payment. No success screen, no cart clearing, no Purchase here:
     // the return page (/ro/comanda/finalizata) does those once the payment is confirmed. Park the order reference and
     // go to Stripe; the form stays locked in the "redirecting" state meanwhile.
-    if (method === "card") {
-      const url = typeof body?.checkoutUrl === "string" ? body.checkoutUrl : "";
-      if (body?.success !== true || body.paymentMethod !== "card" || !/^https?:\/\//i.test(url)) {
-        fail(FALLBACK_ERROR);
-        return;
-      }
-      const pendingRef = typeof body.orderRef === "string" && body.orderRef ? body.orderRef : ref;
-      try { sessionStorage.setItem(PENDING_ORDER_KEY, pendingRef); } catch { /* private mode: the return page reads ?ref= */ }
-      setRedirecting(true);
-      window.location.assign(url);
+    const url = typeof body?.checkoutUrl === "string" ? body.checkoutUrl : "";
+    if (body?.success !== true || body.paymentMethod !== "card" || !/^https?:\/\//i.test(url)) {
+      fail(FALLBACK_ERROR);
       return;
     }
-
-    // Accepted. Show the confirmation first, clear the cart, then fire Purchase exactly once
-    // (event_id = ref, so Meta de-duplicates it against the server-side CAPI event).
-    setOrderRef(ref);
-    setSubmittedTotal(orderTotal);
-    setSubmittedEmail(email);
-    setSubmitting(false);
-    setSubmitted(true);
-    clearCart();
-
-    if (!purchaseFired.current) {
-      purchaseFired.current = true;
-      trackFbEvent("Purchase", {
-        value: orderTotal,
-        currency: "RON",
-        content_ids: lines.map((i) => i.sku),
-        contents: lines.map((i) => ({ id: i.sku, quantity: i.quantity })),
-        content_type: "product",
-        content_category: "RO",
-        order_id: ref,
-      }, ref);
-    }
-
-    closeTimer.current = setTimeout(() => onSuccess(), 4000);
+    const pendingRef = typeof body.orderRef === "string" && body.orderRef ? body.orderRef : ref;
+    try { sessionStorage.setItem(PENDING_ORDER_KEY, pendingRef); } catch { /* private mode: the return page reads ?ref= */ }
+    setRedirecting(true);
+    window.location.assign(url);
   };
-
-  // ── Success screen ─────────────────────────────────────────────────────────
-  if (submitted) {
-    return (
-      <div className="flex flex-col items-center gap-6 py-6 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#1E5C37] bg-[#0F2A1A]">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15803D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        </div>
-
-        <div>
-          <h3 className="font-serif text-2xl text-white">Comanda a fost primită!</h3>
-          <p className="mt-1 font-sans text-sm text-[#B0B0B0]">Număr comandă: {orderRef}</p>
-        </div>
-
-        <div className="flex w-full flex-col gap-2.5 rounded-[8px] border border-[#2F2F2F] bg-[#141414] p-4 text-left">
-          <div className="flex justify-between font-sans text-sm">
-            <span className="text-[#B0B0B0]">Sumă de plată</span>
-            <span className="font-semibold text-white">{fmtRON(submittedTotal)}</span>
-          </div>
-          <div className="flex justify-between font-sans text-sm">
-            <span className="text-[#B0B0B0]">Metodă de plată</span>
-            <span className="text-white">Plata la livrare</span>
-          </div>
-          <div className="flex justify-between gap-4 font-sans text-sm">
-            <span className="text-[#B0B0B0]">Livrare estimată</span>
-            <span className="text-right text-white">{RO_DELIVERY_DAYS} zile lucrătoare de la expediere</span>
-          </div>
-        </div>
-
-        <p className="font-sans text-sm leading-relaxed text-[#C9C9C9]">
-          Am trimis confirmarea la <span className="break-all font-medium text-white">{submittedEmail}</span>
-        </p>
-
-        <p className="font-sans text-xs text-[#A0A0A0]">Plătiți la primirea coletului · Retur în {RO_RETURN_DAYS} zile conform legii</p>
-      </div>
-    );
-  }
 
   // ── Order summary rows (everything is computed above; this only formats it) ─
   const summaryLines: SummaryLine[] = items.map((i) => ({
@@ -413,7 +330,6 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
   const summaryRows: SummaryRow[] = [
     ...bundles.map(({ id, label, discount }) => ({ key: `bundle-${id}`, label: bundleLineLabel(label), value: `-${fmtRON(discount)}`, tone: "discount" as const })),
     { key: "shipping", label: "Livrare", value: freeShipping ? "Gratuită" : fmtRON(shippingCost), tone: freeShipping ? ("free" as const) : undefined },
-    ...(!isCardPay && RO_COD_FEE_RON > 0 ? [{ key: "cod-fee", label: "Taxă ramburs", value: fmtRON(RO_COD_FEE_RON) }] : []),
   ];
   const OPT = "(opțional)";
 
@@ -562,41 +478,25 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
         </CoField>
       </div>
 
-      {/* ── Payment: ramburs (default) or card (only while the card option is switched on) ── */}
-      {CARD_PAYMENTS_ENABLED ? (
-        <CoSection title="Metodă de plată">
-          <div role="radiogroup" aria-label="Metodă de plată" className="flex flex-col gap-2.5">
-            <CoRadioCard
-              name="ro-payment" value="cod" selected={!isCardPay}
-              onSelect={() => { if (!submitting) setPayMethod("cod"); }}
-              title="Plata la livrare (ramburs)"
-              subtitle="Plătiți curierului la primirea coletului"
-              right={fmtRON(codTotal)}
-            />
-            <CoRadioCard
-              name="ro-payment" value="card" selected={isCardPay}
-              onSelect={() => { if (!submitting) setPayMethod("card"); }}
-              title="Plata cu cardul"
-              subtitle="Plată online securizată prin Stripe"
-              right={fmtRON(cardTotal)}
-            >
-              <PaymentMarks label="Carduri și portofele acceptate" />
-              {isCardPay && (
-                <SecureNote>Plata este procesată în siguranță de Stripe. Nu stocăm datele cardului.</SecureNote>
-              )}
-            </CoRadioCard>
-          </div>
-        </CoSection>
-      ) : (
-        <CoSection title="Metodă de plată">
+      {/* ── Payment: card only (Romania has no cash on delivery) ── */}
+      <CoSection title="Metodă de plată">
+        {CARD_PAYMENTS_ENABLED ? (
           <CoRadioCard
-            name="ro-payment" value="cod" selected onSelect={() => {}}
-            title="Plata la livrare (ramburs)"
-            subtitle={`Plătiți curierului suma de ${fmtRON(grandTotal)} la primirea coletului.`}
+            name="ro-payment" value="card" selected onSelect={() => {}}
+            title="Plata cu cardul"
+            subtitle="Plată online securizată prin Stripe, în lei. Nu aveți nimic de plătit la livrare."
             right={fmtRON(grandTotal)}
-          />
-        </CoSection>
-      )}
+          >
+            <PaymentMarks label="Carduri și portofele acceptate" />
+            <SecureNote>Plata este procesată în siguranță de Stripe. Nu stocăm datele cardului.</SecureNote>
+          </CoRadioCard>
+        ) : (
+          <p role="status" className="rounded-[8px] border border-[#606060] bg-[#141414] px-4 py-4 font-sans text-sm leading-relaxed text-[#C9C9C9]">
+            Plata cu cardul nu este disponibilă momentan, de aceea nu se pot plasa comenzi. Vă rugăm să reveniți puțin mai târziu sau să ne scrieți la{" "}
+            <a href={`mailto:${PREPAYMENT_EMAIL}`} className="font-medium text-white underline underline-offset-2">{PREPAYMENT_EMAIL}</a>.
+          </p>
+        )}
+      </CoSection>
 
       </>)}
 
@@ -621,8 +521,8 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
       {needsPrepayment ? (
         <div className="flex flex-col gap-3 rounded-[8px] border border-[#606060] bg-[#141414] px-5 py-5 text-center">
           <p className="font-sans text-sm leading-relaxed text-[#C9C9C9]">
-            Produsele cu prețul de la {PREPAYMENT_THRESHOLD_TEXT} în sus se comandă cu plată în avans, stabilită direct cu noi -
-            plata la livrare (ramburs) nu este disponibilă pentru această comandă. Vă rugăm să ne contactați pentru a finaliza comanda.
+            Produsele cu prețul de la {PREPAYMENT_THRESHOLD_TEXT} în sus se comandă cu plată în avans, stabilită direct cu noi.
+            Vă rugăm să ne contactați pentru a finaliza comanda.
           </p>
           <a
             href={PREPAYMENT_VIBER_LINK}
@@ -641,7 +541,7 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
             </a>
           </p>
         </div>
-      ) : (
+      ) : CARD_PAYMENTS_ENABLED && (
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-3">
             {formSummary && (
@@ -649,8 +549,8 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
                 {formSummary}
               </div>
             )}
-            <CoSubmit busy={submitting} busyLabel={redirecting ? "Vă redirecționăm către plată..." : isCardPay ? "Se pregătește plata..." : "Se trimite comanda..."}>
-              {isCardPay ? `Plătiți ${fmtRON(grandTotal)}` : `Finalizați comanda · ${fmtRON(grandTotal)}`}
+            <CoSubmit busy={submitting} busyLabel={redirecting ? "Vă redirecționăm către plată..." : "Se pregătește plata..."}>
+              {`Plătiți ${fmtRON(grandTotal)}`}
             </CoSubmit>
             <CoLegal>
               Plasând comanda, ești de acord cu{" "}
@@ -664,7 +564,6 @@ export function RoCheckoutForm({ items, onSuccess }: RoCheckoutFormProps) {
             points={[
               "5 ani garanție la ceasuri",
               `Retur în ${RO_RETURN_DAYS} zile`,
-              ...(!isCardPay && RO_INSPECT_BEFORE_PAY ? ["Inspecție înainte de plată"] : []),
             ]}
             links={[
               { href: "/ro/politici/termeni", label: "Termeni" },

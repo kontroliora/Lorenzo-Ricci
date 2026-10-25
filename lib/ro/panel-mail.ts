@@ -7,9 +7,10 @@
 import { Resend } from "resend";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { langOf, mayEmail, type MailKind } from "@/lib/mail-policy";
+import { hasCardMoney, isCard } from "@/lib/payments";
 import {
   buildRoConfirmedEmail, buildRoCancelledEmail, buildRoDeliveredEmail, buildRoReturnedEmail, buildRoShippedEmail,
-  roConfirmedSubject, roCancelledSubject, roDeliveredSubject, roReturnedSubject, roShippedSubject, type RoCancelCategory,
+  roConfirmedSubject, roCancelledSubject, roDeliveredSubject, roReturnedSubject, roShippedSubject, type RoCancelCategory, type RoPayment,
 } from "@/lib/ro/emails";
 
 export type RoPanelMail =
@@ -22,14 +23,18 @@ export type RoPanelMail =
 type Row = {
   id: number; order_ref: string | null; name: string | null; email: string | null; items: unknown; total: number | null;
   ship_country: string | null; tracking_number: string | null;
+  payment_method: string | null; payment_status: string | null; stripe_payment_intent: string | null;
 };
 
 const FROM = "Lorenzo Ricci <info@lorenzo-ricci.com>";
 
+/** How the order is paid (see RoPayment in lib/ro/emails.ts): Romania is card only, "ramburs" is left only for orders placed before 25.10.2026. */
+const roPaymentOf = (o: Row): RoPayment => (hasCardMoney(o) ? "card" : isCard(o) ? "unknown" : "ramburs");
+
 /** Sends the Romanian e-mail for `mail` about order `orderId`. Returns null (sent, or nothing to send) or a warning for the panel. */
 export async function sendRoPanelMail(sb: SupabaseClient, orderId: number, mail: RoPanelMail): Promise<string | null> {
   const { data, error } = await sb.from("orders")
-    .select("id, order_ref, name, email, items, total, ship_country, tracking_number").eq("id", orderId).single();
+    .select("id, order_ref, name, email, items, total, ship_country, tracking_number, payment_method, payment_status, stripe_payment_intent").eq("id", orderId).single();
   if (error || !data) return `Статусът е променен, но не успях да прочета поръчката за имейла (${error?.message ?? "не е намерена"}).`;
   const o = data as Row;
   if (langOf(o) !== "ro") return null;                         // not a Romanian order: this module never mails it
@@ -41,14 +46,15 @@ export async function sendRoPanelMail(sb: SupabaseClient, orderId: number, mail:
   const firstName = String(o.name ?? "").trim().split(" ")[0];
   const items = Array.isArray(o.items) ? (o.items as { name?: string; quantity?: number; price?: number; gift?: boolean }[]).filter((i) => !i.gift) : [];
   const total = Number(o.total ?? 0);
+  const payment = roPaymentOf(o);   // paid by card: the e-mails say there is nothing to pay on delivery
 
   let subject: string; let html: string;
   switch (mail.kind) {
-    case "order_confirmed": subject = roConfirmedSubject(ref); html = buildRoConfirmedEmail({ orderRef: ref, firstName, items, total }); break;
+    case "order_confirmed": subject = roConfirmedSubject(ref); html = buildRoConfirmedEmail({ orderRef: ref, firstName, items, total, payment }); break;
     case "order_cancelled": subject = roCancelledSubject(ref); html = buildRoCancelledEmail({ orderRef: ref, firstName, category: mail.category, refundLabel: mail.refundLabel }); break;
     case "order_delivered": subject = roDeliveredSubject(ref); html = buildRoDeliveredEmail({ orderRef: ref, firstName }); break;
     case "order_returned": subject = roReturnedSubject(ref); html = buildRoReturnedEmail({ orderRef: ref, firstName }); break;
-    case "shipment_shipped": subject = roShippedSubject(ref); html = buildRoShippedEmail({ orderRef: ref, firstName, items, total, awb: mail.awb, trackUrl: mail.trackUrl }); break;
+    case "shipment_shipped": subject = roShippedSubject(ref); html = buildRoShippedEmail({ orderRef: ref, firstName, items, total, payment, awb: mail.awb, trackUrl: mail.trackUrl }); break;
   }
 
   try {

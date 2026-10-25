@@ -82,8 +82,9 @@ function groupByCustomer(orders: AdminOrder[]): AdminOrder[][] {
   for (const o of orders) {
     const core = phoneCore(o.phone ?? "");
     const key = core ? `${marketOf(o)}:${core}` : ""; // a Bulgarian and a Romanian order are never merged into one card
-    // A card order is never merged either: its courier-collects amount differs from a cash-on-delivery one.
-    if (!key || isCard(o)) { noPhone.push([o]); continue; }
+    // A card order is never merged either: its courier-collects amount differs from a cash-on-delivery one. Romanian orders (card only)
+    // are never merged: each shows its own paid / НЕПЛАТЕНА state.
+    if (!key || isCard(o) || isRoOrder(o)) { noPhone.push([o]); continue; }
     const b = buckets.get(key);
     if (b) b.push(o); else buckets.set(key, [o]);
   }

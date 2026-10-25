@@ -7,7 +7,7 @@ import { safeText, type RoTileProduct } from "./ro-home-utils";
 
 // Romanian counterpart of components/home/MilanoAvorioFlagship.tsx: the one-of-a-kind crocodile bag, EUR 4000 base
 // price (the page hands it in price-overridden and localized). Price in lei; from EUR 1500 up the product is sold on
-// prepayment arranged directly with the shop (no cash on delivery), the same rule as on the Bulgarian site.
+// prepayment arranged directly with the shop (not through the card checkout), the same rule as on the Bulgarian site.
 interface Props {
   product: RoTileProduct;
 }
@@ -88,7 +88,7 @@ export function RoMilanoAvorioFlagship({ product }: Props) {
             {/* Prepayment note: shown only while the product really needs it (price at or above the threshold) */}
             {!isSoldOut && roNeedsPrepayment(product) ? (
               <p className="font-sans text-xs font-light text-ink-muted leading-relaxed tracking-wide mb-8 max-w-sm">
-                Se comandă cu plata în avans (fără ramburs), stabilită direct cu noi.
+                Se comandă cu plata în avans, stabilită direct cu noi.
               </p>
             ) : (
               <div className="mb-5" />

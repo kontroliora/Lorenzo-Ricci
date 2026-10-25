@@ -5,7 +5,7 @@ import { RO_CURRENCY } from "./config";
 import { mayEmail, type MailKind } from "../mail-policy";
 import type { RoOrderEmailData } from "./emails";
 
-// Romanian order notifications shared by /api/order-ro (ramburs) and the Stripe webhook (card orders, once paid).
+// Romanian order notifications, sent by the Stripe webhook path (lib/payment-notify.ts) once a card order is paid.
 export const RO_ADMIN_RECIPIENTS = ["info@lorenzo-ricci.com", "sodolos3@gmail.com", "pavelserbezov03@gmail.com"]; // same three as /api/order
 const str = (v: unknown, max = 300) => String(v ?? "").trim().slice(0, max);
 

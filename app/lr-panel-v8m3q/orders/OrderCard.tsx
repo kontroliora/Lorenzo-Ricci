@@ -19,7 +19,7 @@ import {
 import { callTimer, sofiaHHMM, formatAttemptList, formatAttemptAudit } from "@/lib/callSchedule";
 import { OrderItemsList } from "./OrderItemsList";
 import { isRoOrder, fmtLei, fmtLeiWithEuro } from "@/lib/market";
-import { PaymentBadge, PaidCardCollectLine, CardMoneyMissingLine } from "./PaymentUi";
+import { PaymentBadge, PaidCardCollectLine, CardMoneyMissingLine, RoPaymentLine } from "./PaymentUi";
 import { refundPlan } from "@/lib/stripe-mode";
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
@@ -226,7 +226,9 @@ export function OrderCard({
             <span>Доставка: <span style={{ color: "rgba(255,255,255,0.8)" }}>{codShip > 0 ? money(codShip) : "безплатна"}</span></span>
           </div>
         )}
-        {cardMoney ? (
+        {ro ? (
+          <RoPaymentLine paid={cardMoney} total={totalLabel} paidAt={order.paid_at ? fmtDate(order.paid_at) : null} />
+        ) : cardMoney ? (
           <PaidCardCollectLine zero="0" paidAmount={totalLabel} paidAt={order.paid_at ? fmtDate(order.paid_at) : null} />
         ) : cardMissing ? (
           <CardMoneyMissingLine total={totalLabel} />

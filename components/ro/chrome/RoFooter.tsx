@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { fmtRON, RO_DELIVERY_DAYS, RO_FREE_SHIPPING_RON, RO_INSPECT_BEFORE_PAY, RO_RETURN_DAYS } from "@/lib/ro/config";
+import { fmtRON, RO_DELIVERY_DAYS, RO_FREE_SHIPPING_RON, RO_RETURN_DAYS } from "@/lib/ro/config";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import { RoNewsletterStrip } from "./RoNewsletterStrip";
 
@@ -12,9 +12,7 @@ const TRUST = [
   { title: "5 ani garanție comercială", sub: "la ceasuri · pe viață la bijuterii" },
   { title: `${RO_DELIVERY_DAYS} zile lucrătoare`, sub: "Livrare în România" },
   { title: "Livrare gratuită", sub: `Pentru comenzi de peste ${fmtRON(RO_FREE_SHIPPING_RON)}` },
-  RO_INSPECT_BEFORE_PAY
-    ? { title: "Verificare înainte de plată", sub: "Plata la livrare (ramburs)" }
-    : { title: `Retur în ${RO_RETURN_DAYS} zile`, sub: "Plata la livrare (ramburs)" },
+  { title: `Retur în ${RO_RETURN_DAYS} zile`, sub: "Plata securizată cu cardul" },
 ];
 
 export function RoFooter() {
@@ -31,7 +29,7 @@ export function RoFooter() {
               Create să impresioneze. Precizie în fiecare detaliu.
             </p>
             <p className="font-sans text-[10px] font-medium text-charcoal tracking-[0.18em] uppercase">
-              Plata la livrare (ramburs)
+              Plata securizată cu cardul
             </p>
             <LanguageSwitch current="ro" size="lg" className="mt-5 text-charcoal" />
           </div>

@@ -11,17 +11,13 @@ import { RO_COUNTIES } from "@/lib/ro/counties";
 import { CARD_PAYMENTS_ENABLED, PENDING_PAYMENT } from "@/lib/payments";
 import { returnOrigin, startCardPayment } from "@/lib/payment-orders";
 import { SITE_URL } from "@/lib/site";
-import { mayEmail } from "@/lib/mail-policy";
-import { RO_CURRENCY } from "@/lib/ro/config";
-import { buildRoCustomerEmail, buildRoAdminEmail, roCustomerSubject, type RoOrderEmailData } from "@/lib/ro/emails";
-import { sendMail, sendCapiPurchase, RO_ADMIN_RECIPIENTS } from "@/lib/ro/order-notify";
 
-// mail-policy: order_confirmation
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /api/order-ro - Romanian market test: cash on delivery (ramburs), prices in lei.
+// POST /api/order-ro - Romanian market: CARD ONLY (Stripe Checkout), prices in lei. There is no cash on delivery ("ramburs") in
+// Romania (owner, 25.10.2026): a request without paymentMethod "card" is refused with 409 card_only, whatever the browser sends.
 //
 // A PARALLEL path to /api/order (the Bulgarian COD/Econt flow is untouched). Same safety rules:
 //   1. every price, total and the delivery fee are RE-DERIVED here from the catalog + price overrides
@@ -30,6 +26,7 @@ export const dynamic = "force-dynamic";
 //   3. stock is reserved with the same atomic reserve_wallet_stock (all-or-nothing under a row lock);
 //   4. the order is inserted BEFORE the e-mails; if the insert fails the stock is put back and the customer is told;
 //   5. a repeated orderRef is answered with success without reserving or inserting twice.
+// E-mails, the Meta Purchase and the panel only come after Stripe confirms the payment (webhook -> lib/payment-notify.ts).
 // The order is stored with is_international = true and ship_country = 'RO': is_international is the switch every Bulgarian-only
 // automation checks (Econt crons, Econt e-mails), so none of them touches it; the order shows in the normal Поръчки list
 // (badge 🇷🇴 RO, filter Румъния, see lib/market.ts). Amounts in `total`/`subtotal`/`shipping_cost` are lei.
@@ -61,6 +58,9 @@ export async function POST(req: NextRequest) {
     // ── 1. Shape of the request ───────────────────────────────────────────────
     const ref = str(body.orderRef, 20);
     if (!/^LRRO-[A-Z0-9]{4,10}$/.test(ref)) return fail(400, "bad_request", "Cerere invalidă. Vă rugăm să reîncărcați pagina.");
+    // Card only: a missing or any other payment method (an old open tab, a hand-made request) never becomes an order.
+    if (body.paymentMethod !== "card") return fail(409, "card_only", "Comenzile din România se plătesc doar cu cardul, online. Vă rugăm să reîncărcați pagina și să reîncercați.");
+    if (!CARD_PAYMENTS_ENABLED) return fail(503, "unavailable", "Plata cu cardul nu este disponibilă momentan. Vă rugăm să reîncercați mai târziu.");
 
     const cu = (body.customer ?? {}) as Record<string, unknown>;
     const name = str(cu.name, 120);
@@ -113,16 +113,13 @@ export async function POST(req: NextRequest) {
     if (!gate.ok) {
       return fail(409, gate.code, gate.code === "not_for_sale"
         ? stockMessage(gate.names.map((n) => ({ name: n, available: 0 })))
-        : `${gate.names.join(", ")} nu se poate comanda cu plata la livrare.`);
+        : `${gate.names.join(", ")} se comandă cu plată în avans, stabilită direct cu noi. Vă rugăm să ne contactați.`);
     }
 
-    // Card payment: no card discount in Romania (lib/ro/pricing.ts - a request that claims one fails the total check below with 409),
-    // normal delivery rule, and nothing is sent to Meta or the customer until Stripe confirms the payment (webhook).
-    const isCard = body.paymentMethod === "card";
-    if (isCard && !CARD_PAYMENTS_ENABLED) return fail(503, "unavailable", "Plata cu cardul nu este disponibilă momentan. Vă rugăm să alegeți plata la livrare.");
+    // No card discount in Romania (lib/ro/pricing.ts - a request that claims one fails the total check below with 409).
     // Every amount comes from ONE function (lib/ro/pricing.ts, shared with the cart): lines at the current lei prices, set
     // discounts, delivery judged on the amount after discounts. The browser's numbers must match to the leu.
-    const { discount, goods: subtotal, cardDiscount, shipping: shippingCost, total } = roAmounts(lines, { card: isCard });
+    const { discount, goods: subtotal, cardDiscount, shipping: shippingCost, total } = roAmounts(lines);
     const sh = (body.shipping ?? {}) as Record<string, unknown>;
     if (Number(body.subtotal) !== subtotal || Number(body.discount ?? 0) !== discount || Number(body.cardDiscount ?? 0) !== cardDiscount || Number(sh.cost) !== shippingCost || Number(body.total) !== total) {
       console.warn(`[order-ro] total mismatch: client ${String(body.subtotal)}/${String(body.discount)}/${String(body.cardDiscount)}/${String(sh.cost)}/${String(body.total)}, server ${subtotal}/${discount}/${cardDiscount}/${shippingCost}/${total}`);
@@ -148,7 +145,7 @@ export async function POST(req: NextRequest) {
     const orderItems = lines.map((l) => ({ sku: l.sku, slug: l.slug, name: l.name, quantity: l.quantity, qty: l.quantity, price: l.ron, currency: "lei" }));
     const notes = str(cu.notes, 500);
     const orderRow = {
-      ...(isCard ? { status: PENDING_PAYMENT, payment_method: "card", payment_status: "pending", payment_currency: "RON" } : {}),
+      status: PENDING_PAYMENT, payment_method: "card", payment_status: "pending", payment_currency: "RON",
       order_ref: ref,
       name,
       phone,
@@ -179,9 +176,9 @@ export async function POST(req: NextRequest) {
       return fail(503, "unavailable", "Nu am putut înregistra comanda. Vă rugăm să reîncercați în câteva momente.");
     }
 
-    // ── 5b. Card: open the Stripe session. E-mails, Meta Purchase and the panel only come after the webhook says PAID. ──
-    // The saved cart of this visit (abandoned-cart reminder, only exists with the customer's consent): cash on delivery closes it right
-    // here; a card order closes it when the payment is confirmed (the webhook reads cart_session from the session metadata).
+    // ── 6. Open the Stripe session. E-mails, Meta Purchase and the panel only come after the webhook says PAID. ──
+    // The saved cart of this visit (abandoned-cart reminder) is closed when the payment is confirmed: lib/payment-notify.ts reads
+    // cart_session from the session metadata.
     const cartSession = typeof body.sessionId === "string" ? body.sessionId.slice(0, 80) : "";
     const capiCtx = {
       ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("x-real-ip") ?? undefined,
@@ -189,53 +186,32 @@ export async function POST(req: NextRequest) {
       fbc: req.cookies.get("_fbc")?.value,
       fbp: req.cookies.get("_fbp")?.value,
       externalId: req.cookies.get("lr_xid")?.value,
-      sourceUrl: req.headers.get("referer") ?? undefined,
     };
-    if (isCard) {
-      const started = await startCardPayment({
-        sb,
-        orderRef: ref,
-        market: "ro",
-        lines: [
-          ...lines.map((l) => ({ name: l.name, sku: l.sku, quantity: l.quantity, unitPrice: l.ron, image: new URL(getProductBySlug(l.slug)!.coverImage.src, SITE_URL).href })),
-          // delivery is a line of its own on the Stripe page (same price as for ramburs: free from 315 lei, else 46 lei)
-          ...(shippingCost > 0 ? [{ name: office ? "Livrare la locker / birou Speedy" : "Livrare la domiciliu (Speedy)", sku: "SHIPPING", quantity: 1, unitPrice: shippingCost }] : []),
-        ],
-        expectedTotal: total,
-        discount,                            // set discounts only (Romania has no card discount)
-        customerEmail: email,
-        origin: returnOrigin(req.nextUrl.origin),
-        heldItems: orderItems,
-        metadata: {
-          ...(cartSession ? { cart_session: cartSession } : {}),
-          ...(capiCtx.fbp ? { fbp: capiCtx.fbp.slice(0, 120) } : {}),
-          ...(capiCtx.fbc ? { fbc: capiCtx.fbc.slice(0, 200) } : {}),
-          ...(capiCtx.ip ? { client_ip: capiCtx.ip.slice(0, 64) } : {}),
-          ...(capiCtx.userAgent ? { client_ua: capiCtx.userAgent.slice(0, 450) } : {}),
-          ...(capiCtx.externalId ? { xid: capiCtx.externalId.slice(0, 100) } : {}),
-        },
-      });
-      if (!started.ok) return fail(503, "unavailable", "Plata cu cardul nu este disponibilă momentan. Vă rugăm să alegeți plata la livrare sau să reîncercați.");
-      return NextResponse.json({ success: true, paymentMethod: "card", orderRef: ref, checkoutUrl: started.url });
-    }
-
-    if (cartSession) {
-      await sb.from("cart_sessions").update({ status: "converted", converted_at: new Date().toISOString() }).eq("session_id", cartSession).eq("status", "pending");
-    }
-
-    // ── 6. E-mails + Meta Purchase (awaited: Vercel kills un-awaited work). Best effort: the order is already saved. ──
-    const data: RoOrderEmailData = { orderRef: ref, customer: { name, phone, email, county: office ? "" : county, city: office ? "" : city, address: office ? officeAddress : address, postCode, notes }, items: orderItems, subtotal, discount, shippingCost, total, officeDelivery: office };
-    const results = await Promise.allSettled([
-      sendMail({ from: "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>", to: RO_ADMIN_RECIPIENTS, subject: `🇷🇴 Нова поръчка (Румъния) - ${name} - ${ref}`, html: buildRoAdminEmail(data) }),
-      // the customer's confirmation is Romanian (mail-policy: order_confirmation); the team e-mail above is internal
-      mayEmail("order_confirmation", "ro", "ro")
-        ? sendMail({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [email], subject: roCustomerSubject, html: buildRoCustomerEmail(data) }, "order_confirmation")
-        : Promise.resolve(),
-      sendCapiPurchase({ ...data, skus: lines.map((l) => l.sku) }, capiCtx),
-    ]);
-    results.forEach((r, i) => { if (r.status === "rejected") console.error(`[order-ro] ${["admin e-mail", "customer e-mail", "CAPI Purchase"][i]} failed:`, r.reason); });
-
-    return NextResponse.json({ success: true });
+    const started = await startCardPayment({
+      sb,
+      orderRef: ref,
+      market: "ro",
+      lines: [
+        ...lines.map((l) => ({ name: l.name, sku: l.sku, quantity: l.quantity, unitPrice: l.ron, image: new URL(getProductBySlug(l.slug)!.coverImage.src, SITE_URL).href })),
+        // delivery is a line of its own on the Stripe page (free from 315 lei, else 46 lei)
+        ...(shippingCost > 0 ? [{ name: office ? "Livrare la locker / birou Speedy" : "Livrare la domiciliu (Speedy)", sku: "SHIPPING", quantity: 1, unitPrice: shippingCost }] : []),
+      ],
+      expectedTotal: total,
+      discount,                            // set discounts only (Romania has no card discount)
+      customerEmail: email,
+      origin: returnOrigin(req.nextUrl.origin),
+      heldItems: orderItems,
+      metadata: {
+        ...(cartSession ? { cart_session: cartSession } : {}),
+        ...(capiCtx.fbp ? { fbp: capiCtx.fbp.slice(0, 120) } : {}),
+        ...(capiCtx.fbc ? { fbc: capiCtx.fbc.slice(0, 200) } : {}),
+        ...(capiCtx.ip ? { client_ip: capiCtx.ip.slice(0, 64) } : {}),
+        ...(capiCtx.userAgent ? { client_ua: capiCtx.userAgent.slice(0, 450) } : {}),
+        ...(capiCtx.externalId ? { xid: capiCtx.externalId.slice(0, 100) } : {}),
+      },
+    });
+    if (!started.ok) return fail(503, "unavailable", "Plata cu cardul nu este disponibilă momentan. Vă rugăm să reîncercați în câteva momente.");
+    return NextResponse.json({ success: true, paymentMethod: "card", orderRef: ref, checkoutUrl: started.url });
   } catch (error) {
     console.error("[order-ro] error:", error);
     return fail(500, "error", "A apărut o eroare. Vă rugăm să reîncercați.");

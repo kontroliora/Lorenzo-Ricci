@@ -1,26 +1,24 @@
-import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import {
-  RO_COD_FEE_RON,
   RO_COURIER_LABEL,
   RO_DELIVERY_DAYS,
   RO_FREE_SHIPPING_RON,
-  RO_INSPECT_BEFORE_PAY,
   RO_RETURN_DAYS,
   RO_SHIPPING_FEE_RON,
   fmtRON,
   ronPrice,
 } from "@/lib/ro/config";
 
-// Products priced from EUR 1500 up are sold on advance payment (no cash on delivery), exactly like on the Bulgarian site.
+// Romania pays by card only (owner, 25.10.2026: no cash on delivery / ramburs). Products priced from EUR 1500 up are sold on
+// advance payment arranged with the shop, exactly like on the Bulgarian site. LEGAL TEXT: have it reviewed by a Romanian lawyer.
 const PREPAY_RON = fmtRON(ronPrice(PREPAYMENT_THRESHOLD_EUR));
 const PREPAY_EUR = PREPAYMENT_THRESHOLD_EUR.toLocaleString("ro-RO");
 
 export const metadata: Metadata = {
   title: "Termeni și condiții",
-  description: "Termenii și condițiile de vânzare la distanță ale magazinului Lorenzo Ricci: comandă, plata ramburs sau în avans, livrare, drept de retragere, garanții (inclusiv garanția pe viață pentru bijuterii) și reclamații.",
+  description: "Termenii și condițiile de vânzare la distanță ale magazinului Lorenzo Ricci: comandă, plata cu cardul sau în avans, livrare, drept de retragere, garanții (inclusiv garanția pe viață pentru bijuterii) și reclamații.",
   alternates: { canonical: "https://lorenzo-ricci.com/ro/politici/termeni" },
   other: { "content-language": "ro" },
 };
@@ -81,7 +79,7 @@ export default function TermeniPage() {
 
         <PolicySection title="Plasarea comenzii și încheierea contractului">
           <p>
-            Pentru a comanda, adăugați produsul în coș, completați datele solicitate (nume, număr de telefon, adresa de livrare) și confirmați comanda. După plasarea comenzii vă vom contacta pentru confirmare. Contractul la distanță se consideră încheiat în momentul în care vă confirmăm comanda.
+            Pentru a comanda, adăugați produsul în coș, completați datele solicitate (nume, număr de telefon, adresa de livrare) și plătiți cu cardul, online, pe pagina securizată Stripe. Comanda se înregistrează numai după confirmarea plății; imediat după aceea vă trimitem confirmarea comenzii pe e-mail. Contractul la distanță se consideră încheiat în momentul în care vă confirmăm comanda.
           </p>
           <p className="mt-3">
             Pentru produsele care se comandă cu plata în avans (vezi secțiunea „Plata”), comanda se stabilește direct cu noi. Comenzile se onorează în limita stocului disponibil. Dacă doriți să anulați o comandă, scrieți-ne cât mai curând la{" "}
@@ -92,23 +90,11 @@ export default function TermeniPage() {
         <PolicySection title="Plata">
           <p>
             Pentru produsele cu un preț sub <strong className="text-charcoal font-normal">{PREPAY_RON}</strong>, plata se face{" "}
-            <strong className="text-charcoal font-normal">ramburs</strong>, în lei: achitați comanda curierului, la livrare.
-            {CARD_PAYMENTS_ENABLED && <>{" "}Puteți plăti și cu cardul, online, prin Stripe, în lei; livrarea se plătește după aceleași reguli ca la ramburs.</>}
-            {RO_COD_FEE_RON > 0 && (
-              <>
-                {" "}Pentru plata ramburs se percepe o taxă de <strong className="text-charcoal font-normal">{fmtRON(RO_COD_FEE_RON)}</strong>.
-              </>
-            )}
-            {RO_INSPECT_BEFORE_PAY && (
-              <>
-                <br /><br />
-                Aveți dreptul să <strong className="text-charcoal font-normal">verificați coletul înainte de plată</strong> și să îl refuzați dacă produsul nu corespunde așteptărilor dumneavoastră.
-              </>
-            )}
+            <strong className="text-charcoal font-normal">cu cardul</strong>, online, prin Stripe, în lei, la plasarea comenzii; suma plătită include costul livrării, iar la livrare nu se mai plătește nimic. Datele cardului sunt procesate de Stripe; nu le stocăm.
           </p>
           <p className="mt-3">
             Produsele cu un preț de la <strong className="text-charcoal font-normal">{PREPAY_RON}</strong> în sus (echivalentul a {PREPAY_EUR} EUR) se comandă cu{" "}
-            <strong className="text-charcoal font-normal">plata în avans</strong>, stabilită direct cu noi; pentru aceste produse plata ramburs nu este disponibilă. Pentru a comanda un astfel de produs, scrieți-ne la{" "}
+            <strong className="text-charcoal font-normal">plata în avans</strong>, stabilită direct cu noi. Pentru a comanda un astfel de produs, scrieți-ne la{" "}
             <a href="mailto:info@lorenzo-ricci.com" className="text-navy hover:underline">info@lorenzo-ricci.com</a>
             {" "}și vom stabili împreună cu dumneavoastră modalitatea de plată.
           </p>

@@ -30,7 +30,7 @@ export default function AnulataPage() {
         </div>
 
         <p className="font-sans text-xs text-ink-muted leading-relaxed tracking-wide text-center mt-8">
-          Plata la livrare (ramburs) rămâne disponibilă oricând.
+          Puteți reîncerca plata cu cardul oricând: comanda se plasează doar după confirmarea plății.
         </p>
       </div>
     </div>

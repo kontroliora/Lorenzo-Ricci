@@ -1,4 +1,3 @@
-import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import type { Metadata } from "next";
 import { BUNDLES, bundleHasSaleItem } from "@/lib/bundles";
 import { getProductBySlug } from "@/lib/products";
@@ -127,7 +126,7 @@ export default async function RoBundlesPage() {
         <div className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-0 border border-border">
           {[
             { title: "Reducere automată",   sub: "Se aplică direct în coș" },
-            CARD_PAYMENTS_ENABLED ? { title: "Card sau ramburs", sub: "Plată online securizată prin Stripe" } : { title: "Plata ramburs", sub: "Achitați la primirea coletului" },
+            { title: "Plata cu cardul",     sub: "Plată online securizată prin Stripe" },
             { title: "Garanție pe viață",    sub: "La toate bijuteriile" },
           ].map(({ title, sub }, i) => (
             <div
