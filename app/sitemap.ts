@@ -12,6 +12,7 @@ const STATIC_PATHS = [
   "/jewellery",
   "/leather-goods",
   "/bundles",
+  "/namalenia",
   "/story",
   "/faq",
   "/watch-manual",
