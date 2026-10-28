@@ -3554,7 +3554,6 @@ export const reviews: Review[] = [
     author: "Росен К.",
     rating: 5,
     body: "Синята каишка на живо е по-впечатляваща от снимките. Цветовете се съчетават добре.",
-    imageUrl: "/reviews/yachting-blue-РосенК.jpeg",
     date: "2026-01-22",
   },
   {
