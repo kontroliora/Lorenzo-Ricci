@@ -3878,9 +3878,9 @@ export const reviewSummary: Record<string, { count: number; avg: number }> = {
   "cardholder-bianco":         { count: 27,  avg: 4.8 },
   "cardholder-valentina":      { count: 28,  avg: 4.7 },
   "cardholder-zaffiro":        { count: 35,  avg: 4.8 },
-  "yachting-white":            { count: 74,  avg: 4.5 },
-  "yachting-black":            { count: 53,  avg: 4.3 },
-  "yachting-blue":             { count: 38,  avg: 4.5 },
+  "yachting-white":            { count: 74,  avg: 4.9 },
+  "yachting-black":            { count: 53,  avg: 4.7 },
+  "yachting-blue":             { count: 38,  avg: 4.8 },
 };
 
 // ─── Category pooling ────────────────────────────────────────────────────────
