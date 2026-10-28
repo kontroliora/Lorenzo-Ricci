@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getSoldOutSlugs } from "@/lib/sold-out";
+import { soldOutLast } from "@/lib/sold-out-order";
 import { products } from "@/lib/products";
 import { ProductCard } from "@/components/product/ProductCard";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
@@ -13,12 +15,17 @@ export const metadata: Metadata = {
 // lib/price-overrides.ts) — page stays statically generated; the admin discount
 // route calls revalidatePath("/leather-goods") on every write.
 
+// Sold-out products are listed last (lib/sold-out-order.ts); the sold-out list is re-read every 5 minutes.
+export const revalidate = 300;
+
 export default async function LeatherGoodsPage() {
   const overrides = await getPriceOverrides();
   const catalog = applyOverrides(products, overrides);
-  const wallets     = catalog.filter((p) => p.category === "wallets");
-  const cardholders = catalog.filter((p) => p.category === "cardholders");
-  const bags        = catalog.filter((p) => p.category === "bags");
+  const soldOut = new Set(await getSoldOutSlugs());
+  const last = <T extends { slug: string }>(l: T[]) => soldOutLast(l, (s) => soldOut.has(s));
+  const wallets     = last(catalog.filter((p) => p.category === "wallets"));
+  const cardholders = last(catalog.filter((p) => p.category === "cardholders"));
+  const bags        = last(catalog.filter((p) => p.category === "bags"));
 
   return (
     <div className="min-h-screen pt-[116px] pb-24">

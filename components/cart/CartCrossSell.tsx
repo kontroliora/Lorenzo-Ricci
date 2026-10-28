@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useLeatherStock } from "@/lib/use-gifts";
 import Image from "next/image";
 import { useCartStore } from "@/lib/store";
 import { getProductBySlug } from "@/lib/products";
@@ -70,6 +71,7 @@ export function CartCrossSell() {
   const { items, addItem } = useCartStore();
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const applyOverride = usePriceOverrides();
+  const stock = useLeatherStock(true);   // live counts: a product at 0 is never suggested (owner, 28.10.2026)
 
   if (items.length === 0) return null;
 
@@ -78,7 +80,7 @@ export function CartCrossSell() {
 
   const suggestions = suggestionIds
     .map((slug) => getProductBySlug(slug))
-    .filter((p): p is Product => !!p && p.inStock)
+    .filter((p): p is Product => !!p && p.inStock && (stock?.[p.slug] ?? 1) > 0)
     .map(applyOverride);
 
   if (suggestions.length === 0) return null;

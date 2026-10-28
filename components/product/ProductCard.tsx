@@ -70,7 +70,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
       onMouseLeave={() => setHovered(false)}
     >
       {/* Image container */}
-      <Link href={`/products/${product.slug}`} className={`block relative overflow-hidden bg-white aspect-square ${isSoldOut ? "grayscale" : ""}`}>
+      <Link href={`/products/${product.slug}`} className={`block relative overflow-hidden bg-white aspect-square ${isSoldOut ? "grayscale [&_img]:opacity-60" : ""}`}>
 
         {isWatch ? (
           <>
@@ -194,8 +194,8 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
         {/* Sold-out overlay - live available === 0, or switched off in lib/products.ts */}
         {isSoldOut && (
           <div className="absolute inset-0 z-[15] flex items-center justify-center bg-ivory/25">
-            <span className="font-sans text-[10px] tracking-[0.22em] uppercase bg-charcoal/90 text-white px-3 py-1.5">
-              Изчерпана наличност
+            <span data-testid="sold-out-badge" className="font-sans text-[10px] tracking-[0.22em] uppercase bg-charcoal/90 text-white px-3 py-1.5">
+              Изчерпан
             </span>
           </div>
         )}
@@ -223,7 +223,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
         )}
 
         <div className="mt-auto flex items-center gap-3">
-          <span className="font-serif text-xl text-navy">
+          <span className={`font-serif text-xl ${isSoldOut ? "text-ink-faint" : "text-navy"}`}>
             {price.text}
           </span>
           {price.original && (

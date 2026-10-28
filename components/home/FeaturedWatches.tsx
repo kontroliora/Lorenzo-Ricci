@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { getWatches } from "@/lib/products";
+import { soldOutLast } from "@/lib/sold-out-order";
 import { ProductCard } from "@/components/product/ProductCard";
 import { useReveal } from "@/lib/useReveal";
 import { useCountry } from "@/lib/country";
@@ -15,7 +16,8 @@ import type { Product } from "@/lib/types";
 const isYachting = (p: Product) => p.slug.startsWith("yachting-");
 
 export function FeaturedWatches({ soldOut = [] }: { soldOut?: string[] }) {
-  const watches = getWatches().filter((w) => !soldOut.includes(w.slug));
+  // Sold-out watches stay in the section (greyed out by ProductCard) but come last in each group.
+  const watches = soldOutLast(getWatches(), (slug) => soldOut.includes(slug));
   const yachting = watches.filter(isYachting);
   const classic = watches.filter((w) => !isYachting(w));
 

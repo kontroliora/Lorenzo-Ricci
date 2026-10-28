@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import { soldOutLast } from "@/lib/sold-out-order";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useReveal } from "@/lib/useReveal";
@@ -105,9 +106,11 @@ export function WalletsSection({ soldOut = [] }: { soldOut?: string[] }) {
 
   const isSold = (item: LeatherItem) =>
     soldOut.includes(item.slug) || Boolean(outOfStock[item.slug]) || getProductBySlug(item.slug)?.inStock === false;
-  const wallets = WALLETS.filter((i) => !isSold(i));
-  const cardholders = CARDHOLDERS.filter((i) => !isSold(i));
-  const clutches = CLUTCHES.filter((i) => !isSold(i));
+  // Sold-out pieces stay visible (LeatherCard greys them out, "Изчерпан", no price colour) but come last in each row.
+  const soldSlug = (slug: string) => { const it = [...WALLETS, ...CARDHOLDERS, ...CLUTCHES].find((x) => x.slug === slug); return it ? isSold(it) : false; };
+  const wallets = soldOutLast(WALLETS, soldSlug);
+  const cardholders = soldOutLast(CARDHOLDERS, soldSlug);
+  const clutches = soldOutLast(CLUTCHES, soldSlug);
 
   return (
     <section className="py-28 sm:py-40 bg-white border-y border-border">
@@ -131,7 +134,7 @@ export function WalletsSection({ soldOut = [] }: { soldOut?: string[] }) {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
             {wallets.map((w) => (
-              <LeatherCard key={w.id} item={w} sold={false} sizes="(max-width: 640px) 50vw, 33vw" />
+              <LeatherCard key={w.id} item={w} sold={isSold(w)} sizes="(max-width: 640px) 50vw, 33vw" />
             ))}
           </div>
         </div>}
@@ -144,7 +147,7 @@ export function WalletsSection({ soldOut = [] }: { soldOut?: string[] }) {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
             {cardholders.map((c) => (
-              <LeatherCard key={c.id} item={c} sold={false} sizes="(max-width: 640px) 50vw, 33vw" />
+              <LeatherCard key={c.id} item={c} sold={isSold(c)} sizes="(max-width: 640px) 50vw, 33vw" />
             ))}
           </div>
         </div>}
@@ -157,7 +160,7 @@ export function WalletsSection({ soldOut = [] }: { soldOut?: string[] }) {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
             {clutches.map((c) => (
-              <LeatherCard key={c.id} item={c} sold={false} sizes="(max-width: 640px) 50vw, 20vw" />
+              <LeatherCard key={c.id} item={c} sold={isSold(c)} sizes="(max-width: 640px) 50vw, 20vw" />
             ))}
           </div>
         </div>}

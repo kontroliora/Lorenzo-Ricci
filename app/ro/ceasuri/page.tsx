@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getSoldOutSlugs } from "@/lib/sold-out";
+import { soldOutLast } from "@/lib/sold-out-order";
 import Image from "next/image";
 import { products } from "@/lib/products";
 import { RoProductCard } from "@/components/ro/RoProductCard";
@@ -42,9 +44,13 @@ export const metadata: Metadata = {
   },
 };
 
+// Sold-out products are listed last (lib/sold-out-order.ts); the sold-out list is re-read every 5 minutes.
+export const revalidate = 300;
+
 export default async function RoWatchesPage() {
   const overrides = await getPriceOverrides();
-  const watches = applyOverrides(roWatches, overrides).map(localizeProduct);
+  const soldOut = new Set(await getSoldOutSlugs());
+  const watches = soldOutLast(applyOverrides(roWatches, overrides).map(localizeProduct), (s) => soldOut.has(s));
 
   return (
     <div className="min-h-screen pt-[116px] pb-24">

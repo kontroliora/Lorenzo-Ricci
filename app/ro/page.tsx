@@ -11,6 +11,8 @@ import { toRoTile } from "@/components/ro/home/ro-home-utils";
 import { pickRoTestimonials } from "@/components/ro/home/ro-testimonials";
 import { products } from "@/lib/products";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
+import { getSoldOutSlugs } from "@/lib/sold-out";
+import { soldOutLast } from "@/lib/sold-out-order";
 import { localizeProduct } from "@/lib/ro/catalog";
 import { roEligible, fmtRON, RO_FREE_SHIPPING_RON, RO_DELIVERY_DAYS } from "@/lib/ro/config";
 import { RO_REVIEWS_NOTE } from "@/lib/ro/reviews-ro";
@@ -49,11 +51,16 @@ const LEATHER_CATEGORIES = new Set(["wallets", "cardholders", "bags"]);
 // of products is the same RO_SLUGS list the order route validates against. Sections get the already-localized products
 // as props (prices stay EUR in the props; the sections show lei with ronOf / ronOriginalOf, sale included). The leather
 // and flagship sections only get the few fields they render, to keep the page payload small.
+// Sold-out products are listed last (lib/sold-out-order.ts); the sold-out list is re-read every 5 minutes.
+export const revalidate = 300;
+
 export default async function RoHomePage() {
   const overrides = await getPriceOverrides();
   const catalog = applyOverrides(products.filter(roEligible), overrides).map(localizeProduct);
-  const watches = catalog.filter((p) => p.category === "watches");
-  const leather = catalog.filter((p) => LEATHER_CATEGORIES.has(p.category) && p.slug !== FLAGSHIP_SLUG).map(toRoTile);
+  // Sold-out products stay in the sections ("Stoc epuizat", greyed out) but come last (lib/sold-out-order.ts).
+  const soldOut = new Set(await getSoldOutSlugs());
+  const watches = soldOutLast(catalog.filter((p) => p.category === "watches"), (s) => soldOut.has(s));
+  const leather = soldOutLast(catalog.filter((p) => LEATHER_CATEGORIES.has(p.category) && p.slug !== FLAGSHIP_SLUG), (s) => soldOut.has(s)).map(toRoTile);
   const flagshipProduct = catalog.find((p) => p.slug === FLAGSHIP_SLUG);
   const flagship = flagshipProduct ? toRoTile(flagshipProduct) : undefined;
   const testimonials = pickRoTestimonials();

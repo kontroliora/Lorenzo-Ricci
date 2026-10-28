@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getBracelets, getNecklaces } from "@/lib/products";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
+import { getSoldOutSlugs } from "@/lib/sold-out";
+import { soldOutLast } from "@/lib/sold-out-order";
 import { JewelleryPageClient } from "./JewelleryPageClient";
 
 export const metadata: Metadata = {
@@ -19,10 +21,14 @@ export const metadata: Metadata = {
 // lib/price-overrides.ts) — page stays statically generated; the admin discount
 // route calls revalidatePath("/jewellery") on every write.
 
+// Sold-out products are listed last (lib/sold-out-order.ts); the sold-out list is re-read every 5 minutes.
+export const revalidate = 300;
+
 export default async function JewelleryPage() {
   const overrides = await getPriceOverrides();
-  const bracelets = applyOverrides(getBracelets(), overrides);
-  const necklaces = applyOverrides(getNecklaces(), overrides);
+  const soldOut = new Set(await getSoldOutSlugs());
+  const bracelets = soldOutLast(applyOverrides(getBracelets(), overrides), (s) => soldOut.has(s));
+  const necklaces = soldOutLast(applyOverrides(getNecklaces(), overrides), (s) => soldOut.has(s));
 
   return (
     <Suspense>

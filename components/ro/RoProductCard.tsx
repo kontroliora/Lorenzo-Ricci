@@ -84,7 +84,7 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
       onMouseLeave={() => setHovered(false)}
     >
       {/* Image container */}
-      <Link href={href} className={`block relative overflow-hidden bg-white aspect-square ${isSoldOut ? "grayscale" : ""}`}>
+      <Link href={href} className={`block relative overflow-hidden bg-white aspect-square ${isSoldOut ? "grayscale [&_img]:opacity-60" : ""}`}>
 
         {isWatch ? (
           <>
@@ -201,7 +201,7 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
         {/* Sold-out overlay - live available === 0, or switched off in lib/products.ts */}
         {isSoldOut && (
           <div className="absolute inset-0 z-[15] flex items-center justify-center bg-ivory/25">
-            <span className="font-sans text-[10px] tracking-[0.22em] uppercase bg-charcoal/90 text-white px-3 py-1.5">
+            <span data-testid="sold-out-badge" className="font-sans text-[10px] tracking-[0.22em] uppercase bg-charcoal/90 text-white px-3 py-1.5">
               Stoc epuizat
             </span>
           </div>
@@ -217,7 +217,7 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
         </Link>
 
         <div className="mt-auto flex items-center gap-3">
-          <span className="font-serif text-xl text-navy">
+          <span className={`font-serif text-xl ${isSoldOut ? "text-ink-faint" : "text-navy"}`}>
             {fmtRON(ron)}
           </span>
           {ronOriginal !== undefined && (

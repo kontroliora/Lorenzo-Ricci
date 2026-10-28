@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getWatches } from "@/lib/products";
+import { getSoldOutSlugs } from "@/lib/sold-out";
+import { soldOutLast } from "@/lib/sold-out-order";
 import { ProductCard } from "@/components/product/ProductCard";
 import { displayPrice } from "@/lib/price";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
@@ -22,9 +24,13 @@ export const metadata: Metadata = {
   description: `Lorenzo Ricci колекция часовници - Chrono Black, Golden Eclipse, Polar Frost. Сапфирен кристал, японски механизъм, 5 ATM. ${priceNote}`,
 };
 
+// Sold-out products are listed last (lib/sold-out-order.ts); the sold-out list is re-read every 5 minutes.
+export const revalidate = 300;
+
 export default async function WatchesPage() {
   const overrides = await getPriceOverrides();
-  const watches = applyOverrides(getWatches(), overrides);
+  const soldOut = new Set(await getSoldOutSlugs());
+  const watches = soldOutLast(applyOverrides(getWatches(), overrides), (s) => soldOut.has(s));
   const country = "BG"; // Bulgaria-only store; no per-request geo lookup (keeps the page static)
 
   return (
