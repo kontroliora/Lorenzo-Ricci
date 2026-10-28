@@ -2524,7 +2524,6 @@ export const reviews: Review[] = [
     author: "Иван П.",
     rating: 5,
     body: "Пристигна по-рано от очакваното. На работа колега го забеляза и попита откъде е. Хубав часовник.",
-    imageUrl: "/reviews/yachting-white-ИванП.webp",
     date: "2025-09-12",
   },
   {
