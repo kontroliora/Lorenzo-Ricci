@@ -1,13 +1,31 @@
 "use client";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import type { Review } from "@/lib/types";
 import { reviewSummary } from "@/lib/reviews";
 import { useReveal } from "@/lib/useReveal";
 
+export interface ReviewProductInfo {
+  shortName: string;
+  href: string;
+  coverSrc: string;
+}
+
+export interface ReviewPool {
+  reviews: Review[];
+  heading: string;
+  count: number;
+  avg: number;
+  countLabel: string;        // e.g. "ревюта за кардхолдъри"
+  productPrefix: string;     // e.g. "за кардхолдър"
+  productInfo: Record<string, ReviewProductInfo>;
+}
+
 interface ProductReviewsProps {
   reviews: Review[];
   productSlug: string;
+  pool?: ReviewPool;
 }
 
 function Stars({ rating }: { rating: number }) {
@@ -21,14 +39,18 @@ function Stars({ rating }: { rating: number }) {
 }
 
 
-export function ProductReviews({ reviews, productSlug }: ProductReviewsProps) {
+export function ProductReviews({ reviews, productSlug, pool }: ProductReviewsProps) {
   const gridRef = useReveal();
   const [showForm, setShowForm] = useState(false);
   const [formState, setFormState] = useState({ name: "", rating: 5, title: "", body: "" });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [hoverRating, setHoverRating] = useState(0);
-  if (reviews.length === 0 && !showForm) {
+
+  const isPooled = !!pool;
+  const displayReviews = pool ? pool.reviews : reviews;
+
+  if (displayReviews.length === 0 && !showForm) {
     return (
       <section id="reviews" className="py-16 border-t border-border">
         <div className="text-center py-8">
@@ -41,22 +63,39 @@ export function ProductReviews({ reviews, productSlug }: ProductReviewsProps) {
     );
   }
 
-  // Stats from hardcoded summary - always reflects full dataset, not just displayed 20
+  // Summary figures: category-level when pooled, own-product otherwise
   const summary = reviewSummary[productSlug];
-  const totalCount = summary?.count ?? reviews.length;
-  const avgRating = summary?.avg ?? (reviews.length > 0 ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : 5);
+  const totalCount = isPooled
+    ? pool!.count
+    : (summary?.count ?? reviews.length);
+  const avgRating = isPooled
+    ? pool!.avg
+    : (summary?.avg ?? (reviews.length > 0 ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : 5));
+  const summaryText = isPooled
+    ? `${avgRating.toFixed(1).replace(".", ",")} от ${totalCount} ${pool!.countLabel}`
+    : `${avgRating.toFixed(1)} · ${totalCount} ${totalCount === 1 ? "ревю" : "ревюта"}`;
 
-  // Sort logic:
-  // 1. Reviews with photo - always shown, newest first
-  // 2. Fill remaining slots (up to 20 total) with text-only, newest first
+  // Sort logic: own reviews first (photos then text, newest first), then others (photos then text, newest first).
+  // When not pooled: all photos first, then text (original behaviour).
   const MAX_REVIEWS = 20;
   const byDateDesc = (a: Review, b: Review) =>
     new Date(b.date).getTime() - new Date(a.date).getTime();
 
-  const withPhoto    = [...reviews.filter((r) => r.imageUrl)].sort(byDateDesc);
-  const withoutPhoto = [...reviews.filter((r) => !r.imageUrl)].sort(byDateDesc);
-  const textSlots    = Math.max(0, MAX_REVIEWS - withPhoto.length);
-  const visibleReviews = [...withPhoto, ...withoutPhoto.slice(0, textSlots)];
+  let visibleReviews: Review[];
+  if (isPooled) {
+    const own = displayReviews.filter((r) => r.productSlug === productSlug);
+    const others = displayReviews.filter((r) => r.productSlug !== productSlug);
+    const ownPhotos    = own.filter((r) => r.imageUrl).sort(byDateDesc);
+    const ownText      = own.filter((r) => !r.imageUrl).sort(byDateDesc);
+    const otherPhotos  = others.filter((r) => r.imageUrl).sort(byDateDesc);
+    const otherText    = others.filter((r) => !r.imageUrl).sort(byDateDesc);
+    visibleReviews = [...ownPhotos, ...ownText, ...otherPhotos, ...otherText].slice(0, MAX_REVIEWS);
+  } else {
+    const withPhoto    = reviews.filter((r) => r.imageUrl).sort(byDateDesc);
+    const withoutPhoto = reviews.filter((r) => !r.imageUrl).sort(byDateDesc);
+    const textSlots    = Math.max(0, MAX_REVIEWS - withPhoto.length);
+    visibleReviews = [...withPhoto, ...withoutPhoto.slice(0, textSlots)];
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,13 +117,13 @@ export function ProductReviews({ reviews, productSlug }: ProductReviewsProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-10">
         <div>
-          <h2 className="font-serif text-2xl text-charcoal mb-1">Ревюта</h2>
+          <h2 className="font-serif text-2xl text-charcoal mb-1">
+            {isPooled ? pool!.heading : "Ревюта"}
+          </h2>
           {totalCount > 0 && (
             <div className="flex items-center gap-3">
               <Stars rating={Math.round(avgRating)} />
-              <span className="font-sans text-xs text-ink-muted">
-                {avgRating.toFixed(1)} · {totalCount} {totalCount === 1 ? "ревю" : "ревюта"}
-              </span>
+              <span className="font-sans text-xs text-ink-muted">{summaryText}</span>
             </div>
           )}
         </div>
@@ -180,39 +219,63 @@ export function ProductReviews({ reviews, productSlug }: ProductReviewsProps) {
         </div>
       )}
 
-      {/* Reviews grid - images first */}
+      {/* Reviews grid */}
       {visibleReviews.length > 0 && (
         <div ref={gridRef} className="columns-1 sm:columns-2 gap-5">
-          {visibleReviews.map((review, i) => (
-            <div
-              key={review.id}
-              className={`reveal reveal-delay-${Math.min(i + 1, 6)} review-card break-inside-avoid mb-5 inline-block w-full flex flex-col gap-3 p-5`}
-            >
-              <Stars rating={review.rating} />
-              {review.title && (
-                <h4 className="font-serif text-lg text-charcoal">{review.title}</h4>
-              )}
-              <p className="font-sans text-sm font-light text-ink-soft leading-relaxed flex-1">
-                {review.body?.replace(/-|-/g, "-") ?? ""}
-              </p>
-              {review.imageUrl && (
-                <div className="relative w-full aspect-[4/3] overflow-hidden bg-ivory-warm">
-                  <Image
-                    src={review.imageUrl}
-                    alt={`Снимка от ${review.author}`}
-                    fill
-                    quality={75}
-                    sizes="(max-width: 640px) 100vw, 50vw"
-                    className="object-contain object-center p-2"
-                  />
+          {visibleReviews.map((review, i) => {
+            const info = isPooled ? pool!.productInfo[review.productSlug] : undefined;
+            return (
+              <div
+                key={review.id}
+                className={`reveal reveal-delay-${Math.min(i + 1, 6)} review-card break-inside-avoid mb-5 inline-block w-full flex flex-col gap-3 p-5`}
+              >
+                <Stars rating={review.rating} />
+                {review.title && (
+                  <h4 className="font-serif text-lg text-charcoal">{review.title}</h4>
+                )}
+                <p className="font-sans text-sm font-light text-ink-soft leading-relaxed flex-1">
+                  {review.body?.replace(/-|-/g, "-") ?? ""}
+                </p>
+                {review.imageUrl && (
+                  <div className="relative w-full aspect-[4/3] overflow-hidden bg-ivory-warm">
+                    <Image
+                      src={review.imageUrl}
+                      alt={`Снимка от ${review.author}`}
+                      fill
+                      quality={75}
+                      sizes="(max-width: 640px) 100vw, 50vw"
+                      className="object-contain object-center p-2"
+                    />
+                  </div>
+                )}
+                <div className="pt-2 border-t border-border">
+                  <div className="flex items-center justify-between">
+                    <p className="font-sans text-xs font-medium text-charcoal">{review.author}</p>
+                    <span className="font-sans text-[10px] text-navy font-medium tracking-wide">✓ Потвърдена покупка</span>
+                  </div>
+                  {isPooled && info && (
+                    <Link
+                      href={info.href}
+                      className="flex items-center gap-1.5 mt-1 group"
+                    >
+                      <div className="relative w-4 h-4 rounded-sm overflow-hidden flex-shrink-0 bg-ivory-warm">
+                        <Image
+                          src={info.coverSrc}
+                          alt={info.shortName}
+                          fill
+                          sizes="16px"
+                          className="object-cover"
+                        />
+                      </div>
+                      <span className="font-sans text-[10px] text-ink-muted group-hover:text-navy transition-colors">
+                        {pool!.productPrefix} {info.shortName}
+                      </span>
+                    </Link>
+                  )}
                 </div>
-              )}
-              <div className="flex items-center justify-between pt-2 border-t border-border">
-                <p className="font-sans text-xs font-medium text-charcoal">{review.author}</p>
-                <span className="font-sans text-[10px] text-navy font-medium tracking-wide">✓ Потвърдена покупка</span>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

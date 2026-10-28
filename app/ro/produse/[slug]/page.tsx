@@ -7,7 +7,8 @@ import { BUNDLES } from "@/lib/bundles";
 import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
 import { getLiveStock } from "@/lib/live-stock";
 import { RO_SLUGS, localizeProduct } from "@/lib/ro/catalog";
-import { RO_REVIEWS_NOTE } from "@/lib/ro/reviews-ro";
+import { RO_REVIEWS_NOTE, localizeReview } from "@/lib/ro/reviews-ro";
+import { getCategoryType, getCategorySlugs, getCategoryReviews, getCategorySummary } from "@/lib/reviews";
 import { ronOf, roNeedsPrepayment, fmtRON, RO_FREE_SHIPPING_RON } from "@/lib/ro/config";
 import { roProductJsonLd, jsonLdString } from "@/lib/ro/product-jsonld";
 import { RoProductGallery } from "@/components/ro/product/RoProductGallery";
@@ -16,7 +17,7 @@ import { RoBundleUpsell } from "@/components/ro/product/RoBundleUpsell";
 import { RoProductEditorial } from "@/components/ro/product/RoProductEditorial";
 import { RoJewelleryDescription } from "@/components/ro/product/RoJewelleryDescription";
 import { RoLeatherDescription } from "@/components/ro/product/RoLeatherDescription";
-import { RoProductReviews } from "@/components/ro/product/RoProductReviews";
+import { RoProductReviews, type RoReviewPool } from "@/components/ro/product/RoProductReviews";
 import { roSafeProduct, roMissingText } from "@/components/ro/product/ro-text";
 import { roReviewView } from "@/components/ro/product/review-data";
 
@@ -141,10 +142,58 @@ export default async function RoProductPage({ params }: Props) {
   if (!loaded) notFound();
   const { product, overrides } = loaded;
 
-  const reviews = roReviewView(slug);
+  const ownReviews = roReviewView(slug);
   const liveStock = await getLiveStock(slug);
-  const jsonLd = roProductJsonLd(product, { liveStock, reviews: reviews.ldSummary });
+  // JSON-LD aggregateRating uses ONLY this product's own reviews (never pooled).
+  const jsonLd = roProductJsonLd(product, { liveStock, reviews: ownReviews.ldSummary });
   const bundle = bundleFor(product, overrides);
+
+  // Category pool: all cardholder or wallet reviews in Romanian, own product first.
+  const categoryType = getCategoryType(slug);
+  const categoryReviews = getCategoryReviews(slug);
+  const catSummary = getCategorySummary(slug);
+  let roPool: RoReviewPool | undefined;
+  if (categoryType && categoryReviews && catSummary) {
+    const categorySlugs = getCategorySlugs(slug)!;
+    const productInfoMap: RoReviewPool["productInfo"] = {};
+    for (const s of categorySlugs) {
+      const raw = getProductBySlug(s);
+      if (raw) {
+        const shortName = raw.name.match(/"([^"]+)"/)?.[1] ?? raw.name;
+        productInfoMap[s] = {
+          shortName,
+          href: `/ro/produse/${s}`,
+          coverSrc: raw.coverImage.src,
+        };
+      }
+    }
+    roPool = {
+      heading: categoryType === "cardholders"
+        ? "Recenzii pentru portcarduri Lorenzo Ricci"
+        : "Recenzii pentru portofele Lorenzo Ricci",
+      countLabel: categoryType === "cardholders"
+        ? "pentru portcarduri"
+        : "pentru portofele",
+      productPrefix: categoryType === "cardholders" ? "pentru portcard" : "pentru portofel",
+      productInfo: productInfoMap,
+      productSlug: slug,
+    };
+  }
+
+  // When category pooling is active, build localized reviews from all category slugs.
+  const displayReviews = (() => {
+    if (!categoryType || !categoryReviews) return ownReviews;
+    const allLocalized = categoryReviews.map(localizeReview).filter((r): r is NonNullable<typeof r> => r !== null);
+    const ownRaw = categoryReviews.filter((r) => r.productSlug === slug);
+    const ownLocalized = ownRaw.map(localizeReview).filter((r): r is NonNullable<typeof r> => r !== null);
+    return {
+      ...ownReviews,
+      reviews: allLocalized,
+      count: catSummary!.count,
+      avg: catSummary!.avg,
+      allTranslated: ownRaw.length > 0 && ownLocalized.length === ownRaw.length,
+    };
+  })();
 
   // For watches: hide night images and side-profile images from the gallery
   // (night images stay in product.images[] so the moon button on cards still works)
@@ -183,9 +232,9 @@ export default async function RoProductPage({ params }: Props) {
           <div>
             <RoProductInfo
               product={product}
-              reviewCount={reviews.count}
-              reviewAvg={reviews.avg}
-              reviewsTranslated={reviews.allTranslated}
+              reviewCount={ownReviews.count}
+              reviewAvg={ownReviews.avg}
+              reviewsTranslated={ownReviews.allTranslated}
             />
             {bundle && <RoBundleUpsell product={slim(product)} partners={bundle.partners} discountPct={bundle.discountPct} />}
           </div>
@@ -204,15 +253,16 @@ export default async function RoProductPage({ params }: Props) {
           <RoLeatherDescription product={product} videoSrc={CARDHOLDER_VIDEOS[product.slug]} />
         )}
 
-        {/* Reviews: only those with a Romanian text are listed; hidden for a product that has none at all */}
-        {reviews.count > 0 && (
+        {/* Reviews: category-pooled for cardholders/wallets; own-only for everything else */}
+        {displayReviews.count > 0 && (
           <div className="mt-20">
             <RoProductReviews
-              reviews={reviews.reviews}
-              count={reviews.count}
-              avg={reviews.avg}
-              translated={reviews.allTranslated}
+              reviews={displayReviews.reviews}
+              count={displayReviews.count}
+              avg={displayReviews.avg}
+              translated={displayReviews.allTranslated}
               note={RO_REVIEWS_NOTE}
+              pool={roPool}
             />
           </div>
         )}

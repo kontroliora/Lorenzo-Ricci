@@ -3,7 +3,15 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { products, getProductBySlug, getRelatedProducts } from "@/lib/products";
-import { getReviewsBySlug, reviewSummary } from "@/lib/reviews";
+import {
+  getReviewsBySlug,
+  reviewSummary,
+  getCategoryType,
+  getCategorySlugs,
+  getCategoryReviews,
+  getCategorySummary,
+} from "@/lib/reviews";
+import type { ReviewPool } from "@/components/product/ProductReviews";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductInfo } from "@/components/product/ProductInfo";
 import { ProductReviews } from "@/components/product/ProductReviews";
@@ -66,10 +74,45 @@ export default async function ProductPage({ params }: Props) {
   const reviews = getReviewsBySlug(slug);
   const liveStock = await getLiveStock(slug);
   const summary = reviewSummary[slug];
+  // JSON-LD aggregateRating uses ONLY this product's own reviews (never pooled).
   const jsonLd = productJsonLd(product, {
     liveStock,
     reviews: reviews.length > 0 && summary ? summary : null,
   });
+
+  // Category pool: all cardholder or wallet reviews shown together, own product first.
+  const categoryType = getCategoryType(slug);
+  const categoryReviews = getCategoryReviews(slug);
+  const catSummary = getCategorySummary(slug);
+  let reviewPool: ReviewPool | undefined;
+  if (categoryType && categoryReviews && catSummary) {
+    const categorySlugs = getCategorySlugs(slug)!;
+    const productInfoMap: ReviewPool["productInfo"] = {};
+    for (const s of categorySlugs) {
+      const p = products.find((pr) => pr.slug === s);
+      if (p) {
+        const shortName = p.name.match(/"([^"]+)"/)?.[1] ?? p.name;
+        productInfoMap[s] = {
+          shortName,
+          href: `/products/${s}`,
+          coverSrc: p.coverImage.src,
+        };
+      }
+    }
+    reviewPool = {
+      reviews: categoryReviews,
+      heading: categoryType === "cardholders"
+        ? "Ревюта за кардхолдъри Lorenzo Ricci"
+        : "Ревюта за портфейли Lorenzo Ricci",
+      count: catSummary.count,
+      avg: catSummary.avg,
+      countLabel: categoryType === "cardholders"
+        ? "ревюта за кардхолдъри"
+        : "ревюта за портфейли",
+      productPrefix: categoryType === "cardholders" ? "за кардхолдър" : "за портфейл",
+      productInfo: productInfoMap,
+    };
+  }
   // "Подобни продукти" never offers something that cannot be bought (stock-driven, lib/sold-out.ts)
   const soldOut = new Set(await getSoldOutSlugs());
   const related = applyOverrides(getRelatedProducts(product, 4, soldOut), overrides);
@@ -132,7 +175,7 @@ export default async function ProductPage({ params }: Props) {
 
         {/* Reviews */}
         <div className="mt-20">
-          <ProductReviews reviews={reviews} productSlug={slug} />
+          <ProductReviews reviews={reviews} productSlug={slug} pool={reviewPool} />
         </div>
 
         {/* Related */}

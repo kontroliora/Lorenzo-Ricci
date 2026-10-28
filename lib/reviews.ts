@@ -2543,3 +2543,73 @@ export const reviewSummary: Record<string, { count: number; avg: number }> = {
   "cardholder-valentina":      { count: 28,  avg: 4.7 },
   "cardholder-zaffiro":        { count: 35,  avg: 4.8 },
 };
+
+// ─── Category pooling ────────────────────────────────────────────────────────
+// Cardholder pages show reviews from all 9 cardholders; wallet pages from all 3 wallets.
+// Watches, jewellery, and bags are NOT pooled.
+
+export const CARDHOLDER_SLUGS = [
+  "cardholder-ambra",
+  "cardholder-bianco",
+  "cardholder-valentina",
+  "cardholder-zaffiro",
+  "cardholder-onice",
+  "cardholder-giada",
+  "cardholder-cremisi",
+  "cardholder-perla",
+  "cardholder-topazio",
+] as const;
+
+export const WALLET_SLUGS = [
+  "wallet-alabastro",
+  "wallet-rubino",
+  "wallet-smeraldo",
+] as const;
+
+export type CategoryType = "cardholders" | "wallets";
+
+export function getCategoryType(slug: string): CategoryType | null {
+  if ((CARDHOLDER_SLUGS as readonly string[]).includes(slug)) return "cardholders";
+  if ((WALLET_SLUGS as readonly string[]).includes(slug)) return "wallets";
+  return null;
+}
+
+export function getCategorySlugs(slug: string): string[] | null {
+  if ((CARDHOLDER_SLUGS as readonly string[]).includes(slug)) return [...CARDHOLDER_SLUGS];
+  if ((WALLET_SLUGS as readonly string[]).includes(slug)) return [...WALLET_SLUGS];
+  return null;
+}
+
+/** All reviews belonging to the same category as `slug`, in dataset order. Returns null for non-pooled categories. */
+export function getCategoryReviews(slug: string): Review[] | null {
+  const slugs = getCategorySlugs(slug);
+  if (!slugs) return null;
+  return reviews.filter((r) => slugs.includes(r.productSlug));
+}
+
+/**
+ * Category-level count and average using reviewSummary (full dataset) where available,
+ * falling back to the in-file reviews for products without a summary entry.
+ */
+export function getCategorySummary(slug: string): { count: number; avg: number } | null {
+  const slugs = getCategorySlugs(slug);
+  if (!slugs) return null;
+  let totalCount = 0;
+  let weightedSum = 0;
+  for (const s of slugs) {
+    const summary = reviewSummary[s];
+    if (summary) {
+      totalCount += summary.count;
+      weightedSum += summary.count * summary.avg;
+    } else {
+      const own = reviews.filter((r) => r.productSlug === s);
+      if (own.length > 0) {
+        const avg = own.reduce((a, r) => a + r.rating, 0) / own.length;
+        totalCount += own.length;
+        weightedSum += own.length * avg;
+      }
+    }
+  }
+  if (totalCount === 0) return null;
+  return { count: totalCount, avg: Math.round((weightedSum / totalCount) * 10) / 10 };
+}
