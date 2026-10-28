@@ -75,24 +75,29 @@ export function ProductReviews({ reviews, productSlug, pool }: ProductReviewsPro
     ? `${avgRating.toFixed(1).replace(".", ",")} от ${totalCount} ${pool!.countLabel}`
     : `${avgRating.toFixed(1)} · ${totalCount} ${totalCount === 1 ? "ревю" : "ревюта"}`;
 
-  // Sort logic: own reviews first (photos then text, newest first), then others (photos then text, newest first).
-  // When not pooled: all photos first, then text (original behaviour).
+  // Sort logic: photos always first, then text by rating tier (4-5★ → 3★ → 1-2★), newest first within each tier.
+  // For pooled: own product before others within each tier.
   const MAX_REVIEWS = 20;
   const byDateDesc = (a: Review, b: Review) =>
     new Date(b.date).getTime() - new Date(a.date).getTime();
 
+  const tier = (r: Review) => r.rating >= 4 ? 0 : r.rating === 3 ? 1 : 2;
+
   let visibleReviews: Review[];
   if (isPooled) {
-    const own = displayReviews.filter((r) => r.productSlug === productSlug);
+    const own    = displayReviews.filter((r) => r.productSlug === productSlug);
     const others = displayReviews.filter((r) => r.productSlug !== productSlug);
-    const ownPhotos    = own.filter((r) => r.imageUrl).sort(byDateDesc);
-    const ownText      = own.filter((r) => !r.imageUrl).sort(byDateDesc);
-    const otherPhotos  = others.filter((r) => r.imageUrl).sort(byDateDesc);
-    const otherText    = others.filter((r) => !r.imageUrl).sort(byDateDesc);
+    const sortByTierDate = (arr: Review[]) =>
+      [...arr].sort((a, b) => tier(a) - tier(b) || byDateDesc(a, b));
+    const ownPhotos   = own.filter((r) => r.imageUrl).sort(byDateDesc);
+    const ownText     = sortByTierDate(own.filter((r) => !r.imageUrl));
+    const otherPhotos = others.filter((r) => r.imageUrl).sort(byDateDesc);
+    const otherText   = sortByTierDate(others.filter((r) => !r.imageUrl));
     visibleReviews = [...ownPhotos, ...ownText, ...otherPhotos, ...otherText].slice(0, MAX_REVIEWS);
   } else {
     const withPhoto    = reviews.filter((r) => r.imageUrl).sort(byDateDesc);
-    const withoutPhoto = reviews.filter((r) => !r.imageUrl).sort(byDateDesc);
+    const withoutPhoto = [...reviews.filter((r) => !r.imageUrl)]
+      .sort((a, b) => tier(a) - tier(b) || byDateDesc(a, b));
     const textSlots    = Math.max(0, MAX_REVIEWS - withPhoto.length);
     visibleReviews = [...withPhoto, ...withoutPhoto.slice(0, textSlots)];
   }
