@@ -15,8 +15,17 @@ const nextConfig: NextConfig = {
     dangerouslyAllowSVG: false,
   },
   // The hero videos never change under the same name (versioned filenames: bump the name when replacing).
+  // Product and review photos: Vercel's default (max-age=0, must-revalidate) made Cloudflare revalidate every request with the
+  // origin (cf-cache-status REVALIDATED, first byte 0.1-1.9 s on the product page's main photo). s-maxage lets Cloudflare and
+  // Vercel's edge keep them for a day (a deploy clears Vercel's cache; purge Cloudflare after replacing a photo under the same
+  // name); browsers keep the 4 h they get today. Image files only: the /products/<slug> pages must never match.
   async headers() {
-    return [{ source: "/hero-video-:v.mp4", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] }];
+    const photo = [{ key: "Cache-Control", value: "public, max-age=14400, s-maxage=86400, stale-while-revalidate=604800" }];
+    return [
+      { source: "/hero-video-:v.mp4", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+      { source: "/Products/:path(.+\\.(?:webp|jpe?g|png|avif))", headers: photo },
+      { source: "/reviews/:path(.+\\.(?:webp|jpe?g|png|avif))", headers: photo },
+    ];
   },
   experimental: {
     optimizePackageImports: ["zustand"],

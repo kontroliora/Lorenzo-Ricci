@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { Product } from "@/lib/types";
+import { smallOrOriginal } from "@/lib/image-variant";
 import { useCartStore } from "@/lib/store";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 import { useCountry } from "@/lib/country";
@@ -77,7 +78,7 @@ export function StickyCartBar({ product, effectiveInStock }: Props) {
           {/* Thumbnail */}
           <div className="relative w-11 h-11 sm:w-14 sm:h-14 flex-shrink-0 overflow-hidden bg-ivory-warm">
             <Image
-              src={product.coverImage.src}
+              src={smallOrOriginal(product.coverImage.src)}
               alt={product.name}
               fill
               sizes="56px"

@@ -8,6 +8,7 @@ import { useCountry } from "@/lib/country";
 import { usePriceOverrides } from "@/lib/use-price-overrides";
 import { useLeatherStock } from "@/lib/use-gifts";
 import type { Product } from "@/lib/types";
+import { smallOrOriginal } from "@/lib/image-variant";
 
 interface Props {
   product: Product;
@@ -95,7 +96,7 @@ export function BundleUpsell({ product: rawProduct }: Props) {
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <div className="relative w-14 h-14 rounded-md overflow-hidden border border-border bg-ivory-warm">
                     <Image
-                      src={product.coverImage.src}
+                      src={smallOrOriginal(product.coverImage.src)}
                       alt={product.coverImage.alt}
                       fill
                       quality={75}
@@ -106,7 +107,7 @@ export function BundleUpsell({ product: rawProduct }: Props) {
                   <span className="text-ink-faint text-base font-light select-none">+</span>
                   <div className="relative w-14 h-14 rounded-md overflow-hidden border border-border bg-ivory-warm">
                     <Image
-                      src={partner.coverImage.src}
+                      src={smallOrOriginal(partner.coverImage.src)}
                       alt={partner.coverImage.alt}
                       fill
                       quality={75}

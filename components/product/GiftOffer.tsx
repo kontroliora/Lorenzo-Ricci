@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getProductBySlug } from "@/lib/products";
 import { giftOfferText } from "@/lib/gifts";
 import { useGiftFor } from "@/lib/use-gifts";
+import { smallOrOriginal } from "@/lib/image-variant";
 
 // Offer block on a clutch's page: the free cardholder that comes with the bag.
 // Renders nothing for any other product, or when no cardholder is left to give.
@@ -15,7 +16,7 @@ export function GiftOffer({ clutchSlug }: { clutchSlug: string }) {
     <div data-gift-offer className="flex items-center gap-4 border border-navy/20 bg-navy-pale/50 px-4 py-3">
       <div className="relative w-14 h-14 flex-shrink-0 bg-white overflow-hidden border border-border">
         <Image
-          src={gift.coverImage.src}
+          src={smallOrOriginal(gift.coverImage.src)}
           alt={gift.coverImage.alt}
           fill
           quality={70}

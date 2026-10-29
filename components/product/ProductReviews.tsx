@@ -5,6 +5,8 @@ import { useState } from "react";
 import type { Review } from "@/lib/types";
 import { reviewSummary } from "@/lib/reviews";
 import { useReveal } from "@/lib/useReveal";
+import { useAfterLoad } from "@/lib/use-after-load";
+import { smallOrOriginal } from "@/lib/image-variant";
 
 export interface ReviewProductInfo {
   shortName: string;
@@ -41,6 +43,8 @@ function Stars({ rating }: { rating: number }) {
 
 export function ProductReviews({ reviews, productSlug, pool }: ProductReviewsProps) {
   const gridRef = useReveal();
+  // Review photos (up to ~220 KB each) wait for the page load: Chrome's lazy-load margin pulled them in next to the product photo.
+  const photosReady = useAfterLoad();
   const [showForm, setShowForm] = useState(false);
   const [formState, setFormState] = useState({ name: "", rating: 5, title: "", body: "" });
   const [submitted, setSubmitted] = useState(false);
@@ -243,14 +247,14 @@ export function ProductReviews({ reviews, productSlug, pool }: ProductReviewsPro
                 </p>
                 {review.imageUrl && (
                   <div className="relative w-full aspect-[4/3] overflow-hidden bg-ivory-warm">
-                    <Image
+                    {photosReady && <Image
                       src={review.imageUrl}
                       alt={`Снимка от ${review.author}`}
                       fill
                       quality={75}
                       sizes="(max-width: 640px) 100vw, 50vw"
                       className="object-contain object-center p-2"
-                    />
+                    />}
                   </div>
                 )}
                 <div className="pt-2 border-t border-border">
@@ -265,7 +269,7 @@ export function ProductReviews({ reviews, productSlug, pool }: ProductReviewsPro
                     >
                       <div className="relative w-4 h-4 rounded-sm overflow-hidden flex-shrink-0 bg-ivory-warm">
                         <Image
-                          src={info.coverSrc}
+                          src={smallOrOriginal(info.coverSrc)}
                           alt={info.shortName}
                           fill
                           sizes="16px"
