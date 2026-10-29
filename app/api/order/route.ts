@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ATTR_COOKIE, attributionFromCookie } from "@/lib/attribution";
+import { insertOrderResilient } from "@/lib/order-insert";
 import { langOf, mayEmail } from "@/lib/mail-policy";
 import { supabase } from "@/lib/supabase";
 import { buildAdminEmail, buildCustomerEmail, sendAdminEmail, sendCustomerEmail, sendCapiPurchase, type CapiContext } from "@/lib/order-notify";
@@ -21,21 +23,12 @@ import { reserveWithGifts, giftNotes, giftDisplayName, shortModelName, type Gift
 // Insert an order row. econt_office_code (supabase/orders_econt_office.sql) is optional: if the column is not there yet the order is saved
 // without it (the readable address in orders.address already carries the office code) rather than lost.
 type OrderInsertClient = { from: (t: string) => { insert: (row: Record<string, unknown>) => PromiseLike<{ error: { message: string } | null }> } };
+// Optional columns (a migration may not have run yet): the order is saved without them rather than lost (lib/order-insert.ts).
+const OPTIONAL_ORDER_COLUMNS = ["econt_office_code", "card_discount", "utm_source", "utm_medium", "utm_campaign", "fbclid"] as const;
 async function insertOrderRow(sb: OrderInsertClient, row: Record<string, unknown>) {
-  let res = await sb.from("orders").insert(row);
-  if (res.error && "econt_office_code" in row && /econt_office_code|schema cache|column/i.test(res.error.message)) {
-    const { econt_office_code: _dropped, ...rest } = row;
-    void _dropped;
-    row = rest;
-    res = await sb.from("orders").insert(rest);
-  }
-  // card_discount (supabase/orders_card_discount.sql) not added yet: the order is still taken (subtotal / total carry the amounts)
-  if (res.error && "card_discount" in row && /card_discount|schema cache|column/i.test(res.error.message)) {
-    const { card_discount: _cd, ...rest } = row;
-    void _cd;
-    res = await sb.from("orders").insert(rest);
-  }
-  return res;
+  const r = await insertOrderResilient(sb, row, OPTIONAL_ORDER_COLUMNS);
+  if (r.dropped.length) console.warn("[order] saved without optional column(s):", r.dropped.join(", "));
+  return { error: r.error };
 }
 
 // Order line item shape.
@@ -271,6 +264,7 @@ export async function POST(req: NextRequest) {
 
       // 1. Save the order as PENDING_PAYMENT (stock is already reserved). It stays out of the fulfilment board and the Econt flows.
       const { error: insErr } = await insertOrderRow(sbAdmin, {
+        ...attributionFromCookie(req.cookies.get(ATTR_COOKIE)?.value),   // utm_* / fbclid of the landing (lib/attribution.ts)
         order_ref:               orderRef,
         name:                    String(customer.name          ?? ""),
         phone:                   String(customer.phone         ?? ""),
@@ -366,6 +360,7 @@ export async function POST(req: NextRequest) {
       const shipping = (order.shipping ?? {}) as Record<string, unknown>;
       const promoCode = typeof order.promoCode === "string" ? order.promoCode.trim() : "";
       const orderRow: Record<string, unknown> = {
+        ...attributionFromCookie(req.cookies.get(ATTR_COOKIE)?.value),   // utm_* / fbclid of the landing (lib/attribution.ts)
         order_ref:               String(order.orderRef ?? ""),
         name:                    String(customer.name          ?? ""),
         phone:                   String(customer.phone         ?? ""),

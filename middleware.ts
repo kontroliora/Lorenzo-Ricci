@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { ATTR_COOKIE, ATTR_MAX_AGE, attributionFromSearch, encodeAttribution } from "@/lib/attribution";
 import { updateSession } from "@/lib/supabase/middleware";
 import { decideGeoRedirect, LANG_COOKIE } from "@/lib/geo-redirect";
 
@@ -31,7 +32,20 @@ function geoRedirect(request: NextRequest): NextResponse {
 }
 
 export async function middleware(request: NextRequest) {
+  const res = await route(request);
+  // Ad attribution of the landing (utm_* / fbclid) -> first-party cookie, last touch, 30 days (lib/attribution.ts). Not on the panel.
+  const { pathname, searchParams } = request.nextUrl;
+  if (!pathname.startsWith("/lr-panel-v8m3q") && !pathname.startsWith("/api/")) {
+    const attr = attributionFromSearch(searchParams);
+    if (attr) res.cookies.set(ATTR_COOKIE, encodeAttribution(attr), { path: "/", maxAge: ATTR_MAX_AGE, sameSite: "lax" });
+  }
+  return res;
+}
+
+async function route(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
+  // Matched only for the attribution cookie: the Romanian store and the sale page never had a geo redirect.
+  if (pathname === "/ro" || pathname.startsWith("/ro/") || pathname === "/namalenia") return NextResponse.next();
 
   if (!pathname.startsWith("/lr-panel-v8m3q") && !pathname.startsWith("/api/admin")) return geoRedirect(request);
 
@@ -85,5 +99,9 @@ export const config = {
     "/warranty/:path*",
     "/policies/:path*",
     "/products/:path*",
+    // attribution cookie only (no geo redirect): the Romanian store and the sale page
+    "/ro",
+    "/ro/:path*",
+    "/namalenia",
   ],
 };

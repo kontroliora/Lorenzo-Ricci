@@ -14,6 +14,10 @@ export type OrderItem = {
 };
 
 export type AdminOrder = {
+  utm_source?: string | null;   // ad attribution of the landing (lib/attribution.ts); undefined until the migration adds the columns
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  fbclid?: string | null;
   id: number;
   order_ref: string | null;
   name: string | null;

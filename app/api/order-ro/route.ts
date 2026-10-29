@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ATTR_COOKIE, attributionFromCookie } from "@/lib/attribution";
+import { insertOrderResilient } from "@/lib/order-insert";
 import { normalizeRoPhone } from "@/lib/ro/phone";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getProductBySlug } from "@/lib/products";
@@ -143,6 +145,7 @@ export async function POST(req: NextRequest) {
     const orderItems = lines.map((l) => ({ sku: l.sku, slug: l.slug, name: l.name, quantity: l.quantity, qty: l.quantity, price: l.ron, currency: "lei" }));
     const notes = str(cu.notes, 500);
     const orderRow = {
+      ...attributionFromCookie(req.cookies.get(ATTR_COOKIE)?.value),   // utm_* / fbclid of the landing (lib/attribution.ts)
       status: PENDING_PAYMENT, payment_method: "card", payment_status: "pending", payment_currency: "RON",
       order_ref: ref,
       name,
@@ -165,8 +168,10 @@ export async function POST(req: NextRequest) {
     };
     // lang = 'ro' (supabase/lang_columns.sql) marks the order Romanian for every later e-mail; the Romanian signals (ship_country,
     // the LRRO- reference) work without it, so an order is never lost because the column has not been added yet.
-    let { error: insErr } = await sb.from("orders").insert({ ...orderRow, lang: "ro" });
-    if (insErr && /lang/i.test(insErr.message)) ({ error: insErr } = await sb.from("orders").insert(orderRow));
+    // lang and the attribution columns are optional: an order is never lost because a migration has not run (lib/order-insert.ts).
+    const ins = await insertOrderResilient(sb, { ...orderRow, lang: "ro" }, ["lang", "utm_source", "utm_medium", "utm_campaign", "fbclid"]);
+    if (ins.dropped.length) console.warn("[order-ro] saved without optional column(s):", ins.dropped.join(", "));
+    const insErr = ins.error;
     if (insErr) {
       console.error("[order-ro] insert failed:", insErr.message);
       const { error: restockErr } = await sb.rpc("restock_wallet_stock", { p_items: reserveItems });

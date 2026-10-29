@@ -235,6 +235,13 @@ export function OrderCard({
         ) : (
           <div style={{ color: "#fff", fontWeight: 500 }}>{totalLabel}<span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400, fontSize: 12 }}> · {order.payment_method === "card" ? "карта, още не е платено" : "наложен платеж"}</span></div>
         )}
+        {(order.utm_source || order.utm_campaign || order.fbclid) && (
+          <div data-testid="order-attribution" style={{ marginTop: 4, fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
+            ◎ Източник: <span style={{ color: "#fff" }}>{[order.utm_source, order.utm_medium].filter(Boolean).join(" / ") || (order.fbclid ? "Meta (fbclid)" : "—")}</span>
+            {order.utm_campaign ? <> · кампания <span style={{ color: "#fff" }}>{order.utm_campaign}</span></> : null}
+            {order.fbclid ? <span title={order.fbclid}> · fbclid ✓</span> : null}
+          </div>
+        )}
         {order.promo_code && (
           <div style={{ marginTop: 4, fontSize: 12, color: "#C0DD97" }}>
             ◈ Промо код: <span style={{ fontFamily: "monospace", color: "#fff", letterSpacing: "0.04em" }}>{order.promo_code}</span>
