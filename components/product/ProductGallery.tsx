@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ProductImage } from "@/lib/types";
 
 interface ProductGalleryProps {
@@ -12,6 +12,20 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [imageError, setImageError] = useState<Record<number, boolean>>({});
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  // Speed (29.10.2026, live mobile LCP 5-9 s): until the page has loaded and the browser is idle, only the visible photo is
+  // downloaded - the other photos and the thumbnails competed with it for bandwidth (images are served unresized). They appear
+  // right after, or at once when the visitor taps a thumbnail / arrow or swipes.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (ready) return;
+    let cancelled = false;
+    const go = () => { if (!cancelled) setReady(true); };
+    const idle = () => { if ("requestIdleCallback" in window) window.requestIdleCallback(go, { timeout: 2500 }); else setTimeout(go, 800); };
+    if (document.readyState === "complete") idle(); else window.addEventListener("load", idle, { once: true });
+    return () => { cancelled = true; window.removeEventListener("load", idle); };
+  }, [ready]);
+  const show = (i: number) => ready || i === activeIdx;
+  const pick = (i: number) => { setReady(true); setActiveIdx(i); };
 
   const active = images[activeIdx];
 
@@ -19,8 +33,8 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
     setImageError((prev) => ({ ...prev, [idx]: true }));
   };
 
-  const prev = () => setActiveIdx((i) => (i - 1 + images.length) % images.length);
-  const next = () => setActiveIdx((i) => (i + 1) % images.length);
+  const prev = () => { setReady(true); setActiveIdx((i) => (i - 1 + images.length) % images.length); };
+  const next = () => { setReady(true); setActiveIdx((i) => (i + 1) % images.length); };
 
   // Swipe left/right on the main image changes the photo (phones). A mostly
   // vertical drag is left to the page so scrolling still works (touch-pan-y).
@@ -43,7 +57,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
         {images.map((img, i) => (
           <button
             key={i}
-            onClick={() => setActiveIdx(i)}
+            onClick={() => pick(i)}
             className={`relative flex-shrink-0 w-16 h-16 overflow-hidden transition-all duration-200 bg-white ${
               activeIdx === i
                 ? "border border-navy"
@@ -51,7 +65,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
             }`}
             aria-label={img.alt}
           >
-            <Image
+            {show(i) && <Image
               src={imageError[i] ? "/covers/desktop%20cover.webp" : img.src}
               alt={img.alt}
               fill
@@ -59,7 +73,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
               sizes="64px"
               className="object-contain object-center p-1"
               onError={() => handleError(i)}
-            />
+            />}
           </button>
         ))}
       </div>
@@ -74,7 +88,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
         {/* All gallery images pre-rendered and stacked.
             The browser fetches every image on page load; switching is a CSS opacity
             toggle with zero network latency. */}
-        {images.map((img, i) => (
+        {images.map((img, i) => show(i) && (
           <Image
             key={i}
             src={imageError[i] ? "/covers/desktop%20cover.webp" : img.src}
@@ -124,7 +138,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
           {images.map((_, i) => (
             <button
               key={i}
-              onClick={() => setActiveIdx(i)}
+              onClick={() => pick(i)}
               aria-label={`Снимка ${i + 1}`}
               className="h-11 min-w-[28px] px-[11px] flex items-center justify-center"
             >
