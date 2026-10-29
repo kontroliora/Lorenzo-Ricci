@@ -55,7 +55,7 @@ export function Header() {
               height={40}
               quality={90}
               loading="eager" // above the fold, but not `priority`: only the page's LCP image gets the preload + high fetch priority
-              className={`object-contain transition-all duration-300 logo-invert ${scrolled ? "h-8" : "h-10"} w-auto`}
+              className={`object-contain transition-all duration-300 logo-invert ${scrolled ? "h-7 min-[360px]:h-8" : "h-7 min-[360px]:h-8 sm:h-10"} w-auto`}
             />
           </Link>
 
