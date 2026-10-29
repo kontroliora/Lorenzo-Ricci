@@ -6,8 +6,8 @@ import { isOnSale } from "./price";
 // CAMPAIGN PHASES - the ONE place to edit the label. Dates are day-month, inclusive, Europe/Sofia, every year.
 // Outside every phase the banner is hidden (the /namalenia page still lists the discounted products).
 export const CAMPAIGN_PHASES: { from: string; to: string; label: string }[] = [
-  { from: "23.10", to: "31.10", label: "Есенно намаление" },
-  { from: "01.11", to: "14.11", label: "Ранен Черен петък" },
+  { from: "23.10", to: "29.10", label: "Есенно намаление" },
+  { from: "30.10", to: "14.11", label: "Ранен Черен петък" },
   { from: "15.11", to: "26.11", label: "Черен петък" },
   { from: "27.11", to: "30.11", label: "Черен петък · финал" },
   { from: "01.12", to: "15.12", label: "Коледно намаление" },

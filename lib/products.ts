@@ -21,11 +21,11 @@ export const products: Product[] = [
     sku: "LR-YACHT-BLK",
     name: "Yachting Black",
     category: "watches",
-    // Clearance 2026-10-23 (brand closing): €140 → €99. originalPrice = €140.
-    price: 99,
+    // Early Black Friday 2026-10-30: €140 → €79. originalPrice = €140.
+    price: 79,
     originalPrice: 140,
     currency: "€",
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",
@@ -73,11 +73,11 @@ export const products: Product[] = [
     sku: "LR-YACHT-BLU",
     name: "Yachting Blue",
     category: "watches",
-    // Clearance 2026-10-23 (brand closing): €140 → €99. originalPrice = €140.
-    price: 99,
+    // Early Black Friday 2026-10-30: €140 → €79. originalPrice = €140.
+    price: 79,
     originalPrice: 140,
     currency: "€",
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",
@@ -124,11 +124,11 @@ export const products: Product[] = [
     sku: "LR-YACHT-WHT",
     name: "Yachting White",
     category: "watches",
-    // Clearance 2026-10-23 (brand closing): €140 → €99. originalPrice = €140.
-    price: 99,
+    // Early Black Friday 2026-10-30: €140 → €79. originalPrice = €140.
+    price: 79,
     originalPrice: 140,
     currency: "€",
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",
@@ -176,11 +176,11 @@ export const products: Product[] = [
     sku: "LR-CHRONO-BLK",
     name: "Chrono Black",
     category: "watches",
-    // Clearance 2026-10-23: further reduced to €149 (from €175 on 28.09.2026). originalPrice = €279 (price since 21.09.2026; owner accepts EU Omnibus risk).
-    price: 140,
+    // Early Black Friday 2026-10-30: €279 → €119. originalPrice = €279.
+    price: 119,
     originalPrice: 279,
     currency: "€",
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",
@@ -234,11 +234,11 @@ export const products: Product[] = [
     sku: "LR-MIDNIGHT-ECL",
     name: "Golden Eclipse",
     category: "watches",
-    // Autumn sale 2026-09-28 (owner): €299 → €175; shown reference = €279 (owner's choice, accepts EU Omnibus risk).
-    price: 140,
+    // Early Black Friday 2026-10-30: €279 → €119. originalPrice = €279.
+    price: 119,
     originalPrice: 279,
     currency: "€",
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",
@@ -294,11 +294,11 @@ export const products: Product[] = [
     sku: "LR-POLAR-FROST",
     name: "Polar Frost",
     category: "watches",
-    // Clearance 2026-10-23: further reduced to €149 (from €175 on 28.09.2026). originalPrice = €279 (price since 21.09.2026; owner accepts EU Omnibus risk).
-    price: 140,
+    // Early Black Friday 2026-10-30: €279 → €119. originalPrice = €279.
+    price: 119,
     originalPrice: 279,
     currency: "€",
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",
@@ -698,12 +698,12 @@ export const products: Product[] = [
     sku: "WLT-ALA",
     name: 'Lorenzo Ricci "Alabastro"',
     category: "wallets",
-    // Clearance 2026-10-23 (owner): €178 → €149. originalPrice = €178 (price since 21.09.2026; EU Omnibus compliant).
-    price: 149,
+    // Early Black Friday 2026-10-30: €178 → €139. originalPrice = €178.
+    price: 139,
     originalPrice: 178,
     priceAED: 1200,
     currency: "€",
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 5,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -738,12 +738,12 @@ export const products: Product[] = [
     sku: "WLT-RUB",
     name: 'Lorenzo Ricci "Rubino"',
     category: "wallets",
-    // Clearance 2026-10-23 (owner): €178 → €149. originalPrice = €178 (price since 21.09.2026; EU Omnibus compliant).
-    price: 149,
+    // Early Black Friday 2026-10-30: €178 → €139. originalPrice = €178.
+    price: 139,
     originalPrice: 178,
     priceAED: 1200,
     currency: "€",
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 5,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -818,11 +818,11 @@ export const products: Product[] = [
     sku: "CRD-AMB",
     name: 'Lorenzo Ricci "Ambra"',
     category: "cardholders",
-    price: 44,
+    price: 39,
     originalPrice: 65,
     priceAED: 500,
     currency: "€",
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 10,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -856,12 +856,12 @@ export const products: Product[] = [
     sku: "CRD-BIA",
     name: 'Lorenzo Ricci "Bianco"',
     category: "cardholders",
-    // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
-    price: 39,
+    // Early Black Friday 2026-10-30: €65 → €34. originalPrice = €65.
+    price: 34,
     originalPrice: 65,
     priceAED: 500,
     currency: "€",
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 88,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -895,10 +895,10 @@ export const products: Product[] = [
     sku: "CRD-VAL",
     name: 'Lorenzo Ricci "Valentina"',
     category: "cardholders",
-    // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
-    price: 39,
+    // Early Black Friday 2026-10-30: €65 → €34. originalPrice = €65.
+    price: 34,
     originalPrice: 65,
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     priceAED: 500,
     currency: "€",
     inStock: true,
@@ -934,9 +934,11 @@ export const products: Product[] = [
     sku: "CRD-ZAF",
     name: 'Lorenzo Ricci "Zaffiro"',
     category: "cardholders",
-    price: 65,
+    price: 39,
+    originalPrice: 65,
     priceAED: 500,
     currency: "€",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 15,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -976,12 +978,12 @@ export const products: Product[] = [
     sku: "CRD-ONI",
     name: 'Lorenzo Ricci "Onice"',
     category: "cardholders",
-    // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
-    price: 39,
+    // Early Black Friday 2026-10-30: €65 → €34. originalPrice = €65.
+    price: 34,
     originalPrice: 65,
     currency: "€",
     inStock: true,
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     stock: 46,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Черен кардхолдър от крокодилска кожа",
@@ -1011,12 +1013,12 @@ export const products: Product[] = [
     sku: "CRD-GIA",
     name: 'Lorenzo Ricci "Giada"',
     category: "cardholders",
-    // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
-    price: 39,
+    // Early Black Friday 2026-10-30: €65 → €34. originalPrice = €65.
+    price: 34,
     originalPrice: 65,
     currency: "€",
     inStock: true,
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     stock: 27,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Тъмнозелен кардхолдър от крокодилска кожа",
@@ -1046,12 +1048,12 @@ export const products: Product[] = [
     sku: "CRD-CRE",
     name: 'Lorenzo Ricci "Cremisi"',
     category: "cardholders",
-    // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
-    price: 39,
+    // Early Black Friday 2026-10-30: €65 → €34. originalPrice = €65.
+    price: 34,
     originalPrice: 65,
     currency: "€",
     inStock: true,
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     stock: 38,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Червен кардхолдър от крокодилска кожа",
@@ -1081,8 +1083,10 @@ export const products: Product[] = [
     sku: "CRD-PER",
     name: 'Lorenzo Ricci "Perla"',
     category: "cardholders",
-    price: 65,
+    price: 39,
+    originalPrice: 65,
     currency: "€",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 3,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -1113,12 +1117,12 @@ export const products: Product[] = [
     sku: "CRD-TOP",
     name: 'Lorenzo Ricci "Topazio"',
     category: "cardholders",
-    // Autumn sale 2026-09-28 (owner): €65 → €52. originalPrice = €65 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
-    price: 39,
+    // Early Black Friday 2026-10-30: €65 → €34. originalPrice = €65.
+    price: 34,
     originalPrice: 65,
     currency: "€",
     inStock: true,
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     stock: 23,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Жълт кардхолдър от крокодилска кожа",
@@ -1282,12 +1286,12 @@ export const products: Product[] = [
     sku: "CLU-TORINO",
     name: 'Lorenzo Ricci "Torino"',
     category: "bags",
-    // Clearance 2026-10-23: €449 from €749. originalPrice = €749 (was €499 since 28.09; owner accepts EU Omnibus risk).
-    price: 349,
+    // Early Black Friday 2026-10-30: €749 → €299. originalPrice = €749.
+    price: 299,
     originalPrice: 749,
     currency: "€",
     inStock: true,
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     stock: 5,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Черен вечерен клъч от крокодилска кожа",
@@ -1325,12 +1329,12 @@ export const products: Product[] = [
     sku: "CLU-VERONA",
     name: 'Lorenzo Ricci "Verona"',
     category: "bags",
-    // Clearance 2026-10-23: €449 from €749. originalPrice = €749 (was €499 since 28.09; owner accepts EU Omnibus risk).
-    price: 349,
+    // Early Black Friday 2026-10-30: €749 → €299. originalPrice = €749.
+    price: 299,
     originalPrice: 749,
     currency: "€",
     inStock: true,
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     stock: 5,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Бордо вечерен клъч от крокодилска кожа",
@@ -1368,8 +1372,11 @@ export const products: Product[] = [
     sku: "CLU-TOSCANA",
     name: 'Lorenzo Ricci "Toscana"',
     category: "bags",
-    price: 749,
+    // Early Black Friday 2026-10-30: €749 → €299. originalPrice = €749.
+    price: 299,
+    originalPrice: 749,
     currency: "€",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 2,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -1411,12 +1418,12 @@ export const products: Product[] = [
     sku: "CLU-PORTOFINO",
     name: 'Lorenzo Ricci "Portofino"',
     category: "bags",
-    // Clearance 2026-10-23: €449 from €749. originalPrice = €749 (was €499 since 28.09; owner accepts EU Omnibus risk).
-    price: 349,
+    // Early Black Friday 2026-10-30: €749 → €299. originalPrice = €749.
+    price: 299,
     originalPrice: 749,
     currency: "€",
     inStock: true,
-    badge: "ЕСЕННО НАМАЛЕНИЕ",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     stock: 5,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Кремав вечерен клъч от крокодилска кожа",
@@ -1457,8 +1464,11 @@ export const products: Product[] = [
     sku: "CLU-CAPRI",
     name: 'Lorenzo Ricci "Capri"',
     category: "bags",
-    price: 749,
+    // Early Black Friday 2026-10-30: €749 → €299. originalPrice = €749.
+    price: 299,
+    originalPrice: 749,
     currency: "€",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 3,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)

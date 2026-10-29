@@ -22,6 +22,7 @@ const NILE = "crocodil de Nil (Crocodylus niloticus)";
 
 const BADGE_LIMITED = "SERIE LIMITATĂ";
 const BADGE_SALE = "REDUCERE DE TOAMNĂ";
+const BADGE_EARLY_BF = "BLACK FRIDAY TIMPURIU";
 const BADGE_NEW = "Colecție nouă";
 const BADGE_SOLD_OUT = "Stoc epuizat";
 const BADGE_LOW_STOCK = "Stoc limitat";
@@ -132,7 +133,7 @@ const specsNoCites = (color: string): Spec[] => [
 export const RO_PRODUCTS: Record<string, RoProductText> = {
   // ─── WATCHES ───────────────────────────────────────────────────────────────
   "yachting-black": {
-    badge: BADGE_LIMITED,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_WATCH,
     shortDescription: WATCH_TAGLINE,
     description:
@@ -157,7 +158,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "yachting-blue": {
-    badge: BADGE_LIMITED,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_WATCH,
     shortDescription: WATCH_TAGLINE,
     description:
@@ -181,7 +182,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "yachting-white": {
-    badge: BADGE_LIMITED,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_WATCH,
     shortDescription: WATCH_TAGLINE,
     description:
@@ -206,7 +207,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "chrono-black": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_WATCH,
     shortDescription: WATCH_TAGLINE,
     description:
@@ -230,7 +231,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "golden-eclipse": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_WATCH,
     shortDescription: WATCH_TAGLINE,
     description:
@@ -256,7 +257,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "polar-frost": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_WATCH,
     shortDescription: WATCH_TAGLINE,
     description:
@@ -521,6 +522,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
 
   // ─── WALLETS ───────────────────────────────────────────────────────────────
   "wallet-alabastro": {
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Portofel alb din piele de crocodil",
     description: LEATHER_DESC,
@@ -538,6 +540,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "wallet-rubino": {
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Portofel roșu din piele de crocodil",
     description: LEATHER_DESC,
@@ -575,6 +578,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
 
   // ─── CARDHOLDERS ───────────────────────────────────────────────────────────
   "cardholder-ambra": {
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Port-card portocaliu din piele de crocodil",
     description: LEATHER_DESC,
@@ -591,7 +595,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "cardholder-bianco": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Port-card alb din piele",
     description: LEATHER_DESC,
@@ -609,7 +613,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "cardholder-valentina": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Port-card roz din piele de crocodil",
     description: LEATHER_DESC,
@@ -626,6 +630,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "cardholder-zaffiro": {
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Port-card albastru închis din piele de crocodil",
     description: LEATHER_DESC,
@@ -642,7 +647,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "cardholder-onice": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Port-card negru din piele de crocodil",
     description: LEATHER_DESC,
@@ -657,7 +662,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "cardholder-giada": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Port-card verde închis din piele de crocodil",
     description: LEATHER_DESC,
@@ -672,7 +677,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "cardholder-cremisi": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Port-card roșu din piele de crocodil",
     description: LEATHER_DESC,
@@ -687,7 +692,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "cardholder-perla": {
-    badge: BADGE_NEW,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Port-card gri din piele de crocodil",
     description: LEATHER_DESC,
@@ -702,7 +707,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "cardholder-topazio": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Port-card galben din piele de crocodil",
     description: LEATHER_DESC,
@@ -804,7 +809,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "clutch-torino": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Clutch de seară negru din piele de crocodil",
     description: CLUTCH_DESC,
@@ -822,7 +827,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "clutch-verona": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Clutch de seară bordo din piele de crocodil",
     description: CLUTCH_DESC,
@@ -840,7 +845,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "clutch-toscana": {
-    badge: BADGE_NEW,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Clutch de seară verde închis din piele de crocodil",
     description: CLUTCH_DESC,
@@ -858,7 +863,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "clutch-portofino": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Clutch de seară crem din piele de crocodil",
     description: CLUTCH_DESC,
@@ -876,7 +881,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "clutch-capri": {
-    badge: BADGE_NEW,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
     shortDescription: "Clutch de seară albastru închis din piele de crocodil",
     description: CLUTCH_DESC,
