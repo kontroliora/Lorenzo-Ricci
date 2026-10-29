@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import { smallOrOriginal } from "@/lib/image-variant";
 import Link from "next/link";
 import { useState } from "react";
 import type { Product } from "@/lib/types";
@@ -90,7 +91,7 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
           <>
             {/* Day image - no transition class for instant switch */}
             <Image
-              src={product.coverImage.src}
+              src={smallOrOriginal(product.coverImage.src)}
               alt={coverAlt}
               fill
               priority={priority}
@@ -140,7 +141,7 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
           <>
             {/* Non-watch: hover image swap */}
             <Image
-              src={product.coverImage.src}
+              src={smallOrOriginal(product.coverImage.src)}
               alt={coverAlt}
               fill
               priority={priority}
