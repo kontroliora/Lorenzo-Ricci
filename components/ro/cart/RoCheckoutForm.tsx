@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { normalizeRoPhone } from "@/lib/ro/phone";
 import type { RoCartLine } from "@/lib/ro/store";
 import { roAmounts } from "@/lib/ro/pricing";
 import { RO_COUNTIES } from "@/lib/ro/counties";
@@ -47,23 +48,6 @@ const PRICE_MISMATCH_ERROR = "Prețurile produselor s-au actualizat.";
 const PRICE_RELOAD_HINT = "Reîncărcați pagina pentru a vedea prețurile actualizate, apoi încercați din nou.";
 const CART_RELOAD_HINT = "Reîncărcați pagina pentru a actualiza coșul, apoi încercați din nou.";
 
-/** Romanian mobile -> 10 national digits (07xxxxxxxx), or null. Accepts 07.., +407.., 00407.., 407.., spaces/dots/dashes/(). */
-function normalizeRoPhone(raw: string): string | null {
-  let s = raw.trim().replace(/[\s().\-–]/g, "");
-  let national: string;
-  if (s.startsWith("+")) {
-    s = s.slice(1);
-    if (!/^\d+$/.test(s) || !s.startsWith("40")) return null;
-    national = s.slice(2);
-  } else {
-    if (!/^\d+$/.test(s)) return null;
-    if (s.startsWith("0040")) national = s.slice(4);
-    else if (s.startsWith("40") && s.length === 11) national = s.slice(2);
-    else national = s;
-  }
-  national = national.replace(/^0/, "");
-  return /^7\d{8}$/.test(national) ? `0${national}` : null;
-}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 

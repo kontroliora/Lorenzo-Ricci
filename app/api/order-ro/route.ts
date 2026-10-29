@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { normalizeRoPhone } from "@/lib/ro/phone";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getProductBySlug } from "@/lib/products";
 import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
@@ -43,11 +44,8 @@ function stockMessage(items: { name: string; available: number }[]): string {
 }
 
 // Romanian mobile numbers: 07xxxxxxxx, +407xxxxxxxx, 00407xxxxxxxx, 407xxxxxxxx -> 07xxxxxxxx.
-function normalizePhone(raw: string): string | null {
-  const d = raw.replace(/[^\d+]/g, "").replace(/^\+/, "");
-  const national = d.startsWith("0040") ? "0" + d.slice(4) : d.startsWith("40") && d.length === 11 ? "0" + d.slice(2) : d;
-  return /^07\d{8}$/.test(national) ? national : null;
-}
+// Same rule as the checkout form (lib/ro/phone.ts).
+const normalizePhone = (raw: string): string | null => normalizeRoPhone(raw);
 
 export async function POST(req: NextRequest) {
   try {
