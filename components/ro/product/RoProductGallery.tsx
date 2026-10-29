@@ -2,6 +2,7 @@
 import Image from "next/image";
 import { useRef, useState } from "react";
 import type { ProductImage } from "@/lib/types";
+import { smallVariant, smallOrOriginal } from "@/lib/image-variant";
 
 interface RoProductGalleryProps {
   images: ProductImage[];
@@ -52,7 +53,7 @@ export function RoProductGallery({ images, productName }: RoProductGalleryProps)
             aria-label={img.alt}
           >
             <Image
-              src={imageError[i] ? "/covers/desktop%20cover.webp" : img.src}
+              src={imageError[i] ? "/covers/desktop%20cover.webp" : smallOrOriginal(img.src)}
               alt={img.alt}
               fill
               quality={60}
@@ -74,7 +75,36 @@ export function RoProductGallery({ images, productName }: RoProductGalleryProps)
         {/* All gallery images pre-rendered and stacked.
             The browser fetches every image on page load; switching is a CSS opacity
             toggle with zero network latency. */}
-        {images.map((img, i) => (
+        {/* First photo: preload the copy each screen will use (800 px on phones, the original above 640 px) */}
+        {images[0] && smallVariant(images[0].src) && !imageError[0] && (
+          <>
+            <link rel="preload" as="image" href={smallVariant(images[0].src)} media="(max-width: 640px)" fetchPriority="high" />
+            <link rel="preload" as="image" href={images[0].src} media="(min-width: 641px)" fetchPriority="high" />
+          </>
+        )}
+        {images.map((img, i) => {
+          const small = smallVariant(img.src);
+          if (small && !imageError[i]) {
+            return (
+              <picture key={i}>
+                <source media="(max-width: 640px)" srcSet={encodeURI(small)} /> {/* encoded: the paths contain spaces, which split a srcset */}
+                {/* eslint-disable-next-line @next/next/no-img-element -- next/image cannot do srcset while images.unoptimized is on */}
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  fetchPriority={i === 0 ? "high" : undefined}
+                  loading={i === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  className={`absolute inset-0 h-full w-full object-contain object-center transition-opacity duration-150 ${
+                    i === activeIdx ? "opacity-100" : "opacity-0"
+                  }`}
+                  aria-hidden={i !== activeIdx}
+                  onError={() => handleError(i)}
+                />
+              </picture>
+            );
+          }
+          return (
           <Image
             key={i}
             src={imageError[i] ? "/covers/desktop%20cover.webp" : img.src}
@@ -93,7 +123,8 @@ export function RoProductGallery({ images, productName }: RoProductGalleryProps)
             aria-hidden={i !== activeIdx}
             onError={() => handleError(i)}
           />
-        ))}
+          );
+        })}
 
         {/* Nav arrows - mobile: dark, desktop: navy */}
         <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-3 pointer-events-none">
