@@ -1381,11 +1381,11 @@ export const products: Product[] = [
     sku: "CLU-TOSCANA",
     name: 'Lorenzo Ricci "Toscana"',
     category: "bags",
-    // Ранен Черен Петък 2026-10-30: €749 → €299. originalPrice = €749.
-    price: 299,
+    // 2026-10-31: raised to €349 (Torino/Verona/Portofino stay at €299). Badge changed to savings label.
+    price: 349,
     originalPrice: 749,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
+    badge: "Спестявате €400",
     inStock: true,
     stock: 2,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -1473,11 +1473,11 @@ export const products: Product[] = [
     sku: "CLU-CAPRI",
     name: 'Lorenzo Ricci "Capri"',
     category: "bags",
-    // Ранен Черен Петък 2026-10-30: €749 → €299. originalPrice = €749.
-    price: 299,
+    // 2026-10-31: raised to €349 (Torino/Verona/Portofino stay at €299). Badge changed to savings label.
+    price: 349,
     originalPrice: 749,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
+    badge: "Спестявате €400",
     inStock: true,
     stock: 3,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
