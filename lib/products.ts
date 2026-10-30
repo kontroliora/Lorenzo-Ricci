@@ -528,12 +528,9 @@ export const products: Product[] = [
     name: "Колие Aurelius Cross",
     category: "jewellery",
     subcategory: "necklace",
-    // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
-    // days (EU Omnibus) - €42, unchanged in the git history since at least 28.08.2026.
-    price: 33.6,
-    originalPrice: 42,
+    // Ранен Черен Петък 2026-10-30: restored to regular price €42. No sale, no badge.
+    price: 42,
     currency: "€",
-    badge: "Ограничена наличност",
     inStock: true,
     warranty: "Доживотна гаранция",
     shortDescription: "Дух на вечния Рим",
@@ -704,12 +701,11 @@ export const products: Product[] = [
     sku: "WLT-ALA",
     name: 'Lorenzo Ricci "Alabastro"',
     category: "wallets",
-    // Early Black Friday 2026-10-30: €178 → €139. originalPrice = €178.
-    price: 139,
+    // Ранен Черен Петък 2026-10-30: €178 → €149 (sale phase, no badge).
+    price: 149,
     originalPrice: 178,
     priceAED: 1200,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 5,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -744,12 +740,11 @@ export const products: Product[] = [
     sku: "WLT-RUB",
     name: 'Lorenzo Ricci "Rubino"',
     category: "wallets",
-    // Early Black Friday 2026-10-30: €178 → €139. originalPrice = €178.
-    price: 139,
+    // Ранен Черен Петък 2026-10-30: €178 → €149 (sale phase, no badge).
+    price: 149,
     originalPrice: 178,
     priceAED: 1200,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 5,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -824,11 +819,11 @@ export const products: Product[] = [
     sku: "CRD-AMB",
     name: 'Lorenzo Ricci "Ambra"',
     category: "cardholders",
-    price: 39,
+    // Ранен Черен Петък 2026-10-30: €65 → €44 (sale phase, no badge).
+    price: 44,
     originalPrice: 65,
     priceAED: 500,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 10,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -940,11 +935,11 @@ export const products: Product[] = [
     sku: "CRD-ZAF",
     name: 'Lorenzo Ricci "Zaffiro"',
     category: "cardholders",
-    price: 39,
+    // Ранен Черен Петък 2026-10-30: €65 → €44 (sale phase, no badge).
+    price: 44,
     originalPrice: 65,
     priceAED: 500,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 15,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -1089,10 +1084,10 @@ export const products: Product[] = [
     sku: "CRD-PER",
     name: 'Lorenzo Ricci "Perla"',
     category: "cardholders",
-    price: 39,
+    // Ранен Черен Петък 2026-10-30: €65 → €44 (sale phase, no badge).
+    price: 44,
     originalPrice: 65,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 3,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
