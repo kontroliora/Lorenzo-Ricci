@@ -18,7 +18,7 @@ interface RoProductCardProps {
   product: Product;
   priority?: boolean;
   learnMore?: boolean;
-  /** Homepage only: "Economisiți N lei" under a discounted price and "Au mai rămas N buc." from the live stock (≤ 10). */
+  /** Homepage only: "Economisiți N lei" under a discounted price. */
   homeHints?: boolean;
 }
 
@@ -48,7 +48,7 @@ export function RoProductCard({ product, priority = false, learnMore = false, ho
   const ron = ronOf(product);
   const ronOriginal = ronOriginalOf(product); // defined while on sale: crossed-out price in lei
   const saved = homeHints ? savingsRon(product) : null;
-  const left = homeHints && !isSoldOut ? lowStockCount(liveStock) : null;
+  const left = !isSoldOut ? lowStockCount(liveStock) : null; // low-stock line on every card, savings only on the homepage
 
   // Night image for watches is always images[1]
   const nightImage = isWatch ? (product.images[1] ?? product.coverImage) : null;

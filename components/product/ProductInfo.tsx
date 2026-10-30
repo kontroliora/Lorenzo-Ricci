@@ -13,6 +13,7 @@ import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { GiftOffer } from "@/components/product/GiftOffer";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { getProductBySlug } from "@/lib/products";
+import { PAGE_LOW_STOCK_MAX } from "@/lib/home-card-hints";
 
 // A colour swatch reads as sold out when its product is switched off in
 // lib/products.ts (inStock: false - the owner's single on/off switch); the
@@ -121,9 +122,7 @@ const VIBER_LINK = "viber://chat?number=%2B359888081811";
 // bring it back (nothing is deleted).
 const SHOW_VIBER = false;
 
-// Show the low-stock line only when AVAILABLE units drop below this. Bags sit at
-// 5 in stock as a matter of course, so their line only appears under 5 (owner).
-const lowStockThreshold = (category: Product["category"]) => (category === "bags" ? 5 : 6);
+// Show the low-stock line only when AVAILABLE units are at or below PAGE_LOW_STOCK_MAX (lib/home-card-hints.ts).
 
 interface ProductInfoProps {
   product: Product;
@@ -377,7 +376,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           admin panel's "Налични". Shown only below the low-stock threshold; above
           it nothing is revealed (we don't disclose how much we hold). Premium and
           restrained - a quiet nudge, never a loud "HURRY". */}
-      {shownCount !== null && shownCount < lowStockThreshold(product.category) && (
+      {shownCount !== null && shownCount <= PAGE_LOW_STOCK_MAX && (
         <div className="flex items-center gap-2">
           {shownCount === 0 ? (
             <>
@@ -403,7 +402,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
 
       {/* Viewer count badge — shown only alongside the low-stock nudge so it
           reads as social proof rather than a standalone pressure tactic */}
-      {viewerCount !== null && shownCount !== null && shownCount > 0 && shownCount < lowStockThreshold(product.category) && (
+      {viewerCount !== null && shownCount !== null && shownCount > 0 && shownCount <= PAGE_LOW_STOCK_MAX && (
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#B5451B] animate-pulse flex-shrink-0" />
           <span className="font-sans text-[11px] text-[#B5451B] tracking-wide">

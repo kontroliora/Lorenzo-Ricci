@@ -26,6 +26,7 @@ import { PayLine, CodLine } from "@/components/product/CodNote";
 import { roCartLine } from "@/components/ro/product/cart-line";
 import { hasCyrillic, roReviewsCount, roRatingText } from "@/components/ro/product/ro-text";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
+import { PAGE_LOW_STOCK_MAX } from "@/lib/home-card-hints";
 
 // A colour swatch reads as sold out when its product is switched off in
 // lib/products.ts (inStock: false - the owner's single on/off switch); the
@@ -121,8 +122,7 @@ const CLUTCH_VARIANTS: Variant[] = [
   { slug: "clutch-capri",     label: "Capri - Albastru închis", color: "#1F2D4F", inStock: true },
 ];
 
-// Show the low-stock line only when AVAILABLE units drop below this (bags sit at 5 as a matter of course).
-const lowStockThreshold = (category: Product["category"]) => (category === "bags" ? 5 : 6);
+// Show the low-stock line only when AVAILABLE units are at or below PAGE_LOW_STOCK_MAX (lib/home-card-hints.ts).
 
 // The one-of-one bag: "limited", never "running out" (same as the Bulgarian page).
 const ONE_OF_ONE_SLUG = "bag-milano-avorio";
@@ -377,7 +377,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
       {/* Stock indicator - the number AVAILABLE (free to order). Shown only below the low-stock threshold; above
           it nothing is revealed (we don't disclose how much we hold). Premium and restrained - a quiet nudge,
           never a loud "HURRY". */}
-      {shownCount !== null && shownCount < lowStockThreshold(product.category) && (
+      {shownCount !== null && shownCount <= PAGE_LOW_STOCK_MAX && (
         <div className="flex items-center gap-2">
           {shownCount === 0 ? (
             <>
@@ -401,7 +401,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         </div>
       )}
 
-      {viewerCount !== null && shownCount !== null && shownCount > 0 && shownCount < lowStockThreshold(product.category) && (
+      {viewerCount !== null && shownCount !== null && shownCount > 0 && shownCount <= PAGE_LOW_STOCK_MAX && (
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#B5451B] animate-pulse flex-shrink-0" />
           <span className="font-sans text-[11px] text-[#B5451B] tracking-wide">
