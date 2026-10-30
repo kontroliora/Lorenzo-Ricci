@@ -356,11 +356,11 @@ export const products: Product[] = [
     name: "Гривна Diamante Cross",
     category: "jewellery",
     subcategory: "bracelet",
-    // Ранен Черен Петък 2026-10-30: €39 → €27. originalPrice = €39.
-    price: 27,
+    // Autumn sale 2026-09-28 (owner): €39 → €32. originalPrice = €39 (lowest in 30 days per EU Omnibus - unchanged since 28.08.2026).
+    price: 32,
     originalPrice: 39,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     inStock: true,
     warranty: "Доживотна гаранция",
     shortDescription: "Блясък, който не натежава",
@@ -440,11 +440,8 @@ export const products: Product[] = [
     name: "Гривна Milano Twist",
     category: "jewellery",
     subcategory: "bracelet",
-    // Ранен Черен Петък 2026-10-30: €44 → €27. originalPrice = €44.
-    price: 27,
-    originalPrice: 44,
+    price: 44,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     warranty: "Доживотна гаранция",
     shortDescription: "Спирала от светлина",
@@ -484,11 +481,8 @@ export const products: Product[] = [
     name: "Гривна Signature",
     category: "jewellery",
     subcategory: "bracelet",
-    // Ранен Черен Петък 2026-10-30: €55 → €34. originalPrice = €55.
-    price: 34,
-    originalPrice: 55,
+    price: 55,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     warranty: "Доживотна гаранция",
     shortDescription: "Твоят подпис на китката",
@@ -528,9 +522,12 @@ export const products: Product[] = [
     name: "Колие Aurelius Cross",
     category: "jewellery",
     subcategory: "necklace",
-    // Ранен Черен Петък 2026-10-30: restored to regular price €42. No sale, no badge.
-    price: 42,
+    // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
+    // days (EU Omnibus) - €42, unchanged in the git history since at least 28.08.2026.
+    price: 33.6,
+    originalPrice: 42,
     currency: "€",
+    badge: "Ограничена наличност",
     inStock: true,
     warranty: "Доживотна гаранция",
     shortDescription: "Дух на вечния Рим",
@@ -572,11 +569,11 @@ export const products: Product[] = [
     name: "Колие Grande Imperiale",
     category: "jewellery",
     subcategory: "necklace",
-    // Ранен Черен Петък 2026-10-30: €62 → €31. originalPrice = €62.
-    price: 31,
+    // Autumn sale 2026-09-28 (owner): €62 → €37. originalPrice = €62 (price since 21.09.2026; owner accepts EU Omnibus risk).
+    price: 37,
     originalPrice: 62,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     inStock: true,
     warranty: "Доживотна гаранция",
     shortDescription: "Влиза преди теб",
@@ -656,11 +653,11 @@ export const products: Product[] = [
     name: "Колие Milano Twist",
     category: "jewellery",
     subcategory: "necklace",
-    // Ранен Черен Петък 2026-10-30: €51 → €27. originalPrice = €51.
-    price: 27,
+    // Autumn sale 2026-09-28 (owner): €51 → €32. originalPrice = €51 (price since 21.09.2026; owner accepts EU Omnibus risk).
+    price: 32,
     originalPrice: 51,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
+    badge: "ЕСЕННО НАМАЛЕНИЕ",
     inStock: true,
     warranty: "Доживотна гаранция",
     shortDescription: "Въже от злато",
@@ -701,11 +698,12 @@ export const products: Product[] = [
     sku: "WLT-ALA",
     name: 'Lorenzo Ricci "Alabastro"',
     category: "wallets",
-    // Ранен Черен Петък 2026-10-30: €178 → €149 (sale phase, no badge).
-    price: 149,
+    // Early Black Friday 2026-10-30: €178 → €139. originalPrice = €178.
+    price: 139,
     originalPrice: 178,
     priceAED: 1200,
     currency: "€",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 5,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -740,11 +738,12 @@ export const products: Product[] = [
     sku: "WLT-RUB",
     name: 'Lorenzo Ricci "Rubino"',
     category: "wallets",
-    // Ранен Черен Петък 2026-10-30: €178 → €149 (sale phase, no badge).
-    price: 149,
+    // Early Black Friday 2026-10-30: €178 → €139. originalPrice = €178.
+    price: 139,
     originalPrice: 178,
     priceAED: 1200,
     currency: "€",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 5,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -819,11 +818,12 @@ export const products: Product[] = [
     sku: "CRD-AMB",
     name: 'Lorenzo Ricci "Ambra"',
     category: "cardholders",
-    // Ранен Черен Петък 2026-10-30: €65 → €44 (sale phase, no badge).
-    price: 44,
+    // Early Black Friday 2026-10-30: €65 → €39. originalPrice = €65.
+    price: 39,
     originalPrice: 65,
     priceAED: 500,
     currency: "€",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 10,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -935,11 +935,12 @@ export const products: Product[] = [
     sku: "CRD-ZAF",
     name: 'Lorenzo Ricci "Zaffiro"',
     category: "cardholders",
-    // Ранен Черен Петък 2026-10-30: €65 → €44 (sale phase, no badge).
-    price: 44,
+    // Early Black Friday 2026-10-30: €65 → €39. originalPrice = €65.
+    price: 39,
     originalPrice: 65,
     priceAED: 500,
     currency: "€",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 15,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -1084,10 +1085,11 @@ export const products: Product[] = [
     sku: "CRD-PER",
     name: 'Lorenzo Ricci "Perla"',
     category: "cardholders",
-    // Ранен Черен Петък 2026-10-30: €65 → €44 (sale phase, no badge).
-    price: 44,
+    // Early Black Friday 2026-10-30: €65 → €39. originalPrice = €65.
+    price: 39,
     originalPrice: 65,
     currency: "€",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 3,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -1373,10 +1375,11 @@ export const products: Product[] = [
     sku: "CLU-TOSCANA",
     name: 'Lorenzo Ricci "Toscana"',
     category: "bags",
-    // Ранен Черен Петък 2026-10-30: €749 → €349 (sale phase, no badge). originalPrice = €749.
-    price: 349,
+    // Ранен Черен Петък 2026-10-30: €749 → €299. originalPrice = €749.
+    price: 299,
     originalPrice: 749,
     currency: "€",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 2,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -1464,10 +1467,11 @@ export const products: Product[] = [
     sku: "CLU-CAPRI",
     name: 'Lorenzo Ricci "Capri"',
     category: "bags",
-    // Ранен Черен Петък 2026-10-30: €749 → €349 (sale phase, no badge). originalPrice = €749.
-    price: 349,
+    // Ранен Черен Петък 2026-10-30: €749 → €299. originalPrice = €749.
+    price: 299,
     originalPrice: 749,
     currency: "€",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 3,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
