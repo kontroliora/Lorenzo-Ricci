@@ -399,9 +399,12 @@ export const products: Product[] = [
     name: "Гривна Milano Forte",
     category: "jewellery",
     subcategory: "bracelet",
-    price: 49,
+    // Early Black Friday 2026-10-31 (Havana restock): €49 → €29. stock=4 set in wallet_inventory.
+    price: 29,
+    originalPrice: 49,
     currency: "€",
-    inStock: false, // owner 2026-09-27: out of stock until further notice - stays listed as "Изчерпан"
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
+    inStock: true,
     warranty: "Доживотна гаранция",
     shortDescription: "Осем милиметра присъствие",
     description:
@@ -619,9 +622,12 @@ export const products: Product[] = [
     name: "Колие Milano Forte",
     category: "jewellery",
     subcategory: "necklace",
-    price: 55,
+    // Early Black Friday 2026-10-31 (Havana restock): €55 → €29. stock=3 set in wallet_inventory.
+    price: 29,
+    originalPrice: 55,
     currency: "€",
-    inStock: false, // owner 2026-09-27: out of stock until further notice - stays listed as "Изчерпан"
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
+    inStock: true,
     warranty: "Доживотна гаранция",
     shortDescription: "Тежестта на Милано",
     description:
