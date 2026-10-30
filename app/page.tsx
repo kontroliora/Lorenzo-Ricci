@@ -42,7 +42,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <Hero />
+      <Hero campaign={saleLabel && salePct >= 5 ? { label: saleLabel, pct: salePct } : null} />
       {saleLabel && salePct >= 5 && <SaleBanner label={saleLabel} pct={salePct} />}
       <FeaturedWatches soldOut={soldOut} />
       <WalletsSection soldOut={soldOut} />

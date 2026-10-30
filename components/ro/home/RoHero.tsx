@@ -14,7 +14,9 @@ const DESKTOP_MIN = "(min-width: 640px)";
 const VIDEO = { mobile: "/hero-video-mobile.mp4", desktop: "/hero-video-desktop.mp4" } as const;
 const POSTER = { mobile: "/covers/mobile%20cover.webp", desktop: "/covers/desktop%20cover.webp" } as const;
 
-export function RoHero() {
+// `campaign`: set by the /ro home page while a campaign phase and a discount of at least 5% are live (same rule as the Bulgarian
+// hero and its red banner, lib/sale-campaign.ts). Only the headline, subline and buttons change then; null = the original texts.
+export function RoHero({ campaign = null }: { campaign?: { label: string; pct: number } | null }) {
   const [loaded, setLoaded] = useState(false);
   const [variant, setVariant] = useState<"mobile" | "desktop" | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -108,24 +110,47 @@ export function RoHero() {
           Ceasuri de lux, bijuterii &amp; piele de crocodil
         </p>
 
-        <h1 className="font-serif text-display-xl text-white mb-4 animate-fade-up animate-delay-100 text-balance">
-          Create să
-          <br />
-          <em className="not-italic text-white">impresioneze</em>
-        </h1>
+        {campaign ? (
+          <>
+            <h1 className="font-serif text-display-xl text-white mb-4 animate-fade-up animate-delay-100 text-balance">
+              <em className="not-italic text-white">{campaign.label}</em>
+            </h1>
 
-        <p className="font-sans text-sm sm:text-base font-light text-white/70 tracking-widest uppercase mb-10 animate-fade-up animate-delay-200">
-          Precizie în fiecare detaliu
-        </p>
+            <p className="font-sans text-sm sm:text-base font-light text-white/70 tracking-widest uppercase mb-10 animate-fade-up animate-delay-200">
+              Până la −{campaign.pct}% la ceasuri, bijuterii și piele de crocodil
+            </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 animate-fade-up animate-delay-300">
-          <Link href="/ro/ceasuri" className="btn-primary min-w-[200px]">
-            Descoperiți ceasurile
-          </Link>
-          <Link href="/ro/bijuterii" className="btn-outline-light min-w-[200px]">
-            Descoperiți bijuteriile
-          </Link>
-        </div>
+            <div className="flex flex-col sm:flex-row gap-4 animate-fade-up animate-delay-300">
+              <Link href="/ro/reduceri" className="btn-primary min-w-[200px]">
+                Vedeți reducerile
+              </Link>
+              <Link href="/ro/ceasuri" className="btn-outline-light min-w-[200px]">
+                Descoperiți ceasurile
+              </Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <h1 className="font-serif text-display-xl text-white mb-4 animate-fade-up animate-delay-100 text-balance">
+              Create să
+              <br />
+              <em className="not-italic text-white">impresioneze</em>
+            </h1>
+
+            <p className="font-sans text-sm sm:text-base font-light text-white/70 tracking-widest uppercase mb-10 animate-fade-up animate-delay-200">
+              Precizie în fiecare detaliu
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 animate-fade-up animate-delay-300">
+              <Link href="/ro/ceasuri" className="btn-primary min-w-[200px]">
+                Descoperiți ceasurile
+              </Link>
+              <Link href="/ro/bijuterii" className="btn-outline-light min-w-[200px]">
+                Descoperiți bijuteriile
+              </Link>
+            </div>
+          </>
+        )}
 
         {/* Rating pill: the reviews are those of the Bulgarian store, said so */}
         <div className="mt-10 flex items-center gap-3 bg-white/8 backdrop-blur-sm border border-white/15 px-5 py-2.5 rounded-full animate-fade-up animate-delay-400">

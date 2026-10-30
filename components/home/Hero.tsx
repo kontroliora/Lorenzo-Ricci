@@ -14,7 +14,9 @@ const DESKTOP_MIN = "(min-width: 640px)";
 const VIDEO = { mobile: "/hero-video-mobile.mp4", desktop: "/hero-video-desktop.mp4" } as const;
 const POSTER = { mobile: "/covers/mobile%20cover.webp", desktop: "/covers/desktop%20cover.webp" } as const;
 
-export function Hero() {
+// `campaign`: set by the home page while a campaign phase and a discount of at least 5% are live (the same condition as the red
+// sale banner, lib/sale-campaign.ts). Only the headline, subline and buttons change then; null = the original texts.
+export function Hero({ campaign = null }: { campaign?: { label: string; pct: number } | null }) {
   const [loaded, setLoaded] = useState(false);
   const [variant, setVariant] = useState<"mobile" | "desktop" | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -108,24 +110,47 @@ export function Hero() {
           Луксозни Часовници &amp; Бижута
         </p>
 
-        <h1 className="font-serif text-display-xl text-white mb-4 animate-fade-up animate-delay-100 text-balance">
-          Създадени да
-          <br />
-          <em className="not-italic text-white">впечатляват</em>
-        </h1>
+        {campaign ? (
+          <>
+            <h1 className="font-serif text-display-xl text-white mb-4 animate-fade-up animate-delay-100 text-balance">
+              <em className="not-italic text-white">{campaign.label}</em>
+            </h1>
 
-        <p className="font-sans text-sm sm:text-base font-light text-white/70 tracking-widest uppercase mb-10 animate-fade-up animate-delay-200">
-          Прецизност във всеки детайл
-        </p>
+            <p className="font-sans text-sm sm:text-base font-light text-white/70 tracking-widest uppercase mb-10 animate-fade-up animate-delay-200">
+              До −{campaign.pct}% на часовници, бижута и крокодилска кожа
+            </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 animate-fade-up animate-delay-300">
-          <Link href="/watches" className="btn-primary min-w-[200px]">
-            Разгледай Часовници
-          </Link>
-          <Link href="/jewellery" className="btn-outline-light min-w-[200px]">
-            Разгледай Бижута
-          </Link>
-        </div>
+            <div className="flex flex-col sm:flex-row gap-4 animate-fade-up animate-delay-300">
+              <Link href="/namalenia" className="btn-primary min-w-[200px]">
+                Виж намаленията
+              </Link>
+              <Link href="/watches" className="btn-outline-light min-w-[200px]">
+                Разгледай часовници
+              </Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <h1 className="font-serif text-display-xl text-white mb-4 animate-fade-up animate-delay-100 text-balance">
+              Създадени да
+              <br />
+              <em className="not-italic text-white">впечатляват</em>
+            </h1>
+
+            <p className="font-sans text-sm sm:text-base font-light text-white/70 tracking-widest uppercase mb-10 animate-fade-up animate-delay-200">
+              Прецизност във всеки детайл
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 animate-fade-up animate-delay-300">
+              <Link href="/watches" className="btn-primary min-w-[200px]">
+                Разгледай Часовници
+              </Link>
+              <Link href="/jewellery" className="btn-outline-light min-w-[200px]">
+                Разгледай Бижута
+              </Link>
+            </div>
+          </>
+        )}
 
         {/* Rating pill */}
         <div className="mt-10 flex items-center gap-3 bg-white/8 backdrop-blur-sm border border-white/15 px-5 py-2.5 rounded-full animate-fade-up animate-delay-400">

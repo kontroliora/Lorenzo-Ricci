@@ -14,6 +14,7 @@ import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { soldOutLast } from "@/lib/sold-out-order";
 import { localizeProduct } from "@/lib/ro/catalog";
+import { campaignLabelRo, maxDiscountRounded } from "@/lib/sale-campaign";
 import { roEligible, fmtRON, RO_FREE_SHIPPING_RON, RO_DELIVERY_DAYS } from "@/lib/ro/config";
 import { RO_REVIEWS_NOTE } from "@/lib/ro/reviews-ro";
 
@@ -64,10 +65,13 @@ export default async function RoHomePage() {
   const flagshipProduct = catalog.find((p) => p.slug === FLAGSHIP_SLUG);
   const flagship = flagshipProduct ? toRoTile(flagshipProduct) : undefined;
   const testimonials = pickRoTestimonials();
+  // Campaign hero (same phase config and 5% rule as the Bulgarian banner/hero): the discount is the biggest live one among the products sold in Romania.
+  const salePct = maxDiscountRounded(catalog, soldOut);
+  const saleLabel = campaignLabelRo();
 
   return (
     <>
-      <RoHero />
+      <RoHero campaign={saleLabel && salePct >= 5 ? { label: saleLabel, pct: salePct } : null} />
       <RoFeaturedWatches watches={watches} />
       <RoLeatherSection products={leather} />
       {flagship && <RoMilanoAvorioFlagship product={flagship} />}

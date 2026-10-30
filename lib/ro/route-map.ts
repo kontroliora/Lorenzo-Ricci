@@ -6,6 +6,7 @@ const PAIRS: [bg: string, ro: string][] = [
   ["/jewellery", "/ro/bijuterii"],
   ["/leather-goods", "/ro/piele-de-crocodil"],
   ["/bundles", "/ro/seturi"],
+  ["/namalenia", "/ro/reduceri"],
   ["/story", "/ro/despre-noi"],
   ["/faq", "/ro/intrebari-frecvente"],
   ["/watch-manual", "/ro/ghid-ceas"],
