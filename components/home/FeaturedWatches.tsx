@@ -9,6 +9,8 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { useReveal } from "@/lib/useReveal";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
+import { useLeatherStock } from "@/lib/use-gifts";
+import { lowStockCount, savingsEur } from "@/lib/home-card-hints";
 import type { Product } from "@/lib/types";
 
 // Yachting is the new collection: its own block on top, the earlier models below -
@@ -95,7 +97,7 @@ function WatchGroup({ tag, title, subtitle, watches, priority = false }: {
       <div ref={gridRef} className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
         {watches.map((watch, i) => (
           <div key={watch.id} className={`reveal reveal-delay-${i + 1}`}>
-            <ProductCard product={watch} priority={priority && i < 2} learnMore />
+            <ProductCard product={watch} priority={priority && i < 2} learnMore homeHints />
           </div>
         ))}
       </div>
@@ -148,6 +150,9 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
 
   const active = watches[activeIndex];
   const activePrice = displayPrice(active, useCountry());
+  const stockMap = useLeatherStock(true);
+  const activeSaved = activePrice.original ? savingsEur(active) : null;
+  const activeLeft = active.inStock ? lowStockCount(stockMap?.[active.slug]) : null;
 
   return (
     <>
@@ -262,7 +267,7 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
         {/* Active watch info */}
         <div className="text-center px-6 mt-5">
           <h3 className="font-serif text-xl text-charcoal mb-1">{active.name}</h3>
-          <div className="flex items-baseline justify-center gap-3 mb-5">
+          <div className={`flex items-baseline justify-center gap-3 ${activeSaved !== null || activeLeft !== null ? "mb-1.5" : "mb-5"}`}>
             <span className="font-serif text-lg text-navy">
               {activePrice.text}
             </span>
@@ -272,6 +277,12 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
               </span>
             )}
           </div>
+          {activeSaved !== null && (
+            <p data-testid="home-savings" className={`font-sans text-[12px] leading-snug text-[#4E7D5B] ${activeLeft !== null ? "mb-1" : "mb-5"}`}>Спестявате €{activeSaved}</p>
+          )}
+          {activeLeft !== null && (
+            <p data-testid="home-low-stock" className="font-sans text-[11px] leading-snug tracking-wide text-ink-muted mb-5">Остават {activeLeft} бр.</p>
+          )}
           <Link href={`/products/${active.slug}`} className="btn-primary">
             Виж Детайли
           </Link>

@@ -7,6 +7,7 @@ import type { Product } from "@/lib/types";
 import { useRoCart } from "@/lib/ro/store";
 import { fmtRON, ronOf, ronOriginalOf, roNeedsPrepayment } from "@/lib/ro/config";
 import { useLeatherStock } from "@/lib/use-gifts";
+import { lowStockCount, savingsRon } from "@/lib/home-card-hints";
 import { hasCyrillic, roDisplayName, roSafeText } from "@/components/ro/listing/ro-display";
 
 // Romanian counterpart of components/product/ProductCard.tsx, shared by the home sections and the listings.
@@ -17,6 +18,8 @@ interface RoProductCardProps {
   product: Product;
   priority?: boolean;
   learnMore?: boolean;
+  /** Homepage only: "Economisiți N lei" under a discounted price and "Au mai rămas N buc." from the live stock (≤ 10). */
+  homeHints?: boolean;
 }
 
 /**
@@ -26,7 +29,7 @@ interface RoProductCardProps {
 export const roBadge = (badge?: string): string | undefined =>
   badge && !hasCyrillic(badge) ? badge : undefined;
 
-export function RoProductCard({ product, priority = false, learnMore = false }: RoProductCardProps) {
+export function RoProductCard({ product, priority = false, learnMore = false, homeHints = false }: RoProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const [added, setAdded] = useState(false);
   const [isNight, setIsNight] = useState(false);
@@ -44,6 +47,8 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
   const name = roDisplayName(product);
   const ron = ronOf(product);
   const ronOriginal = ronOriginalOf(product); // defined while on sale: crossed-out price in lei
+  const saved = homeHints ? savingsRon(product) : null;
+  const left = homeHints && !isSoldOut ? lowStockCount(liveStock) : null;
 
   // Night image for watches is always images[1]
   const nightImage = isWatch ? (product.images[1] ?? product.coverImage) : null;
@@ -228,6 +233,13 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
             </span>
           )}
         </div>
+
+        {saved !== null && !isSoldOut && (
+          <p data-testid="home-savings" className="mt-1 font-sans text-[12px] leading-snug text-[#4E7D5B]">Economisiți {fmtRON(saved)}</p>
+        )}
+        {left !== null && (
+          <p data-testid="home-low-stock" className="mt-1 font-sans text-[11px] leading-snug tracking-wide text-ink-muted">Au mai rămas {left} buc.</p>
+        )}
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { useLeatherStock } from "@/lib/use-gifts";
 import { fmtRON, ronOf, ronOriginalOf, RO_CATEGORY_LABEL } from "@/lib/ro/config";
 import type { ProductCategory } from "@/lib/types";
 import { safeText, type RoTileProduct } from "./ro-home-utils";
+import { lowStockCount, savingsRon } from "@/lib/home-card-hints";
 
 // Romanian counterpart of components/home/WalletsSection.tsx. Instead of a hard-coded list it renders the products the
 // page hands in (price-overridden, localized, Milano Avorio excluded: it has its own flagship section), so names,
@@ -18,10 +19,12 @@ const ROWS: { category: ProductCategory; cols: string; sizes: string }[] = [
   { category: "bags",        cols: "grid-cols-2 sm:grid-cols-5", sizes: "(max-width: 640px) 50vw, 20vw" },
 ];
 
-function LeatherCard({ product, sold, sizes }: { product: RoTileProduct; sold: boolean; sizes: string }) {
+function LeatherCard({ product, sold, sizes, live }: { product: RoTileProduct; sold: boolean; sizes: string; live?: number }) {
   const badge = safeText(product.badge);
   const sub = safeText(product.shortDescription);
   const oldRon = ronOriginalOf(product);
+  const saved = sold ? null : savingsRon(product);
+  const left = sold ? null : lowStockCount(live);
   return (
     <Link href={`/ro/produse/${product.slug}`} className="group flex flex-col">
       <div className="relative aspect-square bg-ivory-warm border border-border overflow-hidden">
@@ -61,6 +64,12 @@ function LeatherCard({ product, sold, sizes }: { product: RoTileProduct; sold: b
             <span className="font-sans text-[10px] text-ink-faint line-through ml-2">{fmtRON(oldRon)}</span>
           )}
         </p>
+        {saved !== null && (
+          <p data-testid="home-savings" className="font-sans text-[11px] sm:text-[12px] leading-snug text-[#4E7D5B] mt-0.5">Economisiți {fmtRON(saved)}</p>
+        )}
+        {left !== null && (
+          <p data-testid="home-low-stock" className="font-sans text-[10px] sm:text-[11px] leading-snug tracking-wide text-ink-muted mt-0.5">Au mai rămas {left} buc.</p>
+        )}
       </div>
     </Link>
   );
@@ -102,7 +111,7 @@ export function RoLeatherSection({ products }: { products: RoTileProduct[] }) {
               </div>
               <div className={`grid ${cols} gap-2 sm:gap-3`}>
                 {items.map((p) => (
-                  <LeatherCard key={p.id} product={p} sold={isSold(p)} sizes={sizes} />
+                  <LeatherCard key={p.id} product={p} sold={isSold(p)} sizes={sizes} live={stock?.[p.slug]} />
                 ))}
               </div>
             </div>

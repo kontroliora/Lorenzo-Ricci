@@ -8,15 +8,18 @@ import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
-import { useGiftFor } from "@/lib/use-gifts";
+import { useGiftFor, useLeatherStock } from "@/lib/use-gifts";
+import { lowStockCount, savingsEur } from "@/lib/home-card-hints";
 
 interface ProductCardProps {
   product: Product;
   priority?: boolean;
   learnMore?: boolean;
+  /** Homepage only: "Спестявате €N" under a discounted price and "Остават N бр." from the live stock (≤ 10). */
+  homeHints?: boolean;
 }
 
-export function ProductCard({ product, priority = false, learnMore = false }: ProductCardProps) {
+export function ProductCard({ product, priority = false, learnMore = false, homeHints = false }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const [added, setAdded] = useState(false);
   const [isNight, setIsNight] = useState(false);
@@ -41,6 +44,11 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
 
   const isWatch = product.category === "watches";
   const price = displayPrice(product, useCountry());
+
+  // Homepage hints (off everywhere else): savings only where the struck EUR price is shown, stock from the one shared batched call.
+  const stockMap = useLeatherStock(homeHints);
+  const saved = homeHints && price.original ? savingsEur(product) : null;
+  const left = homeHints && !isSoldOut ? lowStockCount(stockMap?.[product.slug]) : null;
 
   const productSummary = reviewSummary[product.slug];
   const reviewCount = productSummary?.count ?? 0;
@@ -233,6 +241,13 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
             </span>
           )}
         </div>
+
+        {saved !== null && (
+          <p data-testid="home-savings" className="mt-1 font-sans text-[12px] leading-snug text-[#4E7D5B]">Спестявате €{saved}</p>
+        )}
+        {left !== null && (
+          <p data-testid="home-low-stock" className="mt-1 font-sans text-[11px] leading-snug tracking-wide text-ink-muted">Остават {left} бр.</p>
+        )}
 
       </div>
     </div>

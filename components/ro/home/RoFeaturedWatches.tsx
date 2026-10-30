@@ -6,6 +6,8 @@ import { RoProductCard } from "@/components/ro/RoProductCard";
 import { useReveal } from "@/lib/useReveal";
 import { fmtRON, RO_FREE_SHIPPING_RON } from "@/lib/ro/config";
 import { ronOf, ronOriginalOf } from "@/lib/ro/config";
+import { useLeatherStock } from "@/lib/use-gifts";
+import { lowStockCount, savingsRon } from "@/lib/home-card-hints";
 import type { Product } from "@/lib/types";
 
 // Romanian counterpart of components/home/FeaturedWatches.tsx. The page hands in the watches already filtered
@@ -92,7 +94,7 @@ function WatchGroup({ tag, title, subtitle, watches, priority = false }: {
       <div ref={gridRef} className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
         {watches.map((watch, i) => (
           <div key={watch.id} className={`reveal reveal-delay-${i + 1}`}>
-            <RoProductCard product={watch} priority={priority && i < 2} learnMore />
+            <RoProductCard product={watch} priority={priority && i < 2} learnMore homeHints />
           </div>
         ))}
       </div>
@@ -145,6 +147,9 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
 
   const active = watches[activeIndex];
   const activeOldRon = ronOriginalOf(active);
+  const stockMap = useLeatherStock(true);
+  const activeSaved = savingsRon(active);
+  const activeLeft = active.inStock ? lowStockCount(stockMap?.[active.slug]) : null;
 
   return (
     <>
@@ -259,7 +264,7 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
         {/* Active watch info */}
         <div className="text-center px-6 mt-5">
           <h3 className="font-serif text-xl text-charcoal mb-1">{active.name}</h3>
-          <div className="flex items-baseline justify-center gap-3 mb-5">
+          <div className={`flex items-baseline justify-center gap-3 ${activeSaved !== null || activeLeft !== null ? "mb-1.5" : "mb-5"}`}>
             <span className="font-serif text-lg text-navy">
               {fmtRON(ronOf(active))}
             </span>
@@ -269,6 +274,12 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
               </span>
             )}
           </div>
+          {activeSaved !== null && (
+            <p data-testid="home-savings" className={`font-sans text-[12px] leading-snug text-[#4E7D5B] ${activeLeft !== null ? "mb-1" : "mb-5"}`}>Economisiți {fmtRON(activeSaved)}</p>
+          )}
+          {activeLeft !== null && (
+            <p data-testid="home-low-stock" className="font-sans text-[11px] leading-snug tracking-wide text-ink-muted mb-5">Au mai rămas {activeLeft} buc.</p>
+          )}
           <Link href={`/ro/produse/${active.slug}`} className="btn-primary">
             Vedeți detalii
           </Link>

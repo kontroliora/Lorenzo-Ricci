@@ -7,6 +7,8 @@ import { useReveal } from "@/lib/useReveal";
 import { getProductBySlug } from "@/lib/products";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
+import { useLeatherStock } from "@/lib/use-gifts";
+import { lowStockCount, savingsEur } from "@/lib/home-card-hints";
 
 type LeatherItem = { id: string; slug: string; name: string; sub: string; src: string };
 
@@ -41,6 +43,9 @@ function LeatherCard({ item, sold, sizes }: { item: LeatherItem; sold: boolean; 
   const country = useCountry();
   const product = getProductBySlug(item.slug);
   const price = product ? displayPrice(product, country) : null;
+  const stockMap = useLeatherStock(true);
+  const saved = product && price?.original ? savingsEur(product) : null;
+  const left = !sold ? lowStockCount(stockMap?.[item.slug]) : null;
   return (
     <Link href={`/products/${item.slug}`} className="group flex flex-col">
       <div className="relative aspect-square bg-ivory-warm border border-border overflow-hidden">
@@ -77,6 +82,12 @@ function LeatherCard({ item, sold, sizes }: { item: LeatherItem; sold: boolean; 
             {price.text}
             {price.original && <span className="font-sans text-[10px] text-ink-faint line-through ml-2">{price.original}</span>}
           </p>
+        )}
+        {saved !== null && !sold && (
+          <p data-testid="home-savings" className="font-sans text-[11px] sm:text-[12px] leading-snug text-[#4E7D5B] mt-0.5">Спестявате €{saved}</p>
+        )}
+        {left !== null && (
+          <p data-testid="home-low-stock" className="font-sans text-[10px] sm:text-[11px] leading-snug tracking-wide text-ink-muted mt-0.5">Остават {left} бр.</p>
         )}
       </div>
     </Link>
