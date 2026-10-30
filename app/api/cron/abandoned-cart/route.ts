@@ -5,6 +5,9 @@ import { buildRecoveryEmail, type RecoverySession } from "@/lib/recovery-email";
 import { buildRoRecoveryEmail, roRecoverySubject, type RoRecoverySession } from "@/lib/ro/recovery-email";
 import { langOf, mayEmail } from "@/lib/mail-policy";
 import { getSuppressedEmails } from "@/lib/marketing-suppression";
+import { getProductBySlug } from "@/lib/products";
+import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
+import { repriceBgRecovery, repriceRoRecovery } from "@/lib/recovery-reprice";
 
 // mail-policy: abandoned_cart
 
@@ -72,6 +75,14 @@ export async function GET(req: NextRequest) {
   const sessionEmails = (sessions as unknown as { email: string }[]).map((s) => s.email.toLowerCase().trim());
   const unsubSet = await getSuppressedEmails(sessionEmails);
 
+  // The saved lines carry the prices of the day the cart was saved: the e-mail shows today's prices instead (catalogue +
+  // price overrides, switched-off products dropped), like the restore link does (lib/recovery-reprice.ts).
+  const overrides = await getPriceOverrides();
+  const findProduct = (slug: string) => {
+    const p = getProductBySlug(slug);
+    return p ? applyOverride(p, overrides) : undefined;
+  };
+
   const resend = new Resend(resendKey);
   let sent = 0;
 
@@ -89,12 +100,19 @@ export async function GET(req: NextRequest) {
     const ro = lang === "ro";
     if (!mayEmail("abandoned_cart", lang, ro ? "ro" : "bg")) continue;
     if (ro && session.recovery_consent !== true) continue;
+    const live = ro ? repriceRoRecovery(session.items, findProduct) : repriceBgRecovery(session.items, findProduct);
+    if (!live) {
+      console.log(`[AbandonedCart] Nothing orderable left in ${session.session_id}`);
+      continue;
+    }
     try {
       const { error: emailError } = await resend.emails.send({
         from:    "Lorenzo Ricci <info@lorenzo-ricci.com>",
         to:      session.email,
         subject: ro ? roRecoverySubject : "Вашата количка ви очаква — Lorenzo Ricci",
-        html:    ro ? buildRoRecoveryEmail(session as unknown as RoRecoverySession) : buildRecoveryEmail(session),
+        html:    ro
+          ? buildRoRecoveryEmail({ ...(session as unknown as RoRecoverySession), ...live } as RoRecoverySession)
+          : buildRecoveryEmail({ ...session, ...live } as RecoverySession),
       });
 
       if (emailError) {
