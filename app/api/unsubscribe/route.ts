@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { verifyUnsubscribe } from "@/lib/unsubscribe-token";
@@ -72,11 +73,29 @@ export async function POST(req: NextRequest) {
   const email = verifyUnsubscribe(p.get("e"), p.get("t"));
   if (!email) return BAD(lang);
 
-  const { error } = await supabaseAdmin()
+  const sb = supabaseAdmin();
+  const now = new Date().toISOString();
+  const { data: updated, error } = await sb
     .from("newsletter_subscribers")
-    .update({ unsubscribed_at: new Date().toISOString() })
+    .update({ unsubscribed_at: now })
     .eq("email", email)
-    .is("unsubscribed_at", null);
+    .is("unsubscribed_at", null)
+    .select("id");
+  // Customers who ticked e-mail marketing at checkout are mailed without being in newsletter_subscribers. Nothing to update for
+  // them, so record the opt-out as a row of its own (code_used = true: the placeholder promo code can never be redeemed). Without
+  // this their unsubscribe would be a silent no-op and getSuppressedEmails() would never see it.
+  if (!error && !updated?.length) {
+    const { data: exists } = await sb.from("newsletter_subscribers").select("id").eq("email", email).limit(1);
+    if (!exists?.length) {
+      const { error: insErr } = await sb.from("newsletter_subscribers").insert({
+        email, promo_code: `UNSUB-${randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()}`, code_used: true, unsubscribed_at: now,
+      });
+      if (insErr) {
+        console.error("[Unsubscribe] insert failed:", insErr.message);
+        return page(lang, TEXT[lang].errTitle, TEXT[lang].errText, undefined, 500);
+      }
+    }
+  }
   if (error) {
     console.error("[Unsubscribe] update failed:", error.message);
     return page(lang, TEXT[lang].errTitle, TEXT[lang].errText, undefined, 500);
