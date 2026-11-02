@@ -1085,10 +1085,12 @@ export const products: Product[] = [
       { label: "Цвят", value: "Червен (Cremisi)" },
       { label: "Размери", value: "" }, // empty → row hidden until the owner gives real measurements
     ],
-    coverImage: { src: `/Products/wallets/Cremisi/kardholder-cremisi-cherven-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Cremisi червен кардхолдър крокодилска кожа - преден изглед' },
+    // Gallery replaced 2026-11-03 with the new red batch (front, back, lifestyle).
+    coverImage: { src: `/Products/wallets/Cremisi/kardholder-cremisi-cherven-krokodilska-kozha-v2.webp`, alt: 'Lorenzo Ricci Cremisi червен кардхолдър крокодилска кожа - преден изглед' },
     images: [
-      { src: `/Products/wallets/Cremisi/kardholder-cremisi-cherven-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Cremisi червен кардхолдър крокодилска кожа - преден изглед' },
-      { src: `/Products/wallets/Cremisi/kardholder-cremisi-zaden-izgled.webp`, alt: 'Lorenzo Ricci Cremisi - заден изглед, отделения за карти' },
+      { src: `/Products/wallets/Cremisi/kardholder-cremisi-cherven-krokodilska-kozha-v2.webp`, alt: 'Lorenzo Ricci Cremisi червен кардхолдър крокодилска кожа - преден изглед' },
+      { src: `/Products/wallets/Cremisi/kardholder-cremisi-zaden-izgled-v2.webp`, alt: 'Lorenzo Ricci Cremisi - заден изглед, отделения за карти' },
+      { src: `/Products/wallets/Cremisi/kardholder-cremisi-lifestyle-v2.webp`, alt: 'Lorenzo Ricci Cremisi червен кардхолдър - лайфстайл снимка' },
     ],
   },
   {
@@ -1159,6 +1161,43 @@ export const products: Product[] = [
     images: [
       { src: `/Products/wallets/Topazio/kardholder-topazio-zhalt-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Topazio жълт кардхолдър крокодилска кожа - преден изглед' },
       { src: `/Products/wallets/Topazio/kardholder-topazio-zaden-izgled.webp`, alt: 'Lorenzo Ricci Topazio - заден изглед, отделения за карти' },
+    ],
+  },
+  // Added 2026-11-03. Same rules as the 2026-09-27 batch: NO CITES permit number, no AED price, gallery front first.
+  // €39 (struck €65), unlike the €34 of the other cardholders (owner, 2026-11-03). Stock 30 (wallet_inventory_marina_2026-11-03.sql).
+  {
+    id: "cardholder-marina",
+    slug: "cardholder-marina",
+    sku: "CRD-MAR",
+    name: 'Lorenzo Ricci "Marina"',
+    category: "cardholders",
+    price: 39,
+    originalPrice: 65,
+    currency: "€",
+    inStock: true,
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
+    stock: 30,
+    warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
+    shortDescription: "Син кардхолдър от крокодилска кожа",
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
+    materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
+    features: [
+      "100% естествена крокодилска кожа",
+      "Ръчна изработка - всяко изделие е уникално",
+    ],
+    specs: [
+      { label: "Материал", value: "100% Крокодилска кожа" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
+      { label: "Изработка", value: "Ръчна" },
+      { label: "Цвят", value: "Син (Marina)" },
+      { label: "Размери", value: "" }, // empty → row hidden until the owner gives real measurements
+    ],
+    coverImage: { src: `/Products/wallets/Marina/kardholder-marina-sin-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Marina син кардхолдър крокодилска кожа - преден изглед' },
+    images: [
+      { src: `/Products/wallets/Marina/kardholder-marina-sin-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Marina син кардхолдър крокодилска кожа - преден изглед' },
+      { src: `/Products/wallets/Marina/kardholder-marina-zaden-izgled.webp`, alt: 'Lorenzo Ricci Marina - заден изглед, отделения за карти' },
+      { src: `/Products/wallets/Marina/kardholder-marina-lifestyle.webp`, alt: 'Lorenzo Ricci Marina син кардхолдър - лайфстайл снимка' },
     ],
   },
   // ─── BAGS ───────────────────────────────────────────────────────────────────

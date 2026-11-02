@@ -102,6 +102,7 @@ const CARDHOLDER_VARIANTS = [
   { slug: "cardholder-cremisi",   label: "Cremisi - Червен",   color: "#BD0F1A", inStock: true },
   { slug: "cardholder-perla",     label: "Perla - Сив",        color: "#A99B8F", inStock: true },
   { slug: "cardholder-topazio",   label: "Topazio - Жълт",     color: "#E4AB05", inStock: true },
+  { slug: "cardholder-marina",    label: "Marina - Син",       color: "#1B5A80", inStock: true },
 ];
 
 // Evening clutches (the Milano Avorio bag is a one-off and has no siblings).
@@ -155,7 +156,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       : null;
 
   // Small colour groups (watches, wallets: 3): warm the other colours' main photo
-  // once the page has settled. Big groups (cardholders: 9) only on touch/hover,
+  // once the page has settled. Big groups (cardholders: 10) only on touch/hover,
   // so a phone doesn't download eight large photos it may never look at.
   useEffect(() => {
     if (!variants || variants.length > 4) return;

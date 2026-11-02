@@ -689,6 +689,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     imageAlts: [
       "Port-card roșu din piele de crocodil Lorenzo Ricci Cremisi - vedere frontală",
       "Lorenzo Ricci Cremisi - vedere din spate, compartimente pentru carduri",
+      "Port-card roșu din piele de crocodil Lorenzo Ricci Cremisi - fotografie lifestyle",
     ],
   },
   "cardholder-perla": {
@@ -719,6 +720,22 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     imageAlts: [
       "Port-card galben din piele de crocodil Lorenzo Ricci Topazio - vedere frontală",
       "Lorenzo Ricci Topazio - vedere din spate, compartimente pentru carduri",
+    ],
+  },
+  "cardholder-marina": {
+    badge: BADGE_EARLY_BF,
+    warranty: WARRANTY_NONE,
+    shortDescription: "Port-card albastru din piele de crocodil",
+    description: LEATHER_DESC,
+    materialNote: LEATHER_NOTE,
+    crocodileSpecies: SIAMESE,
+    features: LEATHER_FEATURES,
+    specs: specsNoCites("Albastru (Marina)"),
+    coverAlt: "Port-card albastru din piele de crocodil Lorenzo Ricci Marina - vedere frontală",
+    imageAlts: [
+      "Port-card albastru din piele de crocodil Lorenzo Ricci Marina - vedere frontală",
+      "Lorenzo Ricci Marina - vedere din spate, compartimente pentru carduri",
+      "Port-card albastru din piele de crocodil Lorenzo Ricci Marina - fotografie lifestyle",
     ],
   },
 

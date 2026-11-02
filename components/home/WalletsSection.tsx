@@ -26,9 +26,10 @@ const CARDHOLDERS: LeatherItem[] = [
   // 2026-09-27 batch (counts in wallet_inventory_restock_2026-09-27.sql).
   { id: "onice",     slug: "cardholder-onice",     name: 'Lorenzo Ricci "Onice"',     sub: "Черен кардхолдър от крокодилска кожа",      src: `/Products/wallets/Onice/kardholder-onice-cheren-krokodilska-kozha.webp` },
   { id: "giada",     slug: "cardholder-giada",     name: 'Lorenzo Ricci "Giada"',     sub: "Тъмнозелен кардхолдър от крокодилска кожа", src: `/Products/wallets/Giada/kardholder-giada-zelen-krokodilska-kozha.webp` },
-  { id: "cremisi",   slug: "cardholder-cremisi",   name: 'Lorenzo Ricci "Cremisi"',   sub: "Червен кардхолдър от крокодилска кожа",     src: `/Products/wallets/Cremisi/kardholder-cremisi-cherven-krokodilska-kozha.webp` },
+  { id: "cremisi",   slug: "cardholder-cremisi",   name: 'Lorenzo Ricci "Cremisi"',   sub: "Червен кардхолдър от крокодилска кожа",     src: `/Products/wallets/Cremisi/kardholder-cremisi-cherven-krokodilska-kozha-v2.webp` },
   { id: "perla",     slug: "cardholder-perla",     name: 'Lorenzo Ricci "Perla"',     sub: "Сив кардхолдър от крокодилска кожа",        src: `/Products/wallets/Perla/kardholder-perla-siv-krokodilska-kozha.webp` },
   { id: "topazio",   slug: "cardholder-topazio",   name: 'Lorenzo Ricci "Topazio"',   sub: "Жълт кардхолдър от крокодилска кожа",       src: `/Products/wallets/Topazio/kardholder-topazio-zhalt-krokodilska-kozha.webp` },
+  { id: "marina",    slug: "cardholder-marina",    name: 'Lorenzo Ricci "Marina"',    sub: "Син кардхолдър от крокодилска кожа",        src: `/Products/wallets/Marina/kardholder-marina-sin-krokodilska-kozha.webp` },
 ];
 
 const CLUTCHES: LeatherItem[] = [
