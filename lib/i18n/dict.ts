@@ -20,7 +20,7 @@ const bg = {
   "nav.home":     "Начало",
   "nav.watches":  "Часовници",
   "nav.jewellery":"Бижута",
-  "nav.leather":  "Кожени Изделия",
+  "nav.leather":  "Кожени изделия",
   "nav.story":    "История",
   "nav.faq":      "FAQ",
   "nav.menu":     "Меню",

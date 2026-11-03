@@ -42,7 +42,7 @@ export function Header() {
 
               <NavLink href="/jewellery">Бижута</NavLink>
 
-              <NavLink href="/leather-goods">Кожени Изделия</NavLink>
+              <NavLink href="/leather-goods">Кожени изделия</NavLink>
             </div>
           </div>
 
@@ -123,7 +123,7 @@ export function Header() {
 
               {/* Rest */}
               {([
-                { href: "/leather-goods", label: "Кожени Изделия" },
+                { href: "/leather-goods", label: "Кожени изделия" },
                 { href: "/story",         label: "История" },
                 { href: "/faq",           label: "FAQ" },
               ] as const).map(({ href, label }) => (

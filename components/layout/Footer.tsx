@@ -35,7 +35,7 @@ export function Footer() {
               <FooterLink href="/jewellery">Бижута</FooterLink>
               <FooterLink href="/jewellery#bracelets">Гривни</FooterLink>
               <FooterLink href="/jewellery#necklaces">Колиета</FooterLink>
-              <FooterLink href="/leather-goods">Кожени Изделия</FooterLink>
+              <FooterLink href="/leather-goods">Кожени изделия</FooterLink>
             </div>
           </div>
 

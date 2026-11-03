@@ -6,9 +6,9 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 
 export const metadata: Metadata = {
-  title: "Кожени Изделия",
+  title: "Кожени изделия",
   description:
-    "Lorenzo Ricci кожени аксесоари - портфейли и кардхолдъри от 100% крокодилска кожа Crocodylus Siamensis. CITES сертифициран произход. Ръчна изработка.",
+    "Lorenzo Ricci кожени изделия - портфейли и кардхолдъри от 100% крокодилска кожа Crocodylus Siamensis. CITES сертифициран произход. Ръчна изработка.",
 };
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
@@ -43,7 +43,7 @@ export default async function LeatherGoodsPage() {
           <p className="font-sans text-[10px] font-light tracking-[0.32em] uppercase text-white/40 mb-5">
             Crocodylus Siamensis
           </p>
-          <h1 className="font-serif text-display-lg text-white mb-5">Кожени Изделия</h1>
+          <h1 className="font-serif text-display-lg text-white mb-5">Кожени изделия</h1>
           <div className="w-10 h-px bg-white/20 mx-auto my-5" />
           <p className="font-sans text-xs font-light text-white/45 max-w-md mx-auto leading-relaxed tracking-widest uppercase">
             100% Крокодилска Кожа · CITES Сертифициран · Ръчна Изработка
