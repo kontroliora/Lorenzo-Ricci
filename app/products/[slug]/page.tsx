@@ -53,8 +53,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!product) return {};
   // Matches the checkout: prepayment items are arranged directly with us (no specific method promised).
   const paymentNote = requiresPrepayment(product) ? "Поръчка с предплащане." : CARD_PAYMENTS_ENABLED ? "Плащане с карта (−5%) или наложен платеж." : "Наложен платеж.";
+  // Watches get their own keywords (the site-wide list in app/layout.tsx names jewellery, 18K PVD and other models):
+  // the model and what its own specs say.
+  const movement = product.specs.find((s) => s.label === "Механизъм")?.value ?? "";
+  const keywords = product.category === "watches"
+    ? ["Lorenzo Ricci", product.name, "луксозен часовник", ...(/хронограф/i.test(movement) ? ["хронограф"] : []), "японски кварцов механизъм", "сапфирено стъкло", "5 ATM"]
+    : undefined;
   return {
     title: product.name,
+    ...(keywords && { keywords }),
     description: `${product.name} - ${product.shortDescription}. ${product.currency}${product.price}. ${product.warranty ? `${product.warranty}. ` : ""}Безплатна доставка над €60. ${paymentNote}`,
     openGraph: {
       title: `${product.name} | Lorenzo Ricci`,

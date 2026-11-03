@@ -21,6 +21,8 @@ const priceNote =
 
 export const metadata: Metadata = {
   title: "Часовници",
+  // Watches only (the site-wide list in app/layout.tsx also names jewellery and 18K PVD).
+  keywords: ["Lorenzo Ricci", "луксозни часовници", "хронограф", "японски кварцов механизъм", "сапфирено стъкло", "5 ATM", "Yachting", "Chrono Black", "Golden Eclipse", "Polar Frost"],
   description: `Lorenzo Ricci колекция часовници - Chrono Black, Golden Eclipse, Polar Frost. Сапфирен кристал, японски механизъм, 5 ATM. ${priceNote}`,
 };
 

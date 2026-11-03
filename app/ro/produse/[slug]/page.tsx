@@ -111,8 +111,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description =
     `${product.name}${tagline ? ` - ${tagline}` : ""}. ${fmtRON(ronOf(product))}. ${warranty ? `${warranty}. ` : ""}` +
     `Livrare gratuită de la ${fmtRON(RO_FREE_SHIPPING_RON)}. ${paymentNote}`;
+  // Watches get their own keywords (otherwise the Bulgarian site-wide list of app/layout.tsx applies): the model and its own specs.
+  const movement = product.specs.find((s) => s.label === "Mecanism")?.value ?? "";
+  const keywords = product.category === "watches"
+    ? ["Lorenzo Ricci", product.name, "ceas de lux", ...(/cronograf/i.test(movement) ? ["cronograf"] : []), "mecanism quartz japonez", "sticlă safir", "5 ATM"]
+    : undefined;
   return {
     title: product.name,
+    ...(keywords && { keywords }),
     description,
     alternates: {
       canonical: url,
