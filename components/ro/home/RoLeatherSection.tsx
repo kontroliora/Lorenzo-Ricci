@@ -6,7 +6,7 @@ import { useLeatherStock } from "@/lib/use-gifts";
 import { fmtRON, ronOf, ronOriginalOf, RO_CATEGORY_LABEL } from "@/lib/ro/config";
 import type { ProductCategory } from "@/lib/types";
 import { safeText, type RoTileProduct } from "./ro-home-utils";
-import { lowStockCount, savingsRon } from "@/lib/home-card-hints";
+import { lowStockCount, savingsRon, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
 
 // Romanian counterpart of components/home/WalletsSection.tsx. Instead of a hard-coded list it renders the products the
 // page hands in (price-overridden, localized, Milano Avorio excluded: it has its own flagship section), so names,
@@ -50,25 +50,25 @@ function LeatherCard({ product, sold, sizes, live }: { product: RoTileProduct; s
         )}
       </div>
       <div className="pt-2 sm:pt-3">
-        <h3 className={`font-serif text-sm sm:text-base leading-snug ${sold ? "text-ink-faint" : "text-charcoal group-hover:text-navy transition-colors duration-200"}`}>
+        <h3 className={`font-serif text-sm sm:text-base leading-snug ${sold ? "text-ink-muted" : "text-charcoal group-hover:text-navy transition-colors duration-200"}`}>
           {product.name}
         </h3>
         {(sold || sub) && (
-          <p className="font-sans text-[10px] text-ink-muted mt-0.5 tracking-wide">
+          <p className="font-sans text-[11px] text-ink-muted mt-0.5 tracking-wide">
             {sold ? "Epuizat" : sub}
           </p>
         )}
-        <p className={`font-serif text-sm sm:text-base mt-1 ${sold ? "text-ink-faint" : "text-navy"}`}>
+        <p className={`font-serif text-sm sm:text-base mt-1 ${sold ? "text-ink-muted" : "text-navy"}`}>
           {fmtRON(ronOf(product))}
           {oldRon !== undefined && (
-            <span className="font-sans text-[10px] text-ink-faint line-through ml-2">{fmtRON(oldRon)}</span>
+            <span className="font-sans text-[11px] text-ink-muted line-through ml-2">{fmtRON(oldRon)}</span>
           )}
         </p>
-        {saved !== null && (
-          <p data-testid="home-savings" className="font-sans text-[11px] sm:text-[12px] leading-snug text-[#4E7D5B] mt-0.5">Economisiți {fmtRON(saved)}</p>
+        {saved !== null && !sold && (
+          <p data-testid="home-savings" className={`mt-0.5 ${CARD_SAVINGS_CLASS}`}>Economisiți {fmtRON(saved)}</p>
         )}
         {left !== null && (
-          <p data-testid="home-low-stock" className="font-sans text-[10px] sm:text-[11px] leading-snug tracking-wide text-ink-muted mt-0.5">Au mai rămas {left} buc.</p>
+          <p data-testid="home-low-stock" className={`mt-0.5 ${CARD_LOW_STOCK_CLASS}`}>Au mai rămas {left} buc.</p>
         )}
       </div>
     </Link>

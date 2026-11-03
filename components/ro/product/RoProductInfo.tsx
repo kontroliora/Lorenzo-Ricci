@@ -26,7 +26,9 @@ import { PayLine, CodLine } from "@/components/product/CodNote";
 import { roCartLine } from "@/components/ro/product/cart-line";
 import { hasCyrillic, roReviewsCount, roRatingText } from "@/components/ro/product/ro-text";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
-import { PAGE_LOW_STOCK_MAX } from "@/lib/home-card-hints";
+import { PAGE_LOW_STOCK_MAX, savingsRon } from "@/lib/home-card-hints";
+import { campaignLabelRo } from "@/lib/sale-campaign";
+import { SavingsLine, DeliveryLine } from "@/components/product/PriceExtras";
 
 // A colour swatch reads as sold out when its product is switched off in
 // lib/products.ts (inStock: false - the owner's single on/off switch); the
@@ -238,6 +240,9 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   const effectiveInStock = product.inStock && (liveStock === null || liveStock > 0);
   // What the stock hint shows: a switched-off product reads as 0 ("Stoc epuizat").
   const shownCount = product.inStock ? liveStock : 0;
+  // Under the price: the saving in whole lei (not on a sold-out product) with the running campaign's badge.
+  const saved = effectiveInStock ? savingsRon(product) : null;
+  const campaign = campaignLabelRo();
 
   // Cap the cart quantity at the LIVE stock (not the static products.ts value), so the +/- stepper and re-adds
   // can't exceed what we hold.
@@ -290,7 +295,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   return (
     <div className="flex flex-col gap-6">
       {/* Category */}
-      <p className="font-sans text-[10px] text-ink-faint tracking-widest uppercase">
+      <p className="font-sans text-[10px] text-ink-muted tracking-widest uppercase">
         {categoryLabel(product)} / {product.name}
       </p>
 
@@ -302,7 +307,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           </span>
         )}
         <h1 className="font-serif text-display-md text-charcoal leading-tight">{product.name}</h1>
-        <p className="font-sans text-[10px] text-ink-faint tracking-[0.2em] mt-1.5">
+        <p className="font-sans text-[10px] text-ink-muted tracking-[0.2em] mt-1.5">
           Art. {product.sku}
         </p>
       </div>
@@ -310,7 +315,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
       {/* Color variant selector - watches, wallets, cardholders, clutches */}
       {variants.length > 1 && (
         <div className="flex items-center gap-3">
-          <span className="font-sans text-[10px] text-ink-faint tracking-widest uppercase">Culoare:</span>
+          <span className="font-sans text-[10px] text-ink-muted tracking-widest uppercase">Culoare:</span>
           <div className="flex items-center gap-2 max-[373px]:flex-wrap">
             {variants.map((v) => (
               <Link
@@ -360,16 +365,24 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
       )}
 
       {/* Price (lei). Sale: the old price crossed out - the same sale as on the Bulgarian site, converted the same way. */}
-      <div className="flex items-baseline gap-4 py-5 border-y border-border">
-        <span className="font-serif text-4xl text-navy">
-          {fmtRON(ron)}
-        </span>
-        {originalRon !== undefined && (
-          <del className="font-sans text-lg text-ink-faint line-through">
-            {fmtRON(originalRon)}
-          </del>
-        )}
+      <div className="py-5 border-y border-border">
+        <div className="flex items-baseline gap-4">
+          <span className="font-serif text-4xl text-navy">
+            {fmtRON(ron)}
+          </span>
+          {originalRon !== undefined && (
+            <del className="font-sans text-lg text-ink-muted line-through">
+              {fmtRON(originalRon)}
+            </del>
+          )}
+        </div>
+        {saved !== null && <SavingsLine text={`Economisiți ${fmtRON(saved)}`} campaign={campaign} />}
       </div>
+
+      {/* Delivery in one line, right under the price (no inspection before paying: the Romanian shop is card only) */}
+      {effectiveInStock && (
+        <DeliveryLine text={`Livrare gratuită peste ${fmtRON(RO_FREE_SHIPPING_RON)} · Livrare în ${RO_DELIVERY_DAYS.replace("-", "–")} zile lucrătoare`} />
+      )}
 
       {/* Card payment, said under the price (not for a prepayment product) */}
       {effectiveInStock && !prepay && (
@@ -383,8 +396,8 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         <div className="flex items-center gap-2">
           {shownCount === 0 ? (
             <>
-              <span className="text-ink-faint text-xs">◈</span>
-              <span className="font-sans text-[11px] text-ink-faint tracking-wide">Stoc epuizat</span>
+              <span className="text-ink-muted text-xs">◈</span>
+              <span className="font-sans text-[11px] text-ink-muted tracking-wide">Stoc epuizat</span>
             </>
           ) : product.slug === ONE_OF_ONE_SLUG ? (
             // A one-of-one is limited, not "running out".
@@ -395,7 +408,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           ) : (
             <>
               <span className="text-amber-600/80 text-xs">◈</span>
-              <span className="font-sans text-[11px] text-amber-700/90 tracking-wide font-medium">
+              <span className="font-sans text-[11px] text-amber-700 tracking-wide font-medium">
                 {shownCount === 1 ? "Ultima bucată rămasă" : `Au mai rămas doar ${shownCount} bucăți`}
               </span>
             </>
@@ -438,7 +451,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         className={`w-full justify-center text-center ${
           effectiveInStock
             ? "btn-primary"
-            : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-faint border border-border cursor-not-allowed"
+            : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-muted border border-border cursor-not-allowed"
         }`}
       >
         {!effectiveInStock
@@ -468,7 +481,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           } ${isLoneLast ? "col-span-2" : ""}`;
           const inner = (
             <>
-              <Icon className="w-4 h-4 text-ink-faint flex-shrink-0" strokeWidth={1.5} />
+              <Icon className="w-4 h-4 text-ink-muted flex-shrink-0" strokeWidth={1.5} />
               <p className={`font-sans text-[11px] font-light tracking-wide leading-snug ${
                 href ? "text-navy border-b border-transparent hover:border-navy/30 transition-colors duration-200" : "text-ink-soft"
               }`}>
@@ -498,7 +511,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
               className={`font-sans text-[11px] tracking-widest uppercase px-4 py-3 max-[373px]:px-2.5 max-[373px]:tracking-wider max-[349px]:px-2 max-[349px]:text-[10px] transition-all duration-200 ${
                 activeTab === tab
                   ? "text-charcoal border-b-2 border-navy -mb-px"
-                  : "text-ink-faint hover:text-ink-soft"
+                  : "text-ink-muted hover:text-ink-soft"
               }`}
             >
               {tab === "description" ? "Descriere" : tab === "specs" ? "Specificații" : "Livrare"}
@@ -547,7 +560,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
                   a placeholder. */}
               {product.specs.filter(({ value }) => value.trim() !== "").map(({ label, value }) => (
                 <div key={label} className="flex justify-between py-2 border-b border-border">
-                  <span className="font-sans text-[11px] text-ink-faint tracking-wide uppercase">{label}</span>
+                  <span className="font-sans text-[11px] text-ink-muted tracking-wide uppercase">{label}</span>
                   <span className="font-sans text-sm font-light text-charcoal text-right max-w-[60%]">{value}</span>
                 </div>
               ))}

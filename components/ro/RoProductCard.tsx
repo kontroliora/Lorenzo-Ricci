@@ -7,7 +7,7 @@ import type { Product } from "@/lib/types";
 import { useRoCart } from "@/lib/ro/store";
 import { fmtRON, ronOf, ronOriginalOf, roNeedsPrepayment } from "@/lib/ro/config";
 import { useLeatherStock } from "@/lib/use-gifts";
-import { lowStockCount, savingsRon } from "@/lib/home-card-hints";
+import { lowStockCount, savingsRon, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
 import { hasCyrillic, roDisplayName, roSafeText } from "@/components/ro/listing/ro-display";
 
 // Romanian counterpart of components/product/ProductCard.tsx, shared by the home sections and the listings.
@@ -223,11 +223,11 @@ export function RoProductCard({ product, priority = false, learnMore = false, ho
         </Link>
 
         <div className="mt-auto flex items-center gap-3">
-          <span className={`font-serif text-xl ${isSoldOut ? "text-ink-faint" : "text-navy"}`}>
+          <span className={`font-serif text-xl ${isSoldOut ? "text-ink-muted" : "text-navy"}`}>
             {fmtRON(ron)}
           </span>
           {ronOriginal !== undefined && (
-            <span className="font-sans text-xs text-ink-faint line-through">
+            <span className="font-sans text-xs text-ink-muted line-through">
               <span className="sr-only">Preț inițial: </span>
               {fmtRON(ronOriginal)}
             </span>
@@ -235,10 +235,10 @@ export function RoProductCard({ product, priority = false, learnMore = false, ho
         </div>
 
         {saved !== null && !isSoldOut && (
-          <p data-testid="home-savings" className="mt-1 font-sans text-[12px] leading-snug text-[#4E7D5B]">Economisiți {fmtRON(saved)}</p>
+          <p data-testid="home-savings" className={`mt-1 ${CARD_SAVINGS_CLASS}`}>Economisiți {fmtRON(saved)}</p>
         )}
         {left !== null && (
-          <p data-testid="home-low-stock" className="mt-1 font-sans text-[11px] leading-snug tracking-wide text-ink-muted">Au mai rămas {left} buc.</p>
+          <p data-testid="home-low-stock" className={`mt-1 ${CARD_LOW_STOCK_CLASS}`}>Au mai rămas {left} buc.</p>
         )}
       </div>
     </div>

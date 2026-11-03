@@ -43,7 +43,7 @@ const config: Config = {
         ink: {
           DEFAULT: "#1A1A1A",
           soft: "#444444",
-          muted: "#777777",
+          muted: "#6B6B6B", // WCAG AA for small text: 5.3 on white, 5.1 on ivory, 4.8 on ivory-warm (#777 was 4.5/4.3/4.0)
           faint: "#AAAAAA",
         },
         // Borders

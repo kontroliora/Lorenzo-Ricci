@@ -8,7 +8,7 @@ import { getProductBySlug } from "@/lib/products";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
 import { useLeatherStock } from "@/lib/use-gifts";
-import { lowStockCount, savingsEur } from "@/lib/home-card-hints";
+import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
 
 type LeatherItem = { id: string; slug: string; name: string; sub: string; src: string };
 
@@ -73,23 +73,23 @@ function LeatherCard({ item, sold, sizes }: { item: LeatherItem; sold: boolean; 
         )}
       </div>
       <div className="pt-2 sm:pt-3">
-        <h3 className={`font-serif text-sm sm:text-base leading-snug ${sold ? "text-ink-faint" : "text-charcoal group-hover:text-navy transition-colors duration-200"}`}>
+        <h3 className={`font-serif text-sm sm:text-base leading-snug ${sold ? "text-ink-muted" : "text-charcoal group-hover:text-navy transition-colors duration-200"}`}>
           {item.name}
         </h3>
-        <p className="font-sans text-[10px] text-ink-muted mt-0.5 tracking-wide">
+        <p className="font-sans text-[11px] text-ink-muted mt-0.5 tracking-wide">
           {sold ? "Изчерпан" : item.sub}
         </p>
         {price && (
-          <p className={`font-serif text-sm sm:text-base mt-1 ${sold ? "text-ink-faint" : "text-navy"}`}>
+          <p className={`font-serif text-sm sm:text-base mt-1 ${sold ? "text-ink-muted" : "text-navy"}`}>
             {price.text}
-            {price.original && <span className="font-sans text-[10px] text-ink-faint line-through ml-2">{price.original}</span>}
+            {price.original && <span className="font-sans text-[11px] text-ink-muted line-through ml-2">{price.original}</span>}
           </p>
         )}
         {saved !== null && !sold && (
-          <p data-testid="home-savings" className="font-sans text-[11px] sm:text-[12px] leading-snug text-[#4E7D5B] mt-0.5">Спестявате €{saved}</p>
+          <p data-testid="home-savings" className={`mt-0.5 ${CARD_SAVINGS_CLASS}`}>Спестявате €{saved}</p>
         )}
         {left !== null && (
-          <p data-testid="home-low-stock" className="font-sans text-[10px] sm:text-[11px] leading-snug tracking-wide text-ink-muted mt-0.5">Остават {left} бр.</p>
+          <p data-testid="home-low-stock" className={`mt-0.5 ${CARD_LOW_STOCK_CLASS}`}>Остават {left} бр.</p>
         )}
       </div>
     </Link>

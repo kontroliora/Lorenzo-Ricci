@@ -13,7 +13,10 @@ import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { GiftOffer } from "@/components/product/GiftOffer";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { getProductBySlug } from "@/lib/products";
-import { PAGE_LOW_STOCK_MAX } from "@/lib/home-card-hints";
+import { PAGE_LOW_STOCK_MAX, savingsEur } from "@/lib/home-card-hints";
+import { campaignLabel } from "@/lib/sale-campaign";
+import { BG_FREE_SHIPPING_EUR } from "@/lib/shipping-rules";
+import { SavingsLine, DeliveryLine } from "@/components/product/PriceExtras";
 
 // A colour swatch reads as sold out when its product is switched off in
 // lib/products.ts (inStock: false - the owner's single on/off switch); the
@@ -244,6 +247,9 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
   }, [product.slug]);
 
   const price = displayPrice(product, useCountry());
+  // Under the price: the saving while the struck EUR price is shown (not on a sold-out product) with the running campaign's badge.
+  const saved = price.original && effectiveInStock ? savingsEur(product) : null;
+  const campaign = campaignLabel();
 
   const handleAdd = () => {
     addItem({ ...product, stock: effectiveStock });
@@ -270,7 +276,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Category */}
-      <p className="font-sans text-[10px] text-ink-faint tracking-widest uppercase">
+      <p className="font-sans text-[10px] text-ink-muted tracking-widest uppercase">
         {product.category === "watches" ? "Часовници"
           : product.category === "wallets" ? "Портфейли"
           : product.category === "cardholders" ? "Кардхолдъри"
@@ -286,7 +292,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           </span>
         )}
         <h1 className="font-serif text-display-md text-charcoal leading-tight">{product.name}</h1>
-        <p className="font-sans text-[10px] text-ink-faint tracking-[0.2em] mt-1.5">
+        <p className="font-sans text-[10px] text-ink-muted tracking-[0.2em] mt-1.5">
           Арт. {product.sku}
         </p>
       </div>
@@ -294,7 +300,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       {/* Color variant selector - watches, wallets, cardholders */}
       {variants && (
           <div className="flex items-center gap-3">
-            <span className="font-sans text-[10px] text-ink-faint tracking-widest uppercase">Цвят:</span>
+            <span className="font-sans text-[10px] text-ink-muted tracking-widest uppercase">Цвят:</span>
             <div className="flex flex-wrap items-center gap-2 min-w-0 [@media(pointer:coarse)]:gap-0">
               {variants.map((v) => (
                 <Link
@@ -347,28 +353,33 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       )}
 
       {/* Price */}
-      <div className="flex items-baseline gap-4 py-5 border-y border-border">
-        <span className="font-serif text-4xl text-navy">
-          {price.text}
-        </span>
-        {/* Sale: the prior price (lowest of the last 30 days - lib/price.ts isOnSale) */}
-        {price.original && (
-          <span className="font-sans text-lg text-ink-faint line-through">
-            {price.original}
+      <div className="py-5 border-y border-border">
+        <div className="flex items-baseline gap-4">
+          <span className="font-serif text-4xl text-navy">
+            {price.text}
           </span>
-        )}
+          {/* Sale: the prior price (lowest of the last 30 days - lib/price.ts isOnSale) */}
+          {price.original && (
+            <span className="font-sans text-lg text-ink-muted line-through">
+              {price.original}
+            </span>
+          )}
+        </div>
+        {saved !== null && <SavingsLine text={`Спестявате €${saved}`} campaign={campaign} />}
       </div>
 
-      {/* Cash on delivery + inspection before paying: said under the price (not for a prepayment product) */}
+      {/* Delivery in one line, right under the price; inspection before paying only where cash on delivery exists */}
+      {effectiveInStock && (
+        <DeliveryLine
+          text={`Безплатна доставка над €${BG_FREE_SHIPPING_EUR} · Доставка за 1–2 работни дни${requiresPrepayment(product) ? "" : " · Преглед преди плащане"}`}
+        />
+      )}
+
+      {/* How to pay, one line under the price (not for a prepayment product) */}
       {effectiveInStock && !requiresPrepayment(product) && (
-        CARD_PAYMENTS_ENABLED ? (
-          <>
-            <PayLine text="Карта (5% отстъпка)" marks={true} />
-            <PayLine text="Наложен платеж" marks={false} />
-          </>
-        ) : (
-          <PayLine text="Наложен платеж" marks={false} />
-        )
+        CARD_PAYMENTS_ENABLED
+          ? <PayLine text="Плащане с карта (−5%) или при доставка" marks={true} />
+          : <PayLine text="Наложен платеж" marks={false} />
       )}
 
       {/* Clutches: the free gift cardholder (renders nothing for any other product) */}
@@ -382,8 +393,8 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         <div className="flex items-center gap-2">
           {shownCount === 0 ? (
             <>
-              <span className="text-ink-faint text-xs">◈</span>
-              <span className="font-sans text-[11px] text-ink-faint tracking-wide">Изчерпан</span>
+              <span className="text-ink-muted text-xs">◈</span>
+              <span className="font-sans text-[11px] text-ink-muted tracking-wide">Изчерпан</span>
             </>
           ) : product.slug === "bag-milano-avorio" ? (
             // A one-of-one is limited, not "running out".
@@ -394,7 +405,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           ) : (
             <>
               <span className="text-amber-600/80 text-xs">◈</span>
-              <span className="font-sans text-[11px] text-amber-700/90 tracking-wide font-medium">
+              <span className="font-sans text-[11px] text-amber-700 tracking-wide font-medium">
                 {shownCount === 1 ? "Остава последният брой" : `Остават само ${shownCount} броя`}
               </span>
             </>
@@ -440,7 +451,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         className={`w-full justify-center text-center ${
           effectiveInStock
             ? "btn-primary"
-            : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-faint border border-border cursor-not-allowed"
+            : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-muted border border-border cursor-not-allowed"
         }`}
       >
         {!effectiveInStock
@@ -464,7 +475,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       <div className="flex flex-col gap-3 -mt-2">
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-ink-faint/20" />
-          <span className="font-sans text-[10px] text-ink-faint tracking-[0.18em] uppercase">или</span>
+          <span className="font-sans text-[10px] text-ink-muted tracking-[0.18em] uppercase">или</span>
           <div className="flex-1 h-px bg-ink-faint/20" />
         </div>
         <a
@@ -475,7 +486,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           <ViberIcon className="w-5 h-5 flex-shrink-0" />
           Поръчай директно по Viber
         </a>
-        <p className="text-center font-sans text-[11px] text-ink-faint tracking-wide">
+        <p className="text-center font-sans text-[11px] text-ink-muted tracking-wide">
           или ни добавете: <span className="text-ink-soft">+359 888 081 811</span>
         </p>
       </div>
@@ -503,7 +514,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         ].map(({ label, Icon, href }, i) => {
           const inner = (
             <>
-              <Icon className="w-4 h-4 text-ink-faint flex-shrink-0" strokeWidth={1.5} />
+              <Icon className="w-4 h-4 text-ink-muted flex-shrink-0" strokeWidth={1.5} />
               <p className={`font-sans text-[11px] font-light tracking-wide leading-snug ${
                 href ? "text-navy border-b border-transparent hover:border-navy/30 transition-colors duration-200" : "text-ink-soft"
               }`}>
@@ -534,7 +545,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
               className={`font-sans text-[11px] tracking-widest uppercase px-4 py-3 min-h-[44px] max-[373px]:px-2.5 max-[373px]:tracking-wider max-[349px]:px-2 max-[349px]:text-[10px] transition-all duration-200 ${
                 activeTab === tab
                   ? "text-charcoal border-b-2 border-navy -mb-px"
-                  : "text-ink-faint hover:text-ink-soft"
+                  : "text-ink-muted hover:text-ink-soft"
               }`}
             >
               {tab === "description" ? "Описание" : tab === "specs" ? "Спецификации" : "Доставка"}
@@ -583,7 +594,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
                   row - customers never see a placeholder like "TBD". */}
               {product.specs.filter(({ value }) => value.trim() !== "").map(({ label, value }) => (
                 <div key={label} className="flex justify-between py-2 border-b border-border">
-                  <span className="font-sans text-[11px] text-ink-faint tracking-wide uppercase">{label}</span>
+                  <span className="font-sans text-[11px] text-ink-muted tracking-wide uppercase">{label}</span>
                   <span className="font-sans text-sm font-light text-charcoal text-right max-w-[60%]">{value}</span>
                 </div>
               ))}

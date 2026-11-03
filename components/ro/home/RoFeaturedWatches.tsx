@@ -7,7 +7,7 @@ import { useReveal } from "@/lib/useReveal";
 import { fmtRON, RO_FREE_SHIPPING_RON } from "@/lib/ro/config";
 import { ronOf, ronOriginalOf } from "@/lib/ro/config";
 import { useLeatherStock } from "@/lib/use-gifts";
-import { lowStockCount, savingsRon } from "@/lib/home-card-hints";
+import { lowStockCount, savingsRon, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
 import type { Product } from "@/lib/types";
 
 // Romanian counterpart of components/home/FeaturedWatches.tsx. The page hands in the watches already filtered
@@ -48,16 +48,18 @@ export function RoFeaturedWatches({ watches }: { watches: Product[] }) {
         <div className="mt-10 sm:mt-16 border-y border-border py-6 sm:py-8">
           <div className="grid grid-cols-3 gap-0 text-center divide-x divide-border">
             {[
-              { label: "Livrare gratuită", sub: `Pentru comenzi de peste ${fmtRON(RO_FREE_SHIPPING_RON)}` },
-              { label: "5 ani garanție", sub: "Comercială · pentru fiecare mecanism" },
-              { label: "Plata cu cardul", sub: "Plată online securizată" },
-            ].map(({ label, sub }) => (
-              <div key={label} className="px-2 sm:px-6 py-2">
-                <p className="font-sans text-[9px] sm:text-xs font-medium tracking-[0.1em] sm:tracking-[0.18em] uppercase text-charcoal mb-1">
+              { label: "Livrare gratuită", sub: `Pentru comenzi de peste ${fmtRON(RO_FREE_SHIPPING_RON)}`, short: `Peste ${fmtRON(RO_FREE_SHIPPING_RON)}` },
+              { label: "5 ani garanție", sub: "Comercială · pentru fiecare mecanism", short: "Fiecare mecanism" },
+              { label: "Plata cu cardul", sub: "Plată online securizată", short: "Plată securizată" },
+            ].map(({ label, sub, short }) => (
+              <div key={label} className="px-1.5 sm:px-6 py-2">
+                <p className="font-sans text-[10px] sm:text-xs font-medium tracking-[0.08em] sm:tracking-[0.18em] uppercase text-charcoal mb-1">
                   {label}
                 </p>
-                <p className="font-sans text-[8px] sm:text-[10px] font-light text-ink-faint tracking-wide">
-                  {sub}
+                {/* Phones get the short sub-line: three columns at 390px leave about 110px each. */}
+                <p className="font-sans text-[12px] sm:text-[13px] leading-snug text-ink-soft">
+                  <span className="sm:hidden">{short}</span>
+                  <span className="hidden sm:inline">{sub}</span>
                 </p>
               </div>
             ))}
@@ -148,8 +150,10 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
   const active = watches[activeIndex];
   const activeOldRon = ronOriginalOf(active);
   const stockMap = useLeatherStock(true);
-  const activeSaved = savingsRon(active);
-  const activeLeft = active.inStock ? lowStockCount(stockMap?.[active.slug]) : null;
+  // Sold out (switched off or at 0 live): neither the savings nor the low-stock line.
+  const activeSoldOut = !active.inStock || stockMap?.[active.slug] === 0;
+  const activeSaved = !activeSoldOut ? savingsRon(active) : null;
+  const activeLeft = !activeSoldOut ? lowStockCount(stockMap?.[active.slug]) : null;
 
   return (
     <>
@@ -275,10 +279,10 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
             )}
           </div>
           {activeSaved !== null && (
-            <p data-testid="home-savings" className={`font-sans text-[12px] leading-snug text-[#4E7D5B] ${activeLeft !== null ? "mb-1" : "mb-5"}`}>Economisiți {fmtRON(activeSaved)}</p>
+            <p data-testid="home-savings" className={`${CARD_SAVINGS_CLASS} ${activeLeft !== null ? "mb-1" : "mb-5"}`}>Economisiți {fmtRON(activeSaved)}</p>
           )}
           {activeLeft !== null && (
-            <p data-testid="home-low-stock" className="font-sans text-[11px] leading-snug tracking-wide text-ink-muted mb-5">Au mai rămas {activeLeft} buc.</p>
+            <p data-testid="home-low-stock" className={`${CARD_LOW_STOCK_CLASS} mb-5`}>Au mai rămas {activeLeft} buc.</p>
           )}
           <Link href={`/ro/produse/${active.slug}`} className="btn-primary">
             Vedeți detalii

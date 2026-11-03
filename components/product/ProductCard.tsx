@@ -9,7 +9,7 @@ import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
 import { useGiftFor, useLeatherStock } from "@/lib/use-gifts";
-import { lowStockCount, savingsEur } from "@/lib/home-card-hints";
+import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
 
 interface ProductCardProps {
   product: Product;
@@ -47,7 +47,7 @@ export function ProductCard({ product, priority = false, learnMore = false, home
 
   // Low-stock line on every card (live stock from the one shared batched call); savings only on the homepage, where the struck EUR price is shown.
   const stockMap = useLeatherStock(true);
-  const saved = homeHints && price.original ? savingsEur(product) : null;
+  const saved = homeHints && price.original && !isSoldOut ? savingsEur(product) : null;
   const left = !isSoldOut ? lowStockCount(stockMap?.[product.slug]) : null;
 
   const productSummary = reviewSummary[product.slug];
@@ -222,31 +222,31 @@ export function ProductCard({ product, priority = false, learnMore = false, home
           <div className="flex items-center gap-1.5 mb-2">
             <div className="flex gap-px">
               {Array.from({ length: 5 }).map((_, i) => (
-                <span key={i} className={`text-[10px] ${i < Math.round(avgRating) ? "text-navy" : "text-ink-faint"}`}>★</span>
+                <span key={i} className={`text-[11px] ${i < Math.round(avgRating) ? "text-navy" : "text-ink-faint"}`}>★</span>
               ))}
             </div>
-            <span className="font-sans text-[10px] text-ink-faint">
+            <span className="font-sans text-[12px] text-ink-muted">
               {avgRating.toFixed(1)} · {reviewCount} {reviewCount === 1 ? "ревю" : "ревюта"}
             </span>
           </div>
         )}
 
         <div className="mt-auto flex items-center gap-3">
-          <span className={`font-serif text-xl ${isSoldOut ? "text-ink-faint" : "text-navy"}`}>
+          <span className={`font-serif text-xl ${isSoldOut ? "text-ink-muted" : "text-navy"}`}>
             {price.text}
           </span>
           {price.original && (
-            <span className="font-sans text-xs text-ink-faint line-through">
+            <span className="font-sans text-xs text-ink-muted line-through">
               {price.original}
             </span>
           )}
         </div>
 
         {saved !== null && (
-          <p data-testid="home-savings" className="mt-1 font-sans text-[12px] leading-snug text-[#4E7D5B]">Спестявате €{saved}</p>
+          <p data-testid="home-savings" className={`mt-1 ${CARD_SAVINGS_CLASS}`}>Спестявате €{saved}</p>
         )}
         {left !== null && (
-          <p data-testid="home-low-stock" className="mt-1 font-sans text-[11px] leading-snug tracking-wide text-ink-muted">Остават {left} бр.</p>
+          <p data-testid="home-low-stock" className={`mt-1 ${CARD_LOW_STOCK_CLASS}`}>Остават {left} бр.</p>
         )}
 
       </div>

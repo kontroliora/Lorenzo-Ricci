@@ -10,7 +10,7 @@ import { useReveal } from "@/lib/useReveal";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
 import { useLeatherStock } from "@/lib/use-gifts";
-import { lowStockCount, savingsEur } from "@/lib/home-card-hints";
+import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
 import type { Product } from "@/lib/types";
 
 // Yachting is the new collection: its own block on top, the earlier models below -
@@ -32,6 +32,7 @@ export function FeaturedWatches({ soldOut = [] }: { soldOut?: string[] }) {
             title="Yachting"
             subtitle="Черен · Син · Бял"
             watches={yachting}
+            soldOut={soldOut}
             priority
           />
         )}
@@ -43,6 +44,7 @@ export function FeaturedWatches({ soldOut = [] }: { soldOut?: string[] }) {
               title="Класическа Колекция"
               subtitle="Сапфирен кристал · Японски механизъм · 5 ATM водоустойчивост"
               watches={classic}
+              soldOut={soldOut}
             />
           </div>
         )}
@@ -51,16 +53,20 @@ export function FeaturedWatches({ soldOut = [] }: { soldOut?: string[] }) {
         <div className="mt-10 sm:mt-16 border-y border-border py-6 sm:py-8">
           <div className="grid grid-cols-3 gap-0 text-center divide-x divide-border">
             {[
-              { label: "Безплатна доставка", sub: "За поръчки над €60" },
-              { label: "5 Години Гаранция",  sub: "Търговска · на всеки механизъм" },
-              CARD_PAYMENTS_ENABLED ? { label: "Карта или наложен платеж", sub: "−5% при плащане с карта" } : { label: "Преглед преди плащане", sub: "Наложен платеж" },
-            ].map(({ label, sub }) => (
-              <div key={label} className="px-2 sm:px-6 py-2">
-                <p className="font-sans text-[9px] sm:text-xs font-medium tracking-[0.1em] sm:tracking-[0.18em] uppercase text-charcoal mb-1">
+              { label: "Безплатна доставка", sub: "За поръчки над €60", short: "Над €60" },
+              { label: "5 Години Гаранция",  sub: "Търговска · на всеки механизъм", short: "Всеки механизъм" },
+              CARD_PAYMENTS_ENABLED
+                ? { label: "Карта или наложен платеж", sub: "−5% при плащане с карта", short: "−5% с карта" }
+                : { label: "Преглед преди плащане", sub: "Наложен платеж", short: "Наложен платеж" },
+            ].map(({ label, sub, short }) => (
+              <div key={label} className="px-1.5 sm:px-6 py-2">
+                <p className="font-sans text-[10px] sm:text-xs font-medium tracking-[0.08em] sm:tracking-[0.18em] uppercase text-charcoal mb-1">
                   {label}
                 </p>
-                <p className="font-sans text-[8px] sm:text-[10px] font-light text-ink-faint tracking-wide">
-                  {sub}
+                {/* Phones get the short sub-line: three columns at 390px leave about 110px each. */}
+                <p className="font-sans text-[12px] sm:text-[13px] leading-snug text-ink-soft">
+                  <span className="sm:hidden">{short}</span>
+                  <span className="hidden sm:inline">{sub}</span>
                 </p>
               </div>
             ))}
@@ -73,11 +79,12 @@ export function FeaturedWatches({ soldOut = [] }: { soldOut?: string[] }) {
 }
 
 // One collection: heading, desktop row and its own mobile carousel.
-function WatchGroup({ tag, title, subtitle, watches, priority = false }: {
+function WatchGroup({ tag, title, subtitle, watches, soldOut, priority = false }: {
   tag: string;
   title: string;
   subtitle: string;
   watches: Product[];
+  soldOut: string[];
   priority?: boolean;
 }) {
   const gridRef = useReveal();
@@ -102,12 +109,12 @@ function WatchGroup({ tag, title, subtitle, watches, priority = false }: {
         ))}
       </div>
 
-      <WatchCoverFlow watches={watches} />
+      <WatchCoverFlow watches={watches} soldOut={soldOut} />
     </div>
   );
 }
 
-function WatchCoverFlow({ watches }: { watches: Product[] }) {
+function WatchCoverFlow({ watches, soldOut }: { watches: Product[]; soldOut: string[] }) {
   const n = watches.length;
   const [activeIndex, setActiveIndex] = useState(0);
   const [teleporting, setTeleporting] = useState<number | null>(null);
@@ -151,8 +158,10 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
   const active = watches[activeIndex];
   const activePrice = displayPrice(active, useCountry());
   const stockMap = useLeatherStock(true);
-  const activeSaved = activePrice.original ? savingsEur(active) : null;
-  const activeLeft = active.inStock ? lowStockCount(stockMap?.[active.slug]) : null;
+  // Sold out (switched off, in the server list or at 0 live): neither the savings nor the low-stock line.
+  const activeSoldOut = !active.inStock || soldOut.includes(active.slug) || stockMap?.[active.slug] === 0;
+  const activeSaved = activePrice.original && !activeSoldOut ? savingsEur(active) : null;
+  const activeLeft = !activeSoldOut ? lowStockCount(stockMap?.[active.slug]) : null;
 
   return (
     <>
@@ -278,10 +287,10 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
             )}
           </div>
           {activeSaved !== null && (
-            <p data-testid="home-savings" className={`font-sans text-[12px] leading-snug text-[#4E7D5B] ${activeLeft !== null ? "mb-1" : "mb-5"}`}>Спестявате €{activeSaved}</p>
+            <p data-testid="home-savings" className={`${CARD_SAVINGS_CLASS} ${activeLeft !== null ? "mb-1" : "mb-5"}`}>Спестявате €{activeSaved}</p>
           )}
           {activeLeft !== null && (
-            <p data-testid="home-low-stock" className="font-sans text-[11px] leading-snug tracking-wide text-ink-muted mb-5">Остават {activeLeft} бр.</p>
+            <p data-testid="home-low-stock" className={`${CARD_LOW_STOCK_CLASS} mb-5`}>Остават {activeLeft} бр.</p>
           )}
           <Link href={`/products/${active.slug}`} className="btn-primary">
             Виж Детайли

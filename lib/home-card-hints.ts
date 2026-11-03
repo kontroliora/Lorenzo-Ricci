@@ -8,6 +8,11 @@ export const CARD_LOW_STOCK_MAX = 3;
 /** Product page: the "Остават само N броя" / "Au mai rămas doar N bucăți" line shows from this many available units downwards. */
 export const PAGE_LOW_STOCK_MAX = 5;
 
+// The two hint lines look the same on every card (ProductCard, RoProductCard, the homepage carousels and leather tiles).
+// Both pass WCAG AA on white, ivory and ivory-warm: green 6.4/6.1/5.8, amber-700 5.0/4.8/4.5.
+export const CARD_SAVINGS_CLASS = "font-sans text-[14px] leading-snug text-[#2E6B3F]";
+export const CARD_LOW_STOCK_CLASS = "font-sans text-[14px] leading-snug font-medium text-amber-700";
+
 /** Cards: live available units when they are low enough to mention, else null (unknown, 0 = sold out and above the limit show nothing). */
 export const lowStockCount = (live: number | null | undefined): number | null =>
   typeof live === "number" && live > 0 && live <= CARD_LOW_STOCK_MAX ? Math.floor(live) : null;
