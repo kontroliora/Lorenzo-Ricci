@@ -12,6 +12,9 @@ import { promoBase } from "@/lib/bundles";
 import { isOnSale } from "@/lib/price";
 import { cardDiscountEur } from "@/lib/card-discount";
 
+// Same text as lib/promo.ts PROMO_NOT_ON_SALE (not imported: that module pulls the Supabase client into the browser bundle).
+const PROMO_NOT_ON_SALE = "Кодът не важи за продукти на намаление";
+
 const CART_TIMEOUT = 15 * 60; // 900 seconds
 
 export function CartDrawer() {
@@ -60,7 +63,10 @@ export function CartDrawer() {
         body: JSON.stringify({ code }),
       });
       const data = await res.json() as { valid: boolean; discount?: number; error?: string };
-      if (data.valid) {
+      if (data.valid && promoBase(items, totalDiscount) <= 0) {
+        // Only discounted products in the cart: the code covers none of them (the server refuses it the same way).
+        setPromoError(PROMO_NOT_ON_SALE);
+      } else if (data.valid) {
         setPromoInput(code);
         setPromoRate(typeof data.discount === "number" ? data.discount : 0.10);
         setPromoApplied(true);
@@ -387,7 +393,7 @@ export function CartDrawer() {
                       </button>
                     </div>
                     {promoError && (
-                      <p className="font-sans text-[10px] text-red-400/60 mt-1.5 tracking-wide">{promoError}</p>
+                      <p className="font-sans text-[11px] text-red-300 mt-1.5 tracking-wide">{promoError}</p>
                     )}
                   </div>
                 ) : (
@@ -401,8 +407,8 @@ export function CartDrawer() {
                       <span className="font-sans text-xs text-emerald-400/70">-€{promoDiscount.toFixed(2)}</span>
                     </div>
                     {hasSaleItems && (
-                      <p className="font-sans text-[10px] text-white/40 tracking-wide mt-1">
-                        Не важи за продуктите с намалена цена.
+                      <p className="font-sans text-[11px] text-white/60 tracking-wide mt-1">
+                        {PROMO_NOT_ON_SALE}
                       </p>
                     )}
                   </>

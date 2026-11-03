@@ -10,7 +10,6 @@ import { useCartStore } from "@/lib/store";
 // still opens it. Nothing here renders anything visible before it would have.
 const CartDrawer        = dynamic(() => import("@/components/cart/CartDrawer").then((m) => m.CartDrawer), { ssr: false });
 const SalesNotification = dynamic(() => import("@/components/ui/SalesNotification").then((m) => m.SalesNotification), { ssr: false });
-const NewsletterPopup   = dynamic(() => import("@/components/ui/NewsletterPopup").then((m) => m.NewsletterPopup), { ssr: false });
 
 // true once the page is idle after its LCP; capped so it always resolves.
 function useIdle(capMs = 4000): boolean {
@@ -40,8 +39,4 @@ export function LazyCartDrawer() {
 
 export function LazySalesNotification() {
   return useIdle() ? <SalesNotification /> : null;
-}
-
-export function LazyNewsletterPopup() {
-  return useIdle() ? <NewsletterPopup /> : null;
 }

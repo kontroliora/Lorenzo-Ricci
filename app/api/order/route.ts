@@ -17,7 +17,7 @@ import { getOfficeList } from "@/lib/econt-offices";
 import { officeLabel } from "@/lib/econt-label";
 import { validateOrderPricing } from "@/lib/order-pricing";
 import { checkOrderable } from "@/lib/order-availability";
-import { checkPromoCode } from "@/lib/promo";
+import { checkPromoCode, PROMO_NOT_ON_SALE } from "@/lib/promo";
 import { reserveWithGifts, giftNotes, giftDisplayName, shortModelName, type GiftLine, type GiftReservation, type MissedGift, type ReserveFn, type Shortfall } from "@/lib/gifts";
 
 // Insert an order row. econt_office_code (supabase/orders_econt_office.sql) is optional: if the column is not there yet the order is saved
@@ -134,6 +134,10 @@ export async function POST(req: NextRequest) {
     const pricing = validateOrderPricing(order, findProductWithOverride, { promoRate, card: order.paymentMethod === "card" && CARD_PAYMENTS_ENABLED });
     if (!pricing.ok) {
       console.warn("[Order] price check failed:", pricing.reason);
+      // A promo discount on more than the full-price items: the code never covers discounted products.
+      if (pricing.reason.startsWith("promo discount mismatch")) {
+        return NextResponse.json({ success: false, code: "promo_not_on_sale", error: PROMO_NOT_ON_SALE }, { status: 409 });
+      }
       return NextResponse.json(
         { success: false, code: "price_mismatch", error: "Цените са обновени, моля презаредете страницата" },
         { status: 409 },
