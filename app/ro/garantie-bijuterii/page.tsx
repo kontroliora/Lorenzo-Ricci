@@ -87,6 +87,10 @@ const WATCH_NOT_COVERED = [
     desc: "Zgârieturile carcasei, modificările acoperirii și uzura curelei rezultate din folosirea zilnică sunt un rezultat normal al purtării și nu constituie defect de fabricație.",
   },
   {
+    title: "Elemente pierdute sau rupte",
+    desc: "Elementele pierdute sau rupte, precum coroana, știfturile sau închizătoarea, nu sunt acoperite de garanție.",
+  },
+  {
     title: "Reparații sau service efectuate de terți neautorizați",
     desc: "Orice intervenție a unui service neautorizat sau încercare de reparare pe cont propriu anulează automat garanția comercială.",
   },
@@ -276,7 +280,8 @@ export default function GarantieBijuteriiPage() {
         </div>
 
         {/* ── Section 3: Garanția pentru ceasuri ─────────────────── */}
-        <div className="mb-16">
+        {/* id: watch pages and the footer link straight here (/ro/garantie-bijuterii#ceasuri). */}
+        <div id="ceasuri" className="mb-16 scroll-mt-28">
           <SectionLabel>03 · Garanția pentru ceasuri</SectionLabel>
           <div className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide mb-8 flex flex-col gap-3">
             <p>
@@ -306,7 +311,7 @@ export default function GarantieBijuteriiPage() {
               {
                 n: "01",
                 title: "Contactați-ne",
-                desc: "Trimiteți un e-mail la info@lorenzo-ricci.com cu descrierea problemei și o fotografie a articolului.",
+                desc: "Trimiteți un e-mail la info@lorenzo-ricci.com cu numărul comenzii, descrierea problemei și fotografii sau un video al articolului.",
               },
               {
                 n: "02",

@@ -54,6 +54,7 @@ export function RoFooter() {
               <FooterLink href="/ro/intrebari-frecvente">Întrebări frecvente</FooterLink>
               <FooterLink href="/ro/politici/livrare">Livrare</FooterLink>
               <FooterLink href="/ro/politici/retur">Retur</FooterLink>
+              <FooterLink href="/ro/garantie-bijuterii#ceasuri">Garanție ceasuri</FooterLink>
               <FooterLink href="/ro/garantie-bijuterii">Garanție bijuterii</FooterLink>
               <FooterLink href="/ro/ghid-ceas">Ghid ceas</FooterLink>
               <FooterLink href="/ro/politici/confidentialitate">Politica de confidențialitate</FooterLink>

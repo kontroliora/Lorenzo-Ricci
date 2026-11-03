@@ -506,7 +506,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
               ? "Доживотна гаранция"
               : "Майсторска изработка",
             Icon: Award,
-            href: product.category === "watches" || product.category === "jewellery" ? "/warranty/jewelry" : undefined,
+            href: product.category === "watches" ? "/warranty/jewelry#chasovnici" : product.category === "jewellery" ? "/warranty/jewelry" : undefined,
           },
           { label: "30 дни замяна",              Icon: RefreshCw, href: undefined },
           { label: "Доставка за 1–2 работни дни с Еконт", Icon: Truck,  href: undefined },

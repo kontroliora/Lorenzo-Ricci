@@ -75,6 +75,10 @@ const WATCH_NOT_COVERED = [
     desc: "Надрасквания на корпуса, промени в покритието и износване на каишката вследствие на ежедневна употреба са нормален резултат от носенето и не представляват производствен дефект.",
   },
   {
+    title: "Изгубени или счупени елементи",
+    desc: "Изгубени или счупени елементи като корона, щифтове или закопчалка не се покриват от гаранцията.",
+  },
+  {
     title: "Ремонт или сервиз от неоторизирани трети страни",
     desc: "Всяка намеса от страна на нелицензиран сервиз или опит за самостоятелна поправка автоматично анулира гаранцията.",
   },
@@ -256,7 +260,8 @@ export default function WarrantyPage() {
         </div>
 
         {/* ── Section 3: Гаранция за часовници ─────────────────── */}
-        <div className="mb-16">
+        {/* id: watch pages and the footer link straight here (/warranty/jewelry#chasovnici). */}
+        <div id="chasovnici" className="mb-16 scroll-mt-28">
           <SectionLabel>03 · Гаранция за часовници</SectionLabel>
           <div className="font-sans text-sm font-light text-ink-soft leading-relaxed tracking-wide mb-8 flex flex-col gap-3">
             <p>
@@ -286,7 +291,7 @@ export default function WarrantyPage() {
               {
                 n: "01",
                 title: "Свържете се с нас",
-                desc: "Изпратете имейл на info@lorenzo-ricci.com с описание на проблема и снимка на изделието.",
+                desc: "Изпратете имейл на info@lorenzo-ricci.com с номера на поръчката, описание на проблема и снимки или видео на изделието.",
               },
               {
                 n: "02",

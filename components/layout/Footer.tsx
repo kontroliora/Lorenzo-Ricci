@@ -45,7 +45,8 @@ export function Footer() {
             <div className="flex flex-col gap-3 [@media(pointer:coarse)]:gap-0">
               <FooterLink href="/faq">Често задавани въпроси</FooterLink>
               <FooterLink href="/policies/shipping">Доставка и връщане</FooterLink>
-              <FooterLink href="/warranty/jewelry">Гаранция и поддръжка</FooterLink>
+              <FooterLink href="/warranty/jewelry#chasovnici">Гаранция на часовниците</FooterLink>
+              <FooterLink href="/warranty/jewelry">Гаранция на бижутата</FooterLink>
             </div>
           </div>
 

@@ -281,7 +281,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   // Trust strip. Guarantee tile: the product's own (localized) warranty line when it has one (watches: commercial guarantee,
   // jewellery: lifetime guarantee, both explained on the warranty page); leather goods offer none, so that tile stays
   // craftsmanship. Payment tile: card (Romania has no cash on delivery), or advance payment for a prepayment product.
-  const warrantyHref = product.category === "watches" || product.category === "jewellery" ? WARRANTY_HREF : undefined;
+  const warrantyHref = product.category === "watches" ? `${WARRANTY_HREF}#ceasuri` : product.category === "jewellery" ? WARRANTY_HREF : undefined;
   const trust: { label: string; Icon: LucideIcon; href?: string }[] = [
     { label: product.warranty.trim() || "Manoperă artizanală", Icon: Award, href: warrantyHref },
     { label: `Retur în ${RO_RETURN_DAYS} zile`,                Icon: RefreshCw },
