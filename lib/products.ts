@@ -46,12 +46,12 @@ export const products: Product[] = [
       "Водоустойчивост до 50 метра",
     ],
     specs: [
-      { label: "Размери", value: "44 мм × 53.7 мм × 12.8 мм" }, // owner, 2026-09-27: width × lug-to-lug × thickness
+      { label: "Размери", value: "44 × 53,7 × 12,8 мм" }, // owner, 2026-09-27: width × lug-to-lug × thickness
       { label: "Тегло", value: "" }, // empty → row hidden until the owner gives the weight
       { label: "Стъкло", value: "Сапфирено кристално стъкло" },
       { label: "Механизъм", value: "Японски кварцов механизъм" },
       { label: "Каишка", value: "Каучук с релефна структура" },
-      { label: "Водоустойчивост", value: "До 50 метра" },
+      { label: "Водоустойчивост", value: "5 ATM / 50 м" },
     ],
     coverImage: {
       src: `/Products/watches/Yachting Black/yachting-black-hronograf-preden-izgled-v2.webp`,
@@ -97,12 +97,12 @@ export const products: Product[] = [
       "Водоустойчивост до 50 метра",
     ],
     specs: [
-      { label: "Размери", value: "44 мм × 53.7 мм × 12.8 мм" }, // owner, 2026-09-27: width × lug-to-lug × thickness
+      { label: "Размери", value: "44 × 53,7 × 12,8 мм" }, // owner, 2026-09-27: width × lug-to-lug × thickness
       { label: "Тегло", value: "" }, // empty → row hidden until the owner gives the weight
       { label: "Стъкло", value: "Сапфирено кристално стъкло" },
       { label: "Механизъм", value: "Японски кварцов механизъм" },
       { label: "Каишка", value: "Каучук с релефна структура" },
-      { label: "Водоустойчивост", value: "До 50 метра" },
+      { label: "Водоустойчивост", value: "5 ATM / 50 м" },
     ],
     coverImage: {
       src: `/Products/watches/Yachting Blue/yachting-blue-hronograf-preden-izgled-v2.webp`,
@@ -149,12 +149,12 @@ export const products: Product[] = [
       "Водоустойчивост до 50 метра",
     ],
     specs: [
-      { label: "Размери", value: "44 мм × 53.7 мм × 12.8 мм" }, // owner, 2026-09-27: width × lug-to-lug × thickness
+      { label: "Размери", value: "44 × 53,7 × 12,8 мм" }, // owner, 2026-09-27: width × lug-to-lug × thickness
       { label: "Тегло", value: "" }, // empty → row hidden until the owner gives the weight
       { label: "Стъкло", value: "Сапфирено кристално стъкло" },
       { label: "Механизъм", value: "Японски кварцов механизъм" },
       { label: "Каишка", value: "Каучук с релефна структура" },
-      { label: "Водоустойчивост", value: "До 50 метра" },
+      { label: "Водоустойчивост", value: "5 ATM / 50 м" },
     ],
     coverImage: {
       src: `/Products/watches/Yachting White/yachting-white-hronograf-preden-izgled-v2.webp`,

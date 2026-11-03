@@ -44,12 +44,12 @@ const YACHTING_FEATURES = [
 ];
 
 const YACHTING_SPECS: Spec[] = [
-  { label: "Dimensiuni", value: "44 mm × 53,7 mm × 12,8 mm" },
+  { label: "Dimensiuni", value: "44 × 53,7 × 12,8 mm" },
   { label: "Greutate", value: "" }, // empty -> row hidden until the owner gives the weight (as in the Bulgarian catalogue)
   { label: "Sticlă", value: "Sticlă safir" },
   { label: "Mecanism", value: "Mecanism quartz japonez" },
   { label: "Curea", value: "Cauciuc cu textură în relief" },
-  { label: "Rezistență la apă", value: "Până la 50 de metri" },
+  { label: "Rezistență la apă", value: "5 ATM / 50 m" },
 ];
 
 // Chronograph collection (Chrono Black, Golden Eclipse, Polar Frost)
