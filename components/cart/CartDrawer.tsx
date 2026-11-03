@@ -10,6 +10,7 @@ import { CartGiftRow } from "./GiftRow";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 import { promoBase } from "@/lib/bundles";
 import { isOnSale } from "@/lib/price";
+import { cardDiscountEur } from "@/lib/card-discount";
 
 const CART_TIMEOUT = 15 * 60; // 900 seconds
 
@@ -39,6 +40,8 @@ export function CartDrawer() {
     items.reduce((s, { product, quantity }) => s + (isOnSale(product) ? ((product.originalPrice as number) - product.price) * quantity : 0), 0) * 100,
   ) / 100;
   const total = afterBundles - promoDiscount;
+  // "С карта": the same 5% (max €25) the checkout takes off for a card payment (lib/card-discount.ts); none with a promo code.
+  const cardSaving = CARD_PAYMENTS_ENABLED ? cardDiscountEur(total, promoDiscount) : 0;
   const count = totalItems();
   const freeShippingThreshold = 60;
   // Free-shipping qualification is checked on the pre-promo amount (after bundle,
@@ -418,7 +421,7 @@ export function CartDrawer() {
                 </div>
               )}
 
-              {(totalDiscount > 0 || promoDiscount > 0 || savings > 0) && (
+              {(totalDiscount > 0 || promoDiscount > 0 || savings > 0 || cardSaving > 0) && (
                 <div className="mb-4 pt-2 border-t border-white/8">
                   {/* Only when there is a discount: how much the crossed-out prices save, in the site's accent colour */}
                   {savings > 0 && (
@@ -431,6 +434,11 @@ export function CartDrawer() {
                   <span className="font-sans text-xs font-medium text-white tracking-wide">Общо</span>
                   <span className="font-serif text-lg text-white">€{total.toFixed(2)}</span>
                   </div>
+                  {cardSaving > 0 && (
+                    <p data-testid="drawer-card-total" className="mt-1 text-right font-sans text-[12px] text-white/70 tracking-wide">
+                      С карта: €{(total - cardSaving).toFixed(2)} (−5%)
+                    </p>
+                  )}
                 </div>
               )}
 
