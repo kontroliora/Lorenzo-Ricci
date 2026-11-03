@@ -28,7 +28,9 @@ const RIGHT_NAV = [
 
 const MOBILE_NAV = [{ href: "/ro", label: "Acasă" }, ...LEFT_NAV, ...RIGHT_NAV] as const;
 
-export function RoHeader() {
+export function RoHeader({ showSets = true }: { showSets?: boolean }) {
+  const rightNav = showSets ? RIGHT_NAV : RIGHT_NAV.filter((l) => l.href !== "/ro/seturi");
+  const mobileNav = showSets ? MOBILE_NAV : MOBILE_NAV.filter((l) => l.href !== "/ro/seturi");
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const count = useRoCart((s) => s.items.reduce((n, i) => n + i.quantity, 0));
@@ -88,7 +90,7 @@ export function RoHeader() {
           {/* Right nav */}
           <div className="flex-1 flex items-center justify-end gap-5">
             <div className="hidden xl:flex items-center gap-6">
-              {RIGHT_NAV.map(({ href, label }) => (
+              {rightNav.map(({ href, label }) => (
                 <NavLink key={href} href={href}>{label}</NavLink>
               ))}
             </div>
@@ -136,7 +138,7 @@ export function RoHeader() {
             </div>
 
             <nav className="flex flex-col gap-6">
-              {MOBILE_NAV.map(({ href, label }) => (
+              {mobileNav.map(({ href, label }) => (
                 <Link key={href} href={href} onClick={closeMobile}
                   className="font-serif text-3xl sm:text-4xl leading-tight text-white/80 hover:text-white transition-colors duration-300">
                   {label}

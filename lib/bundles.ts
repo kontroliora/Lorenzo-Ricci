@@ -92,6 +92,16 @@ export function bundleHasSaleItem(bundle: Bundle, findProduct: (id: string) => P
   return bundle.slots.some((slot) => slot.some((id) => { const p = findProduct(id); return !!p && isOnSale(p); }));
 }
 
+/** True while at least one set can be bought WITH its set discount: every slot has a product switched on and none is on sale
+ *  (sale items get no set discount). The menu links to the sets page only then. */
+export function bundleOfferLive(findProduct: (id: string) => Product | undefined): boolean {
+  return BUNDLES.some((b) =>
+    b.discountPct > 0 &&
+    !bundleHasSaleItem(b, findProduct) &&
+    b.slots.every((slot) => slot.some((id) => findProduct(id)?.inStock === true)),
+  );
+}
+
 // A set is sold out as soon as ANY of its slots can't be filled: a slot is filled by any
 // one of its products that is switched on in the catalog and has free stock. Stock the
 // storefront doesn't know yet (undefined) counts as available - the browser shows the

@@ -15,7 +15,7 @@ const TRUST = [
   { title: `Retur în ${RO_RETURN_DAYS} zile`, sub: "Plata securizată cu cardul" },
 ];
 
-export function RoFooter() {
+export function RoFooter({ showSets = true }: { showSets?: boolean }) {
   return (
     <footer className="bg-white border-t border-border">
       <RoNewsletterStrip />
@@ -43,7 +43,7 @@ export function RoFooter() {
               <FooterLink href="/ro/bijuterii#bracelets">Brățări</FooterLink>
               <FooterLink href="/ro/bijuterii#necklaces">Coliere</FooterLink>
               <FooterLink href="/ro/piele-de-crocodil">Articole din piele de crocodil</FooterLink>
-              <FooterLink href="/ro/seturi">Seturi</FooterLink>
+              {showSets && <FooterLink href="/ro/seturi">Seturi</FooterLink>}
             </div>
           </div>
 
