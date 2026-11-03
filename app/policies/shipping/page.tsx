@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Политика за Доставка",
-  description: "Безплатна доставка над €60 · Еконт · На следващия работен ден.",
+  description: "Безплатна доставка над €60 · Доставка за 1–2 работни дни с Еконт.",
 };
 
 export default function ShippingPage() {
@@ -23,7 +23,7 @@ export default function ShippingPage() {
           <p>
             Поръчките, получени до <strong className="text-charcoal font-normal">14:00 ч.</strong> в работен ден, се обработват и изпращат <strong className="text-charcoal font-normal">същия ден</strong> (при наличност).
             <br /><br />
-            Доставката се извършва <strong className="text-charcoal font-normal">на следващия работен ден</strong> след изпращане.
+            <strong className="text-charcoal font-normal">Доставка за 1–2 работни дни с Еконт</strong>.
           </p>
         </PolicySection>
 

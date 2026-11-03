@@ -16,6 +16,7 @@ import {
   fmtRON,
   RO_CURRENCY,
   RO_DELIVERY_DAYS,
+  RO_DELIVERY_TEXT,
   RO_FREE_SHIPPING_RON,
   RO_SHIPPING_FEE_RON,
   RO_RETURN_DAYS,
@@ -284,7 +285,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   const trust: { label: string; Icon: LucideIcon; href?: string }[] = [
     { label: product.warranty.trim() || "Manoperă artizanală", Icon: Award, href: warrantyHref },
     { label: `Retur în ${RO_RETURN_DAYS} zile`,                Icon: RefreshCw },
-    { label: `Livrare în ${RO_DELIVERY_DAYS} zile lucrătoare`, Icon: Truck },
+    { label: RO_DELIVERY_TEXT, Icon: Truck },
     prepay
       ? { label: "Plată în avans, stabilită direct cu noi", Icon: Banknote }
       : { label: "Plată securizată cu cardul", Icon: CreditCard },
@@ -381,7 +382,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
 
       {/* Delivery in one line, right under the price (no inspection before paying: the Romanian shop is card only) */}
       {effectiveInStock && (
-        <DeliveryLine text={`Livrare gratuită peste ${fmtRON(RO_FREE_SHIPPING_RON)} · Livrare în ${RO_DELIVERY_DAYS.replace("-", "–")} zile lucrătoare`} />
+        <DeliveryLine text={`Livrare gratuită peste ${fmtRON(RO_FREE_SHIPPING_RON)} · ${RO_DELIVERY_TEXT}`} />
       )}
 
       {/* Card payment, said under the price (not for a prepayment product) */}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { fmtRON, RO_DELIVERY_DAYS, RO_FREE_SHIPPING_RON, RO_RETURN_DAYS } from "@/lib/ro/config";
+import { fmtRON, RO_DELIVERY_DAYS, RO_COURIER_LABEL, RO_FREE_SHIPPING_RON, RO_RETURN_DAYS } from "@/lib/ro/config";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import { RoNewsletterStrip } from "./RoNewsletterStrip";
 
@@ -10,7 +10,7 @@ import { RoNewsletterStrip } from "./RoNewsletterStrip";
 // (the footer is one of the places it may live: never beside the cart icon in the header).
 const TRUST = [
   { title: "5 ani garanție comercială", sub: "la ceasuri · pe viață la bijuterii" },
-  { title: `${RO_DELIVERY_DAYS} zile lucrătoare`, sub: "Livrare în România" },
+  { title: `Livrare în ${RO_DELIVERY_DAYS} zile lucrătoare`, sub: `cu ${RO_COURIER_LABEL}` },
   { title: "Livrare gratuită", sub: `Pentru comenzi de peste ${fmtRON(RO_FREE_SHIPPING_RON)}` },
   { title: `Retur în ${RO_RETURN_DAYS} zile`, sub: "Plata securizată cu cardul" },
 ];

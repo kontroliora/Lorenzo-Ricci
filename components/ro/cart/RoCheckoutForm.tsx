@@ -5,7 +5,7 @@ import type { RoCartLine } from "@/lib/ro/store";
 import { roAmounts } from "@/lib/ro/pricing";
 import { RO_COUNTIES } from "@/lib/ro/counties";
 import {
-  RO_DELIVERY_DAYS,
+  RO_DELIVERY_TEXT,
   RO_RETURN_DAYS,
   RO_SHIPPING_FEE_RON,
   RO_SHIPPING_HOME,
@@ -374,7 +374,7 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
             onSelect={() => { setDelivery("home"); setErrors({}); setFormSummary(""); }}
             icon={<IconHome />}
             title={SHIPPING_LABEL}
-            subtitle={`Termen: ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere`}
+            subtitle={RO_DELIVERY_TEXT}
             right={freeShipping ? (
             <span className="flex flex-col items-end leading-tight">
               <span className="text-[#4ADE80]">Gratuită</span>
@@ -387,7 +387,7 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
             onSelect={() => { setDelivery("office"); setErrors({}); setFormSummary(""); }}
             icon={<IconOffice />}
             title="Livrare la locker / birou Speedy"
-            subtitle={`Ridicați de la locker sau birou · ${RO_DELIVERY_DAYS} zile lucrătoare de la expediere`}
+            subtitle={`Ridicați de la locker sau birou · ${RO_DELIVERY_TEXT}`}
             right={freeShipping ? (
             <span className="flex flex-col items-end leading-tight">
               <span className="text-[#4ADE80]">Gratuită</span>

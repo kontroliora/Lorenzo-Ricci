@@ -371,7 +371,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       {/* Delivery in one line, right under the price; inspection before paying only where cash on delivery exists */}
       {effectiveInStock && (
         <DeliveryLine
-          text={`Безплатна доставка над €${BG_FREE_SHIPPING_EUR} · Доставка за 1–2 работни дни${requiresPrepayment(product) ? "" : " · Преглед преди плащане"}`}
+          text={`Безплатна доставка над €${BG_FREE_SHIPPING_EUR} · Доставка за 1–2 работни дни с Еконт${requiresPrepayment(product) ? "" : " · Преглед преди плащане"}`}
         />
       )}
 
@@ -509,7 +509,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
             href: product.category === "watches" || product.category === "jewellery" ? "/warranty/jewelry" : undefined,
           },
           { label: "30 дни замяна",              Icon: RefreshCw, href: undefined },
-          { label: "Доставка на следващия работен ден",  Icon: Truck,     href: undefined },
+          { label: "Доставка за 1–2 работни дни с Еконт", Icon: Truck,  href: undefined },
           { label: "Преглед и тест",              Icon: Eye,       href: undefined },
         ].map(({ label, Icon, href }, i) => {
           const inner = (
@@ -604,7 +604,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
             <div className="flex flex-col gap-4 text-sm font-light text-ink-soft leading-relaxed tracking-wide">
               <p><strong className="text-charcoal font-normal">Безплатна доставка</strong> за поръчки над €60</p>
               <p>Доставяме с <strong className="text-charcoal font-normal">Еконт</strong> в цяла България</p>
-              <p>Обработваме до 14:00 ч. - изпращаме същия ден. Доставка <strong className="text-charcoal font-normal">на следващия работен ден</strong>.</p>
+              <p>Обработваме до 14:00 ч. - изпращаме същия ден. <strong className="text-charcoal font-normal">Доставка за 1–2 работни дни с Еконт</strong>.</p>
               {CARD_PAYMENTS_ENABLED && <p><strong className="text-charcoal font-normal">Плащане с карта</strong> - −5% отстъпка от стоката (до €25).</p>}
               <p><strong className="text-charcoal font-normal">Преглед и тест преди плащане</strong>{CARD_PAYMENTS_ENABLED ? " при наложен платеж" : ""} - право да откажете на място.</p>
               <p><strong className="text-charcoal font-normal">30 дни лесна замяна</strong> - пишете на info@lorenzo-ricci.com</p>

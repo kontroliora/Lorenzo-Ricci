@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { fmtRON, RO_DELIVERY_DAYS, RO_FREE_SHIPPING_RON } from "@/lib/ro/config";
+import { fmtRON, RO_DELIVERY_TEXT, RO_FREE_SHIPPING_RON } from "@/lib/ro/config";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 
 // Romanian counterpart of components/layout/AnnouncementBar.tsx: same fixed bar, same rotation.
@@ -14,13 +14,13 @@ const DESKTOP = [
   `Livrare gratuită pentru comenzi de peste ${FREE}`,
   "5 ani garanție comercială la ceasuri",
   "Garanție pe viață la bijuterii",
-  `Livrare în ${RO_DELIVERY_DAYS} zile lucrătoare · Plata securizată cu cardul`,
+  `${RO_DELIVERY_TEXT} · Plata securizată cu cardul`,
 ];
 const MOBILE = [
   `Livrare gratuită peste ${FREE}`,
   "Garanție 5 ani la ceasuri",
   "Garanție pe viață la bijuterii",
-  `Livrare în ${RO_DELIVERY_DAYS} zile lucrătoare`,
+  RO_DELIVERY_TEXT,
 ];
 
 export function RoAnnouncementBar() {

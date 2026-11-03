@@ -11,10 +11,10 @@ const bg = {
   // ── Announcement bar ──
   "ann.shipping":        "Безплатна доставка за поръчки над €60",
   "ann.warranty":        "5 години търговска гаранция на часовниците · Доживотна на бижутата",
-  "ann.delivery":        "Доставка на следващия работен ден · Преглед и тест преди плащане",
+  "ann.delivery":        "Доставка за 1–2 работни дни с Еконт · Преглед и тест преди плащане",
   "ann.shipping.short":  "Безплатна доставка над €60",
   "ann.warranty.short":  "Гаранция 5 год. · Доживотна за бижута",
-  "ann.delivery.short":  "Доставка на следващия работен ден",
+  "ann.delivery.short":  "Доставка за 1–2 работни дни с Еконт",
 
   // ── Navigation ──
   "nav.home":     "Начало",
@@ -42,7 +42,7 @@ const bg = {
   "trust.onWatches":       "на часовниците",
   "trust.warrantyLife":    "Доживотна гаранция",
   "trust.onJewellery":     "на бижутата",
-  "trust.days2":           "Следващ работен ден",
+  "trust.days2":           "1–2 работни дни с Еконт",
   "trust.courier":         "Еконт",
   "trust.inspect":         "Преглед преди плащане",
   "trust.cod":             "Наложен платеж",
@@ -145,10 +145,10 @@ const en: Record<DictKey, string> = {
 const ro: Record<DictKey, string> = {
   "ann.shipping":       "Livrare gratuită la comenzi peste €60",
   "ann.warranty":       "Garanție comercială 5 ani la ceasuri · Pe viață la bijuterii",
-  "ann.delivery":       "Livrare în maximum 2 zile lucrătoare · Verificare înainte de plată",
+  "ann.delivery":       "Livrare în 2–4 zile lucrătoare cu Speedy · Plata securizată cu cardul",
   "ann.shipping.short": "Livrare gratuită peste €60",
   "ann.warranty.short": "Garanție 5 ani · Pe viață la bijuterii",
-  "ann.delivery.short": "Livrare în max. 2 zile lucrătoare",
+  "ann.delivery.short": "Livrare în 2–4 zile lucrătoare cu Speedy",
 
   "nav.home":      "Acasă",
   "nav.watches":   "Ceasuri",
@@ -173,7 +173,7 @@ const ro: Record<DictKey, string> = {
   "trust.onWatches":    "la ceasuri",
   "trust.warrantyLife": "Garanție pe viață",
   "trust.onJewellery":  "la bijuterii",
-  "trust.days2":        "Max. 2 zile lucrătoare",
+  "trust.days2":        "2–4 zile lucrătoare cu Speedy",
   "trust.courier":      "Econt",
   "trust.inspect":      "Verificare înainte de plată",
   "trust.cod":          "Plata ramburs",

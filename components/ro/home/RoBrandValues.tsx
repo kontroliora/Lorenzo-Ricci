@@ -1,7 +1,7 @@
 import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import {
   fmtRON, ronPrice,
-  RO_DELIVERY_DAYS, RO_FREE_SHIPPING_RON, RO_RETURN_DAYS, RO_SHIPPING_FEE_RON,
+  RO_DELIVERY_TEXT, RO_FREE_SHIPPING_RON, RO_RETURN_DAYS, RO_SHIPPING_FEE_RON,
 } from "@/lib/ro/config";
 
 // Romanian counterpart of components/home/BrandValues.tsx (the brand quote), with the market's trust strip under it.
@@ -16,7 +16,7 @@ const VALUES = [
     desc: `Plătiți online, securizat prin Stripe, în lei; nu aveți nimic de plătit la livrare. Produsele de la ${PREPAYMENT_FROM} în sus se comandă cu plata în avans.`,
   },
   {
-    title: `Livrare în ${RO_DELIVERY_DAYS} zile lucrătoare`,
+    title: RO_DELIVERY_TEXT,
     desc: `Gratuită de la ${fmtRON(RO_FREE_SHIPPING_RON)}, altfel ${fmtRON(RO_SHIPPING_FEE_RON)}. După expediere, coletul ajunge la dumneavoastră prin curier rapid.`,
   },
   {

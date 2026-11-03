@@ -54,7 +54,7 @@ ${emailHead("Coșul dumneavoastră vă așteaptă - Lorenzo Ricci")}
         <tr><td style="padding:0 48px 0">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #ede8de;border-bottom:1px solid #ede8de"><tr>
             <td align="center" style="padding:22px 8px;width:33.33%;border-right:1px solid #ede8de"><p style="margin:0 0 4px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:${EMAIL_NAVY}">Plata cu cardul</p><p style="margin:0;font-size:11px;color:#9c9489;line-height:1.5">Plată online securizată</p></td>
-            <td align="center" style="padding:22px 8px;width:33.33%;border-right:1px solid #ede8de"><p style="margin:0 0 4px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:${EMAIL_NAVY}">Livrare</p><p style="margin:0;font-size:11px;color:#9c9489;line-height:1.5">${RO_DELIVERY_DAYS} zile lucrătoare</p></td>
+            <td align="center" style="padding:22px 8px;width:33.33%;border-right:1px solid #ede8de"><p style="margin:0 0 4px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:${EMAIL_NAVY}">Livrare</p><p style="margin:0;font-size:11px;color:#9c9489;line-height:1.5">${RO_DELIVERY_DAYS} zile lucrătoare cu Speedy</p></td>
             <td align="center" style="padding:22px 8px;width:33.33%"><p style="margin:0 0 4px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:${EMAIL_NAVY}">Retur</p><p style="margin:0;font-size:11px;color:#9c9489;line-height:1.5">${RO_RETURN_DAYS} zile, conform legii</p></td>
           </tr></table>
         </td></tr>
