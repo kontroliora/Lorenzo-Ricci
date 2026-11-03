@@ -30,6 +30,7 @@ const CARDHOLDERS: LeatherItem[] = [
   { id: "perla",     slug: "cardholder-perla",     name: 'Lorenzo Ricci "Perla"',     sub: "Сив кардхолдър от крокодилска кожа",        src: `/Products/wallets/Perla/kardholder-perla-siv-krokodilska-kozha.webp` },
   { id: "topazio",   slug: "cardholder-topazio",   name: 'Lorenzo Ricci "Topazio"',   sub: "Жълт кардхолдър от крокодилска кожа",       src: `/Products/wallets/Topazio/kardholder-topazio-zhalt-krokodilska-kozha.webp` },
   { id: "marina",    slug: "cardholder-marina",    name: 'Lorenzo Ricci "Marina"',    sub: "Син кардхолдър от крокодилска кожа",        src: `/Products/wallets/Marina/kardholder-marina-sin-krokodilska-kozha.webp` },
+  { id: "panna",     slug: "cardholder-panna",     name: 'Lorenzo Ricci "Panna"',     sub: "Кремаво бял кардхолдър от крокодилска кожа", src: `/Products/wallets/Panna/kardholder-panna-kremavo-byal-krokodilska-kozha.webp` },
 ];
 
 const CLUTCHES: LeatherItem[] = [

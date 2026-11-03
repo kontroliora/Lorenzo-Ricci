@@ -112,6 +112,7 @@ const CARDHOLDER_VARIANTS: Variant[] = [
   { slug: "cardholder-perla",     label: "Perla - Gri",               color: "#A99B8F", inStock: true },
   { slug: "cardholder-topazio",   label: "Topazio - Galben",          color: "#E4AB05", inStock: true },
   { slug: "cardholder-marina",    label: "Marina - Albastru",         color: "#1B5A80", inStock: true },
+  { slug: "cardholder-panna",     label: "Panna - Alb-crem",          color: "#EFE7D6", inStock: false },
 ];
 
 // Evening clutches (the one-off Milano Avorio bag is a single piece and has no siblings).
@@ -200,7 +201,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   }, []);
 
   // Small colour groups (watches, wallets: 3): warm the other colours' main photo once the page has settled.
-  // Big groups (cardholders: 10) only on touch/hover, so a phone doesn't download photos it may never look at.
+  // Big groups (cardholders: 11) only on touch/hover, so a phone doesn't download photos it may never look at.
   useEffect(() => {
     if (variants.length === 0 || variants.length > 4) return;
     const others = variants.filter((v) => v.slug !== product.slug);

@@ -1200,6 +1200,44 @@ export const products: Product[] = [
       { src: `/Products/wallets/Marina/kardholder-marina-lifestyle.webp`, alt: 'Lorenzo Ricci Marina син кардхолдър - лайфстайл снимка' },
     ],
   },
+  // Added 2026-11-03. Creamy white, large belly scales - a separate model from Bianco. Same rules as Marina:
+  // NO CITES permit number, no AED price, €39 (struck €65), gallery front first.
+  // inStock: false until the owner gives the stock count for wallet_inventory (shows "Изчерпан").
+  {
+    id: "cardholder-panna",
+    slug: "cardholder-panna",
+    sku: "CRD-PAN",
+    name: 'Lorenzo Ricci "Panna"',
+    category: "cardholders",
+    price: 39,
+    originalPrice: 65,
+    currency: "€",
+    inStock: false,
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
+    stock: 0,
+    warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
+    shortDescription: "Кремаво бял кардхолдър от крокодилска кожа",
+    description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
+    materialNote: 'Изработено от истинска крокодилска кожа. Тъй като всяка кожа е уникална, шарките и текстурата може да се различават леко от показаните на снимките - това е естествена характеристика на автентичната крокодилска кожа и придава на всяко изделие неповторим характер.',
+    crocodileSpecies: SIAMESE_CROCODILE,
+    features: [
+      "100% естествена крокодилска кожа",
+      "Ръчна изработка - всяко изделие е уникално",
+    ],
+    specs: [
+      { label: "Материал", value: "100% Крокодилска кожа" },
+      { label: "Вид", value: SIAMESE_CROCODILE },
+      { label: "Изработка", value: "Ръчна" },
+      { label: "Цвят", value: "Кремаво бял (Panna)" },
+      { label: "Размери", value: "" }, // empty → row hidden until the owner gives real measurements
+    ],
+    coverImage: { src: `/Products/wallets/Panna/kardholder-panna-kremavo-byal-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Panna кремаво бял кардхолдър крокодилска кожа - преден изглед' },
+    images: [
+      { src: `/Products/wallets/Panna/kardholder-panna-kremavo-byal-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Panna кремаво бял кардхолдър крокодилска кожа - преден изглед' },
+      { src: `/Products/wallets/Panna/kardholder-panna-zaden-izgled.webp`, alt: 'Lorenzo Ricci Panna - заден изглед, отделения за карти' },
+      { src: `/Products/wallets/Panna/kardholder-panna-lifestyle.webp`, alt: 'Lorenzo Ricci Panna кремаво бял кардхолдър - лайфстайл снимка' },
+    ],
+  },
   // ─── BAGS ───────────────────────────────────────────────────────────────────
   // TODO (owed by owner before this section is publish-ready):
   //   - Milano Avorio: lining material (still dropped from specs entirely until confirmed -

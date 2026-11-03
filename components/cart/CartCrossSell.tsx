@@ -18,6 +18,7 @@ const WALLET_FOR_CARDHOLDER: Record<string, string> = {
   "cardholder-perla":      "wallet-alabastro",
   "cardholder-topazio":    "wallet-alabastro",
   "cardholder-marina":     "wallet-alabastro",
+  "cardholder-panna":      "wallet-alabastro",
 };
 
 const BUNDLE_PARTNER: Record<string, string> = {

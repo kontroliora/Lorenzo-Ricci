@@ -3942,7 +3942,7 @@ export const reviewSummary: Record<string, { count: number; avg: number }> = {
 };
 
 // ─── Category pooling ────────────────────────────────────────────────────────
-// Cardholder pages show reviews from all 10 cardholders; wallet pages from all 3 wallets.
+// Cardholder pages show reviews from all 11 cardholders; wallet pages from all 3 wallets.
 // Watches, jewellery, and bags are NOT pooled.
 
 export const CARDHOLDER_SLUGS = [
@@ -3956,6 +3956,7 @@ export const CARDHOLDER_SLUGS = [
   "cardholder-perla",
   "cardholder-topazio",
   "cardholder-marina",
+  "cardholder-panna",
 ] as const;
 
 export const WALLET_SLUGS = [

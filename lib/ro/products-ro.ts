@@ -738,6 +738,22 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
       "Port-card albastru din piele de crocodil Lorenzo Ricci Marina - fotografie lifestyle",
     ],
   },
+  "cardholder-panna": {
+    badge: BADGE_EARLY_BF,
+    warranty: WARRANTY_NONE,
+    shortDescription: "Port-card alb-crem din piele de crocodil",
+    description: LEATHER_DESC,
+    materialNote: LEATHER_NOTE,
+    crocodileSpecies: SIAMESE,
+    features: LEATHER_FEATURES,
+    specs: specsNoCites("Alb-crem (Panna)"),
+    coverAlt: "Port-card alb-crem din piele de crocodil Lorenzo Ricci Panna - vedere frontală",
+    imageAlts: [
+      "Port-card alb-crem din piele de crocodil Lorenzo Ricci Panna - vedere frontală",
+      "Lorenzo Ricci Panna - vedere din spate, compartimente pentru carduri",
+      "Port-card alb-crem din piele de crocodil Lorenzo Ricci Panna - fotografie lifestyle",
+    ],
+  },
 
   // ─── BAGS ──────────────────────────────────────────────────────────────────
   "bag-milano-avorio": {
