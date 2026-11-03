@@ -597,7 +597,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
   "cardholder-bianco": {
     badge: BADGE_EARLY_BF,
     warranty: WARRANTY_NONE,
-    shortDescription: "Port-card alb din piele",
+    shortDescription: "Port-card alb din piele de crocodil",
     description: LEATHER_DESC,
     materialNote:
       "Fiecare port-card Bianco este realizat dintr-o piele diferită. Toate sunt albe, dar dimensiunea și desenul solzilor diferă vizibil, așa că exemplarul dumneavoastră poate să nu arate exact ca în fotografii.",

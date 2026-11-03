@@ -878,7 +878,7 @@ export const products: Product[] = [
     inStock: true,
     stock: 88,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
-    shortDescription: "Бял кожен кардхолдър",
+    shortDescription: "Бял кардхолдър от крокодилска кожа",
     description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
     materialNote: 'Всеки кардхолдър Bianco е от различна кожа. Всички са бели, но големината и шарката на люспите се различават видимо, така че вашият екземпляр може да не изглежда точно като на снимките.',
     crocodileSpecies: SIAMESE_CROCODILE,

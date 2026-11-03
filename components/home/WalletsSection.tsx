@@ -20,7 +20,7 @@ const WALLETS: LeatherItem[] = [
 
 const CARDHOLDERS: LeatherItem[] = [
   { id: "ambra",     slug: "cardholder-ambra",     name: 'Lorenzo Ricci "Ambra"',     sub: "Оранжев кардхолдър от крокодилска кожа", src: `/Products/wallets/Ambra/kardholder-ambra-oranjev-krokodiilska-kozha.webp` },
-  { id: "bianco",    slug: "cardholder-bianco",    name: 'Lorenzo Ricci "Bianco"',    sub: "Бял кожен кардхолдър",                   src: `/Products/wallets/Bianco/kardholder-bianco-byal-krokodiilska-kozha.webp` },
+  { id: "bianco",    slug: "cardholder-bianco",    name: 'Lorenzo Ricci "Bianco"',    sub: "Бял кардхолдър от крокодилска кожа",     src: `/Products/wallets/Bianco/kardholder-bianco-byal-krokodiilska-kozha.webp` },
   { id: "valentina", slug: "cardholder-valentina", name: 'Lorenzo Ricci "Valentina"', sub: "Розов кардхолдър от крокодилска кожа",   src: `/Products/wallets/Valentina/kardholder-valentina-rozov-krokodiilska-kozha.webp` },
   { id: "zaffiro",   slug: "cardholder-zaffiro",   name: 'Lorenzo Ricci "Zaffiro"',   sub: "Тъмносин кардхолдър от крокодилска кожа",src: `/Products/wallets/Zaffiro/kardholder-zaffiro-sinen-krokodiilska-kozha.webp` },
   // 2026-09-27 batch (counts in wallet_inventory_restock_2026-09-27.sql).
