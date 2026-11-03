@@ -1,5 +1,5 @@
-// Small hints on the product cards (BG and RO): what a discounted product saves (homepage cards only) and a low-stock line
-// (every card: homepage and listings). The product page has its own, looser stock threshold (PAGE_LOW_STOCK_MAX).
+// Small hints on the product cards (BG and RO, homepage and listings): what a discounted product saves and a low-stock line
+// on every card. The product page has its own, looser stock threshold (PAGE_LOW_STOCK_MAX).
 // Pure helpers, no React.
 import { ronOf, ronOriginalOf } from "@/lib/ro/config";
 

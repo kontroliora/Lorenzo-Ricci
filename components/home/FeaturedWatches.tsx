@@ -104,7 +104,7 @@ function WatchGroup({ tag, title, subtitle, watches, soldOut, priority = false }
       <div ref={gridRef} className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
         {watches.map((watch, i) => (
           <div key={watch.id} className={`reveal reveal-delay-${i + 1}`}>
-            <ProductCard product={watch} priority={priority && i < 2} learnMore homeHints />
+            <ProductCard product={watch} priority={priority && i < 2} learnMore />
           </div>
         ))}
       </div>

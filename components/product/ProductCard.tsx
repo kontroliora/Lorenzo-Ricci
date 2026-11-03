@@ -15,11 +15,9 @@ interface ProductCardProps {
   product: Product;
   priority?: boolean;
   learnMore?: boolean;
-  /** Homepage only: "Спестявате €N" under a discounted price. */
-  homeHints?: boolean;
 }
 
-export function ProductCard({ product, priority = false, learnMore = false, homeHints = false }: ProductCardProps) {
+export function ProductCard({ product, priority = false, learnMore = false }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const [added, setAdded] = useState(false);
   const [isNight, setIsNight] = useState(false);
@@ -45,9 +43,9 @@ export function ProductCard({ product, priority = false, learnMore = false, home
   const isWatch = product.category === "watches";
   const price = displayPrice(product, useCountry());
 
-  // Low-stock line on every card (live stock from the one shared batched call); savings only on the homepage, where the struck EUR price is shown.
+  // Both hint lines on every card (homepage and listings): the saving while the struck EUR price is shown, the low-stock line from the one shared batched call.
   const stockMap = useLeatherStock(true);
-  const saved = homeHints && price.original && !isSoldOut ? savingsEur(product) : null;
+  const saved = price.original && !isSoldOut ? savingsEur(product) : null;
   const left = !isSoldOut ? lowStockCount(stockMap?.[product.slug]) : null;
 
   const productSummary = reviewSummary[product.slug];
