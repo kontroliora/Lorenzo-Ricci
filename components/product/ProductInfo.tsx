@@ -103,7 +103,7 @@ const CARDHOLDER_VARIANTS = [
   { slug: "cardholder-perla",     label: "Perla - Сив",        color: "#A99B8F", inStock: true },
   { slug: "cardholder-topazio",   label: "Topazio - Жълт",     color: "#E4AB05", inStock: true },
   { slug: "cardholder-marina",    label: "Marina - Син",       color: "#1B5A80", inStock: true },
-  { slug: "cardholder-panna",     label: "Panna - Кремаво бял", color: "#EFE7D6", inStock: false },
+  { slug: "cardholder-panna",     label: "Panna - Кремаво бял", color: "#EFE7D6", inStock: true },
 ];
 
 // Evening clutches (the Milano Avorio bag is a one-off and has no siblings).

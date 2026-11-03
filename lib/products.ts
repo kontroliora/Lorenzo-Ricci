@@ -1202,7 +1202,7 @@ export const products: Product[] = [
   },
   // Added 2026-11-03. Creamy white, large belly scales - a separate model from Bianco. Same rules as Marina:
   // NO CITES permit number, no AED price, €39 (struck €65), gallery front first.
-  // inStock: false until the owner gives the stock count for wallet_inventory (shows "Изчерпан").
+  // Stock 30 (wallet_inventory_panna_2026-11-03.sql).
   {
     id: "cardholder-panna",
     slug: "cardholder-panna",
@@ -1212,9 +1212,9 @@ export const products: Product[] = [
     price: 39,
     originalPrice: 65,
     currency: "€",
-    inStock: false,
+    inStock: true,
     badge: "РАНЕН ЧЕРЕН ПЕТЪК",
-    stock: 0,
+    stock: 30,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Кремаво бял кардхолдър от крокодилска кожа",
     description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',
