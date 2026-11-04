@@ -3959,56 +3959,56 @@ export const reviews: Review[] = [
   {
     id: "r-937",
     productSlug: "clutch-portofino",
-    author: "Стела М.",
+    author: "Николай М.",
     rating: 5,
     body: "Много е елегантен, ама за този светъл цвят си трябва едно наум – само за поводи го нося, че треперя да не го оцапам някъде.",
     date: "2026-10-05",
-    imageUrl: "/reviews/clutch-portofino-СтелаМ.jpeg",
+    imageUrl: "/reviews/clutch-portofino-НиколайМ.jpeg",
   },
   {
     id: "r-938",
     productSlug: "clutch-portofino",
-    author: "Виктория Н.",
+    author: "Петър С.",
     rating: 5,
-    body: "На живо изглежда даже по-добре, отколкото на снимките тук. Кожата е супер мека, направо не ти се излиза с друга чанта.",
+    body: "На живо изглежда даже по-добре, отколкото на снимките тук. Кожата е супер мека, направо не ти се излиза с друг клъч.",
     date: "2026-10-08",
-    imageUrl: "/reviews/clutch-portofino-ВикторияН.jpeg",
+    imageUrl: "/reviews/clutch-portofino-ПетърС.jpeg",
   },
   {
     id: "r-939",
     productSlug: "clutch-torino",
-    author: "Мария Д.",
+    author: "Милен Д.",
     rating: 5,
     body: "Класика, няма какво да се сбърка. Ципът в началото малко затягаше, ама след два-три дни разработи и сега е пушка.",
     date: "2026-10-11",
-    imageUrl: "/reviews/clutch-torino-МарияД.jpeg",
+    imageUrl: "/reviews/clutch-torino-МиленД.jpeg",
   },
   {
     id: "r-940",
     productSlug: "clutch-torino",
-    author: "Вероника С.",
+    author: "Васил Н.",
     rating: 5,
     body: "Малък е, ама телефон, цигари, ключове и картодържачът се събират идеално. Точно това ми трябваше за вечер навън.",
     date: "2026-10-14",
-    imageUrl: "/reviews/clutch-torino-ВероникаС.jpeg",
+    imageUrl: "/reviews/clutch-torino-ВасилН.jpeg",
   },
   {
     id: "r-941",
     productSlug: "clutch-toscana",
-    author: "Кристина В.",
+    author: "Росен В.",
     rating: 5,
     body: "Зеленият цвят е уникален, на слънце избива страхотно, а на тъмно си е направо черен. Доста нестандартен избор, но си струва.",
     date: "2026-10-17",
-    imageUrl: "/reviews/clutch-toscana-КристинаВ.jpeg",
+    imageUrl: "/reviews/clutch-toscana-РосенВ.jpeg",
   },
   {
     id: "r-942",
     productSlug: "clutch-toscana",
-    author: "Милада Т.",
+    author: "Любомир Т.",
     rating: 5,
-    body: "Мъжът ми ме изненада с него. В началото се чудех с какво ще го нося, ама се вързва супер и с дънки, и с по-официално.",
+    body: "Взех го на жена ми за изненада. В началото се чудеше с какво ще го носи, ама се вързва супер и с дънки, и с по-официално.",
     date: "2026-10-20",
-    imageUrl: "/reviews/clutch-toscana-МиладаТ.jpeg",
+    imageUrl: "/reviews/clutch-toscana-ЛюбомирТ.jpeg",
   },
   {
     id: "r-943",
@@ -4027,6 +4027,86 @@ export const reviews: Review[] = [
     body: "Много практичен портфейл, събрах сума ти карти и лични документи, а пък не изглежда надут и дебел.",
     date: "2026-10-25",
     imageUrl: "/reviews/wallet-alabastro-БоянД.jpeg",
+  },
+  {
+    id: "r-945",
+    productSlug: "clutch-torino",
+    author: "Калоян П.",
+    rating: 5,
+    body: "взех го че ми писна джобовете да са ми подути като възглавници от ключове и документи... всичко влиза вътре и не тежи, идеалка е",
+    date: "2026-10-03",
+  },
+  {
+    id: "r-946",
+    productSlug: "clutch-torino",
+    author: "Димитър В.",
+    rating: 5,
+    body: "Стабилна кожа и релефа е такъв мъжки, не изглежда евтино. Ципа в началото беше малко стегнат но за 2 дни омекна.",
+    date: "2026-10-07",
+  },
+  {
+    id: "r-947",
+    productSlug: "clutch-torino",
+    author: "Георги С.",
+    rating: 5,
+    body: "Бърза доставка по Еконт. Ползвам го основно за колата да държа талоните, портфейла и айфона на едно място.",
+    date: "2026-10-12",
+  },
+  {
+    id: "r-948",
+    productSlug: "clutch-verona",
+    author: "Виктор М.",
+    rating: 5,
+    body: "Цвета е доста добър, тъмно бордо. На снимките се чудех да не бие на дамско, но на живо си е абсолютно мъжко.",
+    date: "2026-10-15",
+  },
+  {
+    id: "r-949",
+    productSlug: "clutch-verona",
+    author: "Радослав И.",
+    rating: 5,
+    body: "Плътна кожа и здрави шевове. Пристигна с някакъв пластик за автентичност вътре, за тия пари си заслужава.",
+    date: "2026-10-18",
+  },
+  {
+    id: "r-950",
+    productSlug: "clutch-toscana",
+    author: "Стоян Г.",
+    rating: 5,
+    body: "Зеленото е доста тъмно, на сянка почти черее. Разчупва малко, че ми беше писнало от стандартните черни чантички.",
+    date: "2026-10-02",
+  },
+  {
+    id: "r-951",
+    productSlug: "clutch-toscana",
+    author: "Александър К.",
+    rating: 5,
+    body: "Търсех нещо по-прилично за срещи и бизнес пътувания. Паспорта, двата телефона и кеша влизат без да се подува.",
+    date: "2026-10-06",
+  },
+  {
+    id: "r-952",
+    productSlug: "clutch-toscana",
+    author: "Мартин Д.",
+    rating: 5,
+    body: "Много точен размер. Хем събира всичко необходимо за деня, хем не изглежда като някой огромен несесер.",
+    date: "2026-10-10",
+  },
+  {
+    id: "r-953",
+    productSlug: "clutch-toscana",
+    author: "Ивайло Т.",
+    rating: 5,
+    body: "Поръчах го във вторник следобед и в сряда сутринта вече беше в офиса на Спиди. Точни са.",
+    date: "2026-10-13",
+  },
+  {
+    id: "r-954",
+    productSlug: "clutch-portofino",
+    author: "Борислав Й.",
+    rating: 5,
+    body: "Светлия цвят е много добър за лятото но си иска пазене, че по стелките в колата лесно се зацапва. Иначе като изработка няма грешка.",
+    date: "2026-10-16",
   },
 ];
 
@@ -4082,17 +4162,27 @@ export const WALLET_SLUGS = [
   "wallet-smeraldo",
 ] as const;
 
-export type CategoryType = "cardholders" | "wallets";
+export const CLUTCH_SLUGS = [
+  "clutch-torino",
+  "clutch-verona",
+  "clutch-toscana",
+  "clutch-portofino",
+  "clutch-capri",
+] as const;
+
+export type CategoryType = "cardholders" | "wallets" | "clutches";
 
 export function getCategoryType(slug: string): CategoryType | null {
   if ((CARDHOLDER_SLUGS as readonly string[]).includes(slug)) return "cardholders";
   if ((WALLET_SLUGS as readonly string[]).includes(slug)) return "wallets";
+  if ((CLUTCH_SLUGS as readonly string[]).includes(slug)) return "clutches";
   return null;
 }
 
 export function getCategorySlugs(slug: string): string[] | null {
   if ((CARDHOLDER_SLUGS as readonly string[]).includes(slug)) return [...CARDHOLDER_SLUGS];
   if ((WALLET_SLUGS as readonly string[]).includes(slug)) return [...WALLET_SLUGS];
+  if ((CLUTCH_SLUGS as readonly string[]).includes(slug)) return [...CLUTCH_SLUGS];
   return null;
 }
 
