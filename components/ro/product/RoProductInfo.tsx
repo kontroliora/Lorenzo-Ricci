@@ -26,10 +26,10 @@ import {
 import { RoStickyCartBar } from "@/components/ro/product/RoStickyCartBar";
 import { PayLine, CodLine } from "@/components/product/CodNote";
 import { roCartLine } from "@/components/ro/product/cart-line";
-import { hasCyrillic, roReviewsCount, roRatingText } from "@/components/ro/product/ro-text";
+import { roReviewsCount, roRatingText } from "@/components/ro/product/ro-text";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { PAGE_LOW_STOCK_MAX, savingsRon } from "@/lib/home-card-hints";
-import { campaignLabelRo, isCampaignBadge } from "@/lib/sale-campaign";
+import { campaignLabelRo } from "@/lib/sale-campaign";
 import { SavingsLine, DeliveryLine } from "@/components/product/PriceExtras";
 
 // A colour swatch reads as sold out when its product is switched off in
@@ -167,11 +167,9 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
 
   const ron = ronOf(product);
   // The sale is the Bulgarian one (owner, 2026-10-14): the current price, the old price crossed out (both converted to whole lei)
-  // and the catalogue badge. Defence in depth: a badge that still reads Bulgarian (overlay missing) is never printed.
+  // and the campaign badge by the price (no catalogue badge above the name).
   const originalRon = ronOriginalOf(product);
   const prepay = roNeedsPrepayment(product);
-  // Not when it only repeats the campaign: the red campaign badge by the price says it.
-  const badge = product.badge && !hasCyrillic(product.badge) && !isCampaignBadge(product.badge) ? product.badge : undefined;
 
   const variants = (
     product.category === "watches"
@@ -304,13 +302,8 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         {categoryLabel(product)} / {product.name}
       </p>
 
-      {/* Name & badge */}
+      {/* Name (no catalogue badge above it: the badges sit by the price) */}
       <div>
-        {badge && (
-          <span className="inline-block bg-navy/10 text-navy border border-navy/30 font-sans text-[10px] font-medium tracking-wider uppercase px-2.5 py-1 mb-3">
-            {badge}
-          </span>
-        )}
         <h1 className="font-serif text-display-md text-charcoal leading-tight">{product.name}</h1>
         <p className="font-sans text-[10px] text-ink-muted tracking-[0.2em] mt-1.5">
           Art. {product.sku}
@@ -386,7 +379,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
 
       {/* Delivery in one line, right under the price (no inspection before paying: the Romanian shop is card only) */}
       {effectiveInStock && (
-        <DeliveryLine text={`Livrare gratuită peste ${fmtRON(RO_FREE_SHIPPING_RON)} · ${RO_DELIVERY_TEXT}`} />
+        <DeliveryLine text={shipsFree ? RO_DELIVERY_TEXT : `Livrare gratuită peste ${fmtRON(RO_FREE_SHIPPING_RON)} · ${RO_DELIVERY_TEXT}`} />
       )}
 
       {/* Card payment, said under the price (not for a prepayment product) */}

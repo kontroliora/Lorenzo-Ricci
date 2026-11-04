@@ -37,7 +37,7 @@ export function shortModelName(slug: string): string {
 export const giftDisplayName = (giftSlug: string): string => `Кардхолдър ${shortModelName(giftSlug)}`;
 
 export const giftOfferText = (clutchSlug: string, giftSlug: string): string =>
-  `При покупка на ${shortModelName(clutchSlug)} получаваш кардхолдър ${shortModelName(giftSlug)} безплатно`;
+  `При покупка на ${shortModelName(clutchSlug)} получавате кардхолдър ${shortModelName(giftSlug)} безплатно`;
 
 // Units free to sell for a slug; undefined = not known (yet).
 export type StockOf = (slug: string) => number | undefined;

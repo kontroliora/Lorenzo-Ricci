@@ -38,12 +38,6 @@ export function campaignLabelRo(now: Date = new Date()): string | null {
   return currentPhase(now)?.labelRo ?? null;
 }
 
-/** A catalogue badge that only repeats a campaign phase ("РАНЕН ЧЕРЕН ПЕТЪК", "BLACK FRIDAY TIMPURIU"): the product page shows the red campaign badge by the price instead. */
-export const isCampaignBadge = (badge: string): boolean => {
-  const b = badge.trim().toLocaleUpperCase("bg-BG");
-  return CAMPAIGN_PHASES.some((p) => p.label.toLocaleUpperCase("bg-BG") === b || p.labelRo.toLocaleUpperCase("ro-RO") === b);
-};
-
 /** Discount of one product in % of its regular (crossed-out) price; 0 when it is not on sale. */
 export const discountPct = (p: Pick<Product, "price" | "originalPrice">): number =>
   isOnSale(p) ? ((p.originalPrice! - p.price) / p.originalPrice!) * 100 : 0;

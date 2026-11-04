@@ -14,7 +14,7 @@ import { GiftOffer } from "@/components/product/GiftOffer";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { getProductBySlug } from "@/lib/products";
 import { PAGE_LOW_STOCK_MAX, savingsEur } from "@/lib/home-card-hints";
-import { campaignLabel, isCampaignBadge } from "@/lib/sale-campaign";
+import { campaignLabel } from "@/lib/sale-campaign";
 import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
 import { SavingsLine, DeliveryLine } from "@/components/product/PriceExtras";
 
@@ -252,8 +252,6 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
   const campaign = campaignLabel();
   // Beside it: the free-delivery badge when the product alone reaches the threshold (not on a sold-out product).
   const shipsFree = effectiveInStock && bgShipsFree(product);
-  // The catalogue badge above the name, unless it only repeats the campaign (the red badge by the price says it).
-  const titleBadge = product.badge && !isCampaignBadge(product.badge) ? product.badge : undefined;
 
   const handleAdd = () => {
     addItem({ ...product, stock: effectiveStock });
@@ -288,13 +286,8 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           : "Бижута"} / {product.name}
       </p>
 
-      {/* Name & badge */}
+      {/* Name (no catalogue badge above it: the badges sit by the price) */}
       <div>
-        {titleBadge && (
-          <span className="inline-block bg-navy/10 text-navy border border-navy/30 font-sans text-[10px] font-medium tracking-wider uppercase px-2.5 py-1 mb-3">
-            {titleBadge}
-          </span>
-        )}
         <h1 className="font-serif text-display-md text-charcoal leading-tight">{product.name}</h1>
         <p className="font-sans text-[10px] text-ink-muted tracking-[0.2em] mt-1.5">
           Арт. {product.sku}
@@ -372,10 +365,11 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         <SavingsLine text={saved !== null ? `Спестявате €${saved}` : null} campaign={campaign} freeShipping={shipsFree ? "Безплатна доставка" : null} />
       </div>
 
-      {/* Delivery in one line, right under the price; inspection before paying only where cash on delivery exists */}
+      {/* Delivery in one line, right under the price; inspection before paying only where cash on delivery exists.
+          The "free over €60" part only while the green badge doesn't already say it. */}
       {effectiveInStock && (
         <DeliveryLine
-          text={`Безплатна доставка над €${BG_FREE_SHIPPING_EUR} · Доставка за 1–2 работни дни с Еконт${requiresPrepayment(product) ? "" : " · Преглед преди плащане"}`}
+          text={`${shipsFree ? "" : `Безплатна доставка над €${BG_FREE_SHIPPING_EUR} · `}Доставка за 1–2 работни дни с Еконт${requiresPrepayment(product) ? "" : " · Преглед преди плащане"}`}
         />
       )}
 

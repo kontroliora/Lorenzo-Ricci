@@ -29,9 +29,8 @@ export function GiftOffer({ clutchSlug }: { clutchSlug: string }) {
         <p className="font-sans text-[13px] font-light text-ink-soft leading-snug tracking-wide">
           {giftOfferText(clutchSlug, giftSlug)}
         </p>
-        <p className="font-sans text-xs mt-1">
-          <span className="text-ink-faint line-through">{gift.currency}{gift.price.toFixed(2)}</span>
-          <span className="ml-2 text-navy font-medium">Подарък</span>
+        <p className="font-sans text-xs mt-1 text-ink-soft">
+          Стойност {gift.currency}{Number.isInteger(gift.price) ? gift.price : gift.price.toFixed(2)} · <span className="text-navy font-medium">Безплатно</span>
         </p>
       </div>
     </div>
