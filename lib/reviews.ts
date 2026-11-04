@@ -3943,7 +3943,7 @@ export const reviews: Review[] = [
     productSlug: "cardholder-onice",
     author: "Радослав Т.",
     rating: 5,
-    body: "Prada продават същото за 500 евро. А разлика в качеството не виждам.",
+    body: "Нямам оплаквания.",
     date: "2026-10-05",
     imageUrl: "/reviews/cardholder-onice-РадославТ.jpeg",
   },
