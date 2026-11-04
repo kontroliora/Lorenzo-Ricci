@@ -14,8 +14,8 @@ import { GiftOffer } from "@/components/product/GiftOffer";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { getProductBySlug } from "@/lib/products";
 import { PAGE_LOW_STOCK_MAX, savingsEur } from "@/lib/home-card-hints";
-import { campaignLabel } from "@/lib/sale-campaign";
-import { BG_FREE_SHIPPING_EUR } from "@/lib/shipping-rules";
+import { campaignLabel, isCampaignBadge } from "@/lib/sale-campaign";
+import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
 import { SavingsLine, DeliveryLine } from "@/components/product/PriceExtras";
 
 // A colour swatch reads as sold out when its product is switched off in
@@ -250,6 +250,10 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
   // Under the price: the saving while the struck EUR price is shown (not on a sold-out product) with the running campaign's badge.
   const saved = price.original && effectiveInStock ? savingsEur(product) : null;
   const campaign = campaignLabel();
+  // Beside it: the free-delivery badge when the product alone reaches the threshold (not on a sold-out product).
+  const shipsFree = effectiveInStock && bgShipsFree(product);
+  // The catalogue badge above the name, unless it only repeats the campaign (the red badge by the price says it).
+  const titleBadge = product.badge && !isCampaignBadge(product.badge) ? product.badge : undefined;
 
   const handleAdd = () => {
     addItem({ ...product, stock: effectiveStock });
@@ -286,9 +290,9 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
 
       {/* Name & badge */}
       <div>
-        {product.badge && (
+        {titleBadge && (
           <span className="inline-block bg-navy/10 text-navy border border-navy/30 font-sans text-[10px] font-medium tracking-wider uppercase px-2.5 py-1 mb-3">
-            {product.badge}
+            {titleBadge}
           </span>
         )}
         <h1 className="font-serif text-display-md text-charcoal leading-tight">{product.name}</h1>
@@ -365,7 +369,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
             </span>
           )}
         </div>
-        {saved !== null && <SavingsLine text={`Спестявате €${saved}`} campaign={campaign} />}
+        <SavingsLine text={saved !== null ? `Спестявате €${saved}` : null} campaign={campaign} freeShipping={shipsFree ? "Безплатна доставка" : null} />
       </div>
 
       {/* Delivery in one line, right under the price; inspection before paying only where cash on delivery exists */}

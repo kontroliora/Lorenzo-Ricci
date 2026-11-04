@@ -3,7 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useReveal } from "@/lib/useReveal";
 import { useLeatherStock } from "@/lib/use-gifts";
-import { fmtRON, ronOf, ronOriginalOf, RO_CATEGORY_LABEL } from "@/lib/ro/config";
+import { fmtRON, ronOf, ronOriginalOf, roShipsFree, RO_CATEGORY_LABEL } from "@/lib/ro/config";
+import { FreeShippingBadge } from "@/components/product/PriceExtras";
 import type { ProductCategory } from "@/lib/types";
 import { safeText, type RoTileProduct } from "./ro-home-utils";
 import { lowStockCount, savingsRon, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
@@ -25,6 +26,7 @@ function LeatherCard({ product, sold, sizes, live }: { product: RoTileProduct; s
   const oldRon = ronOriginalOf(product);
   const saved = sold ? null : savingsRon(product);
   const left = sold ? null : lowStockCount(live);
+  const shipsFree = !sold && roShipsFree(product);
   return (
     <Link href={`/ro/produse/${product.slug}`} className="group flex flex-col">
       <div className="relative aspect-square bg-ivory-warm border border-border overflow-hidden">
@@ -66,6 +68,9 @@ function LeatherCard({ product, sold, sizes, live }: { product: RoTileProduct; s
         </p>
         {saved !== null && !sold && (
           <p data-testid="home-savings" className={`mt-0.5 ${CARD_SAVINGS_CLASS}`}>Economisiți {fmtRON(saved)}</p>
+        )}
+        {shipsFree && (
+          <div className="mt-1.5"><FreeShippingBadge text="Livrare gratuită" size="card" /></div>
         )}
         {left !== null && (
           <p data-testid="home-low-stock" className={`mt-0.5 ${CARD_LOW_STOCK_CLASS}`}>Au mai rămas {left} buc.</p>

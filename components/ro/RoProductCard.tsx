@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { useRoCart } from "@/lib/ro/store";
-import { fmtRON, ronOf, ronOriginalOf, roNeedsPrepayment } from "@/lib/ro/config";
+import { fmtRON, ronOf, ronOriginalOf, roNeedsPrepayment, roShipsFree } from "@/lib/ro/config";
+import { FreeShippingBadge } from "@/components/product/PriceExtras";
 import { useLeatherStock } from "@/lib/use-gifts";
 import { lowStockCount, savingsRon, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
 import { hasCyrillic, roDisplayName, roSafeText } from "@/components/ro/listing/ro-display";
@@ -47,6 +48,7 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
   const ronOriginal = ronOriginalOf(product); // defined while on sale: crossed-out price in lei
   const saved = savingsRon(product);
   const left = !isSoldOut ? lowStockCount(liveStock) : null; // both hint lines on every card (homepage and listings)
+  const shipsFree = !isSoldOut && roShipsFree(product);
 
   // Night image for watches is always images[1]
   const nightImage = isWatch ? (product.images[1] ?? product.coverImage) : null;
@@ -234,6 +236,9 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
 
         {saved !== null && !isSoldOut && (
           <p data-testid="home-savings" className={`mt-1 ${CARD_SAVINGS_CLASS}`}>Economisiți {fmtRON(saved)}</p>
+        )}
+        {shipsFree && (
+          <div className="mt-1.5"><FreeShippingBadge text="Livrare gratuită" size="card" /></div>
         )}
         {left !== null && (
           <p data-testid="home-low-stock" className={`mt-1 ${CARD_LOW_STOCK_CLASS}`}>Au mai rămas {left} buc.</p>

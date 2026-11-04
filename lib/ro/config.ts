@@ -65,5 +65,8 @@ export const RO_CATEGORY_LABEL: Record<ProductCategory, string> = {
 /** EUR base price -> whole lei (the displayed AND collected amount for the Romania test). */
 export function ronPrice(eur: number): number { return Math.round(eur * EUR_RON); }
 
+/** The "Livrare gratuită" badge (product page and cards): the product alone, in whole lei as shown, reaches the free-delivery threshold. */
+export const roShipsFree = (p: { price: number }): boolean => ronOf(p) >= RO_FREE_SHIPPING_RON;
+
 export const fmtRON = (ron: number): string =>
   `${ron.toLocaleString("ro-RO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} lei`;

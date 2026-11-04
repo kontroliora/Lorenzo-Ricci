@@ -9,6 +9,8 @@ import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
 import { useLeatherStock } from "@/lib/use-gifts";
 import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
+import { bgShipsFree } from "@/lib/shipping-rules";
+import { FreeShippingBadge } from "@/components/product/PriceExtras";
 
 type LeatherItem = { id: string; slug: string; name: string; sub: string; src: string };
 
@@ -48,6 +50,7 @@ function LeatherCard({ item, sold, sizes }: { item: LeatherItem; sold: boolean; 
   const stockMap = useLeatherStock(true);
   const saved = product && price?.original ? savingsEur(product) : null;
   const left = !sold ? lowStockCount(stockMap?.[item.slug]) : null;
+  const shipsFree = !sold && !!product && bgShipsFree(product);
   return (
     <Link href={`/products/${item.slug}`} className="group flex flex-col">
       <div className="relative aspect-square bg-ivory-warm border border-border overflow-hidden">
@@ -87,6 +90,9 @@ function LeatherCard({ item, sold, sizes }: { item: LeatherItem; sold: boolean; 
         )}
         {saved !== null && !sold && (
           <p data-testid="home-savings" className={`mt-0.5 ${CARD_SAVINGS_CLASS}`}>Спестявате €{saved}</p>
+        )}
+        {shipsFree && (
+          <div className="mt-1.5"><FreeShippingBadge text="Безплатна доставка" size="card" /></div>
         )}
         {left !== null && (
           <p data-testid="home-low-stock" className={`mt-0.5 ${CARD_LOW_STOCK_CLASS}`}>Остават {left} бр.</p>

@@ -10,6 +10,8 @@ import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
 import { useGiftFor, useLeatherStock } from "@/lib/use-gifts";
 import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
+import { bgShipsFree } from "@/lib/shipping-rules";
+import { FreeShippingBadge } from "@/components/product/PriceExtras";
 
 interface ProductCardProps {
   product: Product;
@@ -47,6 +49,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
   const stockMap = useLeatherStock(true);
   const saved = price.original && !isSoldOut ? savingsEur(product) : null;
   const left = !isSoldOut ? lowStockCount(stockMap?.[product.slug]) : null;
+  const shipsFree = !isSoldOut && bgShipsFree(product);
 
   const productSummary = reviewSummary[product.slug];
   const reviewCount = productSummary?.count ?? 0;
@@ -242,6 +245,9 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
 
         {saved !== null && (
           <p data-testid="home-savings" className={`mt-1 ${CARD_SAVINGS_CLASS}`}>Спестявате €{saved}</p>
+        )}
+        {shipsFree && (
+          <div className="mt-1.5"><FreeShippingBadge text="Безплатна доставка" size="card" /></div>
         )}
         {left !== null && (
           <p data-testid="home-low-stock" className={`mt-1 ${CARD_LOW_STOCK_CLASS}`}>Остават {left} бр.</p>

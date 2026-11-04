@@ -5,7 +5,8 @@ import Link from "next/link";
 import { RoProductCard } from "@/components/ro/RoProductCard";
 import { useReveal } from "@/lib/useReveal";
 import { fmtRON, RO_FREE_SHIPPING_RON } from "@/lib/ro/config";
-import { ronOf, ronOriginalOf } from "@/lib/ro/config";
+import { ronOf, ronOriginalOf, roShipsFree } from "@/lib/ro/config";
+import { FreeShippingBadge } from "@/components/product/PriceExtras";
 import { useLeatherStock } from "@/lib/use-gifts";
 import { lowStockCount, savingsRon, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
 import type { Product } from "@/lib/types";
@@ -154,6 +155,7 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
   const activeSoldOut = !active.inStock || stockMap?.[active.slug] === 0;
   const activeSaved = !activeSoldOut ? savingsRon(active) : null;
   const activeLeft = !activeSoldOut ? lowStockCount(stockMap?.[active.slug]) : null;
+  const activeShipsFree = !activeSoldOut && roShipsFree(active);
 
   return (
     <>
@@ -268,7 +270,7 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
         {/* Active watch info */}
         <div className="text-center px-6 mt-5">
           <h3 className="font-serif text-xl text-charcoal mb-1">{active.name}</h3>
-          <div className={`flex items-baseline justify-center gap-3 ${activeSaved !== null || activeLeft !== null ? "mb-1.5" : "mb-5"}`}>
+          <div className={`flex items-baseline justify-center gap-3 ${activeSaved !== null || activeShipsFree || activeLeft !== null ? "mb-1.5" : "mb-5"}`}>
             <span className="font-serif text-lg text-navy">
               {fmtRON(ronOf(active))}
             </span>
@@ -279,7 +281,10 @@ function WatchCoverFlow({ watches }: { watches: Product[] }) {
             )}
           </div>
           {activeSaved !== null && (
-            <p data-testid="home-savings" className={`${CARD_SAVINGS_CLASS} ${activeLeft !== null ? "mb-1" : "mb-5"}`}>Economisiți {fmtRON(activeSaved)}</p>
+            <p data-testid="home-savings" className={`${CARD_SAVINGS_CLASS} ${activeShipsFree || activeLeft !== null ? "mb-1.5" : "mb-5"}`}>Economisiți {fmtRON(activeSaved)}</p>
+          )}
+          {activeShipsFree && (
+            <div className={activeLeft !== null ? "mb-1" : "mb-5"}><FreeShippingBadge text="Livrare gratuită" size="card" /></div>
           )}
           {activeLeft !== null && (
             <p data-testid="home-low-stock" className={`${CARD_LOW_STOCK_CLASS} mb-5`}>Au mai rămas {activeLeft} buc.</p>

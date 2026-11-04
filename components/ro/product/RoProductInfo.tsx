@@ -18,6 +18,7 @@ import {
   RO_DELIVERY_DAYS,
   RO_DELIVERY_TEXT,
   RO_FREE_SHIPPING_RON,
+  roShipsFree,
   RO_SHIPPING_FEE_RON,
   RO_RETURN_DAYS,
   RO_COURIER_LABEL,
@@ -28,7 +29,7 @@ import { roCartLine } from "@/components/ro/product/cart-line";
 import { hasCyrillic, roReviewsCount, roRatingText } from "@/components/ro/product/ro-text";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { PAGE_LOW_STOCK_MAX, savingsRon } from "@/lib/home-card-hints";
-import { campaignLabelRo } from "@/lib/sale-campaign";
+import { campaignLabelRo, isCampaignBadge } from "@/lib/sale-campaign";
 import { SavingsLine, DeliveryLine } from "@/components/product/PriceExtras";
 
 // A colour swatch reads as sold out when its product is switched off in
@@ -169,7 +170,8 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   // and the catalogue badge. Defence in depth: a badge that still reads Bulgarian (overlay missing) is never printed.
   const originalRon = ronOriginalOf(product);
   const prepay = roNeedsPrepayment(product);
-  const badge = product.badge && !hasCyrillic(product.badge) ? product.badge : undefined;
+  // Not when it only repeats the campaign: the red campaign badge by the price says it.
+  const badge = product.badge && !hasCyrillic(product.badge) && !isCampaignBadge(product.badge) ? product.badge : undefined;
 
   const variants = (
     product.category === "watches"
@@ -244,6 +246,8 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   // Under the price: the saving in whole lei (not on a sold-out product) with the running campaign's badge.
   const saved = effectiveInStock ? savingsRon(product) : null;
   const campaign = campaignLabelRo();
+  // Beside it: the free-delivery badge when the product alone reaches the threshold in lei (not on a sold-out product).
+  const shipsFree = effectiveInStock && roShipsFree(product);
 
   // Cap the cart quantity at the LIVE stock (not the static products.ts value), so the +/- stepper and re-adds
   // can't exceed what we hold.
@@ -377,7 +381,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
             </del>
           )}
         </div>
-        {saved !== null && <SavingsLine text={`Economisiți ${fmtRON(saved)}`} campaign={campaign} />}
+        <SavingsLine text={saved !== null ? `Economisiți ${fmtRON(saved)}` : null} campaign={campaign} freeShipping={shipsFree ? "Livrare gratuită" : null} />
       </div>
 
       {/* Delivery in one line, right under the price (no inspection before paying: the Romanian shop is card only) */}
