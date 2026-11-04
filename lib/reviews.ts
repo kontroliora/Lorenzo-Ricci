@@ -3934,7 +3934,7 @@ export const reviews: Review[] = [
     productSlug: "cardholder-cremisi",
     author: "Деница В.",
     rating: 4,
-    body: "Окей е.",
+    body: "Взех за подарък за приятелката ми. Високо качество, но имайте предвид че е кардхолдър за карти и документи, а не портфейл.",
     date: "2026-10-16",
     imageUrl: "/reviews/cardholder-cremisi-ДеницаВ.jpeg",
   },
