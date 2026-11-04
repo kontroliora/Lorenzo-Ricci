@@ -9,7 +9,8 @@ import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
 import { useGiftFor, useLeatherStock } from "@/lib/use-gifts";
-import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
+import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS, CARD_GIFT_CLASS } from "@/lib/home-card-hints";
+import { giftDisplayName } from "@/lib/gifts";
 import { bgShipsFree } from "@/lib/shipping-rules";
 import { FreeShippingBadge } from "@/components/product/PriceExtras";
 
@@ -40,7 +41,8 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
   const isSoldOut = soldOut || !product.inStock;
 
   // Clutches carry a free gift cardholder; the badge goes away if none is left to give.
-  const hasGift = useGiftFor(product.slug, 1) !== null;
+  const giftSlug = useGiftFor(product.slug, 1);
+  const hasGift = giftSlug !== null;
 
   const isWatch = product.category === "watches";
   const price = displayPrice(product, useCountry());
@@ -245,6 +247,9 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
 
         {saved !== null && (
           <p data-testid="home-savings" className={`mt-1 ${CARD_SAVINGS_CLASS}`}>Спестявате €{saved}</p>
+        )}
+        {giftSlug && !isSoldOut && (
+          <p data-testid="card-gift" className={`mt-1 ${CARD_GIFT_CLASS}`}>🎁 + подарък: {giftDisplayName(giftSlug)}</p>
         )}
         {shipsFree && (
           <div className="mt-1.5"><FreeShippingBadge text="Безплатна доставка" size="card" /></div>

@@ -21,11 +21,9 @@ const SIAMESE = "crocodil siamez (Crocodylus siamensis)";
 const NILE = "crocodil de Nil (Crocodylus niloticus)";
 
 const BADGE_LIMITED = "SERIE LIMITATĂ";
-const BADGE_SALE = "REDUCERE DE TOAMNĂ";
 const BADGE_EARLY_BF = "BLACK FRIDAY TIMPURIU";
 const BADGE_NEW = "Colecție nouă";
 const BADGE_SOLD_OUT = "Stoc epuizat";
-const BADGE_LOW_STOCK = "Stoc limitat";
 
 const WARRANTY_WATCH = "Garanție comercială 5 ani";
 const WARRANTY_LIFETIME = "Garanție pe viață"; // jewellery: lifetime warranty, as in the Bulgarian catalogue
@@ -284,7 +282,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
 
   // ─── JEWELLERY ─────────────────────────────────────────────────────────────
   "bracelet-diamante-cross": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_LIFETIME,
     shortDescription: "Strălucire care nu îngreunează",
     description:
@@ -313,6 +311,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "bracelet-milano-forte": {
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_LIFETIME,
     shortDescription: "Opt milimetri de prezență",
     description:
@@ -342,6 +341,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "bracelet-milano-twist": {
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_LIFETIME,
     shortDescription: "Spirală de lumină",
     description:
@@ -371,6 +371,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "bracelet-signature": {
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_LIFETIME,
     shortDescription: "Semnătura ta la încheietură",
     description:
@@ -400,7 +401,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "necklace-aurelius": {
-    badge: BADGE_LOW_STOCK,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_LIFETIME,
     shortDescription: "Spiritul Romei eterne",
     description:
@@ -432,7 +433,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "necklace-grande-imperiale": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_LIFETIME,
     shortDescription: "Intră înaintea ta",
     description:
@@ -462,6 +463,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "necklace-milano-forte": {
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_LIFETIME,
     shortDescription: "Greutatea Milanului",
     description:
@@ -490,7 +492,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "necklace-milano-twist": {
-    badge: BADGE_SALE,
+    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_LIFETIME,
     shortDescription: "Funie de aur",
     description:

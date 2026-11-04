@@ -7,8 +7,9 @@ import { useReveal } from "@/lib/useReveal";
 import { getProductBySlug } from "@/lib/products";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
-import { useLeatherStock } from "@/lib/use-gifts";
-import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
+import { useGiftFor, useLeatherStock } from "@/lib/use-gifts";
+import { giftDisplayName } from "@/lib/gifts";
+import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS, CARD_GIFT_CLASS } from "@/lib/home-card-hints";
 import { bgShipsFree } from "@/lib/shipping-rules";
 import { FreeShippingBadge } from "@/components/product/PriceExtras";
 
@@ -51,6 +52,8 @@ function LeatherCard({ item, sold, sizes }: { item: LeatherItem; sold: boolean; 
   const saved = product && price?.original ? savingsEur(product) : null;
   const left = !sold ? lowStockCount(stockMap?.[item.slug]) : null;
   const shipsFree = !sold && !!product && bgShipsFree(product);
+  // Clutches: the free cardholder that comes with the bag (none when no cardholder is left to give).
+  const giftSlug = useGiftFor(item.slug, 1);
   return (
     <Link href={`/products/${item.slug}`} className="group flex flex-col">
       <div className="relative aspect-square bg-ivory-warm border border-border overflow-hidden">
@@ -90,6 +93,9 @@ function LeatherCard({ item, sold, sizes }: { item: LeatherItem; sold: boolean; 
         )}
         {saved !== null && !sold && (
           <p data-testid="home-savings" className={`mt-0.5 ${CARD_SAVINGS_CLASS}`}>Спестявате €{saved}</p>
+        )}
+        {giftSlug && !sold && (
+          <p data-testid="card-gift" className={`mt-0.5 ${CARD_GIFT_CLASS}`}>🎁 + подарък: {giftDisplayName(giftSlug)}</p>
         )}
         {shipsFree && (
           <div className="mt-1.5"><FreeShippingBadge text="Безплатна доставка" size="card" /></div>

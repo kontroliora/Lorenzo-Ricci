@@ -536,7 +536,7 @@ export const products: Product[] = [
     price: 33.6,
     originalPrice: 42,
     currency: "€",
-    badge: "Ограничена наличност",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     warranty: "Доживотна гаранция",
     shortDescription: "Дух на вечния Рим",
@@ -1468,7 +1468,7 @@ export const products: Product[] = [
     price: 349,
     originalPrice: 749,
     currency: "€",
-    badge: "Спестявате €400",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 2,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
@@ -1560,7 +1560,7 @@ export const products: Product[] = [
     price: 349,
     originalPrice: 749,
     currency: "€",
-    badge: "Спестявате €400",
+    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     stock: 3,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
