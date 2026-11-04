@@ -3943,7 +3943,7 @@ export const reviews: Review[] = [
     productSlug: "cardholder-onice",
     author: "Радослав Т.",
     rating: 5,
-    body: "Шест месеца ежедневно. Нищо не е захабено, нищо не се е разлепило. Издържа добре.",
+    body: "Шест месеца ежедневно. Нищо не е захабено, нищо не се е разнищило. Издържа добре.",
     date: "2026-10-05",
     imageUrl: "/reviews/cardholder-onice-РадославТ.jpeg",
   },
