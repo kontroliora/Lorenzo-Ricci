@@ -3118,15 +3118,6 @@ export const reviews: Review[] = [
 
   // ─── YACHTING BLACK ────────────────────────────────────────────────────────
   {
-    id: "r-831",
-    productSlug: "yachting-black",
-    author: "Георги П.",
-    rating: 5,
-    body: "Едно от най-смелите неща в тази ценова категория. Стои много добре на китката.",
-    imageUrl: "/reviews/yachting-black-ГеоргиП.jpeg",
-    date: "2025-11-08",
-  },
-  {
     id: "r-832",
     productSlug: "yachting-black",
     author: "Петър Н.",
