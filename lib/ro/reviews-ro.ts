@@ -331,6 +331,26 @@ export const RO_REVIEWS: Record<string, RoReviewText> = {
   "r-713": { author: "Deyan B.", body: "Cardurile stau stabil și se scot ușor. Exact asta căutam." },
   "r-714": { author: "Krasimir D.", body: "Execuție foarte bună și piele plăcută. Se vede atenția la detaliu." },
   "r-715": { author: "Anton M.", body: "Mă așteptam ca culoarea să fie puțin mai deschisă, dar este o chestiune de gust. Calitatea este excelentă." },
+  // clutch-portofino
+  "r-937": { author: "Alexandru P.", body: "Este foarte elegant, dar pentru culoarea deschisă trebuie să ai grijă — îl port doar la ocazii, că mă tem să nu-l murdaresc cumva." },
+  "r-938": { author: "Mihai D.", body: "Pe viu arată chiar mai bine decât în poze. Pielea este super moale, practic nu mai vrei să ieși cu alt clutch." },
+  "r-954": { author: "Bogdan I.", body: "Culoarea deschisă este foarte bună pentru vară, dar trebuie să ai grijă, că pe covorașele din mașină se murdarește ușor. Altfel, ca execuție, fără greșeli." },
+  // clutch-torino
+  "r-939": { author: "Florin N.", body: "Clasic, nu dai greș. Fermoarul la început trăgea un pic, dar după două-trei zile s-a dezmorțit și acum merge perfect." },
+  "r-940": { author: "Andrei V.", body: "Este mic, dar telefonul, bricheta, cheile și port-cardul intră perfect. Exact ce îmi trebuia pentru o seară afară." },
+  "r-945": { author: "Cristian P.", body: "L-am luat că m-am săturat că buzunarele îmi sunt umflate ca niște perne de la chei și documente... totul intră înăuntru și nu apasă, e ideal." },
+  "r-946": { author: "Radu V.", body: "Piele solidă și relieful este masculin, nu arată ieftin. Fermoarul la început era puțin strâmt, dar în 2 zile s-a înmuiat." },
+  "r-947": { author: "Marius S.", body: "Livrare rapidă. Îl folosesc mai ales în mașină, să țin actele, portofelul și telefonul la un loc." },
+  // clutch-verona
+  "r-948": { author: "Gheorghe M.", body: "Culoarea este foarte bună, bordo închis. În poze mă întrebam dacă nu bate spre feminin, dar pe viu este absolut masculin." },
+  "r-949": { author: "Victor I.", body: "Piele densă și cusături solide. A venit cu un card de autenticitate înăuntru, pentru banii ăștia merită." },
+  // clutch-toscana
+  "r-941": { author: "Lucian V.", body: "Culoarea verde este unică — la soare iese grozav, iar la întuneric pare aproape negru. O alegere neobișnuită, dar merită." },
+  "r-942": { author: "Sorin T.", body: "L-am luat surpriză pentru soție. La început nu știa cu ce să-l combine, dar merge super și cu jeans, și cu ținute mai elegante." },
+  "r-950": { author: "Adrian G.", body: "Verdele este destul de închis, la umbră devine aproape negru. Schimbă un pic că mă săturasem de genți negre standard." },
+  "r-951": { author: "Viorel K.", body: "Căutam ceva mai decent pentru întâlniri și călătorii de afaceri. Pașaportul, ambele telefoane și banii intră fără să se umfle." },
+  "r-952": { author: "Gabriel D.", body: "Dimensiune foarte precisă. Strânge tot ce e necesar pentru o zi, fără să arate ca un trusou uriaș." },
+  "r-953": { author: "Bogdan T.", body: "L-am comandat marți după-amiază și miercuri dimineață era deja la curier. Punctuali." },
 };
 
 /** The review as the Romanian pages show it, or null when it has no Romanian text yet. */
