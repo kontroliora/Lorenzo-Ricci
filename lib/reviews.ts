@@ -3916,7 +3916,7 @@ export const reviews: Review[] = [
     productSlug: "cardholder-onice",
     author: "Стефан М.",
     rating: 5,
-    body: "Носих стария си портфейл от 5 години. Трябваше смяна. Доволен от избора.",
+    body: "От години ползвам голям портфейл, но реших да пробвам нещо по-компактно.",
     date: "2026-10-10",
     imageUrl: "/reviews/cardholder-onice-СтефанМ.jpeg",
   },
