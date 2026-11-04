@@ -176,11 +176,15 @@ export default async function RoProductPage({ params }: Props) {
     roPool = {
       heading: categoryType === "cardholders"
         ? "Recenzii pentru portcarduri Lorenzo Ricci"
+        : categoryType === "clutches"
+        ? "Recenzii pentru clutch-uri Lorenzo Ricci"
         : "Recenzii pentru portofele Lorenzo Ricci",
       countLabel: categoryType === "cardholders"
         ? "pentru portcarduri"
+        : categoryType === "clutches"
+        ? "pentru clutch-uri"
         : "pentru portofele",
-      productPrefix: categoryType === "cardholders" ? "pentru portcard" : "pentru portofel",
+      productPrefix: categoryType === "cardholders" ? "pentru portcard" : categoryType === "clutches" ? "pentru clutch" : "pentru portofel",
       productInfo: productInfoMap,
       productSlug: slug,
     };

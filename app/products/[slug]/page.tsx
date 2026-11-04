@@ -110,13 +110,17 @@ export default async function ProductPage({ params }: Props) {
       reviews: categoryReviews,
       heading: categoryType === "cardholders"
         ? "Ревюта за кардхолдъри Lorenzo Ricci"
+        : categoryType === "clutches"
+        ? "Ревюта за клъчове Lorenzo Ricci"
         : "Ревюта за портфейли Lorenzo Ricci",
       count: catSummary.count,
       avg: catSummary.avg,
       countLabel: categoryType === "cardholders"
         ? "ревюта за кардхолдъри"
+        : categoryType === "clutches"
+        ? "ревюта за клъчове"
         : "ревюта за портфейли",
-      productPrefix: categoryType === "cardholders" ? "за кардхолдър" : "за портфейл",
+      productPrefix: categoryType === "cardholders" ? "за кардхолдър" : categoryType === "clutches" ? "за клъч" : "за портфейл",
       productInfo: productInfoMap,
     };
   }
