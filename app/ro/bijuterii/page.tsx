@@ -35,8 +35,9 @@ export const metadata: Metadata = {
 // RoJewelleryPageClient is "use client" (category tabs read ?category=), so the server-side price merge happens here and the
 // lists go down as props. Durable price overrides (supabase/product_price_overrides.sql, read via lib/price-overrides.ts):
 // the page stays statically generated; the admin discount route revalidates it.
-// Sold-out products are listed last (lib/sold-out-order.ts); the sold-out list is re-read every 5 minutes.
-export const revalidate = 300;
+// Sold-out products are listed last (lib/sold-out-order.ts). Rebuilt hourly; a sell-out (lib/stock-pages.ts), a price
+// change (admin discount route) and a campaign phase switch (/api/cron/campaign-phase) rebuild it at once.
+export const revalidate = 3600;
 
 export default async function RoJewelleryPage() {
   const overrides = await getPriceOverrides();

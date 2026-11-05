@@ -22,6 +22,10 @@
     {
       "path": "/api/cron/stripe-reconcile?days=30",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/campaign-phase",
+      "schedule": "1 21,22 * * *"
     }
   ]
 }

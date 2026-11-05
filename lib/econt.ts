@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { hasCardMoney, cardMoneyMissing } from "./payments";
+import { refreshStockPages } from "./stock-pages";
 
 const BASE = "https://ee.econt.com/services/Shipments/ShipmentService";
 
@@ -224,6 +225,7 @@ async function restockReceivedItems(sb: SupabaseClient, items: unknown): Promise
   if (!restock.length) return;
   const { error } = await sb.rpc("restock_wallet_stock", { p_items: restock });
   if (error) console.error("[econt] restock_wallet_stock error:", error.message);
+  else await refreshStockPages(restock, "restocked");
 }
 
 // A returning parcel is "received back by us" once Econt sets a delivery time on

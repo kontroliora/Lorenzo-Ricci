@@ -4,9 +4,9 @@ import { getProductBySlug } from "@/lib/products";
 import { deriveGiftLines, isGiftClutch, pickGift, type GiftLine } from "@/lib/gifts";
 import type { CartItem } from "@/lib/types";
 
-// Live stock for the gift cardholders. /api/leather-stock is one small dynamic call (all slugs),
-// shared by every component on the page and cached briefly, so the pages themselves stay static:
-// they render the matching cardholder first and only adjust once these numbers arrive.
+// Live stock of every product (the cards' "Изчерпан" and low-stock hints, the gift cardholders). /api/leather-stock is
+// one small call (all slugs), shared by every component on the page and cached ~20 s at the CDN, so the pages themselves
+// stay static: they render first and only adjust once these numbers arrive.
 type StockMap = Record<string, number>;
 const TTL_MS = 30_000;
 let cached: { at: number; map: StockMap } | null = null;

@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { smallOrOriginal } from "@/lib/image-variant";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
@@ -26,19 +26,12 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
   const [isNight, setIsNight] = useState(false);
   const { addItem } = useCartStore();
 
-  // Live availability - a product at 0 available is shown sold-out in the grid,
-  // automatically, for every category (matches /api/stock = the panel's "Налични").
-  const [soldOut, setSoldOut] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/stock/${product.slug}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (!cancelled && d && typeof d.stock === "number") setSoldOut(d.stock === 0); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [product.slug]);
+  // Live availability - a product at 0 available is shown sold-out in the grid, automatically, for every category.
+  // One batched call shared by every card on the page (/api/leather-stock, same numbers as the panel's "Налични").
   // inStock: false in lib/products.ts is the owner's off switch - sold out regardless of count.
-  const isSoldOut = soldOut || !product.inStock;
+  const stockMap = useLeatherStock(true);
+  const liveStock = stockMap?.[product.slug];
+  const isSoldOut = (typeof liveStock === "number" && liveStock <= 0) || !product.inStock;
 
   // Clutches carry a free gift cardholder; the badge goes away if none is left to give.
   const giftSlug = useGiftFor(product.slug, 1);
@@ -48,9 +41,8 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
   const price = displayPrice(product, useCountry());
 
   // Both hint lines on every card (homepage and listings): the saving while the struck EUR price is shown, the low-stock line from the one shared batched call.
-  const stockMap = useLeatherStock(true);
   const saved = price.original && !isSoldOut ? savingsEur(product) : null;
-  const left = !isSoldOut ? lowStockCount(stockMap?.[product.slug]) : null;
+  const left = !isSoldOut ? lowStockCount(liveStock) : null;
   const shipsFree = !isSoldOut && bgShipsFree(product);
 
   const productSummary = reviewSummary[product.slug];

@@ -22,8 +22,8 @@ export const metadata: Metadata = {
   openGraph: { type: "website", locale: "ro_RO", siteName: "Lorenzo Ricci", url: `https://lorenzo-ricci.com${PATH}`, title: "Reduceri | Lorenzo Ricci", description: DESCRIPTION },
 };
 
-// Re-checked every 5 minutes (sold-out list and prices), like the home page.
-export const revalidate = 300;
+// Rebuilt hourly, like the home page; a sell-out, a price change or a campaign phase switch rebuilds it at once.
+export const revalidate = 3600;
 
 export default async function RoSalePage() {
   const [overrides, soldOutSlugs] = await Promise.all([getPriceOverrides(), getSoldOutSlugs()]);

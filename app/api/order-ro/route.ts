@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { refreshStockPages } from "@/lib/stock-pages";
 import { ATTR_COOKIE, attributionFromCookie } from "@/lib/attribution";
 import { insertOrderResilient } from "@/lib/order-insert";
 import { normalizeRoPhone } from "@/lib/ro/phone";
@@ -140,6 +141,7 @@ export async function POST(req: NextRequest) {
       const shortfall = ((res as { shortfall?: { slug: string; available: number }[] }).shortfall ?? []).map((s) => ({ name: lines.find((l) => l.slug === s.slug)?.name ?? s.slug, available: s.available }));
       return fail(409, "stock", stockMessage(shortfall));
     }
+    await refreshStockPages(reserveItems, "reserved");
 
     // ── 5. Save the order (BEFORE the e-mails). A failed insert gives the stock back and tells the customer. ──
     const orderItems = lines.map((l) => ({ sku: l.sku, slug: l.slug, name: l.name, quantity: l.quantity, qty: l.quantity, price: l.ron, currency: "lei" }));
@@ -176,6 +178,7 @@ export async function POST(req: NextRequest) {
       console.error("[order-ro] insert failed:", insErr.message);
       const { error: restockErr } = await sb.rpc("restock_wallet_stock", { p_items: reserveItems });
       if (restockErr) console.error("[order-ro] restock after failed insert ALSO failed:", restockErr.message, ref);
+      else await refreshStockPages(reserveItems, "restocked");
       return fail(503, "unavailable", "Nu am putut înregistra comanda. Vă rugăm să reîncercați în câteva momente.");
     }
 

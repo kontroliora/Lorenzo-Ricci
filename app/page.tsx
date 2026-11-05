@@ -24,8 +24,10 @@ import { getSoldOutSlugs } from "@/lib/sold-out";
 // showing the plain catalog price. Only the Milano Avorio flagship (fed a `product`
 // prop from here) picks up an override on the homepage.
 
-// The sale banner's label follows the date and its percentage the live prices / stock: re-render at least every 5 minutes.
-export const revalidate = 300;
+// The sale banner's label follows the date and its percentage the live prices / stock. Rebuilt hourly; a sell-out
+// (lib/stock-pages.ts), a price change (admin discount route) and a campaign phase switch (/api/cron/campaign-phase)
+// rebuild it at once.
+export const revalidate = 3600;
 
 export default async function HomePage() {
   const overrides = await getPriceOverrides();

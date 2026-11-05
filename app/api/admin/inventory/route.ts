@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { refreshAllStockPages } from "@/lib/stock-pages";
 
 // Unified inventory (decrement model): wallet_inventory is the single source of
 // truth for EVERY product (watches, jewellery, leather). The number here is the
@@ -25,5 +26,6 @@ export async function PATCH(req: NextRequest) {
     console.error("[admin/inventory] wallet_inventory write error:", error.message);
     return NextResponse.json({ ok: false, error: "Наличността не се записа." }, { status: 500 });
   }
+  refreshAllStockPages();
   return NextResponse.json({ ok: true, slug, quantity: qty });
 }

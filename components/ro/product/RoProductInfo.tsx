@@ -221,16 +221,15 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
     product.category === "bags";
   const featuresLimit = isLeatherGoods ? 5 : 4;
 
-  // Live free-to-sell count (public endpoint, slug -> number, same numbers as the admin panel). A product at 0
+  // Live free-to-sell count (/api/stock/<slug>, never cached - same number as the admin panel and the Bulgarian page). A product at 0
   // shows "Stoc epuizat" + a locked button; with no live number (request failed / slug missing) the static
   // catalog switch decides.
   useEffect(() => {
     let alive = true;
-    fetch("/api/leather-stock")
+    fetch(`/api/stock/${product.slug}`)
       .then((r) => r.json())
-      .then((d: Record<string, unknown>) => {
-        const n = d?.[product.slug];
-        if (alive) setLiveStock(typeof n === "number" ? n : null);
+      .then((d: { stock?: unknown }) => {
+        if (alive) setLiveStock(typeof d?.stock === "number" ? d.stock : null);
       })
       .catch(() => {});
     return () => { alive = false; };

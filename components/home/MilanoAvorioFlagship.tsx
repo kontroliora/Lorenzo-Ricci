@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useLeatherStock } from "@/lib/use-gifts";
 import type { Product } from "@/lib/types";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
@@ -11,23 +11,14 @@ interface Props {
 }
 
 export function MilanoAvorioFlagship({ product }: Props) {
-  // Live stock (wallet_inventory, same /api/stock/[slug] path as ProductCard /
-  // ProductInfo). Sold out → the section STAYS, marked "Изчерпан" (owner's rule,
+  // Live stock (wallet_inventory, the batched /api/leather-stock call the
+  // product cards share). Sold out → the section STAYS, marked "Изчерпан" (owner's rule,
   // 2026-09-27: out-of-stock products stay listed, just not orderable). inStock:
   // false in lib/products.ts is the owner's off switch and counts as sold out too.
   // (No early return any more - it also used to skip the useCountry() hook below.)
-  const [soldOut, setSoldOut] = useState(false);
+  const liveStock = useLeatherStock(true)?.[product.slug];
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/stock/${product.slug}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (!cancelled && d && typeof d.stock === "number") setSoldOut(d.stock === 0); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [product.slug]);
-
-  const isSoldOut = soldOut || !product.inStock;
+  const isSoldOut = (typeof liveStock === "number" && liveStock <= 0) || !product.inStock;
   const price = displayPrice(product, useCountry());
 
   return (

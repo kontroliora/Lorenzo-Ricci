@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { buildAdminEmail, buildCustomerEmail, sendAdminEmail, sendCustomerEmail, sendCapiPurchase, type CapiContext } from "@/lib/order-notify";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { CARD_PAYMENTS_ENABLED, PENDING_PAYMENT } from "@/lib/payments";
+import { refreshStockPages } from "@/lib/stock-pages";
 import { claimPromo, releasePromo, restockLines, returnOrigin, startCardPayment } from "@/lib/payment-orders";
 import { BG_ORDER_REF_RE } from "@/lib/order-ref";
 import { SITE_URL } from "@/lib/site";
@@ -213,6 +214,7 @@ export async function POST(req: NextRequest) {
         }
         gifts = reservation.gifts;
         missedGifts = reservation.missed;
+        await refreshStockPages([...reserveItems, ...gifts.map((g) => ({ slug: g.giftSlug, qty: g.qty }))], "reserved");
       }
     }
 

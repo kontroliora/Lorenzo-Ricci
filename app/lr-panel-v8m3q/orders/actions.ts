@@ -11,6 +11,7 @@ import { getStripe } from "@/lib/stripe";
 import { isPaidCard, hasCardMoney, cardMoneyMissing } from "@/lib/payments";
 import { refundPlan, isMissingStripeObject } from "@/lib/stripe-mode";
 import { fmtRON } from "@/lib/ro/config";
+import { refreshStockPages } from "@/lib/stock-pages";
 
 const ORDERS_PATH = "/lr-panel-v8m3q/orders";
 
@@ -40,6 +41,7 @@ async function restockOrderItems(
   if (!restock.length) return;
   const { error } = await supabase.rpc("restock_wallet_stock", { p_items: restock });
   if (error) console.error("[orders] restock_wallet_stock error:", error.message);
+  else await refreshStockPages(restock, "restocked");
 }
 
 const HOLDS_STOCK = (status: string) => (RESERVING_STATUSES as readonly string[]).includes(status);
@@ -458,6 +460,7 @@ export async function createManualOrder(input: ManualOrderInput): Promise<{ ok: 
       const names = sf.map((s) => `${input.items.find((i) => i.slug === s.slug)?.name ?? s.slug} (налични ${s.available})`).join(", ");
       return { ok: false, message: `Няма достатъчно наличност: ${names}` };
     }
+    await refreshStockPages(reserveItems, "reserved");
   }
 
   const { error } = await supabase.from("orders").insert({

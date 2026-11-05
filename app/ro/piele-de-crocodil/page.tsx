@@ -37,8 +37,9 @@ export const metadata: Metadata = {
 // statically generated; the admin discount route revalidates it. Every leather product is listed (same set as RO_SLUGS),
 // including the one-off bag Milano Avorio, which is sold on prepayment: its card looks like any other.
 
-// Sold-out products are listed last (lib/sold-out-order.ts); the sold-out list is re-read every 5 minutes.
-export const revalidate = 300;
+// Sold-out products are listed last (lib/sold-out-order.ts). Rebuilt hourly; a sell-out (lib/stock-pages.ts), a price
+// change (admin discount route) and a campaign phase switch (/api/cron/campaign-phase) rebuild it at once.
+export const revalidate = 3600;
 
 export default async function RoLeatherPage() {
   const overrides = await getPriceOverrides();

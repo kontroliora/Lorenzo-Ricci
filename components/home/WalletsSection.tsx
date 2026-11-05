@@ -2,7 +2,6 @@
 import Image from "next/image";
 import { soldOutLast } from "@/lib/sold-out-order";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { useReveal } from "@/lib/useReveal";
 import { getProductBySlug } from "@/lib/products";
 import { useCountry } from "@/lib/country";
@@ -111,26 +110,12 @@ function LeatherCard({ item, sold, sizes }: { item: LeatherItem; sold: boolean; 
 export function WalletsSection({ soldOut = [] }: { soldOut?: string[] }) {
   const featuresRef = useReveal();
   // Sold-out items are left out of this section. The server passes the list (lib/sold-out.ts: catalogue switch + live
-  // wallet_inventory, regenerated at most every 5 minutes); the browser re-checks the live stock once (one batched call)
+  // wallet_inventory, rebuilt when a product sells out); the browser re-checks the live stock once (the batched call the cards share)
   // so a piece that sold out since the page was built disappears too. Their own pages still say "Изчерпан".
-  const [outOfStock, setOutOfStock] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/leather-stock")
-      .then((r) => r.json())
-      .then((map: Record<string, number>) => {
-        if (cancelled || !map || typeof map !== "object") return;
-        const out: Record<string, boolean> = {};
-        for (const [slug, stock] of Object.entries(map)) out[slug] = Number(stock) <= 0;
-        setOutOfStock(out);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
+  const stockMap = useLeatherStock(true);
 
   const isSold = (item: LeatherItem) =>
-    soldOut.includes(item.slug) || Boolean(outOfStock[item.slug]) || getProductBySlug(item.slug)?.inStock === false;
+    soldOut.includes(item.slug) || Number(stockMap?.[item.slug] ?? 1) <= 0 || getProductBySlug(item.slug)?.inStock === false;
   // Sold-out pieces stay visible (LeatherCard greys them out, "Изчерпан", no price colour) but come last in each row.
   const soldSlug = (slug: string) => { const it = [...WALLETS, ...CARDHOLDERS, ...CLUTCHES].find((x) => x.slug === slug); return it ? isSold(it) : false; };
   const wallets = soldOutLast(WALLETS, soldSlug);

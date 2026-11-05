@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   description: "Всички намалени часовници, бижута и кожени изделия Lorenzo Ricci, подредени по размер на отстъпката.",
 };
 
-// Re-checked every 5 minutes (sold-out list and prices), like the homepage.
-export const revalidate = 300;
+// Rebuilt hourly, like the homepage; a sell-out, a price change or a campaign phase switch rebuilds it at once.
+export const revalidate = 3600;
 
 // Every product on sale that can be bought now (in stock, not switched off), biggest discount first (lib/sale-campaign.ts).
 export default async function SalePage() {

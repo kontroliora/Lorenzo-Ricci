@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createCardSession, createOrderCoupon, getStripe, type CardLine } from "./stripe";
 import { PENDING_PAYMENT } from "./payments";
 import { cancelToken } from "./payment-token";
+import { refreshStockPages } from "./stock-pages";
 import { SITE_URL } from "./site";
 import { alertTeam, notifyPaidOnce } from "./payment-notify";
 
@@ -39,7 +40,9 @@ async function restock(sb: SupabaseClient, items: Reserve, what: string): Promis
   if (error) {
     console.error("[payment] restock failed:", error.message);
     await alertTeam(`Наличността НЕ се върна - ${what}`, `restock_wallet_stock даде грешка: ${error.message}\nБройки: ${JSON.stringify(items)}\nВърни ги ръчно.`);
+    return;
   }
+  await refreshStockPages(items, "restocked");
 }
 
 /** Put reserved units back (all lines of the order, gifts included). Never throws: the caller already moved the order. */
@@ -173,6 +176,7 @@ export async function markOrderPaid(sb: SupabaseClient, ref: string, info: { pay
       return { kind: "refunded", order: (done.data?.[0] ?? now) as OrderRow };
     }
 
+    await refreshStockPages(paidItems, "reserved");
     const back = await sb.from("orders").update({ ...patch, cancel_category: null, cancel_reason: null })
       .eq("order_ref", ref).eq("status", "cancelled").in("payment_status", ["expired", "failed"]).select("*");
     if (!back.data?.length) {
@@ -190,7 +194,7 @@ export async function markOrderPaid(sb: SupabaseClient, ref: string, info: { pay
         const upd = await sb.from("orders").update({ items: kept }).eq("order_ref", ref).select("*");
         if (upd.data?.length) order = upd.data[0] as OrderRow;
         await alertTeam(`Късно плащане: подаръкът свърши - ${ref}`, "Платените стоки са налични и поръчката е възстановена, но подаръкът вече го няма и е махнат от поръчката. Уведоми клиента.");
-      }
+      } else await refreshStockPages(gifts, "reserved");
     }
     // The single-use promo code was given back when the order expired: take it again (or tell the team it is gone).
     if (order.promo_code && order.payment_method === "card") {

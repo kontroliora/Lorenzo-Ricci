@@ -17,6 +17,7 @@ function revalidateStorefront(slug: string) {
   revalidatePath("/leather-goods");
   revalidatePath("/jewellery");
   revalidatePath("/bundles");
+  revalidatePath("/namalenia");
   revalidatePath(`/products/${slug}`);
   // Romanian market test (/ro): same prices (EUR x 5.25), same cache
   revalidatePath("/ro");
@@ -24,7 +25,10 @@ function revalidateStorefront(slug: string) {
   revalidatePath("/ro/piele-de-crocodil");
   revalidatePath("/ro/bijuterii");
   revalidatePath("/ro/seturi");
+  revalidatePath("/ro/reduceri");
   revalidatePath(`/ro/produse/${slug}`);
+  // The overrides the client components fetch (cart repricing, bundle upsell): a static route, rebuilt here too.
+  revalidatePath("/api/price-overrides");
 }
 
 // Plain Route Handler (not a "use server" action) — same reasoning as before this

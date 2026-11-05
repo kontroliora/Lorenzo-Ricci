@@ -83,25 +83,29 @@ function redirectWithCookies(url: URL, source: NextResponse): NextResponse {
   return response;
 }
 
+// Storefront entries skip Next's in-app navigations and prefetches (RSC headers): the geo redirect ignores them anyway
+// (lib/geo-redirect.ts) and the attribution cookie is set on the landing, a full page load. Browser prerenders still match
+// (an ad click Chrome prerendered keeps its utm cookie). The admin gate keeps matching every request. Literal entries:
+// Next reads this config statically.
 export const config = {
   matcher: [
     "/lr-panel-v8m3q/:path*",
     "/api/admin/:path*",
     // Bulgarian storefront pages that have a Romanian twin (lib/ro/route-map.ts); nothing else is touched.
-    "/",
-    "/watches",
-    "/jewellery",
-    "/leather-goods",
-    "/bundles",
-    "/story",
-    "/faq",
-    "/watch-manual",
-    "/warranty/:path*",
-    "/policies/:path*",
-    "/products/:path*",
+    { source: "/", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
+    { source: "/watches", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
+    { source: "/jewellery", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
+    { source: "/leather-goods", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
+    { source: "/bundles", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
+    { source: "/story", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
+    { source: "/faq", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
+    { source: "/watch-manual", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
+    { source: "/warranty/:path*", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
+    { source: "/policies/:path*", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
+    { source: "/products/:path*", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
     // attribution cookie only (no geo redirect): the Romanian store and the sale page
-    "/ro",
-    "/ro/:path*",
-    "/namalenia",
+    { source: "/ro", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
+    { source: "/ro/:path*", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
+    { source: "/namalenia", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
   ],
 };
