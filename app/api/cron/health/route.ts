@@ -15,8 +15,12 @@ export const maxDuration = 120;   // the first run pulls 30 days of Meta history
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   // Operator calls (lib/cron-auth.ts opsAuthorized): run history + a fake problem to test the Telegram alert end to end.
-  if ((sp.has("status") || sp.has("simulate")) && opsAuthorized(req.headers.get("authorization"))) {
+  if ((sp.has("status") || sp.has("simulate") || sp.has("sync")) && opsAuthorized(req.headers.get("authorization"))) {
     const sb = supabaseAdmin();
+    if (sp.get("sync") === "1") {
+      try { return NextResponse.json({ ok: true, meta: await syncMeta(sb, 30, true) }); }
+      catch (e) { return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : String(e) }); }
+    }
     if (sp.get("simulate") === "on" || sp.get("simulate") === "off") {
       const extra = sp.get("simulate") === "on"
         ? [{ key: "test:simulated", ok: false, title: "ТЕСТ: симулиран проблем (не е истински)", detail: "пуснат ръчно за проверка на известията; изчиства се със simulate=off" }]
@@ -33,7 +37,7 @@ export async function GET(req: NextRequest) {
       checks: rows.filter((r) => !r.key.startsWith("_run")).map((r) => ({ key: r.key, ok: r.ok, detail: r.detail })),
     });
   }
-  if (!cronAuthorized(req.headers.get("authorization"))) return NextResponse.json({ ok: false, error: "unauthorized", build: "health-v4" }, { status: 401 });
+  if (!cronAuthorized(req.headers.get("authorization"))) return NextResponse.json({ ok: false, error: "unauthorized", build: "health-v5" }, { status: 401 });
   if (sp.get("ping") === "1") return NextResponse.json({ ok: true });
   if (sp.get("test") === "1") {
     const t = await sendTelegram("✅ <b>Lorenzo Ricci</b>: тестово известие. Проверките на системата са включени (на всеки 15 мин), проблемите идват тук най-много веднъж на час.");
@@ -45,7 +49,9 @@ export async function GET(req: NextRequest) {
     let meta: Awaited<ReturnType<typeof syncMeta>> | { error: string };
     try { meta = await syncMeta(sb, first ? 30 : 2, first); }   // first run: 30 days of history + every live ad
     catch (e) { meta = { error: e instanceof Error ? e.message : String(e) }; }
-    const r = await runHealth(sb, { source: req.headers.get("user-agent")?.includes("vercel-cron") ? "vercel-cron" : "manual" });
+    // A failing Meta pull is a problem of its own (bar + Telegram), with Meta's error message.
+    const metaCheck = { key: "meta_api", ok: !("error" in meta), title: "Meta синхронизацията не работи", detail: "error" in meta ? meta.error.slice(0, 200) : undefined };
+    const r = await runHealth(sb, { extra: [metaCheck], source: req.headers.get("user-agent")?.includes("vercel-cron") ? "vercel-cron" : "manual" });
     console.log("[health]", JSON.stringify({ meta, ...r }));
     if (first) {
       const m = "error" in meta ? `Meta: грешка (${meta.error.slice(0, 120)})` : `Meta: ${meta.ads} реклами, ${meta.rows} реда за ${meta.since} – ${meta.until}, €${meta.spend.toFixed(2)} разход`;

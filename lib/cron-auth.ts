@@ -14,9 +14,9 @@ export function cronAuthorized(authorization: string | null): boolean {
 }
 
 /**
- * Narrow operator key for /api/cron/health?status=1 (read the last 2 run timestamps) and ?simulate=on|off (a fake test problem
+ * Narrow operator key for /api/cron/health?status=1 (read the last 2 run timestamps), ?sync=1 (pull Meta now) and ?simulate=on|off (a fake test problem
  * to try the Telegram alert): HMAC-SHA256(TELEGRAM_BOT_TOKEN, "lr-health-ops"), hex. Whoever holds the bot token can already
- * write to the alert chat; this key opens nothing else (no data, no Meta sync, no orders).
+ * write to the alert chat; this key opens nothing else (no customer data, no orders).
  */
 export function opsAuthorized(authorization: string | null): boolean {
   const bot = (process.env.TELEGRAM_BOT_TOKEN ?? "").trim();
