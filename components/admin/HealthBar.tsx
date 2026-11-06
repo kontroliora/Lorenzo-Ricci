@@ -53,7 +53,7 @@ export function HealthBar() {
           {n === 0 && !waiting && (
             <p className="text-[12px] opacity-80">Сайт, поръчки, Stripe webhook, Еконт, грешки при поръчка и рекламите са наред. Проблемите идват и в Telegram (най-много веднъж на час).</p>
           )}
-          {waiting && <p className="text-[12px]">Таблицата health_status е празна: проверките тръгват на всеки 15 мин от GitHub Actions „health“.</p>}
+          {waiting && <p className="text-[12px]">Таблицата health_status е празна: проверките тръгват на всеки 15 мин (Vercel Cron).</p>}
           {h.unknown.length > 0 && (
             <p className="text-[11px] opacity-60">Не е проверено: {h.unknown.map((u) => `${u.title} (${(u.detail ?? "").replace(/^не е проверено:\s*/, "")})`).join(" · ")}</p>
           )}

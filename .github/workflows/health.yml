@@ -1,37 +1,30 @@
-# Health checks + Meta ads data every 15 minutes (GitHub delays scheduled runs, so a strict hourly slot would be missed) (the Vercel Hobby plan allows only daily crons; vercel.json also pulls
-# Meta once a day). Same secret as stripe-reconcile.yml: RECONCILE_SECRET (Settings -> Secrets and variables -> Actions), equal to
-# RECONCILE_SECRET in Vercel. Without it the job does nothing.
-# Optional TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID secrets here too: then a site that does not answer at all (so it cannot alert by
-# itself) is still reported from GitHub.
-name: health
+# Outside watchdog. The 15-minute checks + Meta sync run on Vercel Cron (vercel.json -> /api/cron/health); if the whole site is down,
+# that cron cannot alert, so this job pings the endpoint from GitHub and sends Telegram itself when it does not answer.
+# GitHub delays scheduled jobs (in practice every few hours), so this is a backstop, not the main check.
+# Secrets (Settings -> Secrets and variables -> Actions): RECONCILE_SECRET (= Vercel's), TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID.
+# Without RECONCILE_SECRET the job does nothing.
+name: health-watchdog
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "7,37 * * * *"
   workflow_dispatch:
 jobs:
-  health:
+  ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 3
     steps:
-      - name: Meta ads sync (yesterday + today, before the checks so "spent > 15 EUR today" is fresh)
-        env:
-          RECONCILE_SECRET: ${{ secrets.RECONCILE_SECRET }}
-        run: |
-          if [ -z "$RECONCILE_SECRET" ]; then echo "RECONCILE_SECRET is not set - skipping"; exit 0; fi
-          code=$(curl -s -o meta.json -w "%{http_code}" --max-time 90 -H "Authorization: Bearer $RECONCILE_SECRET" "https://www.lorenzo-ricci.com/api/cron/meta-ads?days=2")
-          echo "HTTP $code"; cat meta.json; echo
-      - name: Health checks
+      - name: Ping the health endpoint
         env:
           RECONCILE_SECRET: ${{ secrets.RECONCILE_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           if [ -z "$RECONCILE_SECRET" ]; then echo "RECONCILE_SECRET is not set - skipping"; exit 0; fi
-          code=$(curl -s -o out.json -w "%{http_code}" --max-time 90 -H "Authorization: Bearer $RECONCILE_SECRET" https://www.lorenzo-ricci.com/api/cron/health || echo 000)
-          echo "HTTP $code"; cat out.json; echo
+          code=$(curl -s -o out.json -w "%{http_code}" --max-time 30 -H "Authorization: Bearer $RECONCILE_SECRET" "https://www.lorenzo-ricci.com/api/cron/health?ping=1" || echo 000)
+          echo "HTTP $code"
           if [ "$code" != "200" ] && [ "$code" != "401" ] && [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
             curl -s --max-time 20 "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
               --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" \
-              --data-urlencode "text=🔴 Lorenzo Ricci: проверката на системата не отговаря (HTTP $code). Сайтът може да е паднал." > /dev/null
+              --data-urlencode "text=🔴 Lorenzo Ricci: сайтът не отговаря (HTTP $code). Проверката от Vercel също не може да алармира." > /dev/null
           fi
           [ "$code" = "200" ]

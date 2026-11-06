@@ -1,4 +1,4 @@
-// Health checks for the panel's top bar + Telegram alerts. Run every 15 min by /api/cron/health (GitHub Actions). Read-only towards
+// Health checks for the panel's top bar + Telegram alerts. Run every 15 min by /api/cron/health (Vercel Cron). Read-only towards
 // the shop: it only reads orders / checkout_events / stock, calls Stripe (list events), Econt (a status lookup) and Meta data
 // already in the database, and writes health_status. Never touches prices, checkout, stock or orders.
 import type { SupabaseClient } from "@supabase/supabase-js";

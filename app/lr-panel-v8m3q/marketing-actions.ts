@@ -38,9 +38,9 @@ export async function getHealth(): Promise<HealthState | null> {
   const run = rows.find((r) => r.key === "_run");
   const lastRun = (run?.checked_at as string | undefined) ?? null;
   const problems: HealthItem[] = rows.filter((r) => !r.ok && r.key !== "_run").map((r) => ({ key: r.key, title: r.title, detail: r.detail, since: r.since }));
-  // The checks themselves stopped (GitHub schedule off / endpoint failing) - that is a problem too.
+  // The checks themselves stopped (Vercel Cron off / endpoint failing) - that is a problem too.
   if (lastRun && Date.now() - Date.parse(lastRun) > 45 * 60_000)
-    problems.unshift({ key: "_stale", title: "Проверките не са вървели от над 45 мин", detail: "GitHub Actions „health“ или /api/cron/health не работи", since: lastRun });
+    problems.unshift({ key: "_stale", title: "Проверките не са вървели от над 45 мин", detail: "Vercel Cron /api/cron/health не работи", since: lastRun });
   const unknown = rows.filter((r) => r.ok && typeof r.detail === "string" && r.detail.startsWith("не е проверено"))
     .map((r) => ({ key: r.key, title: r.title, detail: r.detail, since: null }));
   return { lastRun, problems, unknown, ready: true };

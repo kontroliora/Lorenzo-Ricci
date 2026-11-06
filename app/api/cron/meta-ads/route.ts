@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // Meta ads -> meta_ads + meta_ad_insights (lib/meta-ads.ts). Called by:
-//   - GitHub Actions every hour (.github/workflows/health.yml): ?days=2 = yesterday + today;
+//   - /api/cron/health every 15 min calls syncMeta(2) directly (yesterday + today, active ads);
 //   - Vercel Cron once a day (vercel.json): ?days=3, so the final numbers of the last days are kept.
 // ?days=30 once fills the history (?days>=3 also refreshes every live ad, not only the active ones). Answers totals only.
 export async function GET(req: NextRequest) {
