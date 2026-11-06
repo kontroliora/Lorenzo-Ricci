@@ -87,6 +87,9 @@ export type ShipmentAnalysis = {
   arrivedAtFinalOfficeMs: number | null; // count the 4-5 days from HERE, not from ship date
   deliveryAttemptCount: number;      // >0 → a failed door attempt (parcel parked at office)
   officeName: string;                // storageOfficeName → final-office event name → "" (for the reminder)
+  // Where arrivedAtFinalOfficeMs came from: the recipient office code, the door-delivery fallback, or nothing.
+  // "door_no_data": a failed door attempt but no pickup-office event after it - left unknown on purpose (never guessed).
+  finalOfficeSource: "office_code" | "door_fallback" | "door_no_data" | null;
 };
 
 const FINAL_OFFICE_TYPES = new Set(["in_delivery_office", "in_pickup_office"]);
@@ -119,6 +122,29 @@ export function analyzeShipment(raw: unknown): ShipmentAnalysis {
       break;
     }
   }
+  // Door delivery with a failed attempt: Econt gives no receiver office code (the parcel was addressed to a door), so the
+  // match above can't find where it was parked. Fallback: the first in_pickup_office event AFTER the attempt, i.e. after the
+  // last event that is not an office event (the courier run). No such event = unknown, never a guess.
+  let finalOfficeSource: ShipmentAnalysis["finalOfficeSource"] = arrivedAtFinalOfficeMs != null ? "office_code" : null;
+  const attempts = Number(s.deliveryAttemptCount ?? 0) || 0;
+  if (arrivedAtFinalOfficeMs == null && String(s.receiverDeliveryType ?? "") === "door" && attempts > 0) {
+    let attemptIdx = -1;
+    events.forEach((e, i) => {
+      const t = e?.destinationType ?? "";
+      if (t && t !== "prepared" && !FINAL_OFFICE_TYPES.has(t) && !RETURN_EVENT_TYPES.has(t)) attemptIdx = i;
+    });
+    const parked = attemptIdx >= 0
+      ? events.slice(attemptIdx + 1).find((e) => e?.destinationType === "in_pickup_office" && e?.officeCode != null && Number(e?.time) > 0)
+      : undefined;
+    if (parked) {
+      arrivedAtFinalOfficeMs = Number(parked.time);
+      finalOfficeName = String(parked.officeName ?? "");
+      finalOfficeSource = "door_fallback";
+    } else {
+      finalOfficeSource = "door_no_data";
+    }
+  }
+
   // Which office to name in the reminder: the live storage location first, then
   // the final-office event name, else empty (template omits the name gracefully).
   const officeName = String(s.storageOfficeName ?? "").trim() || finalOfficeName || "";
@@ -132,8 +158,9 @@ export function analyzeShipment(raw: unknown): ShipmentAnalysis {
     deliveryType: String(s.receiverDeliveryType ?? ""),
     atFinalOffice: arrivedAtFinalOfficeMs != null && !delivered && !returned,
     arrivedAtFinalOfficeMs,
-    deliveryAttemptCount: Number(s.deliveryAttemptCount ?? 0) || 0,
+    deliveryAttemptCount: attempts,
     officeName,
+    finalOfficeSource,
   };
 }
 
@@ -435,6 +462,8 @@ export type MatchResult = {
   scanned: number;
   autoFilled: Array<{ orderId: number; ref: string | null; name: string | null; awb: string }>;
   pending: Array<{ orderId: number; ref: string | null; name: string | null; phone: string | null; total: number; candidates: MatchCandidate[] }>;
+  // Confirmed orders with no Econt waybill for their phone in the last 14 days (or no phone at all): nothing to match yet.
+  unmatched: Array<{ orderId: number; ref: string | null; name: string | null; phone: string | null }>;
 };
 
 export async function matchTrackingNumbers(sb: SupabaseClient): Promise<MatchResult> {
@@ -450,7 +479,7 @@ export async function matchTrackingNumbers(sb: SupabaseClient): Promise<MatchRes
   }
   if (ordersRes.error) throw new Error(ordersRes.error.message);
   const orders = (ordersRes.data ?? []) as unknown as Array<{ id: number; order_ref: string | null; name: string | null; phone: string | null; total: number | null; subtotal: number | null; created_at: string; payment_method?: string | null; payment_status?: string | null; stripe_payment_intent?: string | null }>;
-  if (!orders.length) return { scanned: 0, autoFilled: [], pending: [] };
+  if (!orders.length) return { scanned: 0, autoFilled: [], pending: [], unmatched: [] };
 
   // AWBs already assigned anywhere → never reuse.
   const { data: usedData } = await sb.from("orders").select("tracking_number").not("tracking_number", "is", null);
@@ -472,16 +501,18 @@ export async function matchTrackingNumbers(sb: SupabaseClient): Promise<MatchRes
 
   const autoFilled: MatchResult["autoFilled"] = [];
   const pending: MatchResult["pending"] = [];
+  const unmatched: MatchResult["unmatched"] = [];
   const claimed = new Set<string>();
 
   for (const o of orders) {
     const p = normPhone(o.phone ?? "");
-    if (!p) continue;
+    const unmatchedRow = { orderId: o.id, ref: o.order_ref, name: o.name, phone: o.phone };
+    if (!p) { unmatched.push(unmatchedRow); continue; }
     const orderCreated = new Date(o.created_at).getTime();
     const cands = (byPhone.get(p) ?? []).filter(
       (a) => !claimed.has(a.shipmentNumber) && a.createdDate >= orderCreated - 12 * 3_600_000,
     );
-    if (!cands.length) continue;
+    if (!cands.length) { unmatched.push(unmatchedRow); continue; }
 
     const total = Number(o.total ?? 0);
     const subtotal = Number(o.subtotal ?? 0);
@@ -502,5 +533,5 @@ export async function matchTrackingNumbers(sb: SupabaseClient): Promise<MatchRes
       });
     }
   }
-  return { scanned: orders.length, autoFilled, pending };
+  return { scanned: orders.length, autoFilled, pending, unmatched };
 }

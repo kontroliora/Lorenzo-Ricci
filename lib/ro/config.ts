@@ -27,6 +27,9 @@ export const RO_SHIPPING_OFFICE = "Livrare la locker sau biroul Speedy";
 export const RO_SHIPPING_OFFICE_LEGACY = "Livrare la biroul Econt";
 export const isRoOfficeMethod = (m: unknown): boolean => m === RO_SHIPPING_OFFICE || m === RO_SHIPPING_OFFICE_LEGACY;
 export const RO_COURIER_LABEL = "Speedy";                                   // the courier of the Romanian shop (owner, 17.10.2026)
+/** Speedy's public tracking page for an AWB (speedy.ro is not Speedy's site). Used when staff leave the panel's link field empty. */
+export const roTrackUrl = (awb: string): string =>
+  `https://www.speedy.bg/en/track-shipment?shipmentNumber=${encodeURIComponent(String(awb).replace(/\s+/g, ""))}`;
 /** The one delivery-time wording of the Romanian shop (the Bulgarian one: "Доставка за 1–2 работни дни с Еконт"). */
 export const RO_DELIVERY_TEXT = `Livrare în ${RO_DELIVERY_DAYS} zile lucrătoare cu ${RO_COURIER_LABEL}`;
 export const RO_RETURN_DAYS = 14;                                       // legal right of withdrawal (EU)

@@ -34,20 +34,30 @@ export default async function TrackPage({ params }: { params: Promise<{ awb: str
   const clean = decodeURIComponent(awb).replace(/\s+/g, "");
 
   let status: Record<string, unknown> | null = null;
+  let econtDown = false;
   try {
     const map = await getRawStatuses([clean]);
     status = (map.get(clean) as Record<string, unknown>) ?? null;
-  } catch {
-    status = null;
+  } catch (e) {
+    console.error("[track] Econt API failed for", clean, e);
+    econtDown = true;
   }
 
   if (!status) {
+    // Our copy of the data is missing (Econt API down, or not yet known to it): send the customer to Econt's own page for this AWB.
+    const econtUrl = `https://www.econt.com/services/track-shipment/${encodeURIComponent(clean)}`;
     return (
       <Shell>
         <p style={{ fontFamily: "Georgia, serif", fontSize: 20, color: NAVY, margin: "0 0 10px" }}>Пратка {clean}</p>
         <p style={{ color: "#666", fontSize: 14, lineHeight: 1.7, margin: 0 }}>
-          Все още няма информация за тази пратка. Ако току-що е изпратена, проверете отново след няколко часа. При въпроси ни пишете на info@lorenzo-ricci.com.
+          {econtDown
+            ? "В момента не можем да заредим статуса на пратката. Можете да я проследите директно на сайта на Еконт."
+            : "Все още няма информация за тази пратка. Ако току-що е изпратена, проверете отново след няколко часа или я проследете директно на сайта на Еконт."}
         </p>
+        <a href={econtUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 22, background: NAVY, color: "#fff", fontSize: 11, letterSpacing: ".22em", textTransform: "uppercase", textDecoration: "none", padding: "14px 32px" }}>
+          Проследете в Еконт
+        </a>
+        <p style={{ color: "#999", fontSize: 13, lineHeight: 1.7, margin: "22px 0 0" }}>При въпроси ни пишете на info@lorenzo-ricci.com.</p>
       </Shell>
     );
   }

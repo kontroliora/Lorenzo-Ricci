@@ -45,6 +45,17 @@ export function MatchPanel() {
         </span>
       </div>
 
+      {result && result.unmatched.length > 0 && (
+        <div style={{ background: "rgba(240,149,149,0.06)", border: "0.5px solid rgba(240,149,149,0.35)", borderRadius: 8, padding: "10px 12px", color: "#F09595", fontSize: 13, lineHeight: 1.6 }}>
+          Няма товарителница в Еконт за:{" "}
+          {result.unmatched.map((u, i) => (
+            <span key={u.orderId} title={[u.name, u.phone || "без телефон"].filter(Boolean).join(" · ")} style={{ color: "#fff" }}>
+              {i > 0 && ", "}#{u.ref ?? u.orderId}
+            </span>
+          ))}
+        </div>
+      )}
+
       {result && result.pending.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ color: "#FAC775", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase" }}>Възможни съвпадения — потвърди на ръка</div>

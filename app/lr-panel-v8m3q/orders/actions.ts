@@ -10,7 +10,7 @@ import { sendRoPanelMail, type RoPanelMail } from "@/lib/ro/panel-mail";
 import { getStripe } from "@/lib/stripe";
 import { isPaidCard, hasCardMoney, cardMoneyMissing } from "@/lib/payments";
 import { refundPlan, isMissingStripeObject } from "@/lib/stripe-mode";
-import { fmtRON } from "@/lib/ro/config";
+import { fmtRON, roTrackUrl } from "@/lib/ro/config";
 import { refreshStockPages } from "@/lib/stock-pages";
 
 const ORDERS_PATH = "/lr-panel-v8m3q/orders";
@@ -265,8 +265,9 @@ export async function shipOrder(id: number, tracking: string): Promise<string | 
 export async function shipRoOrder(id: number, awb: string, trackUrl: string): Promise<string | null> {
   const tracking = (awb ?? "").trim();
   if (!tracking) return "Въведи AWB номер на куриера първо";
-  const url = (trackUrl ?? "").trim();
-  if (url && !/^https:\/\//i.test(url)) return "Линкът за проследяване трябва да започва с https://";
+  const typed = (trackUrl ?? "").trim();
+  if (typed && !/^https:\/\//i.test(typed)) return "Линкът за проследяване трябва да започва с https://";
+  const url = typed || roTrackUrl(tracking);                                   // empty field: Speedy's tracking page for this AWB
 
   const supabase = await createClient();
   const { data: order, error: readErr } = await supabase.from("orders").select("*").eq("id", id).single();
@@ -280,9 +281,16 @@ export async function shipRoOrder(id: number, awb: string, trackUrl: string): Pr
   if (error) { console.error("[orders] ship RO error:", error.message); return error.message; }
   revalidatePath(ORDERS_PATH);
 
-  if (order.ship_email_sent_at) return null;                                   // the customer already has the shipped e-mail
-  const warning = await sendRoPanelMail(supabase, id, { kind: "shipment_shipped", awb: tracking, trackUrl: url || undefined });
-  if (!warning) await supabase.from("orders").update({ ship_email_sent_at: now }).eq("id", id);
+  // Claim first (only while ship_email_sent_at is still empty), then send: two clicks can never both mail the customer.
+  const { data: claimed, error: claimErr } = await supabase.from("orders").update({ ship_email_sent_at: now })
+    .eq("id", id).is("ship_email_sent_at", null).select("id");
+  if (claimErr) return `Статусът е променен, но имейлът не е изпратен (${claimErr.message}).`;
+  if (!claimed?.length) return null;                                           // the customer already has the shipped e-mail
+  const warning = await sendRoPanelMail(supabase, id, { kind: "shipment_shipped", awb: tracking, trackUrl: url });
+  if (warning) {
+    const { error: relErr } = await supabase.from("orders").update({ ship_email_sent_at: null }).eq("id", id).eq("ship_email_sent_at", now);
+    if (relErr) console.error("[orders] RO ship: could not release the e-mail claim", id, relErr.message);
+  }
   return warning;
 }
 
@@ -382,7 +390,7 @@ export async function matchTracking(): Promise<{ ok: boolean; message: string; r
     revalidatePath(ORDERS_PATH);
     return {
       ok: true,
-      message: `Сканирани ${r.scanned} · попълнени ${r.autoFilled.length} · за потвърждение ${r.pending.length}${shipMsg}`,
+      message: `Сканирани ${r.scanned} · попълнени ${r.autoFilled.length} · за потвърждение ${r.pending.length} · без товарителница ${r.unmatched.length}${shipMsg}`,
       result: r,
     };
   } catch (e) {
@@ -392,10 +400,19 @@ export async function matchTracking(): Promise<{ ok: boolean; message: string; r
 
 // Confirm a suggested (uncertain) match → fill the tracking number + mark shipped.
 export async function confirmMatch(orderId: number, awb: string): Promise<string | null> {
-  const [snap] = await snapshot(await createClient(), [orderId]);
+  const supabase = await createClient();
+  const [snap] = await snapshot(supabase, [orderId]);
   const blocked = refundedBlock(snap ? [snap] : []) ?? roUnpaidBlock(snap ? [snap] : []) ?? (await codGuard(snap, awb));
   if (blocked) return blocked;
-  return patchOrder(orderId, { tracking_number: awb, status: "shipped" });
+  const err = await patchOrder(orderId, { tracking_number: awb, status: "shipped" });
+  if (err) return err;
+  // Same instant Email 1 as the match button (sent only once Econt has accepted the parcel; once per order). Non-fatal.
+  try {
+    await sendShipConfirmations(supabase);
+  } catch (e) {
+    console.error("[orders] ship-confirm emails after confirmMatch failed:", e);
+  }
+  return null;
 }
 
 // Manual "check Econt now" — reconciles shipped orders against Econt using the

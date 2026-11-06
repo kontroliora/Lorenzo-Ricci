@@ -5,6 +5,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import { langOf, mayEmail } from "@/lib/mail-policy";
+import { hasCardMoney } from "@/lib/payments";
 import { getRawStatuses, analyzeShipment } from "./econt";
 import {
   buildShippedEmail, buildReminderOfficeEmail, buildReminderDoorEmail,
@@ -30,7 +31,7 @@ export function isWeekendSofia(now = Date.now()): boolean {
 type OrderRow = {
   id: number; order_ref: string | null; name: string | null; email: string | null;
   tracking_number: string | null; items: unknown; total: number | null;
-  payment_method?: string | null; payment_status?: string | null; // after supabase/stripe_payments.sql
+  payment_method?: string | null; payment_status?: string | null; stripe_payment_intent?: string | null; // after supabase/stripe_payments.sql
 };
 
 export function toEmailData(o: OrderRow, awb: string, officeName = ""): ShipmentEmailData {
@@ -56,28 +57,32 @@ export function toEmailData(o: OrderRow, awb: string, officeName = ""): Shipment
     tracking: awb,
     trackUrl: trackPageUrl(awb),
     officeName,
-    paid: o.payment_method === "card" && o.payment_status === "paid",
+    // Same rule as the courier guard: any Stripe money on the order (card order, or a COD order paid by card) = nothing to pay on delivery.
+    paid: hasCardMoney(o),
   };
 }
 
 const SELECT = "id, order_ref, name, email, tracking_number, items, total";
 // Card orders: the e-mails say "paid by card". The columns exist once stripe_payments.sql has run; until then the old select is used.
-const SELECT_PAID = `${SELECT}, payment_method, payment_status`;
-type Q = { eq: (c: string, v: unknown) => Q; not: (c: string, op: string, v: unknown) => Q; is: (c: string, v: unknown) => Q } & PromiseLike<{ data: unknown; error: { message: string } | null }>;
+const SELECT_PAID = `${SELECT}, payment_method, payment_status, stripe_payment_intent`;
+type Q = { eq: (c: string, v: unknown) => Q; neq: (c: string, v: unknown) => Q; not: (c: string, op: string, v: unknown) => Q; is: (c: string, v: unknown) => Q } & PromiseLike<{ data: unknown; error: { message: string } | null }>;
 async function readOrders(build: (cols: string) => Q): Promise<{ data: unknown; error: { message: string } | null }> {
   const res = await build(SELECT_PAID);
-  return res.error && /payment_(method|status)/.test(res.error.message) ? build(SELECT) : res;
+  return res.error && /payment_(method|status)|stripe_payment_intent/.test(res.error.message) ? build(SELECT) : res;
 }
 
 // ── EMAIL 1 — ship confirmation. Sends for every shipped order that Econt has
 // physically accepted (sendTime != null) and hasn't been emailed. NO weekday
 // gate — transactional confirmations go out 7 days a week.
+// Sent once: the order is CLAIMED (ship_email_sent_at set only while still NULL)
+// before Resend is called, so the cron and the panel button running at the same
+// moment can never both send. A failed send releases the claim for the next run.
 export async function sendShipConfirmations(sb: SupabaseClient): Promise<{ sent: number; scanned: number }> {
   const resend = getResend();
   if (!resend) return { sent: 0, scanned: 0 };
   const { data, error } = await readOrders((cols) => sb.from("orders").select(cols)
     .eq("status", "shipped").eq("is_international", false)
-    .not("tracking_number", "is", null).not("email", "is", null)
+    .not("tracking_number", "is", null).not("email", "is", null).neq("email", "")
     .is("ship_email_sent_at", null) as unknown as Q);
   if (error) throw new Error(error.message);
   const orders = (data ?? []) as OrderRow[];
@@ -94,11 +99,24 @@ export async function sendShipConfirmations(sb: SupabaseClient): Promise<{ sent:
     const a = analyzeShipment(raw);
     if (!a.accepted) continue;                                  // sendTime == null → the "prepared" trap
     if (a.returning || a.delivered) continue;                   // already heading back to sender / delivered → never send "on its way" (the LR-K2Y30V after-return bug)
-    if (a.arrivedAtFinalOfficeMs != null) continue;             // already waiting at the destination office → "пътува към Вас" is stale; Email 2 (reminder) covers it. Only email while genuinely in transit.
+    // A parcel already waiting at the destination office still gets it: with next-day delivery that is the usual state by the
+    // time we look, and skipping it meant the customer never got the tracking number at all.
+
+    const { data: claimed, error: claimErr } = await sb.from("orders").update({ ship_email_sent_at: nowIso })
+      .eq("id", o.id).is("ship_email_sent_at", null).select("id");
+    if (claimErr) { console.error("[ship] claim failed", o.id, claimErr.message); continue; }
+    if (!claimed?.length) continue;                             // another run claimed (and sent) it first
+
     const d = toEmailData(o, clean(o.tracking_number));
     const { error: e } = await resend.emails.send({ from: FROM, to: [o.email!], subject: shipmentSubjects.shipped(d.ref), html: buildShippedEmail(d) });
-    if (e) { console.error("[ship] email failed", o.id, e.message); continue; }
-    await sb.from("orders").update({ shipped_at: a.shippedAtMs ? new Date(a.shippedAtMs).toISOString() : nowIso, ship_email_sent_at: nowIso }).eq("id", o.id);
+    if (e) {
+      console.error("[ship] email failed", o.id, e.message);
+      const { error: relErr } = await sb.from("orders").update({ ship_email_sent_at: null }).eq("id", o.id).eq("ship_email_sent_at", nowIso);
+      if (relErr) console.error("[ship] could not release the claim - order", o.id, "will NOT be retried:", relErr.message);
+      continue;
+    }
+    const { error: saveErr } = await sb.from("orders").update({ shipped_at: a.shippedAtMs ? new Date(a.shippedAtMs).toISOString() : nowIso }).eq("id", o.id);
+    if (saveErr) console.error("[ship] e-mail sent but shipped_at not saved", o.id, saveErr.message);
     sent++;
   }
   return { sent, scanned: orders.length };
@@ -110,7 +128,7 @@ export async function sendReminders(sb: SupabaseClient): Promise<{ sent: number;
   const resend = getResend();
   if (!resend) return { sent: 0, scanned: 0 };
   const { data, error } = await readOrders((cols) => sb.from("orders").select(cols)
-    .eq("status", "shipped").eq("is_international", false).not("tracking_number", "is", null).not("email", "is", null)
+    .eq("status", "shipped").eq("is_international", false).not("tracking_number", "is", null).not("email", "is", null).neq("email", "")
     .is("reminder_sent_at", null) as unknown as Q);
   if (error) throw new Error(error.message);
   const orders = (data ?? []) as OrderRow[];
@@ -125,6 +143,11 @@ export async function sendReminders(sb: SupabaseClient): Promise<{ sent: number;
     const raw = statuses.get(clean(o.tracking_number));
     if (!raw) continue;
     const a = analyzeShipment(raw);
+    if (a.finalOfficeSource === "door_fallback") {
+      console.log("[reminder] door delivery: office arrival taken from the first pickup-office event after the failed attempt", o.id, clean(o.tracking_number), new Date(a.arrivedAtFinalOfficeMs!).toISOString(), a.officeName);
+    } else if (a.finalOfficeSource === "door_no_data" && !a.delivered && !a.returning) {
+      console.warn("[reminder] door delivery with a failed attempt but no pickup-office event after it - no reminder, check by hand", o.id, clean(o.tracking_number));
+    }
     // `returning` (broad), not `returned` (text-only): a parcel that Econt has
     // already started sending back still reads "Връща се към подател" and still
     // looks "at the final office", so the narrow flag let a "your parcel is

@@ -366,7 +366,7 @@ export function OrderCard({
               <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>Пакетиране и изпращане</div>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <input value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder={ro ? "AWB номер на румънския куриер…" : "Тракинг номер от Еконт…"} style={{ flex: 1, minWidth: 150, background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 13 }} />
-                {ro && <input value={trackUrl} onChange={(e) => setTrackUrl(e.target.value)} placeholder="Линк за проследяване https://… (по желание)" style={{ flex: 1, minWidth: 150, background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 13 }} />}
+                {ro && <input value={trackUrl} onChange={(e) => setTrackUrl(e.target.value)} placeholder="Линк за проследяване (празно = Speedy с AWB)" style={{ flex: 1, minWidth: 150, background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 13 }} />}
                 <button disabled={pending} onClick={() => run(() => (ro ? shipRoOrder(order.id, tracking, trackUrl) : shipOrder(order.id, tracking)))} style={primaryBtn}>Маркирай изпратена</button>
                 <button onClick={() => setCancelStep("category")} style={outlineBtn("#A32D2D", "#F09595")}>Откажи</button>
               </div>
