@@ -87,6 +87,7 @@ export type ShipmentAnalysis = {
   arrivedAtFinalOfficeMs: number | null; // count the 4-5 days from HERE, not from ship date
   deliveryAttemptCount: number;      // >0 → a failed door attempt (parcel parked at office)
   officeName: string;                // storageOfficeName → final-office event name → "" (for the reminder)
+  finalOfficeCode: string | null;    // Econt code of the office holding the parcel (to look up its address)
   // Where arrivedAtFinalOfficeMs came from: the recipient office code, the door-delivery fallback, or nothing.
   // "door_no_data": a failed door attempt but no pickup-office event after it - left unknown on purpose (never guessed).
   finalOfficeSource: "office_code" | "door_fallback" | "door_no_data" | null;
@@ -115,10 +116,12 @@ export function analyzeShipment(raw: unknown): ShipmentAnalysis {
   // AND officeCode === receiverOfficeCode). Transit offices/hubs have other codes.
   let arrivedAtFinalOfficeMs: number | null = null;
   let finalOfficeName = "";
+  let finalOfficeCode: string | null = null;
   for (const e of events) {
     if (FINAL_OFFICE_TYPES.has(e?.destinationType ?? "") && e?.officeCode != null && roc != null && String(e.officeCode) === roc) {
       arrivedAtFinalOfficeMs = Number(e.time) || null;
       finalOfficeName = String(e.officeName ?? "");
+      finalOfficeCode = String(e.officeCode);
       break;
     }
   }
@@ -139,6 +142,7 @@ export function analyzeShipment(raw: unknown): ShipmentAnalysis {
     if (parked) {
       arrivedAtFinalOfficeMs = Number(parked.time);
       finalOfficeName = String(parked.officeName ?? "");
+      finalOfficeCode = String(parked.officeCode);
       finalOfficeSource = "door_fallback";
     } else {
       finalOfficeSource = "door_no_data";
@@ -160,6 +164,7 @@ export function analyzeShipment(raw: unknown): ShipmentAnalysis {
     arrivedAtFinalOfficeMs,
     deliveryAttemptCount: attempts,
     officeName,
+    finalOfficeCode,
     finalOfficeSource,
   };
 }

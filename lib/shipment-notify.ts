@@ -7,6 +7,7 @@ import { Resend } from "resend";
 import { langOf, mayEmail } from "@/lib/mail-policy";
 import { hasCardMoney } from "@/lib/payments";
 import { getRawStatuses, analyzeShipment } from "./econt";
+import { getOfficeList, type OfficeList } from "./econt-offices";
 import {
   buildShippedEmail, buildReminderOfficeEmail, buildReminderDoorEmail,
   shipmentSubjects, trackPageUrl, type ShipmentEmailData, type ShipmentItem,
@@ -71,6 +72,16 @@ async function readOrders(build: (cols: string) => Q): Promise<{ data: unknown; 
   return res.error && /payment_(method|status)|stripe_payment_intent/.test(res.error.message) ? build(SELECT) : res;
 }
 
+// "name, address" of the Econt office holding the parcel, from Econt's office list (cached a day); just the name when the list
+// is unavailable or doesn't know the code.
+async function officeText(code: string | null, name: string): Promise<string> {
+  if (!code) return name;
+  const list: OfficeList | null = await getOfficeList().catch(() => null);
+  const office = list?.offices.find((x) => x.c === code);
+  if (!office) return name;
+  return [office.n, office.a].filter(Boolean).join(", ");
+}
+
 // ── EMAIL 1 — ship confirmation. Sends for every shipped order that Econt has
 // physically accepted (sendTime != null) and hasn't been emailed. NO weekday
 // gate — transactional confirmations go out 7 days a week.
@@ -100,14 +111,16 @@ export async function sendShipConfirmations(sb: SupabaseClient): Promise<{ sent:
     if (!a.accepted) continue;                                  // sendTime == null → the "prepared" trap
     if (a.returning || a.delivered) continue;                   // already heading back to sender / delivered → never send "on its way" (the LR-K2Y30V after-return bug)
     // A parcel already waiting at the destination office still gets it: with next-day delivery that is the usual state by the
-    // time we look, and skipping it meant the customer never got the tracking number at all.
+    // time we look, and skipping it meant the customer never got the tracking number at all. The e-mail then says where it waits.
 
     const { data: claimed, error: claimErr } = await sb.from("orders").update({ ship_email_sent_at: nowIso })
       .eq("id", o.id).is("ship_email_sent_at", null).select("id");
     if (claimErr) { console.error("[ship] claim failed", o.id, claimErr.message); continue; }
     if (!claimed?.length) continue;                             // another run claimed (and sent) it first
 
-    const d = toEmailData(o, clean(o.tracking_number));
+    const d = a.atFinalOffice
+      ? { ...toEmailData(o, clean(o.tracking_number), await officeText(a.finalOfficeCode, a.officeName)), atOffice: true }
+      : toEmailData(o, clean(o.tracking_number));
     const { error: e } = await resend.emails.send({ from: FROM, to: [o.email!], subject: shipmentSubjects.shipped(d.ref), html: buildShippedEmail(d) });
     if (e) {
       console.error("[ship] email failed", o.id, e.message);

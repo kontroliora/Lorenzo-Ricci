@@ -20,6 +20,7 @@ export interface ShipmentEmailData {
   trackUrl: string;   // own branded /track/{awb} page
   officeName?: string; // Econt storageOfficeName - WHICH office holds the parcel (reminders)
   paid?: boolean;     // paid by card in advance: nothing is collected on delivery
+  atOffice?: boolean; // Email 1 only: the parcel already waits at the Econt office (officeName then = "name, address")
 }
 
 export const shipmentSubjects = {
@@ -94,9 +95,15 @@ export function buildShippedEmail(d: ShipmentEmailData): string {
     )
     .join("");
 
-  return shell(d, "Вашата поръчка е предадена на Еконт и пътува към Вас.", `
+  // Already at the destination office when we e-mail (next-day delivery): say where it waits, not that it is on its way.
+  const office = d.officeName ? ` – ${d.officeName.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}` : "";
+  const intro = d.atOffice
+    ? `Благодарим Ви за доверието към Lorenzo Ricci. Пратката Ви очаква в офис на Еконт${office}.`
+    : "Благодарим Ви за доверието към Lorenzo Ricci. Вашата поръчка е предадена на куриер Еконт и вече пътува към Вас.";
+  const preheader = d.atOffice ? "Пратката Ви очаква в офис на Еконт." : "Вашата поръчка е предадена на Еконт и пътува към Вас.";
+  return shell(d, preheader, `
   <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Здравейте, ${d.firstName},</p>
-  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">Благодарим Ви за доверието към Lorenzo Ricci. Вашата поръчка е предадена на куриер Еконт и вече пътува към Вас.</p>
+  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">${intro}</p>
   ${DIV}${LABEL("Поръчка " + d.ref)}
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
     <tbody>${itemRows}</tbody>
@@ -112,7 +119,7 @@ export function buildShippedEmail(d: ShipmentEmailData): string {
     <tr><td style="padding:4px 0;width:150px;color:#888">Тракинг номер</td><td style="padding:4px 0;color:#1a1a1a;font-family:Georgia,serif">${d.tracking}</td></tr>
   </table>
   ${trackButton(d)}
-  <p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7"><strong style="color:#1a1a1a">Доставка за 1–2 работни дни с Еконт</strong>.</p>`);
+  ${d.atOffice ? "" : `<p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7"><strong style="color:#1a1a1a">Доставка за 1–2 работни дни с Еконт</strong>.</p>`}`);
 }
 
 // ── EMAIL 2, CASE A - office delivery, waiting at final office ───────────────
