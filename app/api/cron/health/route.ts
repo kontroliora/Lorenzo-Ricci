@@ -30,9 +30,10 @@ export async function GET(req: NextRequest) {
       ok: !q.error, error: q.error?.message,
       runs: rows.filter((r) => r.key.startsWith("_run")).map((r) => ({ key: r.key, at: r.checked_at, summary: r.detail })),
       problems: rows.filter((r) => !r.ok).map((r) => ({ key: r.key, title: r.title, since: r.since, last_alerted_at: r.last_alerted_at })),
+      checks: rows.filter((r) => !r.key.startsWith("_run")).map((r) => ({ key: r.key, ok: r.ok, detail: r.detail })),
     });
   }
-  if (!cronAuthorized(req.headers.get("authorization"))) return NextResponse.json({ ok: false, error: "unauthorized", build: "health-v3" }, { status: 401 });
+  if (!cronAuthorized(req.headers.get("authorization"))) return NextResponse.json({ ok: false, error: "unauthorized", build: "health-v4" }, { status: 401 });
   if (sp.get("ping") === "1") return NextResponse.json({ ok: true });
   if (sp.get("test") === "1") {
     const t = await sendTelegram("✅ <b>Lorenzo Ricci</b>: тестово известие. Проверките на системата са включени (на всеки 15 мин), проблемите идват тук най-много веднъж на час.");
