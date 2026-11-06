@@ -12,7 +12,8 @@ import { useGiftFor, useLeatherStock } from "@/lib/use-gifts";
 import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS, CARD_GIFT_CLASS } from "@/lib/home-card-hints";
 import { giftDisplayName } from "@/lib/gifts";
 import { bgShipsFree } from "@/lib/shipping-rules";
-import { FreeShippingBadge } from "@/components/product/PriceExtras";
+import { FreeShippingBadge, OnePlusOneLine } from "@/components/product/PriceExtras";
+import { opoGroupOf, opoPriceLineBg } from "@/lib/one-plus-one";
 
 interface ProductCardProps {
   product: Product;
@@ -44,6 +45,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
   const saved = price.original && !isSoldOut ? savingsEur(product) : null;
   const left = !isSoldOut ? lowStockCount(liveStock) : null;
   const shipsFree = !isSoldOut && bgShipsFree(product);
+  const opo = isSoldOut ? undefined : opoGroupOf(product.slug); // 1+1 group: badge on the photo + line under the price
 
   const productSummary = reviewSummary[product.slug];
   const reviewCount = productSummary?.count ?? 0;
@@ -165,6 +167,11 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
               + Подарък кардхолдър
             </span>
           )}
+          {opo && (
+            <span data-testid="card-opo-badge" className="bg-[#B3121F] text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
+              {opo.text.bg.badge}
+            </span>
+          )}
         </div>
 
         {/* Quick-add / learn-more overlay */}
@@ -240,6 +247,7 @@ export function ProductCard({ product, priority = false, learnMore = false }: Pr
         {saved !== null && (
           <p data-testid="home-savings" className={`mt-1 ${CARD_SAVINGS_CLASS}`}>Спестявате €{saved}</p>
         )}
+        {opo && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(product.slug)} size="card" />}
         {giftSlug && !isSoldOut && (
           <p data-testid="card-gift" className={`mt-1 ${CARD_GIFT_CLASS}`}>🎁 + подарък: {giftDisplayName(giftSlug)}</p>
         )}

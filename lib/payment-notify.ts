@@ -4,6 +4,7 @@ import { supabaseAdmin } from "./supabase-admin";
 import type { OrderRow } from "./payment-orders";
 import { langOf } from "./mail-policy";
 import { buildAdminEmail, buildCustomerEmail, sendAdminEmail, sendCustomerEmail, sendCapiPurchase } from "./order-notify";
+import { onePlusOneOfOrder } from "./one-plus-one";
 import { buildRoAdminEmail, buildRoCustomerEmail, roPaidSubject, type RoOrderEmailData } from "./ro/emails";
 import { RO_ADMIN_RECIPIENTS, sendMail, sendCapiPurchase as sendRoCapiPurchase } from "./ro/order-notify";
 import { RO_SHIPPING_HOME, RO_SHIPPING_OFFICE, isRoOfficeMethod } from "./ro/config";
@@ -50,6 +51,8 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
       subtotal: Number(order.subtotal ?? 0),
       // the order stores goods AFTER the set discount; the discount itself is what the lines add up to above that
       discount: Math.max(0, items.reduce((s, i) => s + Number(i.price ?? 0) * Number(i.quantity ?? i.qty ?? 1), 0) - Number(order.subtotal ?? 0)),
+      // the 1+1 part of it (lib/one-plus-one.ts), read back from the saved lines (they carry the slug)
+      onePlusOne: onePlusOneOfOrder(items, Math.max(0, items.reduce((s, i) => s + Number(i.price ?? 0) * Number(i.quantity ?? i.qty ?? 1), 0) - Number(order.subtotal ?? 0))),
       cardDiscount: Number(order.card_discount ?? 0) || undefined,
       shippingCost: Number(order.shipping_cost ?? 0),
       total: Number(order.total ?? 0),
@@ -76,6 +79,7 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
     total: Number(order.total ?? 0),
     subtotal: Number(order.subtotal ?? 0),
     cardDiscount: Number(order.card_discount ?? 0) || 0,
+    promoDiscount: Number(order.promo_discount ?? 0) || 0,   // so the e-mails can tell the 1+1 apart from a promo code
   };
   const names = ["team e-mail", ...(email ? ["customer e-mail"] : []), "Meta Purchase"];
   const r = await Promise.allSettled([

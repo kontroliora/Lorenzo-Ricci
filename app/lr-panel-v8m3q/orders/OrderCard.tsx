@@ -21,6 +21,7 @@ import { OrderItemsList } from "./OrderItemsList";
 import { isRoOrder, fmtLei, fmtLeiWithEuro } from "@/lib/market";
 import { PaymentBadge, PaidCardCollectLine, CardMoneyMissingLine, RoPaymentLine } from "./PaymentUi";
 import { refundPlan } from "@/lib/stripe-mode";
+import { onePlusOneOfOrder } from "@/lib/one-plus-one";
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
   new:       { label: "Нова · за обаждане", bg: "#412402", fg: "#FAC775" },
@@ -146,6 +147,10 @@ export function OrderCard({
   const codSub = order.subtotal != null ? Number(order.subtotal) : null;
   const codShip = Number(order.shipping_cost ?? 0);
   const cardOff = ro ? 0 : Number(order.card_discount ?? 0);   // Romania has no card discount (25.10.2026)   // 5% for paying by card (max €25 / 130 lei): subtotal - card discount + delivery = total
+  // 1+1 groups (lib/one-plus-one.ts): read back from the order's own lines (lines - goods - promo code).
+  const paidLines = ((order.items ?? []) as { slug?: unknown; price?: unknown; quantity?: unknown; qty?: unknown; gift?: unknown }[]).filter((i) => !i.gift);
+  const linesGross = paidLines.reduce((s, i) => s + Number(i.price ?? 0) * Number(i.quantity ?? i.qty ?? 1), 0);
+  const opoOff = codSub != null ? onePlusOneOfOrder(paidLines, linesGross - codSub - Number(order.promo_discount ?? 0)) : 0;
   const showBreakdown = codSub != null && codSub > 0 && Math.abs(codSub - cardOff + codShip - cod) < 0.01;
   // Money: euro for Bulgaria, lei for Romania (with the euro equivalent next to the total).
   const money = (n: number) => (ro ? fmtLei(n) : `€${n.toFixed(2)}`);
@@ -222,6 +227,7 @@ export function OrderCard({
         {showBreakdown && (
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2, display: "flex", gap: 14, flexWrap: "wrap" }}>
             <span>Стока: <span style={{ color: "rgba(255,255,255,0.8)" }}>{money(codSub!)}</span></span>
+            {opoOff > 0 && <span>1+1: <span style={{ color: "#97C459" }}>−{money(opoOff)}</span></span>}
             {cardOff > 0 && <span>Отстъпка карта −5%: <span style={{ color: "#97C459" }}>−{money(cardOff)}</span></span>}
             <span>Доставка: <span style={{ color: "rgba(255,255,255,0.8)" }}>{codShip > 0 ? money(codShip) : "безплатна"}</span></span>
           </div>

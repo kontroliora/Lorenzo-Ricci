@@ -8,7 +8,9 @@ import { CheckoutForm } from "./CheckoutForm";
 import { CartCrossSell } from "./CartCrossSell";
 import { CartGiftRow } from "./GiftRow";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
-import { promoBase } from "@/lib/bundles";
+import { promoBase, bundleLineText } from "@/lib/bundles";
+import { OnePlusOneNudge } from "./OnePlusOneNudge";
+import { opoExcludedFromPromo } from "@/lib/one-plus-one";
 import { isOnSale } from "@/lib/price";
 import { cardDiscountEur } from "@/lib/card-discount";
 
@@ -65,7 +67,8 @@ export function CartDrawer() {
       const data = await res.json() as { valid: boolean; discount?: number; error?: string };
       if (data.valid && promoBase(items, totalDiscount) <= 0) {
         // Only discounted products in the cart: the code covers none of them (the server refuses it the same way).
-        setPromoError(PROMO_NOT_ON_SALE);
+        // Items of a 1+1 group (lib/one-plus-one.ts) never take a code either: the 1+1 is their promotion.
+        setPromoError(items.some((i) => opoExcludedFromPromo(i.product.slug)) && !items.some((i) => isOnSale(i.product)) ? "Кодът не важи за продукти с оферта 1+1" : PROMO_NOT_ON_SALE);
       } else if (data.valid) {
         setPromoInput(code);
         setPromoRate(typeof data.discount === "number" ? data.discount : 0.10);
@@ -348,6 +351,7 @@ export function CartDrawer() {
                 </Fragment>
                 );
               })}
+              <OnePlusOneNudge />
               <CartCrossSell />
             </div>
 
@@ -359,13 +363,13 @@ export function CartDrawer() {
               </div>
 
               {/* Bundle discount lines */}
-              {activeBundles.map(({ label, discount }) => (
-                <div key={label} className="flex items-center justify-between mb-2">
+              {activeBundles.map((b) => (
+                <div key={b.id} className="flex items-center justify-between mb-2">
                   <span className="font-sans text-xs text-navy-light tracking-wide">
-                    ◈ {label} -10%
+                    ◈ {bundleLineText(b)}
                   </span>
                   <span className="font-sans text-xs text-navy-light tracking-wide">
-                    -€{discount.toFixed(2)}
+                    -€{b.discount.toFixed(2)}
                   </span>
                 </div>
               ))}

@@ -30,7 +30,9 @@ import { roReviewsCount, roRatingText } from "@/components/ro/product/ro-text";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { PAGE_LOW_STOCK_MAX, savingsRon } from "@/lib/home-card-hints";
 import { campaignLabelRo } from "@/lib/sale-campaign";
-import { SavingsLine, DeliveryLine } from "@/components/product/PriceExtras";
+import { SavingsLine, DeliveryLine, OnePlusOneLine } from "@/components/product/PriceExtras";
+import { opoGroupOf } from "@/lib/one-plus-one";
+import { opoPriceLineRo } from "@/lib/ro/config";
 
 // A colour swatch reads as sold out when its product is switched off in
 // lib/products.ts (inStock: false - the owner's single on/off switch); the
@@ -374,6 +376,10 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           )}
         </div>
         <SavingsLine text={saved !== null ? `Economisiți ${fmtRON(saved)}` : null} campaign={campaign} freeShipping={shipsFree ? "Livrare gratuită" : null} />
+        {/* 1+1 group (lib/one-plus-one.ts): badge + "2 port-carduri pentru 341 lei ..." */}
+        {effectiveInStock && opoGroupOf(product.slug) && (
+          <OnePlusOneLine badge={opoGroupOf(product.slug)!.text.ro.badge} line={opoPriceLineRo(product.slug)} size="page" />
+        )}
       </div>
 
       {/* Delivery in one line, right under the price (no inspection before paying: the Romanian shop is card only) */}

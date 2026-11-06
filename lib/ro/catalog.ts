@@ -6,6 +6,7 @@ import type { Product } from "@/lib/types";
 import { roEligible } from "./config";
 import { RO_PRODUCTS } from "./products-ro";
 import { roName } from "./names-ro";
+import { opoFixesPrice } from "@/lib/one-plus-one";
 
 export const RO_SLUGS: string[] = products.filter(roEligible).map((p) => p.slug);
 
@@ -21,7 +22,8 @@ export function localizeProduct(p: Product): Product {
     ...p,
     ...text,
     name: roName(p),
-    badge: text.badge ?? p.badge,
+    // a running 1+1 group with a fixed price drops the sale badge (the 1+1 badge is drawn by the cards and pages)
+    badge: opoFixesPrice(p.slug) ? undefined : (text.badge ?? p.badge),
     images: p.images.map((img, i) => ({ ...img, alt: imageAlts?.[i] ?? img.alt })),
     coverImage: { ...p.coverImage, alt: coverAlt ?? p.coverImage.alt },
   };

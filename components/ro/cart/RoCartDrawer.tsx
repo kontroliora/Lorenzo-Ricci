@@ -8,6 +8,7 @@ import { RO_FREE_SHIPPING_RON, fmtRON } from "@/lib/ro/config";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 import { RoCheckoutForm } from "./RoCheckoutForm";
 import { bundleLineLabel } from "./shared";
+import { RoOnePlusOneNudge } from "./RoOnePlusOneNudge";
 
 // Romania cart drawer (port of components/cart/CartDrawer.tsx): lei, card payment only (no ramburs), sets with their discount,
 // crossed-out sale prices, free delivery from RO_FREE_SHIPPING_RON (judged on the amount after set discounts). A cart holding a
@@ -226,6 +227,7 @@ export function RoCartDrawer() {
                   </div>
                 );
               })}
+              <RoOnePlusOneNudge />
             </div>
 
             {/* Footer */}
@@ -238,7 +240,7 @@ export function RoCartDrawer() {
               {/* Set discount lines */}
               {bundles.map(({ id, label, discount }) => (
                 <div key={id} className="flex items-center justify-between mb-2">
-                  <span className="font-sans text-xs text-navy-light tracking-wide">◈ {bundleLineLabel(label)}</span>
+                  <span className="font-sans text-xs text-navy-light tracking-wide">◈ {bundleLineLabel(label, id)}</span>
                   <span className="font-sans text-xs text-navy-light tracking-wide">-{fmtRON(discount)}</span>
                 </div>
               ))}

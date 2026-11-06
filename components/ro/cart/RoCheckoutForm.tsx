@@ -312,7 +312,7 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
     compareAt: i.originalRon != null && i.originalRon > i.ron ? fmtRON(i.originalRon * i.quantity) : undefined,
   }));
   const summaryRows: SummaryRow[] = [
-    ...bundles.map(({ id, label, discount }) => ({ key: `bundle-${id}`, label: bundleLineLabel(label), value: `-${fmtRON(discount)}`, tone: "discount" as const })),
+    ...bundles.map(({ id, label, discount }) => ({ key: `bundle-${id}`, label: bundleLineLabel(label, id), value: `-${fmtRON(discount)}`, tone: "discount" as const })),
     { key: "shipping", label: "Livrare", value: freeShipping ? "Gratuită" : fmtRON(shippingCost), tone: freeShipping ? ("free" as const) : undefined },
   ];
   const OPT = "(opțional)";

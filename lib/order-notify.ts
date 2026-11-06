@@ -2,6 +2,16 @@
 import { Resend } from "resend";
 import { buildUserData, eventSourceUrl, mayPostPurchase, sendCapiEvents, type CapiContext } from "@/lib/meta-capi";
 import { mayEmail, type MailKind, type MailLang } from "./mail-policy";
+import { onePlusOneOfOrder } from "./one-plus-one";
+
+// The 1+1 part of the order's discounts (lib/one-plus-one.ts), read back from its own lines: lines - goods after discounts - promo.
+const onePlusOneOf = (order: Record<string, unknown>): number => {
+  const items = (Array.isArray(order.items) ? order.items : []) as Record<string, unknown>[];
+  const paid = items.filter((i) => !i.gift);
+  const gross = paid.reduce((s, i) => s + Number(i.price ?? 0) * Number(i.quantity ?? i.qty ?? 1), 0);
+  const discount = gross - Number(order.subtotal ?? gross) - Number(order.promoDiscount ?? 0);
+  return onePlusOneOfOrder(paid, discount);
+};
 
 // Order notifications shared by /api/order (cash on delivery) and the Stripe webhook (card orders, after payment):
 // the team e-mail, the customer confirmation e-mail and the Meta Conversions API Purchase. Moved here unchanged from
@@ -111,6 +121,7 @@ export function buildAdminEmail(order: Record<string, unknown>, alertMessage?: s
         </thead>
         <tbody>${items}</tbody>
         <tfoot>
+          ${onePlusOneOf(order) > 0 ? `<tr><td colspan="3" style="padding:10px 12px;color:#047857">1+1 (втори брой безплатно)</td><td style="padding:10px 12px;text-align:right;color:#047857">-€${onePlusOneOf(order).toFixed(2)}</td></tr>` : ""}
           ${Number(order.cardDiscount ?? 0) > 0 ? `<tr><td colspan="3" style="padding:10px 12px;color:#047857">Отстъпка за плащане с карта (-5%)</td><td style="padding:10px 12px;text-align:right;color:#047857">-€${Number(order.cardDiscount).toFixed(2)}</td></tr>` : ""}
           <tr style="background:#f3f4f6;font-weight:700">
             <td colspan="3" style="padding:10px 12px">${opts.paidByCard ? "ОБЩО (платено с карта)" : "ОБЩО"}</td>
@@ -187,6 +198,7 @@ export function buildCustomerEmail(order: Record<string, unknown>, opts: { paidB
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tbody>${items}</tbody>
                 <tfoot>
+                  ${onePlusOneOf(order) > 0 ? `<tr><td colspan="2" style="padding:12px 0 0;font-size:12px;color:#888">1+1 – вторият брой е подарък</td><td style="padding:12px 0 0;text-align:right;font-size:14px;color:#047857">-€${onePlusOneOf(order).toFixed(2)}</td></tr>` : ""}
                   ${Number(order.cardDiscount ?? 0) > 0 ? `<tr><td colspan="2" style="padding:12px 0 0;font-size:12px;color:#888">Отстъпка за плащане с карта (-5%)</td><td style="padding:12px 0 0;text-align:right;font-size:14px;color:#047857">-€${Number(order.cardDiscount).toFixed(2)}</td></tr>` : ""}
                   <tr>
                     <td colspan="2" style="padding:14px 0 0;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#888">${opts.paidByCard ? "Платено с карта" : "Сума за плащане при доставка"}</td>

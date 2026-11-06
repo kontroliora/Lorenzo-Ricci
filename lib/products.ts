@@ -1,4 +1,5 @@
 import type { Product } from "./types";
+import { withOnePlusOnePrice } from "./one-plus-one";
 
 // Confirmed crocodile species (per CITES permit) - single source for both the
 // specs "Вид" row and the LeatherDescription.tsx CITES bullet everywhere they're
@@ -7,7 +8,9 @@ import type { Product } from "./types";
 const SIAMESE_CROCODILE = "сиамски крокодил (Crocodylus siamensis)";
 const NILE_CROCODILE = "нилски крокодил (Crocodylus niloticus)";
 
-export const products: Product[] = [
+const catalog: Product[] = [
+  // NOTE: prices below are the catalog prices. A running 1+1 group with a fixed price (lib/one-plus-one.ts, e.g. the
+  // cardholders at €65) replaces price / originalPrice / badge of its products in `products` at the end of this file.
   // ─── WATCHES ────────────────────────────────────────────────────────────────
   // Yachting collection - 3 dial colours of one design, placed first so they lead
   // the homepage watches section (FeaturedWatches renders getWatches() in array
@@ -1593,6 +1596,9 @@ export const products: Product[] = [
     ],
   },
 ];
+
+/** The shop's catalog: catalog prices, except products of a running 1+1 group with a fixed price (lib/one-plus-one.ts). */
+export const products: Product[] = catalog.map(withOnePlusOnePrice);
 
 export function getProductBySlug(slug: string): Product | undefined {
   return products.find((p) => p.slug === slug);

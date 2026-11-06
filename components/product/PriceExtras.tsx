@@ -44,3 +44,18 @@ export function SavingsLine({ text, campaign, freeShipping = null }: { text: str
 export function DeliveryLine({ text }: { text: string }) {
   return <p data-testid="delivery-line" className="-mt-3 font-sans text-[13px] leading-snug text-ink-soft">{text}</p>;
 }
+
+/**
+ * A product of a running 1+1 group (lib/one-plus-one.ts): the badge and the line under the price. "page" sits under the product-page
+ * price, "card" under a card's price (the card draws the badge on its photo). The caller decides when it shows (not on a sold-out product).
+ */
+export function OnePlusOneLine({ badge, line, size }: { badge: string; line: string | null; size: "page" | "card" }) {
+  return size === "page" ? (
+    <div data-testid="page-opo" className="mt-2.5 flex flex-col items-start gap-1.5">
+      <span className={`${PAGE_BADGE} bg-[#B3121F]`}>{badge}</span>
+      {line && <span className="font-sans text-[15px] sm:text-[16px] font-medium leading-snug text-[#2E6B3F]">{line}</span>}
+    </div>
+  ) : line ? (
+    <p data-testid="card-opo" className="mt-1 font-sans text-[13px] leading-snug text-[#2E6B3F]">{line}</p>
+  ) : null;
+}

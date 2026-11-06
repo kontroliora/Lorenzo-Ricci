@@ -6,7 +6,9 @@ import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { useRoCart } from "@/lib/ro/store";
 import { fmtRON, ronOf, ronOriginalOf, roNeedsPrepayment, roShipsFree } from "@/lib/ro/config";
-import { FreeShippingBadge } from "@/components/product/PriceExtras";
+import { FreeShippingBadge, OnePlusOneLine } from "@/components/product/PriceExtras";
+import { opoGroupOf } from "@/lib/one-plus-one";
+import { opoPriceLineRo } from "@/lib/ro/config";
 import { useLeatherStock } from "@/lib/use-gifts";
 import { lowStockCount, savingsRon, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
 import { hasCyrillic, roDisplayName, roSafeText } from "@/components/ro/listing/ro-display";
@@ -49,6 +51,7 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
   const saved = savingsRon(product);
   const left = !isSoldOut ? lowStockCount(liveStock) : null; // both hint lines on every card (homepage and listings)
   const shipsFree = !isSoldOut && roShipsFree(product);
+  const opo = isSoldOut ? undefined : opoGroupOf(product.slug); // 1+1 group: badge on the photo + line under the price
 
   // Night image for watches is always images[1]
   const nightImage = isWatch ? (product.images[1] ?? product.coverImage) : null;
@@ -170,11 +173,18 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
         )}
 
         {/* Badges: the product's own badge, including the sale badge (same as the Bulgarian card) */}
-        {badge && !isSoldOut && (
+        {((badge && !isSoldOut) || opo) && (
           <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
-            <span className="bg-white/95 text-navy border border-navy/20 font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
-              {badge}
-            </span>
+            {badge && !isSoldOut && (
+              <span className="bg-white/95 text-navy border border-navy/20 font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
+                {badge}
+              </span>
+            )}
+            {opo && (
+              <span data-testid="card-opo-badge" className="bg-[#B3121F] text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
+                {opo.text.ro.badge}
+              </span>
+            )}
           </div>
         )}
 
@@ -237,6 +247,7 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
         {saved !== null && !isSoldOut && (
           <p data-testid="home-savings" className={`mt-1 ${CARD_SAVINGS_CLASS}`}>Economisiți {fmtRON(saved)}</p>
         )}
+        {opo && <OnePlusOneLine badge={opo.text.ro.badge} line={opoPriceLineRo(product.slug)} size="card" />}
         {shipsFree && (
           <div className="mt-1.5"><FreeShippingBadge text="Livrare gratuită" size="card" /></div>
         )}

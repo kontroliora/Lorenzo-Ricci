@@ -3,6 +3,7 @@
 import { BUNDLES } from "@/lib/bundles";
 import { RO_FREE_SHIPPING_RON, RO_SHIPPING_FEE_RON } from "./config";
 import { RO_BUNDLE_LABEL } from "./bundles-ro";
+import { onePlusOne, opoLineId } from "@/lib/one-plus-one";
 
 export type PricedLine = { ron: number; quantity: number };
 /** A line that can take part in a set: its slug, and whether the product is on sale (a sale item earns no set discount). */
@@ -29,6 +30,11 @@ export function roBundleDiscount(lines: BundleLine[]): { totalDiscount: number; 
     const discount = Math.round((base * b.discountPct) / 100);
     totalDiscount += discount;
     if (discount > 0) active.push({ id: b.id, label: RO_BUNDLE_LABEL[b.id] ?? b.label, discount });
+  }
+  // 1+1 groups (lib/one-plus-one.ts) on the lei prices (whole lei): same rule as the Bulgarian cart, each group on its own.
+  for (const g of onePlusOne(lines.map((l) => ({ slug: l.slug, unit: l.ron, quantity: l.quantity, onSale: l.onSale }))).groups) {
+    totalDiscount += g.discount;
+    active.push({ id: opoLineId(g.id), label: "1+1", discount: g.discount });
   }
   return { totalDiscount, active };
 }

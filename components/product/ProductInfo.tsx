@@ -16,7 +16,8 @@ import { getProductBySlug } from "@/lib/products";
 import { PAGE_LOW_STOCK_MAX, savingsEur } from "@/lib/home-card-hints";
 import { campaignLabel } from "@/lib/sale-campaign";
 import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
-import { SavingsLine, DeliveryLine } from "@/components/product/PriceExtras";
+import { SavingsLine, DeliveryLine, OnePlusOneLine } from "@/components/product/PriceExtras";
+import { opoGroupOf, opoPriceLineBg } from "@/lib/one-plus-one";
 
 // A colour swatch reads as sold out when its product is switched off in
 // lib/products.ts (inStock: false - the owner's single on/off switch); the
@@ -363,6 +364,10 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           )}
         </div>
         <SavingsLine text={saved !== null ? `Спестявате €${saved}` : null} campaign={campaign} freeShipping={shipsFree ? "Безплатна доставка" : null} />
+        {/* 1+1 group (lib/one-plus-one.ts): badge + "2 картодържателя за €65 ..." */}
+        {effectiveInStock && opoGroupOf(product.slug) && (
+          <OnePlusOneLine badge={opoGroupOf(product.slug)!.text.bg.badge} line={opoPriceLineBg(product.slug)} size="page" />
+        )}
       </div>
 
       {/* Delivery in one line, right under the price; inspection before paying only where cash on delivery exists.

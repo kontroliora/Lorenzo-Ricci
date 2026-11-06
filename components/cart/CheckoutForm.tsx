@@ -4,7 +4,7 @@ import type { CartItem } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { BG_FREE_SHIPPING_EUR, BG_SHIPPING_HOME_EUR, BG_SHIPPING_OFFICE_EUR } from "@/lib/shipping-rules";
 import { cardDiscountEur, cardDiscountIsCapped, CARD_DISCOUNT_CAP_EUR } from "@/lib/card-discount";
-import { calcBundleDiscount } from "@/lib/bundles";
+import { calcBundleDiscount, bundleLineText } from "@/lib/bundles";
 import { giftDisplayName } from "@/lib/gifts";
 import { useGiftLines } from "@/lib/use-gifts";
 import { trackFbEvent, rememberMatchKeys } from "@/lib/fbq";
@@ -440,7 +440,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       : [line];
   });
   const summaryRows: SummaryRow[] = [
-    ...activeBundles.map(({ label, discount }) => ({ key: `bundle-${label}`, label: `${label} -10%`, value: `-€${discount.toFixed(2)}`, tone: "discount" as const })),
+    ...activeBundles.map((b) => ({ key: `bundle-${b.id}`, label: bundleLineText(b), value: `-€${b.discount.toFixed(2)}`, tone: "discount" as const })),
     ...(promoCode && promoDiscount > 0
       ? [{ key: "promo", label: `Промо ${promoCode} -${Math.round(promoRate * 100)}%`, value: `-€${promoDiscount.toFixed(2)}`, tone: "discount" as const }]
       : []),

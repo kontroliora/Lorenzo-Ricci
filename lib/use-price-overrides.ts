@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { Product } from "./types";
+import { opoFixesPrice } from "./one-plus-one";
 
 type PriceOverride = { price: number; originalPrice: number };
 type OverrideMap = Record<string, PriceOverride>;
@@ -28,6 +29,6 @@ export function usePriceOverrides(): (product: Product) => Product {
 
   return (product: Product) => {
     const ov = overrides[product.slug];
-    return ov ? { ...product, price: ov.price, originalPrice: ov.originalPrice } : product;
+    return ov && !opoFixesPrice(product.slug) ? { ...product, price: ov.price, originalPrice: ov.originalPrice } : product;
   };
 }

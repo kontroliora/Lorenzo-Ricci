@@ -1,5 +1,6 @@
 import type { CartItem, Product } from "./types";
 import { isOnSale } from "./price";
+import { onePlusOne, opoLineId, isOpoLineId, opoExcludedFromPromo, type OpoLine } from "./one-plus-one";
 
 export interface Bundle {
   id: string;
@@ -53,13 +54,22 @@ export const BUNDLES: Bundle[] = [
 
 export interface BundleResult {
   totalDiscount: number;
-  active: { label: string; discount: number }[];
+  // id: the set's id, or "1+1:<group>" for a 1+1 line (lib/one-plus-one.ts); pct: the set's % (absent on a 1+1 line)
+  active: { id: string; label: string; discount: number; pct?: number }[];
 }
+
+/** The cart lines as the 1+1 groups see them. */
+export const opoLines = (items: CartItem[]): OpoLine[] =>
+  items.map((i) => ({ slug: i.product.slug, unit: i.product.price, quantity: i.quantity, onSale: isOnSale(i.product) }));
+
+/** How a discount line reads in the cart and the checkout: "Milano Twist Комплект -10%" / "1+1". */
+export const bundleLineText = (b: { id: string; label: string; pct?: number }): string =>
+  isOpoLineId(b.id) ? "1+1" : `${b.label} -${b.pct ?? 10}%`;
 
 export function calcBundleDiscount(items: CartItem[]): BundleResult {
   const inCart = new Set(items.map((i) => i.product.id));
   let totalDiscount = 0;
-  const active: { label: string; discount: number }[] = [];
+  const active: BundleResult["active"] = [];
 
   for (const bundle of BUNDLES) {
     const allSlotsMatched = bundle.slots.every((slot) =>
@@ -80,8 +90,16 @@ export function calcBundleDiscount(items: CartItem[]): BundleResult {
 
     const discount = Math.round(bundleSubtotal * bundle.discountPct) / 100;
     totalDiscount += discount;
-    if (discount > 0) active.push({ label: bundle.label, discount });
+    if (discount > 0) active.push({ id: bundle.id, label: bundle.label, discount, pct: bundle.discountPct });
   }
+
+  // 1+1 groups (lib/one-plus-one.ts), each on its own. Same field as the set discounts, so /api/order, Stripe, the card -5%
+  // (taken after it), free delivery (judged after it) and abandoned-cart recovery all see it.
+  for (const g of onePlusOne(opoLines(items)).groups) {
+    totalDiscount += g.discount;
+    active.push({ id: opoLineId(g.id), label: "1+1", discount: g.discount });
+  }
+  totalDiscount = Math.round(totalDiscount * 100) / 100;
 
   return { totalDiscount, active };
 }
@@ -119,9 +137,12 @@ export function bundleSoldOut(
 
 // What a promo code (newsletter / waitlist) applies to: full-price items only, after
 // their set discounts (sale items can't earn one). No stacking on sale items.
+// Items of a running 1+1 group never take a code either (the 1+1 is their promotion): they and the 1+1 part of `setDiscount`
+// are left out.
 export function promoBase(items: CartItem[], setDiscount: number): number {
   const fullPrice = items
-    .filter((i) => !isOnSale(i.product))
+    .filter((i) => !isOnSale(i.product) && !opoExcludedFromPromo(i.product.slug))
     .reduce((sum, i) => sum + i.product.price * i.quantity, 0);
-  return Math.max(0, Math.round((fullPrice - setDiscount) * 100) / 100);
+  const otherSets = setDiscount - onePlusOne(opoLines(items)).total;
+  return Math.max(0, Math.round((fullPrice - otherSets) * 100) / 100);
 }

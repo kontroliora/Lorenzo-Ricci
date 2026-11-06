@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import type { Product } from "./types";
+import { opoFixesPrice } from "./one-plus-one";
 import { supabaseAdmin } from "./supabase-admin";
 
 // Durable price overrides — see supabase/product_price_overrides.sql for the full
@@ -62,7 +63,8 @@ export async function getPriceOverrides(): Promise<Map<string, PriceOverride>> {
 // etc.) stays the same value, so components that only care about those see no change.
 export function applyOverride<T extends Product>(product: T, overrides: Map<string, PriceOverride>): T {
   const ov = overrides.get(product.slug);
-  if (!ov) return product;
+  // A running 1+1 group with a fixed price (lib/one-plus-one.ts) sets the price - an override would break the 1+1 and the order check.
+  if (!ov || opoFixesPrice(product.slug)) return product;
   return { ...product, price: ov.price, originalPrice: ov.originalPrice };
 }
 
