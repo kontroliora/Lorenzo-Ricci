@@ -30,6 +30,7 @@ import { BgFooter } from "@/components/layout/BgFooter";
 import { LazyCartDrawer, LazySalesNotification } from "@/components/layout/DeferredChrome";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
+import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { HideOnAdmin } from "@/components/layout/HideOnAdmin";
@@ -110,6 +111,7 @@ export default async function RootLayout({
         </ThemeProvider>
         {/* Vercel Web Analytics: page views for the whole site, Bulgarian and /ro (one root layout). */}
         <Analytics />
+        <PageViewTracker />
         <SpeedInsights />
       </body>
     </html>

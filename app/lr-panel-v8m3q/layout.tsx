@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { HealthBar } from "@/components/admin/HealthBar";
 
 // The entire admin area must never be indexed by search engines.
 export const metadata: Metadata = {
@@ -10,5 +11,6 @@ export const metadata: Metadata = {
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  // Health bar on top of every panel page (owner only; hidden on the login screen).
+  return <><HealthBar />{children}</>;
 }

@@ -4,6 +4,8 @@ import { logout } from "../actions";
 import { isOwner } from "@/lib/admin-auth";
 import { computeRoas } from "@/lib/roas";
 import { RoasBoard } from "./RoasBoard";
+import { MetaAdsBlock } from "./MetaAdsBlock";
+import { getAdPerformance } from "../marketing-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +19,7 @@ export default async function RoasPage() {
   const start = new Date(end);
   start.setDate(start.getDate() - 29);
   start.setHours(0, 0, 0, 0);
-  const initial = await computeRoas(start.toISOString(), end.toISOString());
+  const [initial, ads] = await Promise.all([computeRoas(start.toISOString(), end.toISOString()), getAdPerformance("7d", "all").catch(() => null)]);
 
   return (
     <div className="min-h-screen bg-[#0a0e1f] text-white">
@@ -35,7 +37,7 @@ export default async function RoasPage() {
 
       <AdminNav />
       {initial
-        ? <RoasBoard initial={initial} />
+        ? <RoasBoard initial={initial} metaAds={<MetaAdsBlock initial={ads} initialPeriod="7d" />} />
         : <p className="text-white/40 text-sm text-center py-20">Няма достъп.</p>}
     </div>
   );

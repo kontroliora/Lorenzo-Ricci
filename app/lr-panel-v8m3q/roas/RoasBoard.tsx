@@ -22,7 +22,7 @@ function presetRange(key: Exclude<PeriodKey, "custom">) {
 }
 const dayToISO = (d: string, endOfDay = false) => new Date(`${d}T${endOfDay ? "23:59:59" : "00:00:00"}`).toISOString();
 
-export function RoasBoard({ initial }: { initial: RoasData }) {
+export function RoasBoard({ initial, metaAds }: { initial: RoasData; metaAds?: React.ReactNode }) {
   const [data, setData] = useState<RoasData>(initial);
   const [period, setPeriod] = useState<PeriodKey>("30d");
   const [cStart, setCStart] = useState(initial.range.start.slice(0, 10));
@@ -164,6 +164,9 @@ export function RoasBoard({ initial }: { initial: RoasData }) {
           </p>
         </div>
       </section>
+
+      {/* ── Automatic Meta data per campaign / ad (own period + market switch) ─────── */}
+      {metaAds}
 
       {/* ── Spend manager ───────────────────────────────────────────── */}
       <SpendManager entries={data.spendEntries} onChange={refresh} />

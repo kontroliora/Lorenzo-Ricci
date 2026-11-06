@@ -13,6 +13,7 @@ const TABS = [
 // server-side, so hiding the tab is UX, not the security boundary.
 const OWNER_TABS = [
   { href: "/lr-panel-v8m3q/revenue", label: "Оборот" },
+  { href: "/lr-panel-v8m3q/traffic", label: "Трафик" },
   { href: "/lr-panel-v8m3q/roas", label: "ROAS" },
   { href: "/lr-panel-v8m3q/waitlist", label: "Международни" },
 ];
