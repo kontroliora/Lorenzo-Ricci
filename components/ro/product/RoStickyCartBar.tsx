@@ -9,9 +9,11 @@ interface Props {
   effectiveInStock: boolean;
   // The add-to-cart handler lives in RoProductInfo (same live-stock cap and the same pixel event for both buttons).
   onAdd: () => void;
+  /** "Adaugă 2 în coș – 341 lei" while a 1+1 second item is picked. */
+  pairLabel?: string | null;
 }
 
-export function RoStickyCartBar({ product, effectiveInStock, onAdd }: Props) {
+export function RoStickyCartBar({ product, effectiveInStock, onAdd, pairLabel = null }: Props) {
   const [visible, setVisible] = useState(false);
   const [added, setAdded]     = useState(false);
   // Sale: the old price in lei (undefined when the product is not on sale)
@@ -104,6 +106,11 @@ export function RoStickyCartBar({ product, effectiveInStock, onAdd }: Props) {
               "EPUIZAT"
             ) : added ? (
               "✓ ADĂUGAT"
+            ) : pairLabel ? (
+              <>
+                <span className="hidden sm:inline">{pairLabel}</span>
+                <span className="sm:hidden">{pairLabel.replace(/ în coș/i, "")}</span>
+              </>
             ) : (
               <>
                 <span className="hidden sm:inline">ADAUGĂ ÎN COȘ</span>

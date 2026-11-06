@@ -3,8 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useReveal } from "@/lib/useReveal";
 import { useLeatherStock } from "@/lib/use-gifts";
-import { fmtRON, ronOf, ronOriginalOf, roShipsFree, RO_CATEGORY_LABEL } from "@/lib/ro/config";
-import { FreeShippingBadge } from "@/components/product/PriceExtras";
+import { fmtRON, ronOf, ronOriginalOf, roShipsFree, RO_CATEGORY_LABEL, opoPriceLineRo, opoPriceRo } from "@/lib/ro/config";
+import { FreeShippingBadge, OnePlusOneLine, OnePlusOneBanner } from "@/components/product/PriceExtras";
+import { opoGroupOf, cardholderOpo } from "@/lib/one-plus-one";
 import type { ProductCategory } from "@/lib/types";
 import { safeText, type RoTileProduct } from "./ro-home-utils";
 import { lowStockCount, savingsRon, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
@@ -27,13 +28,23 @@ function LeatherCard({ product, sold, sizes, live }: { product: RoTileProduct; s
   const saved = sold ? null : savingsRon(product);
   const left = sold ? null : lowStockCount(live);
   const shipsFree = !sold && roShipsFree(product);
+  const opo = sold ? undefined : opoGroupOf(product.slug); // 1+1 group: badge on the photo + line under the price (as RoProductCard)
   return (
     <Link href={`/ro/produse/${product.slug}`} className="group flex flex-col">
       <div className="relative aspect-square bg-ivory-warm border border-border overflow-hidden">
-        {badge && !sold && (
-          <span className="absolute top-2 left-2 z-10 bg-white/90 text-navy border border-navy/20 font-sans text-[8px] sm:text-[9px] font-medium tracking-[0.16em] uppercase px-2 py-0.5">
-            {badge}
-          </span>
+        {((badge && !sold) || opo) && (
+          <div className="absolute top-2 left-2 z-10 flex flex-col items-start gap-1">
+            {badge && !sold && (
+              <span className="bg-white/90 text-navy border border-navy/20 font-sans text-[8px] sm:text-[9px] font-medium tracking-[0.16em] uppercase px-2 py-0.5">
+                {badge}
+              </span>
+            )}
+            {opo && (
+              <span data-testid="card-opo-badge" className="bg-[#B3121F] text-white font-sans text-[9px] sm:text-[10px] font-medium tracking-[0.16em] uppercase px-2 py-1">
+                {opo.text.ro.badge}
+              </span>
+            )}
+          </div>
         )}
         <Image
           src={product.coverImage.src}
@@ -69,6 +80,7 @@ function LeatherCard({ product, sold, sizes, live }: { product: RoTileProduct; s
         {saved !== null && !sold && (
           <p data-testid="home-savings" className={`mt-0.5 ${CARD_SAVINGS_CLASS}`}>Economisiți {fmtRON(saved)}</p>
         )}
+        {opo && <OnePlusOneLine badge={opo.text.ro.badge} line={opoPriceLineRo(product.slug)} size="card" />}
         {shipsFree && (
           <div className="mt-1.5"><FreeShippingBadge text="Livrare gratuită" size="card" /></div>
         )}
@@ -108,12 +120,22 @@ export function RoLeatherSection({ products }: { products: RoTileProduct[] }) {
         {ROWS.map(({ category, cols, sizes }) => {
           const items = products.filter((p) => p.category === category);
           if (items.length === 0) return null;
+          // The cardholders' 1+1 banner above their row, while the offer runs and one is buyable.
+          const chOpo = category === "cardholders" && items.some((p) => !isSold(p)) ? cardholderOpo() : undefined;
           return (
             <div key={category} className="mb-6 sm:mb-10">
               <div className="flex items-center gap-4 mb-3 sm:mb-5">
                 <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">{RO_CATEGORY_LABEL[category]}</p>
                 <div className="flex-1 h-px bg-border" />
               </div>
+              {chOpo && (
+                <OnePlusOneBanner
+                  badge={chOpo.text.ro.badge}
+                  text={chOpo.text.ro.banner({ one: opoPriceRo(chOpo) })}
+                  cta={chOpo.text.ro.cta}
+                  href="/ro/piele-de-crocodil#port-carduri"
+                />
+              )}
               <div className={`grid ${cols} gap-2 sm:gap-3`}>
                 {items.map((p) => (
                   <LeatherCard key={p.id} product={p} sold={isSold(p)} sizes={sizes} live={stock?.[p.slug]} />

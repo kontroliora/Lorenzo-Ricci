@@ -16,8 +16,10 @@ import { getProductBySlug } from "@/lib/products";
 import { PAGE_LOW_STOCK_MAX, savingsEur } from "@/lib/home-card-hints";
 import { campaignLabel } from "@/lib/sale-campaign";
 import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
-import { SavingsLine, DeliveryLine, OnePlusOneLine } from "@/components/product/PriceExtras";
-import { opoGroupOf, opoPriceLineBg } from "@/lib/one-plus-one";
+import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge } from "@/components/product/PriceExtras";
+import { OnePlusOnePicker, shortModel, type PickOption } from "@/components/product/OnePlusOnePicker";
+import { opoGroupOf, opoPriceLineBg, opoPriceBg } from "@/lib/one-plus-one";
+import { useLeatherStock } from "@/lib/use-gifts";
 
 // A colour swatch reads as sold out when its product is switched off in
 // lib/products.ts (inStock: false - the owner's single on/off switch); the
@@ -136,8 +138,11 @@ interface ProductInfoProps {
 }
 
 export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
-  const { addItem } = useCartStore();
+  const { addItem, items: cartItems } = useCartStore();
   const [added, setAdded] = useState(false);
+  // 1+1 group: the free second item picked on the page (null = none; may be this same model)
+  const [pick, setPick] = useState<string | null>(null);
+  const opoStock = useLeatherStock(!!opoGroupOf(product.slug)); // the group's live stock (one batched call)
   // A product with no description content (e.g. the Yachting watches until they're
   // measured) gets no Описание tab and opens on the specs instead of an empty tab.
   const hasDescription = Boolean(
@@ -254,17 +259,41 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
   // Beside it: the free-delivery badge when the product alone reaches the threshold (not on a sold-out product).
   const shipsFree = effectiveInStock && bgShipsFree(product);
 
+  // ── 1+1 (lib/one-plus-one.ts): the group's models, each available when its live stock, less what the cart already holds, covers
+  //    it (the page's own model needs 2 for "the same one again"). A pick that stops being available is dropped.
+  const opo = effectiveInStock ? opoGroupOf(product.slug) : undefined;
+  const inCart = (slug: string) => cartItems.find((i) => i.product.slug === slug)?.quantity ?? 0;
+  const freeLeft = (slug: string): number => {
+    const p = getProductBySlug(slug);
+    if (!p || !p.inStock) return 0;
+    const live = slug === product.slug ? effectiveStock : (opoStock?.[slug] ?? p.stock);
+    return (typeof live === "number" ? live : Infinity) - inCart(slug);
+  };
+  const pickOptions: PickOption[] = opo
+    ? [...opo.slugs].flatMap((slug) => {
+        const p = getProductBySlug(slug);
+        if (!p) return [];
+        return [{ slug, name: shortModel(p.name), image: p.coverImage, available: freeLeft(slug) >= (slug === product.slug ? 2 : 1) && freeLeft(product.slug) >= 1 }];
+      })
+    : [];
+  const picked = opo && pick ? pickOptions.find((o) => o.slug === pick && o.available) ?? null : null;
+  useEffect(() => { setPick(null); }, [product.slug]);
+  const pairLabel = picked && opo ? opo.text.bg.addPair({ one: opoPriceBg(opo) }) : null;
+
   const handleAdd = () => {
     addItem({ ...product, stock: effectiveStock });
+    const second = picked ? getProductBySlug(picked.slug) : undefined;
+    if (second) addItem(second.slug === product.slug ? { ...product, stock: effectiveStock } : { ...second, stock: opoStock?.[second.slug] ?? second.stock });
     setAdded(true);
+    setPick(null);
     setTimeout(() => setAdded(false), 2000);
     trackWithCapi("AddToCart", {
-      content_ids:  [product.sku],
-      content_name: product.name,
+      content_ids:  second ? [product.sku, second.sku] : [product.sku],
+      content_name: second ? `${product.name} + ${second.name}` : product.name,
       content_type: "product",
-      value:        product.price,
+      value:        product.price, // the second one is free
       currency:     "EUR",
-      num_items:    1,
+      num_items:    second ? 2 : 1,
     }, genEventId("ATC"));
   };
 
@@ -352,8 +381,8 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
 
       {/* Price */}
       <div className="py-5 border-y border-border">
-        <div className="flex items-baseline gap-4">
-          <span className="font-serif text-4xl text-navy">
+        <div className={`flex ${opo ? "flex-wrap items-center gap-x-3 gap-y-2" : "items-baseline gap-4"}`}>
+          <span className={`font-serif text-4xl text-navy ${opo ? "mr-1" : ""}`}>
             {price.text}
           </span>
           {/* Sale: the prior price (lowest of the last 30 days - lib/price.ts isOnSale) */}
@@ -362,11 +391,15 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
               {price.original}
             </span>
           )}
+          {/* 1+1 group: the red badge right after the price, then the green free-delivery one */}
+          {opo && <OnePlusOneBadge text={opo.text.bg.badge} />}
+          {opo && shipsFree && <FreeShippingBadge text="Безплатна доставка" size="page" />}
         </div>
-        <SavingsLine text={saved !== null ? `Спестявате €${saved}` : null} campaign={campaign} freeShipping={shipsFree ? "Безплатна доставка" : null} />
-        {/* 1+1 group (lib/one-plus-one.ts): badge + "2 картодържателя за €65 ..." */}
-        {effectiveInStock && opoGroupOf(product.slug) && (
-          <OnePlusOneLine badge={opoGroupOf(product.slug)!.text.bg.badge} line={opoPriceLineBg(product.slug)} size="page" />
+        <SavingsLine text={saved !== null ? `Спестявате €${saved}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Безплатна доставка" : null} />
+        {/* 1+1 group (lib/one-plus-one.ts): "2 картодържателя за €65 ..." and the free second one, picked here */}
+        {opo && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(product.slug)} size="page" />}
+        {opo && (
+          <OnePlusOnePicker title={opo.text.bg.pickTitle} options={pickOptions} selected={picked?.slug ?? null} onSelect={setPick} soldOutLabel="Изчерпан" />
         )}
       </div>
 
@@ -461,7 +494,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           ? "ИЗЧЕРПАНА НАЛИЧНОСТ"
           : added
           ? "✓ ДОБАВЕНО В КОЛИЧКАТА"
-          : "ДОБАВИ В КОЛИЧКАТА"}
+          : pairLabel ?? "ДОБАВИ В КОЛИЧКАТА"}
       </button>
 
       {effectiveInStock && !requiresPrepayment(product) && <CodLine text={CARD_PAYMENTS_ENABLED ? "Карта или наложен платеж · Доставка с Еконт" : "Без предплащане · Доставка с Еконт · Плащате при получаване"} />}
@@ -495,7 +528,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       </div>
       )}
 
-      <StickyCartBar product={product} effectiveInStock={effectiveInStock} />
+      <StickyCartBar product={product} effectiveInStock={effectiveInStock} onAdd={handleAdd} pairLabel={pairLabel} />
 
       {/* Trust strip */}
       <div className="grid grid-cols-2 gap-0 border border-border">

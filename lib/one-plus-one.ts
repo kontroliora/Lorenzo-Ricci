@@ -30,6 +30,16 @@ export interface OnePlusOneGroup {
     line: (price: { one: string; half: string }) => string;
     /** The cart's suggestion when one more item would be free. */
     addOne: string;
+    /** The home-page banner above the group's row: the badge, then this ("2 картодържателя ... за €65"). */
+    banner: (price: { one: string }) => string;
+    /** The banner's button (to the group's listing). */
+    cta: string;
+    /** The top black bar's line (desktop / phone). */
+    bar: (price: { one: string }) => { desktop: string; mobile: string };
+    /** Product page: the heading over the second-item picker. */
+    pickTitle: string;
+    /** Product page: the add button with a second item picked. */
+    addPair: (price: { one: string }) => string;
   }>;
 }
 
@@ -55,11 +65,21 @@ export const ONE_PLUS_ONE_GROUPS: OnePlusOneGroup[] = [
         badge: "1+1 БЕЗПЛАТНО",
         line: ({ one, half }) => `2 картодържателя за ${one} – по ${half} на брой. Един за Вас, един за подарък.`,
         addOne: "Добавете още един картодържател – безплатно",
+        banner: ({ one }) => `2 картодържателя от крокодилска кожа за ${one}`,
+        cta: "Към картодържателите",
+        bar: ({ one }) => ({ desktop: `1+1 на картодържатели – 2 за ${one}`, mobile: `1+1 картодържатели – 2 за ${one}` }),
+        pickTitle: "Изберете втория – безплатно:",
+        addPair: ({ one }) => `Добави 2 в количката – ${one}`,
       },
       ro: {
         badge: "1+1 GRATUIT",
         line: ({ one, half }) => `2 port-carduri pentru ${one} – ${half} bucata. Unul pentru dumneavoastră, unul cadou.`,
         addOne: "Adăugați încă un port-card – gratuit",
+        banner: ({ one }) => `2 port-carduri din piele de crocodil pentru ${one}`,
+        cta: "Vedeți port-cardurile",
+        bar: ({ one }) => ({ desktop: `1+1 la port-carduri – 2 pentru ${one}`, mobile: `1+1 port-carduri – ${one}` }), // short: the BG · RO switch sits beside it on phones
+        pickTitle: "Alegeți-l pe al doilea – gratuit:",
+        addPair: ({ one }) => `Adaugă 2 în coș – ${one}`, // same voice as the page's "ADAUGĂ ÎN COȘ"
       },
     },
   },
@@ -157,6 +177,15 @@ export function onePlusOneOfOrder(
 // ─── Wording helpers ─────────────────────────────────────────────────────────
 
 const eur = (n: number): string => `€${Number.isInteger(n) ? n : n.toFixed(2).replace(".", ",")}`;
+
+/** The running cardholder group (home banner, top bar, product-page picker), or undefined while it is off / over. */
+export const cardholderOpo = (now?: Date): OnePlusOneGroup | undefined => {
+  const g = ONE_PLUS_ONE_GROUPS.find((x) => x.id === "cardholders");
+  return g && groupActive(g, now) && typeof g.fixedPrice === "number" ? g : undefined;
+};
+
+/** A group's fixed price as the BG site writes it ("€65"). */
+export const opoPriceBg = (g: OnePlusOneGroup): string => eur(g.fixedPrice ?? 0);
 
 /** The line under the price for a product of a running group with a fixed price (BG site, EUR). */
 export function opoPriceLineBg(slug: string): string | null {

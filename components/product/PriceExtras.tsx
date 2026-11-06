@@ -1,6 +1,7 @@
 // The lines right under the product-page price (BG and RO): what a discounted product saves, with the running campaign's badge
 // and the free-delivery badge, and one delivery line. The pages decide the text and when to show them (savings: on sale and not sold out).
 // Colours pass WCAG AA on the page's ivory: green 6.1, white on the badge red 6.6, white on the free-delivery green 5.4, ink-soft 9.3.
+import Link from "next/link";
 import { Truck } from "lucide-react";
 
 const PAGE_BADGE = "inline-flex items-center whitespace-nowrap text-white font-sans text-[11px] font-medium tracking-[0.14em] uppercase leading-none px-2.5 py-1.5";
@@ -50,12 +51,32 @@ export function DeliveryLine({ text }: { text: string }) {
  * price, "card" under a card's price (the card draws the badge on its photo). The caller decides when it shows (not on a sold-out product).
  */
 export function OnePlusOneLine({ badge, line, size }: { badge: string; line: string | null; size: "page" | "card" }) {
+  // "page": the red badge sits in the price row (OnePlusOneBadge), so this is only the line, a touch smaller than the price's lines.
+  void badge;
   return size === "page" ? (
-    <div data-testid="page-opo" className="mt-2.5 flex flex-col items-start gap-1.5">
-      <span className={`${PAGE_BADGE} bg-[#B3121F]`}>{badge}</span>
-      {line && <span className="font-sans text-[15px] sm:text-[16px] font-medium leading-snug text-[#2E6B3F]">{line}</span>}
-    </div>
+    line ? <p data-testid="page-opo" className="mt-2 font-sans text-[13px] sm:text-[14px] font-medium leading-snug text-[#2E6B3F]">{line}</p> : null
   ) : line ? (
     <p data-testid="card-opo" className="mt-1 font-sans text-[13px] leading-snug text-[#2E6B3F]">{line}</p>
   ) : null;
+}
+
+/** The red 1+1 badge in the product-page price row, right after the price (before the green free-delivery badge). */
+export function OnePlusOneBadge({ text }: { text: string }) {
+  return <span data-testid="page-opo-badge" className={`${PAGE_BADGE} bg-[#B3121F]`}>{text}</span>;
+}
+
+/**
+ * The 1+1 banner above a group's row on the home pages (BG / RO): the red badge, the offer, and a button to the group's listing.
+ * The caller passes the wording (lib/one-plus-one.ts group text) and shows it only while the group runs.
+ */
+export function OnePlusOneBanner({ badge, text, cta, href }: { badge: string; text: string; cta: string; href: string }) {
+  return (
+    <div data-testid="home-opo-banner" className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 border border-[#B3121F]/30 bg-[#B3121F]/[0.04] px-4 py-4 sm:px-6 sm:py-5">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 flex-1 min-w-0">
+        <span className={`${PAGE_BADGE} self-start sm:self-auto bg-[#B3121F]`}>{badge}</span>
+        <p className="font-serif text-[17px] sm:text-xl leading-snug text-charcoal">{text}</p>
+      </div>
+      <Link href={href} className="btn-primary self-stretch sm:self-auto text-center whitespace-nowrap">{cta}</Link>
+    </div>
+  );
 }

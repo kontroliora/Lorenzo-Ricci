@@ -1,6 +1,6 @@
 import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import type { ProductCategory } from "@/lib/types";
-import { opoGroupOf } from "@/lib/one-plus-one";
+import { opoGroupOf, type OnePlusOneGroup } from "@/lib/one-plus-one";
 
 // Romania market (the whole catalogue: watches, jewellery, crocodile leather goods, sets). ONE place for the market's facts, so the
 // pages, the checkout and the e-mails can't drift apart. Values marked PROVISIONAL are assumptions until the
@@ -74,6 +74,9 @@ export const roShipsFree = (p: { price: number }): boolean => ronOf(p) >= RO_FRE
 
 export const fmtRON = (ron: number): string =>
   `${ron.toLocaleString("ro-RO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} lei`;
+
+/** A 1+1 group's fixed price as the Romanian site writes it ("341 lei"). */
+export const opoPriceRo = (g: OnePlusOneGroup): string => fmtRON(ronPrice(g.fixedPrice ?? 0));
 
 /** The 1+1 line under a Romanian price (lib/one-plus-one.ts), in lei: "2 port-carduri pentru 341 lei – 170,50 lei bucata. ..." */
 export function opoPriceLineRo(slug: string): string | null {

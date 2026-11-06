@@ -10,7 +10,8 @@ import { useGiftFor, useLeatherStock } from "@/lib/use-gifts";
 import { giftDisplayName } from "@/lib/gifts";
 import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS, CARD_GIFT_CLASS } from "@/lib/home-card-hints";
 import { bgShipsFree } from "@/lib/shipping-rules";
-import { FreeShippingBadge } from "@/components/product/PriceExtras";
+import { FreeShippingBadge, OnePlusOneLine, OnePlusOneBanner } from "@/components/product/PriceExtras";
+import { opoGroupOf, opoPriceLineBg, cardholderOpo, opoPriceBg } from "@/lib/one-plus-one";
 
 type LeatherItem = { id: string; slug: string; name: string; sub: string; src: string };
 
@@ -53,13 +54,23 @@ function LeatherCard({ item, sold, sizes }: { item: LeatherItem; sold: boolean; 
   const shipsFree = !sold && !!product && bgShipsFree(product);
   // Clutches: the free cardholder that comes with the bag (none when no cardholder is left to give).
   const giftSlug = useGiftFor(item.slug, 1);
+  const opo = sold ? undefined : opoGroupOf(item.slug); // 1+1 group: badge on the photo + line under the price (as ProductCard)
   return (
     <Link href={`/products/${item.slug}`} className="group flex flex-col">
       <div className="relative aspect-square bg-ivory-warm border border-border overflow-hidden">
-        {product?.badge && !sold && (
-          <span className="absolute top-2 left-2 z-10 bg-white/90 text-navy border border-navy/20 font-sans text-[8px] sm:text-[9px] font-medium tracking-[0.16em] uppercase px-2 py-0.5">
-            {product.badge}
-          </span>
+        {((product?.badge && !sold) || opo) && (
+          <div className="absolute top-2 left-2 z-10 flex flex-col items-start gap-1">
+            {product?.badge && !sold && (
+              <span className="bg-white/90 text-navy border border-navy/20 font-sans text-[8px] sm:text-[9px] font-medium tracking-[0.16em] uppercase px-2 py-0.5">
+                {product.badge}
+              </span>
+            )}
+            {opo && (
+              <span data-testid="card-opo-badge" className="bg-[#B3121F] text-white font-sans text-[9px] sm:text-[10px] font-medium tracking-[0.16em] uppercase px-2 py-1">
+                {opo.text.bg.badge}
+              </span>
+            )}
+          </div>
         )}
         <Image
           src={item.src}
@@ -93,6 +104,7 @@ function LeatherCard({ item, sold, sizes }: { item: LeatherItem; sold: boolean; 
         {saved !== null && !sold && (
           <p data-testid="home-savings" className={`mt-0.5 ${CARD_SAVINGS_CLASS}`}>Спестявате €{saved}</p>
         )}
+        {opo && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(item.slug)} size="card" />}
         {giftSlug && !sold && (
           <p data-testid="card-gift" className={`mt-0.5 ${CARD_GIFT_CLASS}`}>🎁 + подарък: {giftDisplayName(giftSlug)}</p>
         )}
@@ -121,6 +133,7 @@ export function WalletsSection({ soldOut = [] }: { soldOut?: string[] }) {
   const wallets = soldOutLast(WALLETS, soldSlug);
   const cardholders = soldOutLast(CARDHOLDERS, soldSlug);
   const clutches = soldOutLast(CLUTCHES, soldSlug);
+  const chOpo = cardholders.some((c) => !isSold(c)) ? cardholderOpo() : undefined; // the 1+1 banner, while one is buyable
 
   return (
     <section className="py-28 sm:py-40 bg-white border-y border-border">
@@ -155,6 +168,14 @@ export function WalletsSection({ soldOut = [] }: { soldOut?: string[] }) {
             <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Кардхолдъри</p>
             <div className="flex-1 h-px bg-border" />
           </div>
+          {chOpo && (
+            <OnePlusOneBanner
+              badge={chOpo.text.bg.badge}
+              text={chOpo.text.bg.banner({ one: opoPriceBg(chOpo) })}
+              cta={chOpo.text.bg.cta}
+              href="/leather-goods#kardholdari"
+            />
+          )}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
             {cardholders.map((c) => (
               <LeatherCard key={c.id} item={c} sold={isSold(c)} sizes="(max-width: 640px) 50vw, 33vw" />

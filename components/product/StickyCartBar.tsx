@@ -11,9 +11,13 @@ import { displayPrice } from "@/lib/price";
 interface Props {
   product: Product;
   effectiveInStock: boolean;
+  /** The page's own add (it also adds a picked 1+1 second item); without it the bar adds the product alone. */
+  onAdd?: () => void;
+  /** "Добави 2 в количката – €65" while a 1+1 second item is picked. */
+  pairLabel?: string | null;
 }
 
-export function StickyCartBar({ product, effectiveInStock }: Props) {
+export function StickyCartBar({ product, effectiveInStock, onAdd, pairLabel = null }: Props) {
   const [visible, setVisible] = useState(false);
   const [added, setAdded]     = useState(false);
   const { addItem } = useCartStore();
@@ -50,6 +54,12 @@ export function StickyCartBar({ product, effectiveInStock }: Props) {
 
   const handleAdd = () => {
     if (!effectiveInStock) return;
+    if (onAdd) {
+      onAdd();
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2000);
+      return;
+    }
     addItem(product);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -117,6 +127,11 @@ export function StickyCartBar({ product, effectiveInStock }: Props) {
               "ИЗЧЕРПАН"
             ) : added ? (
               "✓ ДОБАВЕНО"
+            ) : pairLabel ? (
+              <>
+                <span className="hidden sm:inline">{pairLabel}</span>
+                <span className="sm:hidden">{pairLabel.replace(/ в количката/i, "")}</span>
+              </>
             ) : (
               <>
                 <span className="hidden sm:inline">ДОБАВИ В КОЛИЧКАТА</span>

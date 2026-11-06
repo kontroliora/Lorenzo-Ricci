@@ -85,7 +85,8 @@ export default async function RoLeatherPage() {
 
         {/* ── Wallets / cardholders / clutches ─────────────────── */}
         {sections.map(({ key, title, items, gap }) => (
-          <div key={key} className="mt-20">
+          // #port-carduri: the home page's 1+1 banner links to the cardholders
+          <div key={key} id={key === "cardholders" ? "port-carduri" : undefined} className="mt-20 scroll-mt-32">
             <div className="flex items-center gap-5 mb-10">
               <div>
                 <p className="section-tag mb-1">Colecție</p>

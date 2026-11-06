@@ -70,8 +70,8 @@ export default async function LeatherGoodsPage() {
           </div>
         </div>
 
-        {/* ── Cardholders ──────────────────────────────────────── */}
-        <div className="mt-20">
+        {/* ── Cardholders ── (#kardholdari: the home page's 1+1 banner links here) */}
+        <div id="kardholdari" className="mt-20 scroll-mt-32">
           <div className="flex items-center gap-5 mb-10">
             <div>
               <p className="section-tag mb-1">Колекция</p>

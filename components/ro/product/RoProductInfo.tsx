@@ -30,9 +30,13 @@ import { roReviewsCount, roRatingText } from "@/components/ro/product/ro-text";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { PAGE_LOW_STOCK_MAX, savingsRon } from "@/lib/home-card-hints";
 import { campaignLabelRo } from "@/lib/sale-campaign";
-import { SavingsLine, DeliveryLine, OnePlusOneLine } from "@/components/product/PriceExtras";
+import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge } from "@/components/product/PriceExtras";
+import { OnePlusOnePicker, shortModel, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { opoGroupOf } from "@/lib/one-plus-one";
-import { opoPriceLineRo } from "@/lib/ro/config";
+import { opoPriceLineRo, opoPriceRo } from "@/lib/ro/config";
+import { localizeProduct } from "@/lib/ro/catalog";
+import { safeText } from "@/components/ro/home/ro-home-utils";
+import { useLeatherStock } from "@/lib/use-gifts";
 
 // A colour swatch reads as sold out when its product is switched off in
 // lib/products.ts (inStock: false - the owner's single on/off switch); the
@@ -154,7 +158,11 @@ interface RoProductInfoProps {
 
 export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviewsTranslated = false }: RoProductInfoProps) {
   const addItem = useRoCart((s) => s.addItem);
+  const cartItems = useRoCart((s) => s.items);
   const [added, setAdded] = useState(false);
+  // 1+1 group: the free second item picked on the page (null = none; may be this same model)
+  const [pick, setPick] = useState<string | null>(null);
+  const opoStock = useLeatherStock(!!opoGroupOf(product.slug)); // the group's live stock (one batched call)
   // A product with no description content gets no Descriere tab and opens on the specs instead of an empty tab.
   const hasDescription = Boolean(
     product.descriptionSections?.length || product.tabDescription?.length ||
@@ -266,18 +274,45 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
 
   // The cart line carries the sale snapshot (originalRon, onSale: a sale item earns no set discount) and the prepayment flag
   // (EUR 1500 and up: not sold through the card checkout; the checkout then shows the prepayment flow instead of the delivery form).
+  // ── 1+1 (lib/one-plus-one.ts), as on the Bulgarian page: the group's models sold in Romania, each available when its live stock,
+  //    less what the cart already holds, covers it (this same model needs 2). Names and photos are the localized ones.
+  const opo = effectiveInStock ? opoGroupOf(product.slug) : undefined;
+  const inCart = (slug: string) => cartItems.find((i) => i.slug === slug)?.quantity ?? 0;
+  const freeLeft = (slug: string): number => {
+    const p = getProductBySlug(slug);
+    if (!p || !p.inStock || !RO_SLUGS.includes(slug)) return 0;
+    const live = slug === product.slug ? effectiveStock : (opoStock?.[slug] ?? p.stock);
+    return (typeof live === "number" ? live : Infinity) - inCart(slug);
+  };
+  const pickOptions: PickOption[] = opo
+    ? [...opo.slugs].filter((slug) => RO_SLUGS.includes(slug)).flatMap((slug) => {
+        const raw = getProductBySlug(slug);
+        if (!raw) return [];
+        const p = slug === product.slug ? product : localizeProduct(raw);
+        const name = safeText(shortModel(p.name)) ?? shortModel(raw.name);
+        return [{ slug, name, image: { src: p.coverImage.src, alt: safeText(p.coverImage.alt) ?? name }, available: freeLeft(slug) >= (slug === product.slug ? 2 : 1) && freeLeft(product.slug) >= 1 }];
+      })
+    : [];
+  const picked = opo && pick ? pickOptions.find((o) => o.slug === pick && o.available) ?? null : null;
+  useEffect(() => { setPick(null); }, [product.slug]);
+  const pairLabel = picked && opo ? opo.text.ro.addPair({ one: opoPriceRo(opo) }) : null;
+
   const handleAdd = () => {
     addItem(roCartLine(product, effectiveStock));
+    const raw = picked && picked.slug !== product.slug ? getProductBySlug(picked.slug) : undefined;
+    const second = picked ? (picked.slug === product.slug ? product : raw ? localizeProduct(raw) : undefined) : undefined;
+    if (second) addItem(roCartLine(second, second.slug === product.slug ? effectiveStock : (opoStock?.[second.slug] ?? second.stock)));
     setAdded(true);
+    setPick(null);
     setTimeout(() => setAdded(false), 2000);
     trackWithCapi("AddToCart", {
-      content_ids:      [product.sku],
-      content_name:     product.name,
+      content_ids:      second ? [product.sku, second.sku] : [product.sku],
+      content_name:     second ? `${product.name} + ${second.name}` : product.name,
       content_type:     "product",
       content_category: "RO",
-      value:            ron,
+      value:            ron, // the second one is free
       currency:         RO_CURRENCY,
-      num_items:        1,
+      num_items:        second ? 2 : 1,
     }, genEventId("ATC"));
   };
 
@@ -365,8 +400,8 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
 
       {/* Price (lei). Sale: the old price crossed out - the same sale as on the Bulgarian site, converted the same way. */}
       <div className="py-5 border-y border-border">
-        <div className="flex items-baseline gap-4">
-          <span className="font-serif text-4xl text-navy">
+        <div className={`flex ${opo ? "flex-wrap items-center gap-x-3 gap-y-2" : "items-baseline gap-4"}`}>
+          <span className={`font-serif text-4xl text-navy ${opo ? "mr-1" : ""}`}>
             {fmtRON(ron)}
           </span>
           {originalRon !== undefined && (
@@ -374,11 +409,15 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
               {fmtRON(originalRon)}
             </del>
           )}
+          {/* 1+1 group: the red badge right after the price, then the green free-delivery one */}
+          {opo && <OnePlusOneBadge text={opo.text.ro.badge} />}
+          {opo && shipsFree && <FreeShippingBadge text="Livrare gratuită" size="page" />}
         </div>
-        <SavingsLine text={saved !== null ? `Economisiți ${fmtRON(saved)}` : null} campaign={campaign} freeShipping={shipsFree ? "Livrare gratuită" : null} />
-        {/* 1+1 group (lib/one-plus-one.ts): badge + "2 port-carduri pentru 341 lei ..." */}
-        {effectiveInStock && opoGroupOf(product.slug) && (
-          <OnePlusOneLine badge={opoGroupOf(product.slug)!.text.ro.badge} line={opoPriceLineRo(product.slug)} size="page" />
+        <SavingsLine text={saved !== null ? `Economisiți ${fmtRON(saved)}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Livrare gratuită" : null} />
+        {/* 1+1 group (lib/one-plus-one.ts): "2 port-carduri pentru 341 lei ..." and the free second one, picked here */}
+        {opo && <OnePlusOneLine badge={opo.text.ro.badge} line={opoPriceLineRo(product.slug)} size="page" />}
+        {opo && (
+          <OnePlusOnePicker title={opo.text.ro.pickTitle} options={pickOptions} selected={picked?.slug ?? null} onSelect={setPick} soldOutLabel="Stoc epuizat" />
         )}
       </div>
 
@@ -461,7 +500,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           ? "STOC EPUIZAT"
           : added
           ? "✓ ADĂUGAT ÎN COȘ"
-          : "ADAUGĂ ÎN COȘ"}
+          : pairLabel ?? "ADAUGĂ ÎN COȘ"}
       </button>
 
       {effectiveInStock && !prepay && <CodLine text="Plata cu cardul, online · Livrare cu Speedy" />}
@@ -473,7 +512,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         </p>
       )}
 
-      <RoStickyCartBar product={product} effectiveInStock={effectiveInStock} onAdd={handleAdd} />
+      <RoStickyCartBar product={product} effectiveInStock={effectiveInStock} onAdd={handleAdd} pairLabel={pairLabel} />
 
       {/* Trust strip */}
       <div className="grid grid-cols-2 gap-0 border border-border">

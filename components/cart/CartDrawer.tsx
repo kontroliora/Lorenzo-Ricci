@@ -365,10 +365,10 @@ export function CartDrawer() {
               {/* Bundle discount lines */}
               {activeBundles.map((b) => (
                 <div key={b.id} className="flex items-center justify-between mb-2">
-                  <span className="font-sans text-xs text-navy-light tracking-wide">
+                  <span className="font-sans text-xs text-green-400 tracking-wide">
                     ◈ {bundleLineText(b)}
                   </span>
-                  <span className="font-sans text-xs text-navy-light tracking-wide">
+                  <span className="font-sans text-xs text-green-400 tracking-wide">
                     -€{b.discount.toFixed(2)}
                   </span>
                 </div>

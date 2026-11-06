@@ -240,8 +240,8 @@ export function RoCartDrawer() {
               {/* Set discount lines */}
               {bundles.map(({ id, label, discount }) => (
                 <div key={id} className="flex items-center justify-between mb-2">
-                  <span className="font-sans text-xs text-navy-light tracking-wide">◈ {bundleLineLabel(label, id)}</span>
-                  <span className="font-sans text-xs text-navy-light tracking-wide">-{fmtRON(discount)}</span>
+                  <span className="font-sans text-xs text-green-400 tracking-wide">◈ {bundleLineLabel(label, id)}</span>
+                  <span className="font-sans text-xs text-green-400 tracking-wide">-{fmtRON(discount)}</span>
                 </div>
               ))}
 
