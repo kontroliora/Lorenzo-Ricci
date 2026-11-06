@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { runHealth, sendTelegram } from "@/lib/health";
 import { syncMeta } from "@/lib/meta-ads";
-import { cronAuthorized } from "@/lib/cron-auth";
+import { cronAuthorized, opsAuthorized } from "@/lib/cron-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,8 +13,26 @@ export const maxDuration = 120;   // the first run pulls 30 days of Meta history
 // problem per hour). The very first run also sends a short "data is in" summary to Telegram.
 // ?test=1 only sends a test message. ?ping=1 only answers 200 (the GitHub watchdog: .github/workflows/health.yml).
 export async function GET(req: NextRequest) {
-  if (!cronAuthorized(req.headers.get("authorization"))) return NextResponse.json({ ok: false, error: "unauthorized", build: "health-v2" }, { status: 401 });
   const sp = req.nextUrl.searchParams;
+  // Operator calls (lib/cron-auth.ts opsAuthorized): run history + a fake problem to test the Telegram alert end to end.
+  if ((sp.has("status") || sp.has("simulate")) && opsAuthorized(req.headers.get("authorization"))) {
+    const sb = supabaseAdmin();
+    if (sp.get("simulate") === "on" || sp.get("simulate") === "off") {
+      const extra = sp.get("simulate") === "on"
+        ? [{ key: "test:simulated", ok: false, title: "ТЕСТ: симулиран проблем (не е истински)", detail: "пуснат ръчно за проверка на известията; изчиства се със simulate=off" }]
+        : [];
+      const r = await runHealth(sb, { extra, source: `simulate-${sp.get("simulate")}` });
+      return NextResponse.json({ ok: true, ...r });
+    }
+    const q = await sb.from("health_status").select("key, ok, title, detail, since, checked_at, last_alerted_at").order("checked_at", { ascending: false });
+    const rows = q.data ?? [];
+    return NextResponse.json({
+      ok: !q.error, error: q.error?.message,
+      runs: rows.filter((r) => r.key.startsWith("_run")).map((r) => ({ key: r.key, at: r.checked_at, summary: r.detail })),
+      problems: rows.filter((r) => !r.ok).map((r) => ({ key: r.key, title: r.title, since: r.since, last_alerted_at: r.last_alerted_at })),
+    });
+  }
+  if (!cronAuthorized(req.headers.get("authorization"))) return NextResponse.json({ ok: false, error: "unauthorized", build: "health-v3" }, { status: 401 });
   if (sp.get("ping") === "1") return NextResponse.json({ ok: true });
   if (sp.get("test") === "1") {
     const t = await sendTelegram("✅ <b>Lorenzo Ricci</b>: тестово известие. Проверките на системата са включени (на всеки 15 мин), проблемите идват тук най-много веднъж на час.");
@@ -26,7 +44,7 @@ export async function GET(req: NextRequest) {
     let meta: Awaited<ReturnType<typeof syncMeta>> | { error: string };
     try { meta = await syncMeta(sb, first ? 30 : 2, first); }   // first run: 30 days of history + every live ad
     catch (e) { meta = { error: e instanceof Error ? e.message : String(e) }; }
-    const r = await runHealth(sb);
+    const r = await runHealth(sb, { source: req.headers.get("user-agent")?.includes("vercel-cron") ? "vercel-cron" : "manual" });
     console.log("[health]", JSON.stringify({ meta, ...r }));
     if (first) {
       const m = "error" in meta ? `Meta: грешка (${meta.error.slice(0, 120)})` : `Meta: ${meta.ads} реклами, ${meta.rows} реда за ${meta.since} – ${meta.until}, €${meta.spend.toFixed(2)} разход`;

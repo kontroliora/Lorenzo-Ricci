@@ -179,8 +179,8 @@ export async function sendTelegram(html: string): Promise<{ ok: boolean; error?:
 type Row = { key: string; ok: boolean; title: string; detail: string | null; since: string | null; checked_at: string; last_alerted_at: string | null };
 
 /** Run the checks, store them, send Telegram for problems not alerted in the last hour (+ one "решено" when a problem clears). */
-export async function runHealth(sb: SupabaseClient) {
-  const checks = await runChecks(sb);
+export async function runHealth(sb: SupabaseClient, opts: { extra?: Check[]; source?: string } = {}) {
+  const checks = [...(await runChecks(sb)), ...(opts.extra ?? [])];
   const nowISO = new Date().toISOString();
   const prev = await sb.from("health_status").select("key, ok, title, detail, since, checked_at, last_alerted_at");
   if (prev.error) throw new Error(`health_status: ${prev.error.message}`);
@@ -205,11 +205,15 @@ export async function runHealth(sb: SupabaseClient) {
   }
   // Per-ad problems that did not come back this run are over.
   for (const b of before.values()) {
-    if (seen.has(b.key) || b.key === "_run") continue;
+    if (seen.has(b.key) || b.key === "_run" || b.key === "_run_prev") continue;
     if (!b.ok && b.last_alerted_at) resolved.push(b);
     rows.push({ ...b, ok: true, since: null, checked_at: nowISO, last_alerted_at: null });
   }
-  rows.push({ key: "_run", ok: true, title: "last run", detail: null, since: null, checked_at: nowISO, last_alerted_at: null });
+  // Run history: this run in '_run', the one before in '_run_prev' (detail = short JSON summary), so "the last 2 runs" can be shown.
+  const prevRun = before.get("_run");
+  if (prevRun) rows.push({ ...prevRun, key: "_run_prev", title: "previous run" });
+  const summary = JSON.stringify({ src: opts.source ?? "cron", checks: checks.length, problems: checks.filter((c) => !c.ok).map((c) => c.key) }).slice(0, 900);
+  rows.push({ key: "_run", ok: true, title: "last run", detail: summary, since: null, checked_at: nowISO, last_alerted_at: null });
 
   let telegram: { ok: boolean; error?: string } | null = null;
   if (due.length || resolved.length) {
@@ -231,7 +235,7 @@ export async function runHealth(sb: SupabaseClient) {
   const up = await sb.from("health_status").upsert(rows, { onConflict: "key" });
   if (up.error) throw new Error(`health_status upsert: ${up.error.message}`);
   // Cleared per-ad rows are dropped so the table stays small.
-  await sb.from("health_status").delete().eq("ok", true).or("key.like.ad_zero:*,key.like.soldout:*,key.like.check:*");
+  await sb.from("health_status").delete().eq("ok", true).or("key.like.ad_zero:*,key.like.soldout:*,key.like.check:*,key.like.test:*");
 
   return { checks: checks.length, problems: checks.filter((c) => !c.ok).map((c) => c.key), alerted: due.map((c) => c.key), resolved: resolved.map((r) => r.key), telegram, day: sofiaDay() };
 }
