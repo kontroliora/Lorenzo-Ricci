@@ -123,8 +123,8 @@ const TEXT: Record<CollectionKey, DesignText> = {
     description: {
       necklace: { bg: "", ro: "" },
       bracelet: {
-        bg: "Гривна във формата на пирон, изцяло обсипана с камъни. Улавя светлината от всеки ъгъл и я превръща в блясък при всяко движение на ръката. За вечерите, в които искате да блестите.",
-        ro: "O brățară în formă de cui, acoperită în întregime cu pietre. Prinde lumina din orice unghi și o transformă în strălucire la fiecare mișcare a mâinii. Pentru serile în care vreți să străluciți.",
+        bg: "Гривна пирон с камъни до половината. Повече блясък от Linea, но все така изчистена за всеки ден.",
+        ro: "Brățară-cui cu pietre până la jumătate. Mai multă strălucire decât Linea, dar la fel de minimalistă, pentru fiecare zi.",
       },
     },
     features: {
