@@ -40,6 +40,7 @@ export function CollectionModelRow({ row, current, hrefPrefix, onPrefetch }: {
                 aria-label={o.label}
                 aria-current={o.slug === shown ? "true" : undefined}
                 prefetch={true}
+                scroll={false} // a sibling switch keeps the visitor where they are (no jump to the top)
                 onClick={(e) => tap(e, o.slug)}
                 onTouchStart={() => onPrefetch?.(o.slug)}
                 onMouseEnter={() => onPrefetch?.(o.slug)}
@@ -66,6 +67,7 @@ export function CollectionModelRow({ row, current, hrefPrefix, onPrefetch }: {
               href={`${hrefPrefix}${o.slug}`}
               aria-current={o.slug === shown ? "true" : undefined}
               prefetch={true}
+              scroll={false}
               onClick={(e) => tap(e, o.slug)}
               onTouchStart={() => onPrefetch?.(o.slug)}
               onMouseEnter={() => onPrefetch?.(o.slug)}

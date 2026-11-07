@@ -416,6 +416,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
                 aria-label={v.label}
                 prefetch={true}
                 onClick={(e) => tapVariant(e, v.slug)}
+                scroll={false} // a colour switch keeps the visitor where they are (no jump to the top)
                 onTouchStart={() => prefetchMainImage(v.slug)}
                 onMouseEnter={() => prefetchMainImage(v.slug)}
                 className={`relative w-6 h-6 rounded-full border-2 transition-all duration-200 ${
