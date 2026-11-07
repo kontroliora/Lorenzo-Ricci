@@ -22,14 +22,15 @@ export function RoNewCollectionSection({ pieces }: { pieces: Product[] }) {
           </p>
         </div>
 
-        {/* One cover image, full width at its own 4:3 ratio (never cropped: the boxes stay whole). Static import = content-hashed URL. */}
-        <Link href="/ro/bijuterii#colectia-pentru-femei" className="group block overflow-hidden bg-ivory-warm" aria-label="Descoperiți colecția pentru femei">
+        {/* One cover image at its own 4:3 ratio, never cropped (the boxes fill 92% of its height, so cropping would cut them).
+            Phones: full width (~250px tall). Larger screens: capped at 560px tall, centred (~750px wide). Static import = hashed URL. */}
+        <Link href="/ro/bijuterii#colectia-pentru-femei" className="group block w-fit max-w-full mx-auto overflow-hidden" aria-label="Descoperiți colecția pentru femei">
           <Image
             src={cover}
             alt="Colecția pentru femei Lorenzo Ricci – coliere și brățări în cutii LORENZO RICCI"
             quality={85}
-            sizes="(max-width: 1280px) 100vw, 1216px"
-            className="w-full h-auto transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+            sizes="(max-width: 640px) 100vw, 750px"
+            className="block w-auto max-w-full h-auto max-h-[560px] transition-transform duration-700 ease-out group-hover:scale-[1.02]"
           />
         </Link>
         <div className="mt-6 sm:mt-8 mb-10 sm:mb-12 flex justify-center">
