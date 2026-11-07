@@ -7,7 +7,7 @@
 import type { Product } from "../types";
 import { NEW_COLLECTION_RO } from "../new-collection-products";
 
-export type RoProductText = Partial<Pick<Product, "shortDescription" | "description" | "tabDescription" | "descriptionSections" | "materialNote" | "crocodileSpecies" | "specs" | "features" | "badge" | "warranty" | "commercial_warranty_text">> & {
+export type RoProductText = Partial<Pick<Product, "shortDescription" | "description" | "tabDescription" | "descriptionSections" | "materialNote" | "crocodileSpecies" | "specs" | "features" | "details" | "deliveryNote" | "badge" | "warranty" | "commercial_warranty_text">> & {
   /** Alt text of images[i], same order and length as the Bulgarian `images` array (SEO). */
   imageAlts?: string[];
   /** Alt text of coverImage. */

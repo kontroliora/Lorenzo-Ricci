@@ -62,8 +62,8 @@ const TEXT: Record<CollectionKey, DesignText> = {
       },
     },
     features: {
-      necklace: [{ bg: "Четирилистна детелина", ro: "Trifoi cu patru foi" }, { bg: "Наситено зелена вложка", ro: "Inserție de un verde intens" }, { bg: "Фина верижка", ro: "Lănțișor fin" }, { bg: "Подарък с пожелание за късмет", ro: "Un cadou cu urare de noroc" }],
-      bracelet: [{ bg: "Детелини по цялата верижка", ro: "Trifoi de-a lungul lănțișorului" }, { bg: "Наситено зелена вложка", ro: "Inserție de un verde intens" }, { bg: "Самостоятелно или до часовник", ro: "Singură sau alături de un ceas" }, { bg: "Подарък с пожелание за късмет", ro: "Un cadou cu urare de noroc" }],
+      necklace: [{ bg: "Четирилистна детелина с наситено зелена вложка", ro: "Trifoi cu patru foi, cu inserție de un verde intens" }, { bg: "Фин гранулиран обков около детелината", ro: "Ramă fină granulată în jurul trifoiului" }, { bg: "Регулируема дължина с удължител", ro: "Lungime reglabilă, cu prelungitor" }, { bg: "Носи се самостоятелно или на слоеве с часовник", ro: "Se poartă singur sau în straturi, alături de un ceas" }],
+      bracelet: [{ bg: "Четирилистни детелини с наситено зелена вложка", ro: "Trifoi cu patru foi, cu inserție de un verde intens" }, { bg: "Фин гранулиран обков около всяка детелина", ro: "Ramă fină granulată în jurul fiecărui trifoi" }, { bg: "Регулируема дължина с удължител", ro: "Lungime reglabilă, cu prelungitor" }, { bg: "Носи се самостоятелно или на слоеве с часовник", ro: "Se poartă singură sau în straturi, alături de un ceas" }],
     },
     extraSpecs: [INLAY("Зелена", "Verde")],
   },
@@ -80,8 +80,8 @@ const TEXT: Record<CollectionKey, DesignText> = {
       },
     },
     features: {
-      necklace: [{ bg: "Четирилистна детелина", ro: "Trifoi cu patru foi" }, { bg: "Дълбоко черна вложка", ro: "Inserție de un negru profund" }, { bg: "Фина верижка", ro: "Lănțișor fin" }, { bg: "От деня до вечерта", ro: "De zi și de seară" }],
-      bracelet: [{ bg: "Детелини по цялата верижка", ro: "Trifoi de-a lungul lănțișorului" }, { bg: "Дълбоко черна вложка", ro: "Inserție de un negru profund" }, { bg: "Графичен контраст", ro: "Contrast grafic" }, { bg: "От деня до вечерта", ro: "De zi și de seară" }],
+      necklace: [{ bg: "Четирилистна детелина с дълбоко черна вложка", ro: "Trifoi cu patru foi, cu inserție de un negru profund" }, { bg: "Фин гранулиран обков около детелината", ro: "Ramă fină granulată în jurul trifoiului" }, { bg: "Регулируема дължина с удължител", ro: "Lungime reglabilă, cu prelungitor" }, { bg: "Изчистен контраст за всеки ден и за вечер", ro: "Un contrast curat, de zi și de seară" }],
+      bracelet: [{ bg: "Четирилистни детелини с дълбоко черна вложка", ro: "Trifoi cu patru foi, cu inserție de un negru profund" }, { bg: "Фин гранулиран обков около всяка детелина", ro: "Ramă fină granulată în jurul fiecărui trifoi" }, { bg: "Регулируема дължина с удължител", ro: "Lungime reglabilă, cu prelungitor" }, { bg: "Изчистен контраст за всеки ден и за вечер", ro: "Un contrast curat, de zi și de seară" }],
     },
     extraSpecs: [INLAY("Черна", "Neagră")],
   },
@@ -98,8 +98,8 @@ const TEXT: Record<CollectionKey, DesignText> = {
       },
     },
     features: {
-      necklace: [{ bg: "Четирилистна детелина", ro: "Trifoi cu patru foi" }, { bg: "Перлено бяла вложка", ro: "Inserție alb-sidefie" }, { bg: "Мек, преливащ блясък", ro: "Strălucire blândă, irizată" }, { bg: "Нежен подарък за нея", ro: "Un cadou delicat pentru ea" }],
-      bracelet: [{ bg: "Детелини по цялата верижка", ro: "Trifoi de-a lungul lănțișorului" }, { bg: "Перлено бяла вложка", ro: "Inserție alb-sidefie" }, { bg: "Мек, преливащ блясък", ro: "Strălucire blândă, irizată" }, { bg: "Нежен подарък за нея", ro: "Un cadou delicat pentru ea" }],
+      necklace: [{ bg: "Четирилистна детелина с перлено бяла вложка", ro: "Trifoi cu patru foi, cu inserție alb-sidefie" }, { bg: "Мек, преливащ блясък на светлина", ro: "Strălucire blândă, irizată, în lumină" }, { bg: "Фин гранулиран обков", ro: "Ramă fină granulată" }, { bg: "Регулируема дължина с удължител", ro: "Lungime reglabilă, cu prelungitor" }],
+      bracelet: [{ bg: "Четирилистни детелини с перлено бяла вложка", ro: "Trifoi cu patru foi, cu inserție alb-sidefie" }, { bg: "Мек, преливащ блясък на светлина", ro: "Strălucire blândă, irizată, în lumină" }, { bg: "Фин гранулиран обков", ro: "Ramă fină granulată" }, { bg: "Регулируема дължина с удължител", ro: "Lungime reglabilă, cu prelungitor" }],
     },
     extraSpecs: [INLAY("Перлена", "Sidefie")],
   },
@@ -114,7 +114,7 @@ const TEXT: Record<CollectionKey, DesignText> = {
     },
     features: {
       necklace: [],
-      bracelet: [{ bg: "Силует на пирон", ro: "Siluetă de cui" }, { bg: "Фина линия от камъни", ro: "Linie fină de pietre" }, { bg: "Твърда гривна", ro: "Brățară rigidă" }, { bg: "Самостоятелно или до часовник", ro: "Singură sau alături de un ceas" }],
+      bracelet: [{ bg: "Тънка твърда гривна с форма на пирон", ro: "Brățară rigidă, subțire, în formă de cui" }, { bg: "Камъни по главата и върха", ro: "Pietre pe cap și pe vârf" }, { bg: "Отваря се със скрита закопчалка", ro: "Se deschide cu o închizătoare ascunsă" }, { bg: "Минималистична, за носене на слоеве", ro: "Minimalistă, de purtat în straturi" }],
     },
     extraSpecs: [STONES],
   },
@@ -129,7 +129,7 @@ const TEXT: Record<CollectionKey, DesignText> = {
     },
     features: {
       necklace: [],
-      bracelet: [{ bg: "Силует на пирон", ro: "Siluetă de cui" }, { bg: "Изцяло обсипана с камъни", ro: "Acoperită în întregime cu pietre" }, { bg: "Твърда гривна", ro: "Brățară rigidă" }, { bg: "Вечерен блясък", ro: "Strălucire de seară" }],
+      bracelet: [{ bg: "Гривна пирон с камъни по цялата дължина", ro: "Brățară-cui cu pietre pe toată lungimea" }, { bg: "Блести от всеки ъгъл", ro: "Strălucește din orice unghi" }, { bg: "Отваря се със скрита закопчалка", ro: "Se deschide cu o închizătoare ascunsă" }, { bg: "Ефектна сама или до Linea", ro: "Spectaculoasă singură sau alături de Linea" }],
     },
     extraSpecs: [STONES],
   },
@@ -144,7 +144,7 @@ const TEXT: Record<CollectionKey, DesignText> = {
     },
     features: {
       necklace: [],
-      bracelet: [{ bg: "Силует на змия", ro: "Siluetă de șarpe" }, { bg: "Камъни по линията на тялото", ro: "Pietre de-a lungul corpului" }, { bg: "Твърда гривна", ro: "Brățară rigidă" }, { bg: "Подарък с характер", ro: "Un cadou cu caracter" }],
+      bracelet: [{ bg: "Змия, увита около китката", ro: "Un șarpe înfășurat în jurul încheieturii" }, { bg: "Люспи, покрити с камъни", ro: "Solzi acoperiți cu pietre" }, { bg: "Отваря се със скрита закопчалка", ro: "Se deschide cu o închizătoare ascunsă" }, { bg: "Смел акцент за всеки ден", ro: "Un accent îndrăzneț, de purtat zilnic" }],
     },
     extraSpecs: [STONES],
   },
@@ -159,6 +159,30 @@ const materialSpecs = (metal: Metal, lang: "bg" | "ro"): ProductSpec[] =>
     : lang === "bg"
       ? [{ label: "Материал", value: "316L неръждаема стомана" }]
       : [{ label: "Material", value: "Oțel inoxidabil 316L" }];
+
+// "Детайли" under the bullets (ProductDetails): Метал · Вложка / Камъни · Дължина · Закопчаване · Артикул. A row with no value is
+// hidden, so the pending answers (silver finish, stones, lengths - owner) only need their value filled in here.
+const METAL_ROW: Record<Metal, Lang> = {
+  gold: { bg: "316L неръждаема стомана с 18K PVD покритие", ro: "Oțel inoxidabil 316L cu placare 18K PVD" }, // the old gold jewellery's wording
+  silver: { bg: "316L неръждаема стомана", ro: "Oțel inoxidabil 316L" }, // finish pending (owner)
+};
+const CLASP_ROW: Partial<Record<CollectionKey, Lang>> = {
+  linea: { bg: "Скрита закопчалка", ro: "Închizătoare ascunsă" },
+  solaris: { bg: "Скрита закопчалка", ro: "Închizătoare ascunsă" },
+  spira: { bg: "Скрита закопчалка", ro: "Închizătoare ascunsă" },
+};
+function details(key: CollectionKey, metal: Metal, skuCode: string, lang: "bg" | "ro"): ProductSpec[] {
+  return [
+    { label: lang === "bg" ? "Метал" : "Metal", value: METAL_ROW[metal][lang] },
+    ...(TEXT[key].extraSpecs ?? []).map((s) => ({ label: s.label[lang], value: s.value?.[lang] ?? "" })), // Вложка / Камъни
+    { label: lang === "bg" ? "Дължина" : "Lungime", value: "" }, // pending the owner's measurement
+    { label: lang === "bg" ? "Закопчаване" : "Închidere", value: CLASP_ROW[key]?.[lang] ?? "" },
+    { label: lang === "bg" ? "Артикул" : "Cod produs", value: skuCode },
+  ];
+}
+
+/** The neutral box line under "Детайли" (self-purchase and gifts alike). */
+const DELIVERY_NOTE: Lang = { bg: "Доставя се в кутия LORENZO RICCI", ro: "Se livrează în cutie LORENZO RICCI" };
 
 function specs(key: CollectionKey, type: PieceType, metal: Metal, lang: "bg" | "ro"): ProductSpec[] {
   return [
@@ -198,6 +222,8 @@ export const NEW_COLLECTION_PRODUCTS: Product[] = COLLECTION_PIECES.map(({ slug,
     description: fill(t.description[type].bg, metal, "bg"),
     features: t.features[type].map((f) => f.bg),
     specs: specs(design.key, type, metal, "bg"),
+    details: details(design.key, metal, sku(type, design.key, metal), "bg"),
+    deliveryNote: DELIVERY_NOTE.bg,
     coverImage: photos(slug, type, design.key, metal, alt, "bg")[0],
     images: photos(slug, type, design.key, metal, alt, "bg"),
   };
@@ -209,6 +235,8 @@ export const NEW_COLLECTION_RO: Record<string, {
   shortDescription: string;
   description: string;
   features: string[];
+  details: ProductSpec[];
+  deliveryNote: string;
   specs: ProductSpec[];
   warranty: string;
   coverAlt: string;
@@ -223,6 +251,8 @@ export const NEW_COLLECTION_RO: Record<string, {
       description: fill(t.description[type].ro, metal, "ro"),
       features: t.features[type].map((f) => f.ro),
       specs: specs(design.key, type, metal, "ro"),
+      details: details(design.key, metal, sku(type, design.key, metal), "ro"),
+      deliveryNote: DELIVERY_NOTE.ro,
       warranty: "Garanție pe viață",
       coverAlt: `${name} Lorenzo Ricci`,
       imageAlts: photos(slug, type, design.key, metal, `${name} Lorenzo Ricci`, "ro").map((i) => i.alt),

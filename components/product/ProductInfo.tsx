@@ -18,6 +18,7 @@ import { campaignLabel } from "@/lib/sale-campaign";
 import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
 import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
+import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches } from "@/lib/new-collection";
 import { opoGroupOf, opoPriceLineBg, opoPairPrice, opoPairPriceBg } from "@/lib/one-plus-one";
 import { useLeatherStock } from "@/lib/use-gifts";
@@ -473,6 +474,9 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           </li>
         ))}
       </ul>
+
+      {/* 2026 collection: "Детайли" rows that have a value + the box line (nothing for other products) */}
+      <ProductDetails title="Детайли" rows={product.details} note={product.deliveryNote} />
 
       {/* Natural-variation note: above the CTA on desktop so it's read before ordering;
           on phones it sits right under the button instead (owner: a text block on top

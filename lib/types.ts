@@ -50,6 +50,10 @@ export interface Product {
   shortDescription: string;
   specs: ProductSpec[];
   features: string[];
+  // "Детайли" rows under the bullets (2026 collection); a row with an empty value is not shown.
+  details?: ProductSpec[];
+  // A neutral line under "Детайли" ("Доставя се в кутия LORENZO RICCI").
+  deliveryNote?: string;
   images: ProductImage[];
   coverImage: ProductImage;
   badge?: string;

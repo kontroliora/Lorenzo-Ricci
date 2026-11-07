@@ -32,6 +32,7 @@ import { PAGE_LOW_STOCK_MAX, savingsRon } from "@/lib/home-card-hints";
 import { campaignLabelRo } from "@/lib/sale-campaign";
 import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
+import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches } from "@/lib/new-collection";
 import { opoGroupOf } from "@/lib/one-plus-one";
 import { opoPriceLineRo } from "@/lib/ro/config";
@@ -482,6 +483,9 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           </li>
         ))}
       </ul>
+
+      {/* 2026 collection: "Detalii" rows that have a value + the box line (nothing for other products) */}
+      <ProductDetails title="Detalii" rows={product.details} note={product.deliveryNote} />
 
       {/* Natural-variation note: above the CTA on desktop so it's read before ordering;
           on phones it sits right under the button instead. Same text, one of the two renders. */}
