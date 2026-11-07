@@ -338,6 +338,31 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   const odd = trust.length % 2 === 1;
   const lastRowStart = odd ? trust.length - 1 : trust.length - 2;
 
+  // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
+  const inCollection = isCollectionSlug(product.slug);
+  const cta = (
+    <>
+    <button
+      data-main-cta="true"
+      onClick={effectiveInStock ? handleAdd : undefined}
+      disabled={!effectiveInStock}
+      className={`w-full justify-center text-center ${
+        effectiveInStock
+          ? "btn-primary"
+          : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-muted border border-border cursor-not-allowed"
+      }`}
+    >
+      {!effectiveInStock
+        ? "STOC EPUIZAT"
+        : added
+        ? "✓ ADĂUGAT ÎN COȘ"
+        : pairLabel ?? "ADAUGĂ ÎN COȘ"}
+    </button>
+  
+    {effectiveInStock && !prepay && <CodLine text="Plata cu cardul, online · Livrare cu Speedy" />}
+    </>
+  );
+
   return (
     <div className="flex flex-col gap-6">
       {/* Category */}
@@ -421,14 +446,17 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           {opo && shipsFree && <FreeShippingBadge text="Livrare gratuită" size="page" />}
         </div>
         <SavingsLine text={saved !== null ? `Economisiți ${fmtRON(saved)}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Livrare gratuită" : null} />
-        {isCollectionSlug(product.slug) && <BoxLine text="Cutie luxoasă din catifea LORENZO RICCI" />}
-        {isCollectionSlug(product.slug) && <WarrantyLine text="Garanție pe viață" href={WARRANTY_HREF} />}
+        {inCollection && <BoxLine text="Cutie luxoasă din catifea LORENZO RICCI" />}
+        {inCollection && <WarrantyLine text="Garanție pe viață" href={WARRANTY_HREF} />}
         {/* 1+1 group (lib/one-plus-one.ts): "2 port-carduri pentru 341 lei ..." and the free second one, picked here */}
         {opo && <OnePlusOneLine badge={opo.text.ro.badge} line={opoPriceLineRo(product.slug)} size="page" />}
         {opo && (
           <OnePlusOnePicker title={opo.text.ro.pickTitle} options={pickOptions} selected={picked?.slug ?? null} onSelect={setPick} soldOutLabel="Stoc epuizat" />
         )}
       </div>
+
+      {/* Women's collection: the button right after the picker */}
+      {inCollection && cta}
 
       {/* Delivery in one line, right under the price (no inspection before paying: the Romanian shop is card only) */}
       {effectiveInStock && (
@@ -497,25 +525,8 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         </p>
       )}
 
-      {/* CTA */}
-      <button
-        data-main-cta="true"
-        onClick={effectiveInStock ? handleAdd : undefined}
-        disabled={!effectiveInStock}
-        className={`w-full justify-center text-center ${
-          effectiveInStock
-            ? "btn-primary"
-            : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-muted border border-border cursor-not-allowed"
-        }`}
-      >
-        {!effectiveInStock
-          ? "STOC EPUIZAT"
-          : added
-          ? "✓ ADĂUGAT ÎN COȘ"
-          : pairLabel ?? "ADAUGĂ ÎN COȘ"}
-      </button>
-
-      {effectiveInStock && !prepay && <CodLine text="Plata cu cardul, online · Livrare cu Speedy" />}
+      {/* CTA (a women's-collection piece has it right after the picker, further up) */}
+      {!inCollection && cta}
 
       {/* Phones: the natural-variation note goes under the button (see above). */}
       {product.materialNote && (

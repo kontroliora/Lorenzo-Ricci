@@ -57,13 +57,13 @@ const TEXT: Record<CollectionKey, DesignText> = {
         ro: "Un trifoi cu patru foi, cu inserție de un verde intens, într-o ramă granulată. Se poartă singur sau alături de alte coliere.",
       },
       bracelet: {
-        bg: "Детелини с наситено зелена вложка по цялата верижка. Изглежда добре сама или на слоеве с часовник и други гривни.",
-        ro: "Trifoi cu inserție de un verde intens de-a lungul întregului lănțișor. Arată bine singură sau în straturi, alături de un ceas și de alte brățări.",
+        bg: "Детелини с наситено зелена вложка по цялата верижка. Изглежда добре сама или в комбинация с часовник и други гривни.",
+        ro: "Trifoi cu inserție de un verde intens de-a lungul întregului lănțișor. Arată bine singură sau în combinație cu un ceas și cu alte brățări.",
       },
     },
     features: {
       necklace: [{ bg: "Четирилистна детелина с наситено зелена вложка", ro: "Trifoi cu patru foi, cu inserție de un verde intens" }, { bg: "Фин гранулиран обков около детелината", ro: "Ramă fină granulată în jurul trifoiului" }, { bg: "Регулируема дължина с удължител", ro: "Lungime reglabilă, cu prelungitor" }, { bg: "Изчистен акцент за всеки ден и за вечер", ro: "Un accent curat, de zi și de seară" }],
-      bracelet: [{ bg: "Четирилистни детелини с наситено зелена вложка", ro: "Trifoi cu patru foi, cu inserție de un verde intens" }, { bg: "Фин гранулиран обков около всяка детелина", ro: "Ramă fină granulată în jurul fiecărui trifoi" }, { bg: "Регулируема дължина с удължител", ro: "Lungime reglabilă, cu prelungitor" }, { bg: "Носи се самостоятелно или на слоеве с часовник", ro: "Se poartă singură sau în straturi, alături de un ceas" }],
+      bracelet: [{ bg: "Четирилистни детелини с наситено зелена вложка", ro: "Trifoi cu patru foi, cu inserție de un verde intens" }, { bg: "Фин гранулиран обков около всяка детелина", ro: "Ramă fină granulată în jurul fiecărui trifoi" }, { bg: "Регулируема дължина с удължител", ro: "Lungime reglabilă, cu prelungitor" }, { bg: "Стои добре сама или до часовник", ro: "Arată bine singură sau lângă un ceas" }],
     },
     extraSpecs: [INLAY("Зелена", "Verde")],
   },
@@ -114,7 +114,7 @@ const TEXT: Record<CollectionKey, DesignText> = {
     },
     features: {
       necklace: [],
-      bracelet: [{ bg: "Тънка твърда гривна с форма на пирон", ro: "Brățară rigidă, subțire, în formă de cui" }, { bg: "Камъни по главата и върха", ro: "Pietre pe cap și pe vârf" }, { bg: "Отваря се със скрита закопчалка", ro: "Se deschide cu o închizătoare ascunsă" }, { bg: "Минималистична, за носене на слоеве", ro: "Minimalistă, de purtat în straturi" }],
+      bracelet: [{ bg: "Тънка твърда гривна с форма на пирон", ro: "Brățară rigidă, subțire, în formă de cui" }, { bg: "Камъни по главата и върха", ro: "Pietre pe cap și pe vârf" }, { bg: "Отваря се със скрита закопчалка", ro: "Se deschide cu o închizătoare ascunsă" }, { bg: "Минималистична, лесна за комбиниране", ro: "Minimalistă, ușor de asortat" }],
     },
     extraSpecs: [STONES],
   },
@@ -197,17 +197,18 @@ function details(key: CollectionKey, type: PieceType, metal: Metal, skuCode: str
   ];
 }
 
-/** The neutral box line under "Детайли" (self-purchase and gifts alike). */
-const DELIVERY_NOTE: Lang = { bg: "Доставя се в луксозна велурена кутия LORENZO RICCI", ro: "Se livrează într-o cutie luxoasă din catifea LORENZO RICCI" };
 
-function specs(key: CollectionKey, type: PieceType, metal: Metal, lang: "bg" | "ro"): ProductSpec[] {
-  return [
+function specs(key: CollectionKey, type: PieceType, metal: Metal, skuCode: string, lang: "bg" | "ro"): ProductSpec[] {
+  // "Спецификации" tab = the specs and the former "Детайли" rows in one list, no duplicates: "Метал" says the same as "Материал"
+  // (same value), and Вложка / Камъни / Дължина are in both - each shown once. A row with no value stays hidden (the tab skips it).
+  const rows: ProductSpec[] = [
     ...materialSpecs(metal, lang),
-    ...(TEXT[key].extraSpecs ?? []).map((s) => ({ label: s.label[lang], value: s.value?.[lang] ?? "" })),
-    { label: lang === "bg" ? "Дължина" : "Lungime", value: lengthOf(key, type, lang) }, // same as "Детайли"
+    ...details(key, type, metal, skuCode, lang).filter((r) => r.label !== "Метал" && r.label !== "Metal" && r.label !== "Артикул" && r.label !== "Cod produs" && r.label !== "Гаранция" && r.label !== "Garanție"),
     { label: lang === "bg" ? "Пол" : "Gen", value: lang === "bg" ? "Дамски" : "Damă" },
     { label: lang === "bg" ? "Цвят" : "Culoare", value: COLOR[metal][lang] },
+    ...details(key, type, metal, skuCode, lang).filter((r) => r.label === "Гаранция" || r.label === "Garanție" || r.label === "Артикул" || r.label === "Cod produs"),
   ];
+  return rows.filter((r, i) => rows.findIndex((x) => x.label === r.label) === i);
 }
 
 const sku = (type: PieceType, key: CollectionKey, metal: Metal) =>
@@ -237,9 +238,7 @@ export const NEW_COLLECTION_PRODUCTS: Product[] = COLLECTION_PIECES.map(({ slug,
     shortDescription: t.short[type].bg,
     description: fill(t.description[type].bg, metal, "bg"),
     features: t.features[type].map((f) => f.bg),
-    specs: specs(design.key, type, metal, "bg"),
-    details: details(design.key, type, metal, sku(type, design.key, metal), "bg"),
-    deliveryNote: DELIVERY_NOTE.bg,
+    specs: specs(design.key, type, metal, sku(type, design.key, metal), "bg"), // incl. the former "Детайли" rows
     coverImage: photos(slug, type, design.key, metal, alt, "bg")[0],
     images: photos(slug, type, design.key, metal, alt, "bg"),
   };
@@ -266,9 +265,9 @@ export const NEW_COLLECTION_RO: Record<string, {
       shortDescription: t.short[type].ro,
       description: fill(t.description[type].ro, metal, "ro"),
       features: t.features[type].map((f) => f.ro),
-      specs: specs(design.key, type, metal, "ro"),
-      details: details(design.key, type, metal, sku(type, design.key, metal), "ro"),
-      deliveryNote: DELIVERY_NOTE.ro,
+      specs: specs(design.key, type, metal, sku(type, design.key, metal), "ro"),
+      details: [], // merged into specs ("Specificații")
+      deliveryNote: "", // the box is said under the price
       warranty: "Garanție pe viață",
       coverAlt: `${name} Lorenzo Ricci`,
       imageAlts: photos(slug, type, design.key, metal, `${name} Lorenzo Ricci`, "ro").map((i) => i.alt),

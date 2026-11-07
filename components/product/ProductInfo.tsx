@@ -310,6 +310,31 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
     });
   };
 
+  // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
+  const inCollection = isCollectionSlug(product.slug);
+  const cta = (
+    <>
+    <button
+      data-main-cta="true"
+      onClick={effectiveInStock ? handleAdd : undefined}
+      disabled={!effectiveInStock}
+      className={`w-full justify-center text-center ${
+        effectiveInStock
+          ? "btn-primary"
+          : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-muted border border-border cursor-not-allowed"
+      }`}
+    >
+      {!effectiveInStock
+        ? "ИЗЧЕРПАНА НАЛИЧНОСТ"
+        : added
+        ? "✓ ДОБАВЕНО В КОЛИЧКАТА"
+        : pairLabel ?? "ДОБАВИ В КОЛИЧКАТА"}
+    </button>
+  
+    {effectiveInStock && !requiresPrepayment(product) && <CodLine text={CARD_PAYMENTS_ENABLED ? "Карта или наложен платеж · Доставка с Еконт" : "Без предплащане · Доставка с Еконт · Плащате при получаване"} />}
+    </>
+  );
+
   return (
     <div className="flex flex-col gap-6">
       {/* Category */}
@@ -401,14 +426,17 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           {opo && shipsFree && <FreeShippingBadge text="Безплатна доставка" size="page" />}
         </div>
         <SavingsLine text={saved !== null ? `Спестявате €${saved}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Безплатна доставка" : null} />
-        {isCollectionSlug(product.slug) && <BoxLine text="Луксозна велурена кутия LORENZO RICCI" />}
-        {isCollectionSlug(product.slug) && <WarrantyLine text="Доживотна гаранция" href={"/warranty/jewelry"} />}
+        {inCollection && <BoxLine text="Луксозна велурена кутия LORENZO RICCI" />}
+        {inCollection && <WarrantyLine text="Доживотна гаранция" href={"/warranty/jewelry"} />}
         {/* 1+1 group (lib/one-plus-one.ts): "2 картодържателя за €65 ..." and the free second one, picked here */}
         {opo && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(product.slug)} size="page" />}
         {opo && (
           <OnePlusOnePicker title={opo.text.bg.pickTitle} options={pickOptions} selected={picked?.slug ?? null} onSelect={setPick} soldOutLabel="Изчерпан" />
         )}
       </div>
+
+      {/* Women's collection: the button right after the picker */}
+      {inCollection && cta}
 
       {/* Delivery in one line, right under the price; inspection before paying only where cash on delivery exists.
           The "free over €60" part only while the green badge doesn't already say it. */}
@@ -489,25 +517,8 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         </p>
       )}
 
-      {/* CTA */}
-      <button
-        data-main-cta="true"
-        onClick={effectiveInStock ? handleAdd : undefined}
-        disabled={!effectiveInStock}
-        className={`w-full justify-center text-center ${
-          effectiveInStock
-            ? "btn-primary"
-            : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-muted border border-border cursor-not-allowed"
-        }`}
-      >
-        {!effectiveInStock
-          ? "ИЗЧЕРПАНА НАЛИЧНОСТ"
-          : added
-          ? "✓ ДОБАВЕНО В КОЛИЧКАТА"
-          : pairLabel ?? "ДОБАВИ В КОЛИЧКАТА"}
-      </button>
-
-      {effectiveInStock && !requiresPrepayment(product) && <CodLine text={CARD_PAYMENTS_ENABLED ? "Карта или наложен платеж · Доставка с Еконт" : "Без предплащане · Доставка с Еконт · Плащате при получаване"} />}
+      {/* CTA (a women's-collection piece has it right after the picker, further up) */}
+      {!inCollection && cta}
 
       {/* Phones: the natural-variation note goes under the button (see above). */}
       {product.materialNote && (
