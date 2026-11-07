@@ -136,8 +136,8 @@ const SHOW_VIBER = false;
 
 // The women's collection's free-item picker (components/product/CollectionFreePicker.tsx), Bulgarian wording.
 const FREE_PICKER_BG: FreePickerText = {
-  title: "Изберете второто бижу – безплатно:", setTitle: "Пълният комплект", free: "Безплатно с 1+1", choose: "Избери",
-  other: "Или изберете друго бижу", groups: { clover: COLLECTION_GROUP_LABEL.clover.bg, nail: COLLECTION_GROUP_LABEL.nail.bg, snake: COLLECTION_GROUP_LABEL.snake.bg },
+  title: "Изберете второто бижу – безплатно:", setLabel: "Комплект", free: "Безплатно с 1+1",
+  groups: { clover: COLLECTION_GROUP_LABEL.clover.bg, nail: COLLECTION_GROUP_LABEL.nail.bg, snake: COLLECTION_GROUP_LABEL.snake.bg },
   chooseSecond: "Избери за второ бижу", details: "Виж всички детайли", soldOut: "Изчерпан", second: "Второ бижу:", freeShort: "Безплатно",
   change: "Смени", close: "Затвори",
 };
@@ -461,7 +461,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
         {opo && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(product.slug)} size="page" />}
         {opo && (
           isCollectionSlug(product.slug)
-            ? <CollectionFreePicker items={freeItems} matchSlug={collectionMatchOf(product.slug)} selected={picked?.slug ?? null} onSelect={setPick} text={FREE_PICKER_BG} />
+            ? <CollectionFreePicker items={freeItems} currentName={product.name} matchSlug={collectionMatchOf(product.slug)} selected={picked?.slug ?? null} onSelect={setPick} text={FREE_PICKER_BG} />
             : <OnePlusOnePicker title={opo.text.bg.pickTitle} options={pickOptions} selected={picked?.slug ?? null} onSelect={setPick} soldOutLabel="Изчерпан" />
         )}
       </div>

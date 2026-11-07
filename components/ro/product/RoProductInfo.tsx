@@ -153,8 +153,8 @@ const WARRANTY_HREF = "/ro/garantie-bijuterii";
 
 // The women's collection's free-item picker (components/product/CollectionFreePicker.tsx), Romanian wording (formal).
 const FREE_PICKER_RO: FreePickerText = {
-  title: "Alegeți a doua bijuterie – gratuit:", setTitle: "Setul complet", free: "Gratuit cu 1+1", choose: "Alegeți",
-  other: "Sau alegeți altă bijuterie", groups: { clover: COLLECTION_GROUP_LABEL.clover.ro, nail: COLLECTION_GROUP_LABEL.nail.ro, snake: COLLECTION_GROUP_LABEL.snake.ro },
+  title: "Alegeți a doua bijuterie – gratuit:", setLabel: "Set", free: "Gratuit cu 1+1",
+  groups: { clover: COLLECTION_GROUP_LABEL.clover.ro, nail: COLLECTION_GROUP_LABEL.nail.ro, snake: COLLECTION_GROUP_LABEL.snake.ro },
   chooseSecond: "Alegeți ca a doua bijuterie", details: "Vedeți toate detaliile", soldOut: "Stoc epuizat", second: "A doua bijuterie:", freeShort: "Gratuit",
   change: "Schimbați", close: "Închideți",
 };
@@ -483,7 +483,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         {opo && <OnePlusOneLine badge={opo.text.ro.badge} line={opoPriceLineRo(product.slug)} size="page" />}
         {opo && (
           isCollectionSlug(product.slug)
-            ? <CollectionFreePicker items={freeItems} matchSlug={collectionMatchOf(product.slug)} selected={picked?.slug ?? null} onSelect={setPick} text={FREE_PICKER_RO} />
+            ? <CollectionFreePicker items={freeItems} currentName={product.name} matchSlug={collectionMatchOf(product.slug)} selected={picked?.slug ?? null} onSelect={setPick} text={FREE_PICKER_RO} />
             : <OnePlusOnePicker title={opo.text.ro.pickTitle} options={pickOptions} selected={picked?.slug ?? null} onSelect={setPick} soldOutLabel="Stoc epuizat" />
         )}
       </div>

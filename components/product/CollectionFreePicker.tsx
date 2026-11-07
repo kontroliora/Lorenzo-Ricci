@@ -6,11 +6,11 @@ import { COLLECTION_GROUP_ORDER, type CollectionGroup } from "@/lib/new-collecti
 import { CollectionQuickView } from "@/components/product/CollectionQuickView";
 
 // The women's collection's free second piece (1+1), BG + RO (owner, 08.11.2026):
-//   1. "Пълният комплект": the other half of the set (same clover model and metal, necklace <-> bracelet), large, with "Избери".
-//      Bangles have no other half: no card.
-//   2. "Или изберете друго бижу": every piece, grouped Детелини / Пирони / Змия; sold out = greyed and not clickable.
-//   3. A tap on a piece (the set card's photo / name too) opens a quick view (modal on desktop, bottom sheet on phones); the piece
-//      is picked only by its "Избери за второ бижу" button (or the set card's own "Избери").
+//   1. One line: "1. [this piece] ✓   2. Изберете второто бижу – безплатно:" (the page's piece is the first of the two).
+//   2. Every piece, grouped Детелини / Пирони / Змия; the other half of the set (same clover model and metal, necklace <->
+//      bracelet) is the first thumbnail of Детелини with a small gold "Комплект" above it. Sold out = greyed, not clickable.
+//   3. A tap on a piece opens a quick view (modal on desktop, bottom sheet on phones); the piece is picked only by its
+//      "Избери за второ бижу" button.
 //   4. Picked: a check mark on it and the "Второ бижу: ... · Смени" line under the picker. Nothing goes into the cart here: the
 //      page's main button (then "Добави 2 в количката – €X") adds both.
 // The page builds the items (its own language, prices, stock) and owns the pick, as with OnePlusOnePicker.
@@ -28,19 +28,20 @@ export type FreeItem = {
 };
 
 export type FreePickerText = {
-  title: string; setTitle: string; free: string; choose: string; other: string; groups: Record<CollectionGroup, string>;
+  title: string; setLabel: string; free: string; groups: Record<CollectionGroup, string>;
   chooseSecond: string; details: string; soldOut: string; second: string; freeShort: string; change: string; close: string;
 };
 
-export function CollectionFreePicker({ items, matchSlug, selected, onSelect, text }: {
+export function CollectionFreePicker({ items, currentName, matchSlug, selected, onSelect, text }: {
   items: FreeItem[];
+  currentName: string;     // the page's own piece: item no. 1
+
   matchSlug: string | null;
   selected: string | null;
   onSelect: (slug: string | null) => void;
   text: FreePickerText;
 }) {
   const [viewing, setViewing] = useState<string | null>(null);
-  const match = matchSlug ? items.find((i) => i.slug === matchSlug && i.available) : undefined;
   const picked = selected ? items.find((i) => i.slug === selected) : undefined;
   const viewed = viewing ? items.find((i) => i.slug === viewing) : undefined;
 
@@ -51,43 +52,18 @@ export function CollectionFreePicker({ items, matchSlug, selected, onSelect, tex
 
   return (
     <div data-testid="opo-picker" className="mt-4 scroll-mt-28">
-      <p className="font-sans text-[12px] sm:text-[13px] font-medium tracking-wide text-charcoal mb-3">{text.title}</p>
-
-      {match && (
-        <div
-          data-testid="opo-set-card"
-          className={`flex items-center gap-4 p-3 border-2 bg-[#FBF8F2] ${selected === match.slug ? "border-navy" : "border-gold/60"}`}
-        >
-          <button type="button" onClick={() => setViewing(match.slug)} className="relative flex-shrink-0 w-[120px] h-[120px] bg-white overflow-hidden" aria-label={match.name}>
-            <Image src={smallOrOriginal(match.image.src)} alt={match.image.alt} fill sizes="120px" quality={70} className="object-contain p-1.5" />
-            {selected === match.slug && <Check />}
-          </button>
-          <div className="min-w-0 flex-1">
-            <p className="font-sans text-[10px] tracking-[0.18em] uppercase text-gold-dark mb-1">{text.setTitle}</p>
-            <button type="button" onClick={() => setViewing(match.slug)} className="block text-left font-serif text-[17px] leading-snug text-charcoal hover:text-navy">
-              {match.name}
-            </button>
-            <p className="mt-1 font-sans text-xs">
-              <span className="text-ink-muted line-through mr-2">{match.priceText}</span>
-              <span className="text-[#2F6B3B] font-medium">{text.free}</span>
-            </p>
-            <button
-              type="button"
-              data-testid="opo-set-choose"
-              onClick={() => onSelect(match.slug)}
-              className="mt-2.5 btn-primary !px-5 !py-2.5 !text-[10px]"
-            >
-              {selected === match.slug ? "✓" : text.choose}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {match && <p className="mt-5 mb-1 font-sans text-[12px] text-ink-muted">{text.other}</p>}
+      {/* "1. this piece ✓   2. pick the second one": the page's own piece is the first of the two */}
+      <p data-testid="opo-steps" className="font-sans text-[12px] sm:text-[13px] font-medium tracking-wide text-charcoal mb-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <span>1. {currentName} <span className="text-navy">✓</span></span>
+        <span>2. {text.title}</span>
+      </p>
 
       {COLLECTION_GROUP_ORDER.map((g) => {
-        const list = items.filter((i) => i.group === g);
+        // The other half of the set (same clover model and metal) leads its group, with a small gold "Комплект" above it;
+        // the row keeps that label's height on every thumbnail so the photos stay aligned.
+        const list = items.filter((i) => i.group === g).sort((a, b) => Number(b.slug === matchSlug) - Number(a.slug === matchSlug));
         if (list.length === 0) return null;
+        const hasSet = list.some((i) => i.slug === matchSlug);
         return (
           <div key={g} className="mt-3">
             <p className="font-sans text-[10px] tracking-widest uppercase text-ink-muted mb-2">{text.groups[g]}</p>
@@ -107,6 +83,11 @@ export function CollectionFreePicker({ items, matchSlug, selected, onSelect, tex
                     data-testid={`opo-pick-${o.slug}`}
                     className={`group flex-shrink-0 w-[90px] snap-start text-center ${o.available ? "cursor-pointer" : "cursor-not-allowed"}`}
                   >
+                    {hasSet && (
+                      <span className="block h-4 mb-0.5 font-sans text-[10px] leading-4 tracking-[0.12em] uppercase text-gold-dark font-medium">
+                        {o.slug === matchSlug ? text.setLabel : ""}
+                      </span>
+                    )}
                     <span className={`relative block w-[90px] h-[90px] overflow-hidden bg-white border-2 transition-all duration-150 ${
                       on ? "border-navy shadow-[0_0_0_3px_rgba(15,40,80,0.15)]" : o.available ? "border-border group-hover:border-navy/40" : "border-border"
                     }`}>
