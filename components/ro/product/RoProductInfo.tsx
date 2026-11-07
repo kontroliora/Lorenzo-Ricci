@@ -33,7 +33,8 @@ import { campaignLabelRo } from "@/lib/sale-campaign";
 import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
-import { collectionSwatches, isCollectionSlug, type ModelRow } from "@/lib/new-collection";
+import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
+import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
 import { opoGroupOf } from "@/lib/one-plus-one";
 import { opoPriceLineRo } from "@/lib/ro/config";
@@ -150,6 +151,14 @@ const categoryLabel = (p: Product): string =>
 // Where a watch / jewellery warranty is explained (counterpart of the Bulgarian /warranty/jewelry page).
 const WARRANTY_HREF = "/ro/garantie-bijuterii";
 
+// The women's collection's free-item picker (components/product/CollectionFreePicker.tsx), Romanian wording (formal).
+const FREE_PICKER_RO: FreePickerText = {
+  title: "Alegeți a doua bijuterie – gratuit:", setTitle: "Setul complet", free: "Gratuit cu 1+1", choose: "Alegeți",
+  other: "Sau alegeți altă bijuterie", groups: { clover: COLLECTION_GROUP_LABEL.clover.ro, nail: COLLECTION_GROUP_LABEL.nail.ro, snake: COLLECTION_GROUP_LABEL.snake.ro },
+  chooseSecond: "Alegeți ca a doua bijuterie", details: "Vedeți toate detaliile", soldOut: "Stoc epuizat", second: "A doua bijuterie:", freeShort: "Gratuit",
+  change: "Schimbați", close: "Închideți",
+};
+
 // Prepayment threshold in lei, for the wording of the delivery tab (the rule itself is roNeedsPrepayment).
 const PREPAYMENT_THRESHOLD_RON = Math.round(PREPAYMENT_THRESHOLD_EUR * EUR_RON);
 
@@ -158,10 +167,11 @@ interface RoProductInfoProps {
   reviewCount?: number; // number of reviews of the same product, as the Bulgarian store shows it (lib/reviews.ts)
   reviewAvg?: number;
   reviewsTranslated?: boolean; // every one of those reviews has a Romanian text: the numbers then need no "(Bulgaria)" label
+  typeRow?: ModelRow | null;   // women's collection: "Tip" row (Colier / Brățară), above "Culoare"
   modelRow?: ModelRow | null;  // women's collection: "Piatră" / "Pietre" row (lib/new-collection.ts collectionModelRow)
 }
 
-export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviewsTranslated = false, modelRow = null }: RoProductInfoProps) {
+export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviewsTranslated = false, typeRow = null, modelRow = null }: RoProductInfoProps) {
   const addItem = useRoCart((s) => s.addItem);
   const cartItems = useRoCart((s) => s.items);
   const [added, setAdded] = useState(false);
@@ -301,6 +311,19 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
     : [];
   const picked = opo && pick ? pickOptions.find((o) => o.slug === pick && o.available) ?? null : null;
   useEffect(() => { setPick(null); }, [product.slug]);
+  // Women's collection: the redesigned picker (set card, groups, quick view), localized names / texts / lei prices.
+  const freeItems: FreeItem[] = opo && isCollectionSlug(product.slug)
+    ? pickOptions.flatMap((o) => {
+        const raw = getProductBySlug(o.slug);
+        const group = collectionGroupOf(o.slug);
+        if (!raw || !group) return [];
+        const p = o.slug === product.slug ? product : localizeProduct(raw);
+        const name = safeText(p.name) ?? o.name;
+        return [{ slug: o.slug, name, image: o.image,
+          images: p.images.map((im) => ({ src: im.src, alt: safeText(im.alt) ?? name })), available: o.available, group,
+          priceText: fmtRON(ronOf(p)), description: safeText(p.description) ?? safeText(p.shortDescription) ?? "", href: `/ro/produse/${o.slug}` }];
+      }).sort((a, b) => collectionRank(a.slug) - collectionRank(b.slug))
+    : [];
   // The pair costs the dearer of the two in lei (the cheaper one is free): 341 lei for two cardholders, a piece's lei for jewellery.
   const pickedRaw = picked ? getProductBySlug(picked.slug) : undefined;
   const pickedRon = picked && picked.slug !== product.slug && pickedRaw ? ronOf(localizeProduct(pickedRaw)) : ron;
@@ -380,6 +403,9 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         </p>
       </div>
 
+      {/* Women's collection: "Вид" row (necklace / bracelet of the same model and metal) above the colour */}
+      {typeRow && <CollectionModelRow row={typeRow} current={product.slug} hrefPrefix="/ro/produse/" onPrefetch={prefetchMainImage} />}
+
       {/* Color variant selector - watches, wallets, cardholders, clutches */}
       {variants.length > 1 && (
         <div className="flex items-center gap-3">
@@ -456,7 +482,9 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         {/* 1+1 group (lib/one-plus-one.ts): "2 port-carduri pentru 341 lei ..." and the free second one, picked here */}
         {opo && <OnePlusOneLine badge={opo.text.ro.badge} line={opoPriceLineRo(product.slug)} size="page" />}
         {opo && (
-          <OnePlusOnePicker title={opo.text.ro.pickTitle} options={pickOptions} selected={picked?.slug ?? null} onSelect={setPick} soldOutLabel="Stoc epuizat" />
+          isCollectionSlug(product.slug)
+            ? <CollectionFreePicker items={freeItems} matchSlug={collectionMatchOf(product.slug)} selected={picked?.slug ?? null} onSelect={setPick} text={FREE_PICKER_RO} />
+            : <OnePlusOnePicker title={opo.text.ro.pickTitle} options={pickOptions} selected={picked?.slug ?? null} onSelect={setPick} soldOutLabel="Stoc epuizat" />
         )}
       </div>
 

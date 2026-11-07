@@ -215,3 +215,41 @@ export function collectionModelRow(slug: string, lang: "bg" | "ro", soldOut: Rea
   if (options.length < 2) return null;
   return { title: isStone ? (lang === "bg" ? "Камък" : "Piatră") : (lang === "bg" ? "Камъни" : "Pietre"), kind: isStone ? "swatch" : "image", options };
 }
+
+/**
+ * "Вид" row of a clover piece (owner, 08.11.2026): Колие / Гривна of the same model and metal, as small photo + label, shown above
+ * "Цвят". Same hiding rules as collectionModelRow; Linea / Solaris / Spira (bracelets only) get none.
+ */
+export function collectionTypeRow(slug: string, lang: "bg" | "ro", soldOut: ReadonlySet<string>, allowed: (slug: string) => boolean = () => true): ModelRow | null {
+  const me = COLLECTION_PIECES.find((p) => p.slug === slug);
+  if (!me || me.design.kind !== "clover") return null;
+  const label = { necklace: { bg: "Колие", ro: "Colier" }, bracelet: { bg: "Гривна", ro: "Brățară" } } as const;
+  const options = (["necklace", "bracelet"] as const)
+    .map((type) => ({ type, slug: collectionSlug(type, me.design.key, me.metal) }))
+    .filter(({ slug: s }) => s === slug || (NEW_COLLECTION_SLUGS.has(s) && pieceLive(s) && !soldOut.has(s) && allowed(s)))
+    .map(({ type, slug: s }): ModelOption => ({ slug: s, label: label[type][lang], image: collectionPhoto(`${me.design.key}-${type}-${me.metal}-1.webp`) }));
+  if (options.length < 2) return null;
+  return { title: lang === "bg" ? "Вид" : "Tip", kind: "image", options };
+}
+
+// ─── The free-item picker's grouping (owner, 08.11.2026) ─────────────────────
+
+export type CollectionGroup = "clover" | "nail" | "snake";
+export const COLLECTION_GROUP_ORDER: CollectionGroup[] = ["clover", "nail", "snake"];
+export const COLLECTION_GROUP_LABEL: Record<CollectionGroup, { bg: string; ro: string }> = {
+  clover: { bg: "Детелини", ro: "Trifoi" },
+  nail:   { bg: "Пирони",   ro: "Brățări-cui" },
+  snake:  { bg: "Змия",     ro: "Șarpe" },
+};
+export function collectionGroupOf(slug: string): CollectionGroup | null {
+  const p = COLLECTION_PIECES.find((x) => x.slug === slug);
+  if (!p) return null;
+  return p.design.kind === "clover" ? "clover" : p.design.key === "spira" ? "snake" : "nail";
+}
+/** The other half of the set: same clover model, same metal, necklace <-> bracelet (null for the bangles). */
+export function collectionMatchOf(slug: string): string | null {
+  const p = COLLECTION_PIECES.find((x) => x.slug === slug);
+  if (!p || p.design.kind !== "clover") return null;
+  const other = collectionSlug(p.type === "necklace" ? "bracelet" : "necklace", p.design.key, p.metal);
+  return NEW_COLLECTION_SLUGS.has(other) ? other : null;
+}

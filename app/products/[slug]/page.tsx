@@ -25,7 +25,7 @@ import { getPriceOverrides, applyOverride, applyOverrides } from "@/lib/price-ov
 import { getLiveStock } from "@/lib/live-stock";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { productJsonLd, jsonLdString } from "@/lib/product-jsonld";
-import { collectionModelRow, collectionRelated, isCollectionSlug } from "@/lib/new-collection";
+import { collectionModelRow, collectionTypeRow, collectionRelated, isCollectionSlug } from "@/lib/new-collection";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
 // lib/price-overrides.ts) — every product page stays statically generated
@@ -171,7 +171,7 @@ export default async function ProductPage({ params }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-16">
           <ProductGallery images={galleryImages} productName={product.name} />
           <div>
-            <ProductInfo product={product} reviewCount={reviewSummary[slug]?.count ?? reviews.length} modelRow={inCollection ? collectionModelRow(product.slug, "bg", soldOut) : null} />
+            <ProductInfo product={product} reviewCount={reviewSummary[slug]?.count ?? reviews.length} typeRow={inCollection ? collectionTypeRow(product.slug, "bg", soldOut) : null} modelRow={inCollection ? collectionModelRow(product.slug, "bg", soldOut) : null} />
             {/* Women's collection: no "Завърши визията" block (the 1+1 picker above already offers the matching piece); sets stay in /bundles */}
             {!inCollection && <BundleUpsell product={product} />}
           </div>

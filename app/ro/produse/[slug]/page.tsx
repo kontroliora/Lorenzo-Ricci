@@ -20,7 +20,7 @@ import { RoLeatherDescription } from "@/components/ro/product/RoLeatherDescripti
 import { RoProductReviews, type RoReviewPool } from "@/components/ro/product/RoProductReviews";
 import { roSafeProduct, roMissingText } from "@/components/ro/product/ro-text";
 import { roReviewView } from "@/components/ro/product/review-data";
-import { collectionModelRow, collectionRelated, isCollectionSlug } from "@/lib/new-collection";
+import { collectionModelRow, collectionTypeRow, collectionRelated, isCollectionSlug } from "@/lib/new-collection";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { RoProductCard } from "@/components/ro/RoProductCard";
 
@@ -160,6 +160,7 @@ export default async function RoProductPage({ params }: Props) {
   // JSON-LD aggregateRating uses ONLY this product's own reviews (never pooled).
   const jsonLd = roProductJsonLd(product, { liveStock, reviews: ownReviews.ldSummary });
   const bundle = bundleFor(product, overrides);
+  const roSoldOut = new Set(await getSoldOutSlugs());
 
   // Category pool: all cardholder or wallet reviews in Romanian, own product first.
   const categoryType = getCategoryType(slug);
@@ -252,7 +253,8 @@ export default async function RoProductPage({ params }: Props) {
               reviewCount={ownReviews.count}
               reviewAvg={ownReviews.avg}
               reviewsTranslated={ownReviews.allTranslated}
-              modelRow={isCollectionSlug(slug) ? collectionModelRow(slug, "ro", new Set(await getSoldOutSlugs()), (s) => RO_SLUGS.includes(s)) : null}
+              typeRow={isCollectionSlug(slug) ? collectionTypeRow(slug, "ro", roSoldOut, (s) => RO_SLUGS.includes(s)) : null}
+              modelRow={isCollectionSlug(slug) ? collectionModelRow(slug, "ro", roSoldOut, (s) => RO_SLUGS.includes(s)) : null}
             />
             {/* Women's collection: no "Completați ansamblul" block (the 1+1 picker above already offers the matching piece); sets stay in /ro/seturi */}
             {bundle && !isCollectionSlug(slug) && <RoBundleUpsell product={slim(product)} partners={bundle.partners} discountPct={bundle.discountPct} onePlusOne={bundle.onePlusOne} />}

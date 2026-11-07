@@ -19,7 +19,8 @@ import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
 import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
-import { collectionSwatches, isCollectionSlug, type ModelRow } from "@/lib/new-collection";
+import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
+import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
 import { opoGroupOf, opoPriceLineBg, opoPairPrice, opoPairPriceBg } from "@/lib/one-plus-one";
 import { useLeatherStock } from "@/lib/use-gifts";
@@ -133,15 +134,24 @@ const VIBER_LINK = "viber://chat?number=%2B359888081811";
 // bring it back (nothing is deleted).
 const SHOW_VIBER = false;
 
+// The women's collection's free-item picker (components/product/CollectionFreePicker.tsx), Bulgarian wording.
+const FREE_PICKER_BG: FreePickerText = {
+  title: "Изберете второто бижу – безплатно:", setTitle: "Пълният комплект", free: "Безплатно с 1+1", choose: "Избери",
+  other: "Или изберете друго бижу", groups: { clover: COLLECTION_GROUP_LABEL.clover.bg, nail: COLLECTION_GROUP_LABEL.nail.bg, snake: COLLECTION_GROUP_LABEL.snake.bg },
+  chooseSecond: "Избери за второ бижу", details: "Виж всички детайли", soldOut: "Изчерпан", second: "Второ бижу:", freeShort: "Безплатно",
+  change: "Смени", close: "Затвори",
+};
+
 // Show the low-stock line only when AVAILABLE units are at or below PAGE_LOW_STOCK_MAX (lib/home-card-hints.ts).
 
 interface ProductInfoProps {
   product: Product;
   reviewCount?: number;
+  typeRow?: ModelRow | null;  // women's collection: "Вид" row (Колие / Гривна), above "Цвят"
   modelRow?: ModelRow | null; // women's collection: "Камък" / "Камъни" row (lib/new-collection.ts collectionModelRow)
 }
 
-export function ProductInfo({ product, reviewCount = 0, modelRow = null }: ProductInfoProps) {
+export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow = null }: ProductInfoProps) {
   const { addItem, items: cartItems } = useCartStore();
   const [added, setAdded] = useState(false);
   // 1+1 group: the free second item picked on the page (null = none; may be this same model)
@@ -283,6 +293,17 @@ export function ProductInfo({ product, reviewCount = 0, modelRow = null }: Produ
     : [];
   const picked = opo && pick ? pickOptions.find((o) => o.slug === pick && o.available) ?? null : null;
   useEffect(() => { setPick(null); }, [product.slug]);
+  // Women's collection: the redesigned picker (set card, groups, quick view) gets the same options with more to show.
+  const country = useCountry();
+  const freeItems: FreeItem[] = opo && isCollectionSlug(product.slug)
+    ? pickOptions.flatMap((o) => {
+        const p = getProductBySlug(o.slug);
+        const group = collectionGroupOf(o.slug);
+        if (!p || !group) return [];
+        return [{ slug: o.slug, name: p.name, image: p.coverImage, images: p.images, available: o.available, group,
+          priceText: displayPrice(p, country).text, description: p.description || p.shortDescription, href: `/products/${o.slug}` }];
+      }).sort((a, b) => collectionRank(a.slug) - collectionRank(b.slug))
+    : [];
   // The pair costs the dearer of the two (the cheaper one is free): €65 for two cardholders, €109 / €115 for jewellery.
   const pickedPrice = picked ? (getProductBySlug(picked.slug)?.price ?? product.price) : product.price;
   const pairLabel = picked && opo ? opo.text.bg.addPair({ one: opoPairPriceBg(product.price, pickedPrice) }) : null;
@@ -355,6 +376,9 @@ export function ProductInfo({ product, reviewCount = 0, modelRow = null }: Produ
           Арт. {product.sku}
         </p>
       </div>
+
+      {/* Women's collection: "Вид" row (necklace / bracelet of the same model and metal) above the colour */}
+      {typeRow && <CollectionModelRow row={typeRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} />}
 
       {/* Color variant selector - watches, wallets, cardholders */}
       {variants && (
@@ -436,7 +460,9 @@ export function ProductInfo({ product, reviewCount = 0, modelRow = null }: Produ
         {/* 1+1 group (lib/one-plus-one.ts): "2 картодържателя за €65 ..." and the free second one, picked here */}
         {opo && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(product.slug)} size="page" />}
         {opo && (
-          <OnePlusOnePicker title={opo.text.bg.pickTitle} options={pickOptions} selected={picked?.slug ?? null} onSelect={setPick} soldOutLabel="Изчерпан" />
+          isCollectionSlug(product.slug)
+            ? <CollectionFreePicker items={freeItems} matchSlug={collectionMatchOf(product.slug)} selected={picked?.slug ?? null} onSelect={setPick} text={FREE_PICKER_BG} />
+            : <OnePlusOnePicker title={opo.text.bg.pickTitle} options={pickOptions} selected={picked?.slug ?? null} onSelect={setPick} soldOutLabel="Изчерпан" />
         )}
       </div>
 
