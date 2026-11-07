@@ -3,7 +3,10 @@
 /cover photo
 /cover photo mobile:desktop
 /reviews
-/scripts
+# scripts/ stays out, except the photo-copy step that runs before every build (package.json "prebuild") and its record
+/scripts/*
+!/scripts/make-image-variants.mjs
+!/scripts/image-variant-hashes.json
 *.jsonl
 /Logo-Lorenzo-Ricci-FINAL white png.png
 
