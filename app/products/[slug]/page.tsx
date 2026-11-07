@@ -25,7 +25,7 @@ import { getPriceOverrides, applyOverride, applyOverrides } from "@/lib/price-ov
 import { getLiveStock } from "@/lib/live-stock";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { productJsonLd, jsonLdString } from "@/lib/product-jsonld";
-import { isCollectionSlug } from "@/lib/new-collection";
+import { collectionRelated, isCollectionSlug } from "@/lib/new-collection";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
 // lib/price-overrides.ts) — every product page stays statically generated
@@ -127,7 +127,11 @@ export default async function ProductPage({ params }: Props) {
   }
   // "Подобни продукти" never offers something that cannot be bought (stock-driven, lib/sold-out.ts)
   const soldOut = new Set(await getSoldOutSlugs());
-  const related = applyOverrides(getRelatedProducts(product, 4, soldOut), overrides);
+  // A women's-collection piece: "Комбинирайте с 1+1" with the other collection pieces only (lib/new-collection.ts collectionRelated).
+  const inCollection = isCollectionSlug(product.slug);
+  const related = inCollection
+    ? applyOverrides(collectionRelated(product.slug, products, soldOut), overrides)
+    : applyOverrides(getRelatedProducts(product, 4, soldOut), overrides);
 
   // For watches: hide night images and side-profile images from the gallery
   // (night images stay in product.images[] so the moon button on cards still works)
@@ -185,18 +189,21 @@ export default async function ProductPage({ params }: Props) {
           <LeatherDescription videoSrc={CARDHOLDER_VIDEOS[product.slug]} crocodileSpecies={product.crocodileSpecies} isBag={product.category === "bags"} image={product.descriptionImage} />
         )}
 
-        {/* Reviews */}
-        <div className="mt-20">
-          <ProductReviews reviews={reviews} productSlug={slug} pool={reviewPool} />
-        </div>
+        {/* Reviews: hidden while the product has none (no "Все още няма ревюта" block); it shows again by itself with the first
+            review. Cardholders / wallets show their category pool, so they always have some. Same rule as the Romanian page. */}
+        {(reviews.length > 0 || (reviewPool && reviewPool.reviews.length > 0)) && (
+          <div className="mt-20">
+            <ProductReviews reviews={reviews} productSlug={slug} pool={reviewPool} />
+          </div>
+        )}
 
         {/* Related */}
         {related.length > 0 && (
           <div className="mt-20">
             <div className="flex items-center justify-between mb-10">
               <div>
-                <p className="section-tag mb-2">Може да харесате и</p>
-                <h2 className="font-serif text-display-sm text-charcoal">Подобни продукти</h2>
+                <p className="section-tag mb-2">{inCollection ? "Дамска колекция" : "Може да харесате и"}</p>
+                <h2 className="font-serif text-display-sm text-charcoal">{inCollection ? "Комбинирайте с 1+1" : "Подобни продукти"}</h2>
               </div>
               <div className="h-px flex-1 bg-border ml-8" />
             </div>

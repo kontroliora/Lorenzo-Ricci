@@ -157,3 +157,23 @@ export const COLLECTION_SETS: { id: string; label: string; labelRo: string; slot
         slots: [[collectionSlug("necklace", d.key, m)], [collectionSlug("bracelet", d.key, m)]],
       })),
   );
+
+/**
+ * "Комбинирайте с 1+1" on a collection product page (BG + RO): only other pieces of the women's collection that are in the shop
+ * (photos), in stock and not sold out - never the other jewellery. Order: the matching piece of the same model (necklace <-> bracelet,
+ * same metal), then the same model in the other metal, then the other models; each tier in collection order.
+ */
+export function collectionRelated<T extends { slug: string; inStock: boolean }>(slug: string, shop: T[], soldOut: ReadonlySet<string>, limit = 4): T[] {
+  const me = COLLECTION_PIECES.find((p) => p.slug === slug);
+  if (!me) return [];
+  const tier = (s: string) => {
+    const p = COLLECTION_PIECES.find((x) => x.slug === s)!;
+    if (p.design.key === me.design.key && p.type !== me.type && p.metal === me.metal) return 0;
+    if (p.design.key === me.design.key) return 1;
+    return 2;
+  };
+  return shop
+    .filter((p) => p.slug !== slug && isCollectionSlug(p.slug) && pieceLive(p.slug) && p.inStock && !soldOut.has(p.slug))
+    .sort((a, b) => tier(a.slug) - tier(b.slug) || collectionRank(a.slug) - collectionRank(b.slug))
+    .slice(0, limit);
+}

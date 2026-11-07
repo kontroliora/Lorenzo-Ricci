@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Product } from "@/lib/types";
-import { getProductBySlug } from "@/lib/products";
+import { getProductBySlug, products } from "@/lib/products";
 import { BUNDLES } from "@/lib/bundles";
-import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
+import { getPriceOverrides, applyOverride, applyOverrides } from "@/lib/price-overrides";
 import { getLiveStock } from "@/lib/live-stock";
 import { RO_SLUGS, localizeProduct } from "@/lib/ro/catalog";
 import { RO_REVIEWS_NOTE, localizeReview } from "@/lib/ro/reviews-ro";
 import { getCategoryType, getCategorySlugs, getCategoryReviews, getCategorySummary } from "@/lib/reviews";
-import { ronOf, roNeedsPrepayment, fmtRON, RO_FREE_SHIPPING_RON } from "@/lib/ro/config";
+import { ronOf, roNeedsPrepayment, fmtRON, RO_FREE_SHIPPING_RON, roEligible } from "@/lib/ro/config";
 import { roProductJsonLd, jsonLdString } from "@/lib/ro/product-jsonld";
 import { RoProductGallery } from "@/components/ro/product/RoProductGallery";
 import { RoProductInfo } from "@/components/ro/product/RoProductInfo";
@@ -20,7 +20,9 @@ import { RoLeatherDescription } from "@/components/ro/product/RoLeatherDescripti
 import { RoProductReviews, type RoReviewPool } from "@/components/ro/product/RoProductReviews";
 import { roSafeProduct, roMissingText } from "@/components/ro/product/ro-text";
 import { roReviewView } from "@/components/ro/product/review-data";
-import { isCollectionSlug } from "@/lib/new-collection";
+import { collectionRelated, isCollectionSlug } from "@/lib/new-collection";
+import { getSoldOutSlugs } from "@/lib/sold-out";
+import { RoProductCard } from "@/components/ro/RoProductCard";
 
 // Romanian storefront (/ro/produse/<slug>): the whole Bulgarian catalogue (watches, jewellery, crocodile leather goods) in lei, with the
 // same sale as the Bulgarian site (current price + crossed-out old price + badge, both converted to whole lei).
@@ -150,6 +152,10 @@ export default async function RoProductPage({ params }: Props) {
   const { product, overrides } = loaded;
 
   const ownReviews = roReviewView(slug);
+  // A women's-collection piece: "Combinați cu 1+1" with the other collection pieces sold in Romania (lib/new-collection.ts collectionRelated).
+  const related = isCollectionSlug(slug)
+    ? collectionRelated(slug, applyOverrides(products.filter(roEligible), overrides), new Set(await getSoldOutSlugs())).map(localizeProduct)
+    : [];
   const liveStock = await getLiveStock(slug);
   // JSON-LD aggregateRating uses ONLY this product's own reviews (never pooled).
   const jsonLd = roProductJsonLd(product, { liveStock, reviews: ownReviews.ldSummary });
@@ -276,6 +282,24 @@ export default async function RoProductPage({ params }: Props) {
               note={RO_REVIEWS_NOTE}
               pool={roPool}
             />
+          </div>
+        )}
+
+        {/* Women's collection: pieces to combine with the 1+1 */}
+        {related.length > 0 && (
+          <div className="mt-20" data-testid="collection-related">
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <p className="section-tag mb-2">Colecția pentru femei</p>
+                <h2 className="font-serif text-display-sm text-charcoal">Combinați cu 1+1</h2>
+              </div>
+              <div className="h-px flex-1 bg-border ml-8" />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-8">
+              {related.map((p) => (
+                <RoProductCard key={p.id} product={p} />
+              ))}
+            </div>
           </div>
         )}
       </div>
