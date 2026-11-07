@@ -172,7 +172,8 @@ export default async function ProductPage({ params }: Props) {
           <ProductGallery images={galleryImages} productName={product.name} />
           <div>
             <ProductInfo product={product} reviewCount={reviewSummary[slug]?.count ?? reviews.length} modelRow={inCollection ? collectionModelRow(product.slug, "bg", soldOut) : null} />
-            <BundleUpsell product={product} />
+            {/* Women's collection: no "Завърши визията" block (the 1+1 picker above already offers the matching piece); sets stay in /bundles */}
+            {!inCollection && <BundleUpsell product={product} />}
           </div>
         </div>
 

@@ -254,7 +254,8 @@ export default async function RoProductPage({ params }: Props) {
               reviewsTranslated={ownReviews.allTranslated}
               modelRow={isCollectionSlug(slug) ? collectionModelRow(slug, "ro", new Set(await getSoldOutSlugs()), (s) => RO_SLUGS.includes(s)) : null}
             />
-            {bundle && <RoBundleUpsell product={slim(product)} partners={bundle.partners} discountPct={bundle.discountPct} onePlusOne={bundle.onePlusOne} />}
+            {/* Women's collection: no "Completați ansamblul" block (the 1+1 picker above already offers the matching piece); sets stay in /ro/seturi */}
+            {bundle && !isCollectionSlug(slug) && <RoBundleUpsell product={slim(product)} partners={bundle.partners} discountPct={bundle.discountPct} onePlusOne={bundle.onePlusOne} />}
           </div>
         </div>
 
