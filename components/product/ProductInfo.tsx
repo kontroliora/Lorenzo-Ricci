@@ -17,8 +17,9 @@ import { PAGE_LOW_STOCK_MAX, savingsEur } from "@/lib/home-card-hints";
 import { campaignLabel } from "@/lib/sale-campaign";
 import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
 import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge } from "@/components/product/PriceExtras";
-import { OnePlusOnePicker, shortModel, type PickOption } from "@/components/product/OnePlusOnePicker";
-import { opoGroupOf, opoPriceLineBg, opoPriceBg } from "@/lib/one-plus-one";
+import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
+import { collectionSwatches } from "@/lib/new-collection";
+import { opoGroupOf, opoPriceLineBg, opoPairPrice, opoPairPriceBg } from "@/lib/one-plus-one";
 import { useLeatherStock } from "@/lib/use-gifts";
 
 // A colour swatch reads as sold out when its product is switched off in
@@ -163,6 +164,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       : product.category === "wallets" ? WALLET_VARIANTS
       : product.category === "cardholders" ? CARDHOLDER_VARIANTS
       : product.category === "bags" && product.slug !== "bag-milano-avorio" ? CLUTCH_VARIANTS // the one-off bag has no siblings
+      : product.category === "jewellery" && collectionSwatches(product.slug, "bg").length > 0 ? collectionSwatches(product.slug, "bg") // 2026 collection: gold / silver
       : null;
 
   // Small colour groups (watches, wallets: 3): warm the other colours' main photo
@@ -273,12 +275,14 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
     ? [...opo.slugs].flatMap((slug) => {
         const p = getProductBySlug(slug);
         if (!p) return [];
-        return [{ slug, name: shortModel(p.name), image: p.coverImage, available: freeLeft(slug) >= (slug === product.slug ? 2 : 1) && freeLeft(product.slug) >= 1 }];
+        return [{ slug, name: opo.text.bg.shortName(p.name), image: p.coverImage, available: freeLeft(slug) >= (slug === product.slug ? 2 : 1) && freeLeft(product.slug) >= 1 }];
       })
     : [];
   const picked = opo && pick ? pickOptions.find((o) => o.slug === pick && o.available) ?? null : null;
   useEffect(() => { setPick(null); }, [product.slug]);
-  const pairLabel = picked && opo ? opo.text.bg.addPair({ one: opoPriceBg(opo) }) : null;
+  // The pair costs the dearer of the two (the cheaper one is free): €65 for two cardholders, €109 / €115 for jewellery.
+  const pickedPrice = picked ? (getProductBySlug(picked.slug)?.price ?? product.price) : product.price;
+  const pairLabel = picked && opo ? opo.text.bg.addPair({ one: opoPairPriceBg(product.price, pickedPrice) }) : null;
 
   const handleAdd = () => {
     addItem({ ...product, stock: effectiveStock });
@@ -291,7 +295,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
       content_ids:  second ? [product.sku, second.sku] : [product.sku],
       content_name: second ? `${product.name} + ${second.name}` : product.name,
       content_type: "product",
-      value:        product.price, // the second one is free
+      value:        second ? opoPairPrice(product.price, second.price) : product.price, // the cheaper one is free
       currency:     "EUR",
       num_items:    second ? 2 : 1,
     }, genEventId("ATC"));

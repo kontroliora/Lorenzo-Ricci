@@ -18,6 +18,9 @@ export interface Product {
   name: string;
   category: ProductCategory;
   subcategory?: JewellerySubcategory;
+  metal?: "gold" | "silver"; // jewellery colour; "silver" skips the gold-plating block (JewelleryDescription). Unset = gold.
+  hidden?: boolean; // true = not on the shop at all (no listing, no page, not orderable); only the admin inventory sees it.
+  // Used for products prepared ahead of launch (lib/new-collection.ts NEW_COLLECTION_LIVE).
   price: number;
   originalPrice?: number; // crossed-out prior price during a sale — MUST be the lowest price of the
   // previous 30 days (EU Omnibus rule). Setting it puts the product "on sale" (lib/price.ts

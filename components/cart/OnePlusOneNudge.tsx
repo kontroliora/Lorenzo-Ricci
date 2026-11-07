@@ -48,7 +48,7 @@ export function OnePlusOneNudge() {
                         {added === p.slug ? "✓" : "+"}
                       </span>
                     </span>
-                    <span className="block mt-1 font-sans text-[10px] text-white/60 leading-tight truncate">{p.name.match(/"([^"]+)"/)?.[1] ?? p.name}</span>
+                    <span className="block mt-1 font-sans text-[10px] text-white/60 leading-tight truncate">{g.text.bg.shortName(p.name)}</span>
                   </button>
                 ))}
               </div>

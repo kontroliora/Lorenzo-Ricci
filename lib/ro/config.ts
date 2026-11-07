@@ -81,7 +81,8 @@ export const opoPriceRo = (g: OnePlusOneGroup): string => fmtRON(ronPrice(g.fixe
 /** The 1+1 line under a Romanian price (lib/one-plus-one.ts), in lei: "2 port-carduri pentru 341 lei – 170,50 lei bucata. ..." */
 export function opoPriceLineRo(slug: string): string | null {
   const g = opoGroupOf(slug);
-  if (!g || typeof g.fixedPrice !== "number") return null;
+  if (!g) return null;
+  if (typeof g.fixedPrice !== "number") return g.text.ro.line({ one: "", half: "" }); // no fixed price: the plain line
   const one = ronPrice(g.fixedPrice);
   const half = (one / 2).toLocaleString("ro-RO", { minimumFractionDigits: Number.isInteger(one / 2) ? 0 : 2, maximumFractionDigits: 2 });
   return g.text.ro.line({ one: fmtRON(one), half: `${half} lei` });

@@ -31,9 +31,11 @@ import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { PAGE_LOW_STOCK_MAX, savingsRon } from "@/lib/home-card-hints";
 import { campaignLabelRo } from "@/lib/sale-campaign";
 import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge } from "@/components/product/PriceExtras";
-import { OnePlusOnePicker, shortModel, type PickOption } from "@/components/product/OnePlusOnePicker";
+import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
+import { collectionSwatches } from "@/lib/new-collection";
 import { opoGroupOf } from "@/lib/one-plus-one";
-import { opoPriceLineRo, opoPriceRo } from "@/lib/ro/config";
+import { opoPriceLineRo } from "@/lib/ro/config";
+import { opoPairPrice } from "@/lib/one-plus-one";
 import { localizeProduct } from "@/lib/ro/catalog";
 import { safeText } from "@/components/ro/home/ro-home-utils";
 import { useLeatherStock } from "@/lib/use-gifts";
@@ -187,6 +189,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
       : product.category === "wallets" ? WALLET_VARIANTS
       : product.category === "cardholders" ? CARDHOLDER_VARIANTS
       : product.category === "bags" && product.slug !== ONE_OF_ONE_SLUG ? CLUTCH_VARIANTS // the one-off bag has no siblings
+      : product.category === "jewellery" ? collectionSwatches(product.slug, "ro") // 2026 collection: gold / silver (empty otherwise)
       : []
   ).filter((v) => RO_SLUGS.includes(v.slug));
 
@@ -289,13 +292,16 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         const raw = getProductBySlug(slug);
         if (!raw) return [];
         const p = slug === product.slug ? product : localizeProduct(raw);
-        const name = safeText(shortModel(p.name)) ?? shortModel(raw.name);
+        const name = safeText(opo.text.ro.shortName(p.name)) ?? opo.text.ro.shortName(raw.name);
         return [{ slug, name, image: { src: p.coverImage.src, alt: safeText(p.coverImage.alt) ?? name }, available: freeLeft(slug) >= (slug === product.slug ? 2 : 1) && freeLeft(product.slug) >= 1 }];
       })
     : [];
   const picked = opo && pick ? pickOptions.find((o) => o.slug === pick && o.available) ?? null : null;
   useEffect(() => { setPick(null); }, [product.slug]);
-  const pairLabel = picked && opo ? opo.text.ro.addPair({ one: opoPriceRo(opo) }) : null;
+  // The pair costs the dearer of the two in lei (the cheaper one is free): 341 lei for two cardholders, a piece's lei for jewellery.
+  const pickedRaw = picked ? getProductBySlug(picked.slug) : undefined;
+  const pickedRon = picked && picked.slug !== product.slug && pickedRaw ? ronOf(localizeProduct(pickedRaw)) : ron;
+  const pairLabel = picked && opo ? opo.text.ro.addPair({ one: fmtRON(opoPairPrice(ron, pickedRon)) }) : null;
 
   const handleAdd = () => {
     addItem(roCartLine(product, effectiveStock));
@@ -310,7 +316,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
       content_name:     second ? `${product.name} + ${second.name}` : product.name,
       content_type:     "product",
       content_category: "RO",
-      value:            ron, // the second one is free
+      value:            second ? opoPairPrice(ron, pickedRon) : ron, // the cheaper one is free
       currency:         RO_CURRENCY,
       num_items:        second ? 2 : 1,
     }, genEventId("ATC"));

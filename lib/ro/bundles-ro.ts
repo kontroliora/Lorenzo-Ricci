@@ -1,3 +1,5 @@
+import { COLLECTION_SETS } from "@/lib/new-collection";
+
 // Romanian names of the sets ("комплекти") defined in lib/bundles.ts, by bundle id.
 export const RO_BUNDLE_LABEL: Record<string, string> = {
   "aurelius-signature-pair": "Set Aurelius Cross + Signature",
@@ -5,4 +7,5 @@ export const RO_BUNDLE_LABEL: Record<string, string> = {
   "milano-forte-pair": "Set Milano Forte",
   "bianco-alabastro-pair": "Set Bianco + Alabastro",
   "zaffiro-alabastro-pair": "Set Zaffiro + Alabastro",
+  ...Object.fromEntries(COLLECTION_SETS.map((s) => [s.id, s.labelRo])),
 };

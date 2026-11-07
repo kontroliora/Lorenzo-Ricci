@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
-import { BUNDLES, bundleHasSaleItem } from "@/lib/bundles";
+import { BUNDLES, bundleHasSaleItem, bundleOpoRunning } from "@/lib/bundles";
+import { COLLECTION_SET_TEXT } from "@/lib/new-collection";
+import { opoGroupOf } from "@/lib/one-plus-one";
 import { getProductBySlug } from "@/lib/products";
 import { useCartStore } from "@/lib/store";
 import { useCountry } from "@/lib/country";
@@ -53,6 +55,8 @@ export function BundleUpsell({ product: rawProduct }: Props) {
   // No stacking: while either piece is on sale the set earns no discount, so the
   // pairing is shown without one.
   const hasDiscount = bundle.discountPct > 0 && !bundleHasSaleItem(bundle, findProduct);
+  // A set of the 2026 collection: no % of its own, the partner comes free with the 1+1 (the cheaper piece of the two).
+  const opo = bundleOpoRunning(bundle);
 
   const handleAdd = (partner: Product) => {
     addItem(product);
@@ -70,7 +74,7 @@ export function BundleUpsell({ product: rawProduct }: Props) {
           Завърши визията
         </p>
         <span className="ml-auto font-sans text-[9px] font-semibold tracking-[0.14em] uppercase bg-navy text-white px-2 py-0.5">
-          {hasDiscount ? `-${bundle.discountPct}% КОМПЛЕКТ` : "КОМПЛЕКТ"}
+          {opo ? opoGroupOf(product.slug)?.text.bg.badge ?? "1+1" : hasDiscount ? `-${bundle.discountPct}% КОМПЛЕКТ` : "КОМПЛЕКТ"}
         </span>
       </div>
 
@@ -78,9 +82,12 @@ export function BundleUpsell({ product: rawProduct }: Props) {
       <div className="flex flex-col gap-4">
         {partners.map((partner) => {
           const fullPrice = product.price + partner.price;
-          const displayPrice = hasDiscount
+          const displayPrice = opo
+            ? Math.max(product.price, partner.price)
+            : hasDiscount
             ? +(fullPrice * (1 - bundle.discountPct / 100)).toFixed(2)
             : fullPrice;
+          const struck = opo || hasDiscount;
           const isAdded = addedPartnerId === partner.id;
           const isLocked = addedPartnerId !== null && !isAdded;
 
@@ -120,7 +127,11 @@ export function BundleUpsell({ product: rawProduct }: Props) {
                   <p className="font-sans text-[11px] font-medium tracking-wide text-charcoal leading-snug">
                     Добави <span className="text-navy">{partner.name}</span>
                   </p>
-                  {hasDiscount && (
+                  {opo ? (
+                    <p className="font-sans text-[10px] text-ink-faint tracking-wide leading-snug mt-0.5">
+                      {COLLECTION_SET_TEXT.bg.setFree(partner.subcategory === "necklace" ? "necklace" : "bracelet")}
+                    </p>
+                  ) : hasDiscount && (
                     <p className="font-sans text-[10px] text-ink-faint tracking-wide leading-snug mt-0.5">
                       и спести {bundle.discountPct}% от общата цена
                     </p>
@@ -131,7 +142,7 @@ export function BundleUpsell({ product: rawProduct }: Props) {
               {/* Right: price + button */}
               <div className="flex items-center gap-3 sm:flex-shrink-0">
                 <div className="text-right">
-                  {hasDiscount && (
+                  {struck && (
                     <p className="font-sans text-[10px] text-ink-faint line-through leading-none">
                       €{fullPrice.toFixed(2)}
                     </p>

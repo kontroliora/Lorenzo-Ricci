@@ -9,7 +9,12 @@
 //   - `fixedPrice`: while the group runs, every product of it sells at this EUR price with NO struck-through price (EU Omnibus:
 //     not a sale) - applied to the catalog in lib/products.ts. Turning the group off brings back the catalog's own prices.
 //
-// Adding a group (e.g. the new jewellery collection): add an entry to ONE_PLUS_ONE_GROUPS - nothing else has to change.
+//   - a group without `fixedPrice` (the jewellery: €109 / €115) keeps its catalog prices: two items cost the dearer one, and its
+//     wording (`line`) gets no price. The product-page "add 2" button shows the pair's price (opoPairPrice).
+//
+// Adding a group: add an entry to ONE_PLUS_ONE_GROUPS - nothing else has to change.
+
+import { NEW_COLLECTION_SLUGS } from "./new-collection";
 
 export type OpoLang = "bg" | "ro";
 
@@ -26,7 +31,8 @@ export interface OnePlusOneGroup {
   nudge: "odd" | "single";
   text: Record<OpoLang, {
     badge: string;
-    /** The line under the price; `price` is the group's price formatted for the market (e.g. "€65" / "341 lei"). */
+    /** The line under the price; `price` is the group's fixed price formatted for the market (e.g. "€65" / "341 lei"). A group
+     *  without a fixed price gets empty strings: its wording must not use them. */
     line: (price: { one: string; half: string }) => string;
     /** The cart's suggestion when one more item would be free. */
     addOne: string;
@@ -38,8 +44,10 @@ export interface OnePlusOneGroup {
     bar: (price: { one: string }) => { desktop: string; mobile: string };
     /** Product page: the heading over the second-item picker. */
     pickTitle: string;
-    /** Product page: the add button with a second item picked. */
+    /** Product page: the add button with a second item picked; `one` = what the two cost (the dearer one). */
     addPair: (price: { one: string }) => string;
+    /** The short name under a picker / cart-nudge thumbnail. */
+    shortName: (name: string) => string;
   }>;
 }
 
@@ -47,6 +55,13 @@ export interface OnePlusOneGroup {
 
 /** SWITCH: true = cardholders at €65 with 1+1. false = back to the old prices (€34 / €39 with €65 crossed out), no 1+1. */
 export const CARDHOLDER_ONE_PLUS_ONE = true;
+
+/** SWITCH: true = the 2026 jewellery collection's 1+1 (its own group: never mixed with the cardholders). */
+export const JEWELLERY_ONE_PLUS_ONE = true;
+
+// 'Lorenzo Ricci "Ambra"' -> "Ambra"; "Колие Verdis – Злато" -> "Verdis Злато" (the photo tells necklace from bracelet).
+const quotedModel = (name: string): string => name.match(/"([^"]+)"/)?.[1] ?? name;
+const jewelleryModel = (name: string): string => name.replace(/^\S+\s+/, "").replace(/\s+–\s+/, " ");
 
 export const CARDHOLDER_SLUGS = [
   "cardholder-ambra", "cardholder-bianco", "cardholder-valentina", "cardholder-zaffiro", "cardholder-onice", "cardholder-giada",
@@ -70,6 +85,7 @@ export const ONE_PLUS_ONE_GROUPS: OnePlusOneGroup[] = [
         bar: ({ one }) => ({ desktop: `1+1 на картодържатели – 2 за ${one}`, mobile: `1+1 картодържатели – 2 за ${one}` }),
         pickTitle: "Изберете втория – безплатно:",
         addPair: ({ one }) => `Добави 2 в количката – ${one}`,
+        shortName: quotedModel,
       },
       ro: {
         badge: "1+1 GRATUIT",
@@ -80,6 +96,39 @@ export const ONE_PLUS_ONE_GROUPS: OnePlusOneGroup[] = [
         bar: ({ one }) => ({ desktop: `1+1 la port-carduri – 2 pentru ${one}`, mobile: `1+1 port-carduri – ${one}` }), // short: the BG · RO switch sits beside it on phones
         pickTitle: "Alegeți-l pe al doilea – gratuit:",
         addPair: ({ one }) => `Adaugă 2 în coș – ${one}`, // same voice as the page's "ADAUGĂ ÎN COȘ"
+        shortName: quotedModel,
+      },
+    },
+  },
+  {
+    // The 2026 women's collection (lib/new-collection.ts): any 2 pieces, the cheaper one free. No fixed price (€109 / €115).
+    id: "jewellery",
+    slugs: NEW_COLLECTION_SLUGS,
+    enabled: JEWELLERY_ONE_PLUS_ONE,
+    endsAt: "2026-12-31T23:59:59+02:00", // 31.12.2026 23:59 Sofia (EET, UTC+2)
+    nudge: "single",
+    text: {
+      bg: {
+        badge: "1+1 БЕЗПЛАТНО",
+        line: () => "Второто бижу е подарък",
+        addOne: "Добавете още едно бижу – то е безплатно",
+        banner: () => "Второто бижу от новата колекция е подарък",
+        cta: "Към бижутата",
+        bar: () => ({ desktop: "1+1 на новите бижута – второто е подарък", mobile: "1+1 на новите бижута" }),
+        pickTitle: "Изберете второто бижу – безплатно:",
+        addPair: ({ one }) => `Добави 2 в количката – ${one}`,
+        shortName: jewelleryModel,
+      },
+      ro: {
+        badge: "1+1 GRATUIT",
+        line: () => "A doua bijuterie este cadou",
+        addOne: "Adăugați încă o bijuterie – este gratuită",
+        banner: () => "A doua bijuterie din noua colecție este cadou",
+        cta: "Vedeți bijuteriile",
+        bar: () => ({ desktop: "1+1 la noile bijuterii – a doua este cadou", mobile: "1+1 bijuterii noi" }),
+        pickTitle: "Alegeți a doua bijuterie – gratuit:",
+        addPair: ({ one }) => `Adaugă 2 în coș – ${one}`,
+        shortName: jewelleryModel,
       },
     },
   },
@@ -187,9 +236,16 @@ export const cardholderOpo = (now?: Date): OnePlusOneGroup | undefined => {
 /** A group's fixed price as the BG site writes it ("€65"). */
 export const opoPriceBg = (g: OnePlusOneGroup): string => eur(g.fixedPrice ?? 0);
 
-/** The line under the price for a product of a running group with a fixed price (BG site, EUR). */
+/** What a pair costs with the 1+1 (the cheaper one free = the dearer price), in the cart's own unit (EUR, or lei). */
+export const opoPairPrice = (a: number, b: number): number => Math.max(a, b);
+
+/** The pair price as the BG site writes it ("€115"). */
+export const opoPairPriceBg = (a: number, b: number): string => eur(opoPairPrice(a, b));
+
+/** The line under the price for a product of a running group (BG site, EUR). A group without a fixed price: its plain line. */
 export function opoPriceLineBg(slug: string): string | null {
   const g = opoGroupOf(slug);
-  if (!g || typeof g.fixedPrice !== "number") return null;
+  if (!g) return null;
+  if (typeof g.fixedPrice !== "number") return g.text.bg.line({ one: "", half: "" });
   return g.text.bg.line({ one: eur(g.fixedPrice), half: eur(g.fixedPrice / 2) });
 }

@@ -1,5 +1,5 @@
 import { AdminNav } from "@/components/admin/AdminNav";
-import { products } from "@/lib/products";
+import { allProducts } from "@/lib/products";
 import { getReservedMap } from "@/lib/orders";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
@@ -22,13 +22,14 @@ export default async function AdminInventoryPage() {
     getPriceOverrides(),
   ]);
   const dbStock = new Map((data ?? []).map((r) => [r.slug as string, Number(r.stock)]));
-  const catalog = applyOverrides(products, overrides);
+  // allProducts: hidden products (prepared ahead of launch) are listed too, so their stock can be entered before they go live.
+  const catalog = applyOverrides(allProducts, overrides);
 
   const rows: InventoryRow[] = catalog.map((p) => {
     const stock = dbStock.get(p.slug) ?? 0;
     return {
       slug:          p.slug,
-      name:          p.name,
+      name:          p.hidden ? `${p.name} (скрит - не е в магазина)` : p.name,
       sku:           p.sku,
       category:      p.category,
       coverSrc:      p.coverImage.src,

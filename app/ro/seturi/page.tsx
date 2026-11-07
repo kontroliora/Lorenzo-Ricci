@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BUNDLES, bundleHasSaleItem } from "@/lib/bundles";
+import { BUNDLES, bundleHasSaleItem, bundleOpoRunning } from "@/lib/bundles";
 import { getProductBySlug } from "@/lib/products";
 import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
 import { localizeProduct } from "@/lib/ro/catalog";
@@ -50,6 +50,8 @@ export default async function RoBundlesPage() {
     if (!label || found.some((p) => !p)) return [];
     // A set with a sale item earns no set discount (no stacking) - don't advertise it.
     if (bundleHasSaleItem(bundle, findProduct)) return [];
+    // 2026 collection sets are advertised only while the 1+1 runs (their saving).
+    if (bundle.onePlusOne && !bundleOpoRunning(bundle)) return [];
 
     const pieces: RoBundlePiece[] = found.map((p) => {
       const product = localizeProduct(p!);
@@ -75,7 +77,7 @@ export default async function RoBundlesPage() {
     const inStock: Record<string, boolean> = {};
     for (const slot of bundle.slots) for (const slug of slot) inStock[slug] = getProductBySlug(slug)?.inStock === true;
 
-    return [{ id: bundle.id, label, pieces, discountPct: bundle.discountPct, discountRon: totalDiscount, slots: bundle.slots, inStock }];
+    return [{ id: bundle.id, label, pieces, discountPct: bundle.discountPct, discountRon: totalDiscount, onePlusOne: bundle.onePlusOne === true, slots: bundle.slots, inStock }];
   });
 
   return (

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRoCart } from "@/lib/ro/store";
+import { opoGroupOf } from "@/lib/one-plus-one";
 import { fmtRON } from "@/lib/ro/config";
 import { bundleSoldOut } from "@/lib/bundles";
 import { useLeatherStock } from "@/lib/use-gifts";
@@ -27,13 +28,14 @@ export type RoBundleCardData = {
   label: string;
   pieces: RoBundlePiece[];
   discountPct: number;
-  discountRon: number;                 // set discount in whole lei (0 when the set has none)
+  discountRon: number;                 // set discount in whole lei (0 when the set has none), the 1+1 included
+  onePlusOne?: boolean;                // 2026 collection set: the saving is the 1+1 (cheaper piece free), not a %
   slots: string[][];                   // product slugs that can fill each slot (lib/bundles.ts)
   inStock: Record<string, boolean>;    // the catalogue's on/off switch (lib/products.ts) for every slug above
 };
 
 // Live stock of every piece (one shared call for the whole page); a set is sold out as soon as any of its pieces is.
-function BundleCard({ label, pieces, discountPct, discountRon, slots, inStock }: RoBundleCardData) {
+function BundleCard({ label, pieces, discountPct, discountRon, onePlusOne = false, slots, inStock }: RoBundleCardData) {
   const addItem = useRoCart((s) => s.addItem);
   const [added, setAdded] = useState(false);
   const stock = useLeatherStock(true);
@@ -72,6 +74,10 @@ function BundleCard({ label, pieces, discountPct, discountRon, slots, inStock }:
         {soldOut ? (
           <span className="font-sans text-[9px] font-semibold tracking-[0.14em] uppercase bg-ink-faint text-white px-2 py-0.5">
             Epuizat
+          </span>
+        ) : onePlusOne && discountRon > 0 ? (
+          <span className="font-sans text-[9px] font-semibold tracking-[0.14em] uppercase bg-[#B3121F] text-white px-2 py-0.5">
+            {opoGroupOf(slots[0]?.[0])?.text.ro.badge ?? "1+1"}
           </span>
         ) : discountPct > 0 ? (
           <span className="font-sans text-[9px] font-semibold tracking-[0.14em] uppercase bg-navy text-white px-2 py-0.5">

@@ -5,6 +5,7 @@
 // verbatim (they come from the CITES permits). Prices and sale amounts are not part of any text (the RO site shows lei).
 
 import type { Product } from "../types";
+import { NEW_COLLECTION_RO } from "../new-collection-products";
 
 export type RoProductText = Partial<Pick<Product, "shortDescription" | "description" | "tabDescription" | "descriptionSections" | "materialNote" | "crocodileSpecies" | "specs" | "features" | "badge" | "warranty" | "commercial_warranty_text">> & {
   /** Alt text of images[i], same order and length as the Bulgarian `images` array (SEO). */
@@ -932,4 +933,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
       "Lorenzo Ricci Capri - etichetă Genuine Crocodile Leather, Crocodylus siamensis",
     ],
   },
+  // The 2026 women's collection (Verdis, Noctis, Lumen, Linea, Solaris, Spira): texts live with the products in
+  // lib/new-collection-products.ts; the name goes through lib/ro/names-ro.ts.
+  ...Object.fromEntries(Object.entries(NEW_COLLECTION_RO).map(([slug, { name: _name, ...text }]) => [slug, text])), // eslint-disable-line @typescript-eslint/no-unused-vars
 };

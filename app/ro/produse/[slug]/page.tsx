@@ -78,7 +78,7 @@ const slim = (p: Product): Product => ({
 
 // The set (lib/bundles.ts) this product belongs to, with the products that can fill its other slot (localized, override-applied).
 // Same lookup as the Bulgarian BundleUpsell; stock and the "no discount while on sale" rule are judged in the component.
-function bundleFor(product: Product, overrides: PriceOverrides): { discountPct: number; partners: Product[] } | null {
+function bundleFor(product: Product, overrides: PriceOverrides): { discountPct: number; onePlusOne: boolean; partners: Product[] } | null {
   const bundle = BUNDLES.find((b) => b.slots.some((slot) => slot.includes(product.id)));
   if (!bundle) return null;
   const partnerSlot = bundle.slots.find((slot) => !slot.includes(product.id));
@@ -88,7 +88,7 @@ function bundleFor(product: Product, overrides: PriceOverrides): { discountPct: 
     .map((slug) => getProductBySlug(slug))
     .filter((p): p is Product => !!p && p.inStock)
     .map((p) => slim(roView(p, overrides).product));
-  return partners.length > 0 ? { discountPct: bundle.discountPct, partners } : null;
+  return partners.length > 0 ? { discountPct: bundle.discountPct, onePlusOne: bundle.onePlusOne === true, partners } : null;
 }
 
 // Cut at a word boundary, for meta descriptions.
@@ -246,7 +246,7 @@ export default async function RoProductPage({ params }: Props) {
               reviewAvg={ownReviews.avg}
               reviewsTranslated={ownReviews.allTranslated}
             />
-            {bundle && <RoBundleUpsell product={slim(product)} partners={bundle.partners} discountPct={bundle.discountPct} />}
+            {bundle && <RoBundleUpsell product={slim(product)} partners={bundle.partners} discountPct={bundle.discountPct} onePlusOne={bundle.onePlusOne} />}
           </div>
         </div>
 
@@ -256,7 +256,8 @@ export default async function RoProductPage({ params }: Props) {
         )}
 
         {/* Jewellery description - two product images + quality comparison */}
-        {isJewellery && <RoJewelleryDescription />}
+        {/* 18K PVD gold block: not on a silver piece of the 2026 collection */}
+        {isJewellery && product.metal !== "silver" && <RoJewelleryDescription />}
 
         {/* Leather description - material & craft */}
         {!isWatch && !isJewellery && !product.hideLeatherDescription && (

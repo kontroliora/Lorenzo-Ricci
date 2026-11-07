@@ -1,6 +1,7 @@
 import type { CartItem, Product } from "./types";
 import { isOnSale } from "./price";
-import { onePlusOne, opoLineId, isOpoLineId, opoExcludedFromPromo, type OpoLine } from "./one-plus-one";
+import { onePlusOne, opoLineId, isOpoLineId, opoExcludedFromPromo, opoGroupOf, type OpoLine } from "./one-plus-one";
+import { COLLECTION_SETS } from "./new-collection";
 
 export interface Bundle {
   id: string;
@@ -8,6 +9,8 @@ export interface Bundle {
   // Each slot is a list of product IDs — any one of them satisfies the slot
   slots: string[][];
   discountPct: number;
+  // A set of the 2026 collection: no set % of its own - its saving is the jewellery 1+1 group (lib/one-plus-one.ts).
+  onePlusOne?: boolean;
 }
 
 export const BUNDLES: Bundle[] = [
@@ -50,7 +53,16 @@ export const BUNDLES: Bundle[] = [
     slots: [["cardholder-zaffiro"], ["wallet-alabastro"]],
     discountPct: 0,
   },
+  // 2026 women's collection: "Комплект Verdis / Noctis / Lumen" (necklace + bracelet, same metal).
+  ...COLLECTION_SETS.map((s) => ({ id: s.id, label: s.label, slots: s.slots, discountPct: 0, onePlusOne: true })),
 ];
+
+/** A 1+1 set (the collection's): its saving is its pieces' 1+1 group, so it is advertised only while that group runs. */
+export const bundleOpoRunning = (bundle: Bundle): boolean => !!bundle.onePlusOne && !!opoGroupOf(bundle.slots[0]?.[0]);
+
+/** True while the set saves something: its own % (no sale item in it) or, for a collection set, its running 1+1 group. */
+export const bundleSaves = (bundle: Bundle, findProduct: (id: string) => Product | undefined): boolean =>
+  bundle.onePlusOne ? bundleOpoRunning(bundle) : bundle.discountPct > 0 && !bundleHasSaleItem(bundle, findProduct);
 
 export interface BundleResult {
   totalDiscount: number;
@@ -114,8 +126,7 @@ export function bundleHasSaleItem(bundle: Bundle, findProduct: (id: string) => P
  *  (sale items get no set discount). The menu links to the sets page only then. */
 export function bundleOfferLive(findProduct: (id: string) => Product | undefined): boolean {
   return BUNDLES.some((b) =>
-    b.discountPct > 0 &&
-    !bundleHasSaleItem(b, findProduct) &&
+    bundleSaves(b, findProduct) &&
     b.slots.every((slot) => slot.some((id) => findProduct(id)?.inStock === true)),
   );
 }

@@ -8,6 +8,8 @@ import { roBundleDiscount } from "@/lib/ro/pricing";
 import { usePriceOverrides } from "@/lib/use-price-overrides";
 import { useLeatherStock } from "@/lib/use-gifts";
 import { roCartLine } from "@/components/ro/product/cart-line";
+import { COLLECTION_SET_TEXT } from "@/lib/new-collection";
+import { opoGroupOf } from "@/lib/one-plus-one";
 
 // Romanian counterpart of components/product/BundleUpsell.tsx: on a product that belongs to a set, offers the set partner and
 // adds both pieces to the Romanian cart. Same rules as the Bulgarian component:
@@ -21,9 +23,10 @@ interface Props {
   product: Product;     // this product (localized, override-applied)
   partners: Product[];  // the products that can fill the other slot of its set
   discountPct: number;  // the set's discount in percent (0 = a pairing without a set discount)
+  onePlusOne?: boolean; // a set of the 2026 collection: its saving is the 1+1 (the partner is free), not a %
 }
 
-export function RoBundleUpsell({ product: rawProduct, partners: rawPartners, discountPct }: Props) {
+export function RoBundleUpsell({ product: rawProduct, partners: rawPartners, discountPct, onePlusOne = false }: Props) {
   const addItem = useRoCart((s) => s.addItem);
   const [addedPartnerSlug, setAddedPartnerSlug] = useState<string | null>(null);
   const applyOverride = usePriceOverrides();
@@ -52,7 +55,8 @@ export function RoBundleUpsell({ product: rawProduct, partners: rawPartners, dis
       { slug: product.slug, ron: ronOf(product), quantity: 1, onSale: ronOriginalOf(product) !== undefined },
       { slug: partner.slug, ron: ronOf(partner), quantity: 1, onSale: ronOriginalOf(partner) !== undefined },
     ]).totalDiscount;
-  const hasDiscount = discountPct > 0 && partners.some((p) => discountOf(p) > 0);
+  const opo = onePlusOne && !!opoGroupOf(product.slug);
+  const hasDiscount = (discountPct > 0 || opo) && partners.some((p) => discountOf(p) > 0);
 
   return (
     <div className="mt-6 border-t border-border pt-5">
@@ -63,7 +67,7 @@ export function RoBundleUpsell({ product: rawProduct, partners: rawPartners, dis
           Completați ansamblul
         </p>
         <span className="ml-auto font-sans text-[9px] font-semibold tracking-[0.14em] uppercase bg-navy text-white px-2 py-0.5">
-          {hasDiscount ? `-${discountPct}% SET` : "SET"}
+          {hasDiscount ? (opo ? opoGroupOf(product.slug)?.text.ro.badge ?? "1+1" : `-${discountPct}% SET`) : "SET"}
         </span>
       </div>
 
@@ -71,7 +75,7 @@ export function RoBundleUpsell({ product: rawProduct, partners: rawPartners, dis
       <div className="flex flex-col gap-4">
         {partners.map((partner) => {
           const discount = discountOf(partner);
-          const partnerHasDiscount = discountPct > 0 && discount > 0;
+          const partnerHasDiscount = (discountPct > 0 || opo) && discount > 0;
           const fullPrice = ronOf(product) + ronOf(partner);
           const setPrice = fullPrice - (partnerHasDiscount ? discount : 0);
           const isAdded = addedPartnerSlug === partner.slug;
@@ -115,7 +119,7 @@ export function RoBundleUpsell({ product: rawProduct, partners: rawPartners, dis
                   </p>
                   {partnerHasDiscount && (
                     <p className="font-sans text-[10px] text-ink-faint tracking-wide leading-snug mt-0.5">
-                      și economisiți {discountPct}% din prețul total
+                      {opo ? COLLECTION_SET_TEXT.ro.setFree(partner.subcategory === "necklace" ? "necklace" : "bracelet") : `și economisiți ${discountPct}% din prețul total`}
                     </p>
                   )}
                 </div>

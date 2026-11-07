@@ -1,6 +1,6 @@
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import type { Metadata } from "next";
-import { BUNDLES, bundleHasSaleItem } from "@/lib/bundles";
+import { BUNDLES, bundleHasSaleItem, bundleOpoRunning } from "@/lib/bundles";
 import { getProductBySlug } from "@/lib/products";
 import { getPriceOverrides, applyOverride } from "@/lib/price-overrides";
 import { BundlesClient } from "./BundlesClient";
@@ -29,7 +29,9 @@ export default async function BundlesPage() {
     const productB = findProduct(bundle.slots[1][0]);
     // A set with a sale item earns no set discount (no stacking) - don't advertise it.
     if (!productA || !productB || bundleHasSaleItem(bundle, findProduct)) return [];
-    return [{ id: bundle.id, label: bundle.label, productA, productB, discountPct: bundle.discountPct, slots: bundle.slots }];
+    // 2026 collection sets are advertised only while the 1+1 runs (their saving).
+    if (bundle.onePlusOne && !bundleOpoRunning(bundle)) return [];
+    return [{ id: bundle.id, label: bundle.label, productA, productB, discountPct: bundle.discountPct, onePlusOne: bundle.onePlusOne === true, slots: bundle.slots }];
   });
 
   return (

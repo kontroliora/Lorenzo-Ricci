@@ -5,6 +5,7 @@ import { useCartStore } from "@/lib/store";
 import { bundleSoldOut } from "@/lib/bundles";
 import { getProductBySlug } from "@/lib/products";
 import { useLeatherStock } from "@/lib/use-gifts";
+import { opoGroupOf } from "@/lib/one-plus-one";
 import type { Product } from "@/lib/types";
 
 interface BundleCardProps {
@@ -13,19 +14,20 @@ interface BundleCardProps {
   productA: Product;
   productB: Product;
   discountPct: number;
+  onePlusOne?: boolean; // 2026 collection set: the cheaper piece is free (1+1) instead of a %
   slots: string[][];
 }
 
 // Live stock of every piece (one shared call for the whole page); a set is sold out
 // as soon as any of its pieces is.
-function BundleCard({ label, productA, productB, discountPct, slots }: BundleCardProps) {
+function BundleCard({ label, productA, productB, discountPct, onePlusOne = false, slots }: BundleCardProps) {
   const { addItem } = useCartStore();
   const [added, setAdded] = useState(false);
   const stock = useLeatherStock(true);
   const soldOut = bundleSoldOut({ slots }, (slug) => stock?.[slug], (slug) => getProductBySlug(slug)?.inStock === true);
 
   const fullPrice  = productA.price + productB.price;
-  const discounted = +(fullPrice * (1 - discountPct / 100)).toFixed(2);
+  const discounted = onePlusOne ? Math.max(productA.price, productB.price) : +(fullPrice * (1 - discountPct / 100)).toFixed(2);
   const savings    = +(fullPrice - discounted).toFixed(2);
 
   const handleAdd = () => {
@@ -46,6 +48,10 @@ function BundleCard({ label, productA, productB, discountPct, slots }: BundleCar
         {soldOut ? (
           <span className="font-sans text-[9px] font-semibold tracking-[0.14em] uppercase bg-ink-faint text-white px-2 py-0.5">
             Изчерпан
+          </span>
+        ) : onePlusOne ? (
+          <span className="font-sans text-[9px] font-semibold tracking-[0.14em] uppercase bg-[#B3121F] text-white px-2 py-0.5">
+            {opoGroupOf(slots[0]?.[0])?.text.bg.badge ?? "1+1"}
           </span>
         ) : discountPct > 0 ? (
           <span className="font-sans text-[9px] font-semibold tracking-[0.14em] uppercase bg-navy text-white px-2 py-0.5">

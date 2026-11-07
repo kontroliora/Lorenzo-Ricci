@@ -1,5 +1,6 @@
 import type { Product } from "./types";
 import { withOnePlusOnePrice } from "./one-plus-one";
+import { NEW_COLLECTION_PRODUCTS } from "./new-collection-products";
 
 // Confirmed crocodile species (per CITES permit) - single source for both the
 // specs "Вид" row and the LeatherDescription.tsx CITES bullet everywhere they're
@@ -1597,8 +1598,14 @@ const catalog: Product[] = [
   },
 ];
 
-/** The shop's catalog: catalog prices, except products of a running 1+1 group with a fixed price (lib/one-plus-one.ts). */
-export const products: Product[] = catalog.map(withOnePlusOnePrice);
+/** Every product, including the hidden ones (prepared ahead of launch) - for the admin inventory only. */
+export const allProducts: Product[] = [...catalog, ...NEW_COLLECTION_PRODUCTS].map(withOnePlusOnePrice);
+
+/**
+ * The shop's catalog: hidden products are left out everywhere (listings, pages, sitemap, sets, order checks); catalog prices,
+ * except products of a running 1+1 group with a fixed price (lib/one-plus-one.ts).
+ */
+export const products: Product[] = allProducts.filter((p) => !p.hidden);
 
 export function getProductBySlug(slug: string): Product | undefined {
   return products.find((p) => p.slug === slug);
