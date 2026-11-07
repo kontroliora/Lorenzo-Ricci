@@ -166,7 +166,8 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
               fill
               quality={80}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className={`object-contain object-center p-4 transition-all duration-700 ease-out ${
+              // Women's collection: the hover photo (on model) fills the card edge to edge - no padding, same box as photo no. 1.
+              className={`${isCollectionSlug(product.slug) ? "object-cover" : "object-contain p-4"} object-center transition-all duration-700 ease-out ${
                 hovered ? "opacity-100 scale-100" : "opacity-0 scale-95"
               }`}
             />

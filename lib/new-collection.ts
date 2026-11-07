@@ -76,7 +76,7 @@ export const COLLECTION_PHOTOS: Readonly<Record<string, string>> = {
   "bracelet-verdis-gold": "pmbdc",
   "bracelet-verdis-silver": "pmbc",
   "bracelet-lumen-gold": "pmbdc",
-  "bracelet-lumen-silver": "mbc",
+  "bracelet-lumen-silver": "pmbc",
   "bracelet-noctis-gold": "pmbc",
   "bracelet-noctis-silver": "pmbc",
   "bracelet-linea-gold": "pmbdc",
@@ -117,7 +117,7 @@ export const collectionPhoto = (file: string): string =>
 /** The two on-model photos of the home section's large image: a necklace on the neck, a bracelet on the wrist (Lumen Сребро). */
 export const HOME_HERO_PHOTOS = {
   necklace: collectionPhoto("lumen-necklace-silver-2.webp"),
-  bracelet: collectionPhoto("lumen-bracelet-silver-1.webp"),
+  bracelet: collectionPhoto("lumen-bracelet-silver-2.webp"),
 } as const;
 
 export const NEW_COLLECTION_SLUGS: ReadonlySet<string> = new Set(COLLECTION_PIECES.map((p) => p.slug));
