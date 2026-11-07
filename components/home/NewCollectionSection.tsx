@@ -2,9 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { ProductCard } from "@/components/product/ProductCard";
-import { HOME_HERO_PHOTOS } from "@/lib/new-collection";
+import cover from "@/public/covers/damska-kolekcia-cover.webp";
 
-// Home page (BG): the 2026 women's collection, right above "Мъжка колекция". Title, the 1+1 line, a large two-photo image
+// Home page (BG): the 2026 women's collection, right above "Мъжка колекция". Title, the 1+1 line, one cover image (public/covers/damska-kolekcia-cover.webp)
 // (necklace on the neck + bracelet on the wrist), the button to its section on /jewellery, then up to 8 pieces (in the shop and in
 // stock - app/page.tsx picks them with homeCollectionPicks). Renders nothing when no piece is on sale.
 export function NewCollectionSection({ pieces }: { pieces: Product[] }) {
@@ -22,26 +22,21 @@ export function NewCollectionSection({ pieces }: { pieces: Product[] }) {
           </p>
         </div>
 
-        <Link href="/jewellery#damska-kolekcia" className="group block" aria-label="Разгледай дамската колекция">
-          <div className="grid grid-cols-2 gap-2 sm:gap-4">
-            {([
-              [HOME_HERO_PHOTOS.necklace, "Колие Lumen – Сребро на модел, дамска колекция Lorenzo Ricci"],
-              [HOME_HERO_PHOTOS.bracelet, "Гривна Lumen – Сребро на модел, дамска колекция Lorenzo Ricci"],
-            ] as const).map(([src, alt]) => (
-              <div key={src} className="relative aspect-[4/3] sm:aspect-[3/2] overflow-hidden bg-ivory-warm">
-                <Image
-                  src={src}
-                  alt={alt}
-                  fill
-                  quality={85}
-                  sizes="(max-width: 640px) 50vw, 640px"
-                  className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-                />
-              </div>
-            ))}
-          </div>
+        {/* One cover image, full width at its own 4:3 ratio (never cropped: the boxes stay whole). Static import = content-hashed URL. */}
+        <Link href="/jewellery#damska-kolekcia" className="group block overflow-hidden bg-ivory-warm" aria-label="Разгледай дамската колекция">
+          <Image
+            src={cover}
+            alt="Дамска колекция Lorenzo Ricci – колиета и гривни в кутии LORENZO RICCI"
+            quality={85}
+            sizes="(max-width: 1280px) 100vw, 1216px"
+            className="w-full h-auto transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+          />
         </Link>
-        <div className="mt-6 sm:mt-8" />
+        <div className="mt-6 sm:mt-8 mb-10 sm:mb-12 flex justify-center">
+          <Link href="/jewellery#damska-kolekcia" className="btn-primary w-full sm:w-auto text-center" data-testid="home-collection-cover-cta">
+            Разгледай колекцията
+          </Link>
+        </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-8">
           {pieces.map((p) => (
