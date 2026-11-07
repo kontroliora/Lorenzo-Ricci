@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { HOME_HERO_PHOTOS } from "@/lib/new-collection";
 
+// The slide photos fill a full-screen box (object-cover): cropped and drawn larger than the box, so a resized copy looked a touch
+// softer than the original (checked side by side, 08.11.2026). They always get the original; the slide mounts after load anyway.
+const COVER_SLIDE_SIZES = "2048px";
+
 // The home hero's second slide (BG + RO): the new collection. The watch slide stays first and is the page's LCP, so this one is
 // mounted only after the page has loaded (its photos never compete with the cover) and the two then alternate. Phones: the
 // necklace on the neck, full screen; larger screens: necklace + bracelet on model side by side.
@@ -77,10 +81,10 @@ export function HeroCollectionSlide({ active, mounted, tag, title, badge, line, 
     >
       <div className="absolute inset-0 grid grid-cols-1 sm:grid-cols-2">
         <div className="relative">
-          <Image src={HOME_HERO_PHOTOS.necklace} alt={alts.necklace} fill sizes="(max-width: 640px) 100vw, 50vw" quality={80} className="object-cover object-center" />
+          <Image src={HOME_HERO_PHOTOS.necklace} alt={alts.necklace} fill sizes={COVER_SLIDE_SIZES} quality={80} className="object-cover object-center" />
         </div>
         <div className="relative hidden sm:block">
-          <Image src={HOME_HERO_PHOTOS.bracelet} alt={alts.bracelet} fill sizes="50vw" quality={80} className="object-cover object-center" />
+          <Image src={HOME_HERO_PHOTOS.bracelet} alt={alts.bracelet} fill sizes={COVER_SLIDE_SIZES} quality={80} className="object-cover object-center" />
         </div>
       </div>
       <div className="absolute inset-0 bg-black/35" />

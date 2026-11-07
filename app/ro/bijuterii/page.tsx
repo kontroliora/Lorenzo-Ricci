@@ -6,7 +6,7 @@ import { getBracelets, getNecklaces } from "@/lib/products";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 import { localizeProduct } from "@/lib/ro/catalog";
 import { roToBgPath } from "@/lib/ro/route-map";
-import { RoJewelleryPageClient } from "@/components/ro/listing/RoJewelleryPageClient";
+import { RoJewelleryPageClient, RoJewelleryPageView } from "@/components/ro/listing/RoJewelleryPageClient";
 
 const PATH = "/ro/bijuterii";
 
@@ -46,7 +46,7 @@ export default async function RoJewelleryPage() {
   const necklaces = soldOutLast(applyOverrides(getNecklaces(), overrides).map(localizeProduct), (s) => soldOut.has(s));
 
   return (
-    <Suspense>
+    <Suspense fallback={<RoJewelleryPageView bracelets={bracelets} necklaces={necklaces} category={null} />}>
       <RoJewelleryPageClient bracelets={bracelets} necklaces={necklaces} />
     </Suspense>
   );

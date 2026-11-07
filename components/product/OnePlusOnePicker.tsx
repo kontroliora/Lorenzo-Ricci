@@ -1,6 +1,5 @@
 "use client";
 import Image from "next/image";
-import { smallOrOriginal } from "@/lib/image-variant";
 
 // Product page of a 1+1 group (lib/one-plus-one.ts): "Изберете втория – безплатно:" and a row of every model of the group (the
 // page's own model included: two of the same is allowed). A model that can't be had (sold out / switched off / not enough left)
@@ -49,7 +48,7 @@ export function OnePlusOnePicker({
                 }`}
               >
                 <Image
-                  src={smallOrOriginal(o.image.src)}
+                  src={o.image.src}
                   alt={o.image.alt}
                   fill
                   quality={60}

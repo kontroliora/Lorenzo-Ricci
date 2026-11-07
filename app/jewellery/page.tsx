@@ -4,7 +4,7 @@ import { getBracelets, getNecklaces } from "@/lib/products";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { soldOutLast } from "@/lib/sold-out-order";
-import { JewelleryPageClient } from "./JewelleryPageClient";
+import { JewelleryPageClient, JewelleryPageView } from "./JewelleryPageClient";
 
 export const metadata: Metadata = {
   title: "Бижута",
@@ -32,7 +32,7 @@ export default async function JewelleryPage() {
   const necklaces = soldOutLast(applyOverrides(getNecklaces(), overrides), (s) => soldOut.has(s));
 
   return (
-    <Suspense>
+    <Suspense fallback={<JewelleryPageView bracelets={bracelets} necklaces={necklaces} category={null} />}>
       <JewelleryPageClient bracelets={bracelets} necklaces={necklaces} />
     </Suspense>
   );

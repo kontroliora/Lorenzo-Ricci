@@ -53,7 +53,6 @@ function FeatureBlock({ imageSrc, imageAlt, tag, heading, body, reverse = false 
           quality={85}
           sizes="(min-width: 768px) 50vw, 100vw"
           className="w-full h-auto block"
-          unoptimized
         />
       </div>
 

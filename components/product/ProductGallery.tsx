@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useGallerySwipe } from "@/lib/use-gallery-swipe";
 import { PHOTO_PREVIEW_EVENT } from "@/lib/warm-product";
 import type { ProductImage } from "@/lib/types";
-import { smallVariant, smallOrOriginal } from "@/lib/image-variant";
+import { GALLERY_SIZES } from "@/lib/image-loader";
 
 interface ProductGalleryProps {
   images: ProductImage[];
@@ -90,7 +90,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
             aria-label={img.alt}
           >
             {show(i) && <Image
-              src={imageError[i] ? "/covers/desktop%20cover.webp" : smallOrOriginal(img.src)}
+              src={imageError[i] ? "/covers/desktop%20cover.webp" : img.src}
               alt={img.alt}
               fill
               quality={60}
@@ -111,50 +111,21 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
         {/* All gallery images pre-rendered and stacked.
             The browser fetches every image on page load; switching is a CSS opacity
             toggle with zero network latency. */}
-        {/* First photo: preload the copy each screen will use (800 px on phones, the original above 640 px) */}
-        {images[0] && smallVariant(images[0].src) && !imageError[0] && (
-          <>
-            <link rel="preload" as="image" href={smallVariant(images[0].src)} media="(max-width: 640px)" fetchPriority="high" />
-            <link rel="preload" as="image" href={images[0].src} media="(min-width: 641px)" fetchPriority="high" />
-          </>
-        )}
+        {/* The first photo is the page's LCP: preloaded (with its srcset) and fetched at high priority. Each screen gets the
+            resized copy that fits it (lib/image-loader.ts); the rest load lazily behind it. */}
         {images.map((img, i) => {
           if (!show(i)) return null;
-          const small = smallVariant(img.src);
-          if (small && !imageError[i]) {
-            return (
-              <picture key={i}>
-                <source media="(max-width: 640px)" srcSet={encodeURI(small)} /> {/* encoded: the paths contain spaces, which split a srcset */}
-                {/* eslint-disable-next-line @next/next/no-img-element -- next/image cannot do srcset while images.unoptimized is on */}
-                <img
-                  src={img.src}
-                  alt={img.alt}
-                  fetchPriority={i === 0 ? "high" : undefined}
-                  loading={i === 0 || near(i) ? "eager" : "lazy"}
-                  decoding="async"
-                  className={`absolute inset-0 h-full w-full object-contain object-center transition-opacity duration-150 ${
-                    i === activeIdx ? "opacity-100" : "opacity-0"
-                  }`}
-                  aria-hidden={i !== activeIdx}
-                  onError={() => handleError(i)}
-                />
-              </picture>
-            );
-          }
           return (
           <Image
             key={i}
             src={imageError[i] ? "/covers/desktop%20cover.webp" : img.src}
             alt={img.alt}
             fill
-            // Only the visible first photo is preloaded and fetched at high priority
-            // (it is the page's LCP); preloading three of them made them share
-            // bandwidth on 4G. The rest load normally behind it.
             priority={i === 0}
             fetchPriority={i === 0 ? "high" : undefined}
             loading={i !== 0 && near(i) ? "eager" : undefined}
             quality={80}
-            sizes="(max-width: 640px) 100vw, 60vw"
+            sizes={GALLERY_SIZES}
             className={`object-contain object-center transition-opacity duration-150 ${
               i === activeIdx ? "opacity-100" : "opacity-0"
             }`}

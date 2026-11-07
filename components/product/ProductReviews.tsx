@@ -6,7 +6,6 @@ import type { Review } from "@/lib/types";
 import { reviewSummary } from "@/lib/reviews";
 import { useReveal } from "@/lib/useReveal";
 import { useAfterLoad } from "@/lib/use-after-load";
-import { smallOrOriginal } from "@/lib/image-variant";
 
 export interface ReviewProductInfo {
   shortName: string;
@@ -269,7 +268,7 @@ export function ProductReviews({ reviews, productSlug, pool }: ProductReviewsPro
                     >
                       <div className="relative w-4 h-4 rounded-sm overflow-hidden flex-shrink-0 bg-ivory-warm">
                         <Image
-                          src={smallOrOriginal(info.coverSrc)}
+                          src={info.coverSrc}
                           alt={info.shortName}
                           fill
                           sizes="16px"

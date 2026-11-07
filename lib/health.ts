@@ -6,7 +6,8 @@ import { getStripe } from "@/lib/stripe";
 import { products } from "@/lib/products";
 import { computeAdPerformance, fetchAdMeta, fetchOrders, RULE_DAYS } from "@/lib/ad-performance";
 import { periodRange, sofiaHour, sofiaDay } from "@/lib/sofia-time";
-import { smallVariant } from "@/lib/image-variant";
+import { imageUrl } from "@/lib/image-loader";
+import IMAGE_WIDTHS from "@/lib/image-widths.json";
 
 const SITE = "https://www.lorenzo-ricci.com";
 export const ALERT_EVERY_MS = 60 * 60_000;      // one Telegram message per problem per hour at most
@@ -193,7 +194,7 @@ export async function checkImages(sb: SupabaseClient): Promise<Out> {
     for (const src of [q.coverImage?.src, q.hoverImage?.src, ...(q.images ?? []).map((i) => i.src)]) {
       if (!src || !src.startsWith("/")) continue;
       paths.add(src);
-      const v = smallVariant(src); if (v) paths.add(v);
+      paths.add(decodeURI(imageUrl(src, IMAGE_WIDTHS.widths[1]).split("?")[0])); // one of its resized copies (lib/image-loader.ts): a photo whose copies were never made shows up
     }
   }
   const list = [...paths];

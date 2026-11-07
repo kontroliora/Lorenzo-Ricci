@@ -1,17 +1,24 @@
 "use client";
 // Makes switching to a sibling product (colour / type / stone swatches) paint at once (owner, 08.11.2026): the target's main
-// photo is downloaded AND decoded ahead, at the exact URL the gallery will use on this screen (the 800 px copy on phones when
-// one exists, else the original - images.unoptimized is on, so there is no /_next/image URL to match). The route itself is
+// photo is downloaded AND decoded ahead, at the exact URL the gallery will use on this screen (the resized copy of
+// lib/image-loader.ts that this screen's srcset picks - the same width as the photo the gallery shows now). The route itself is
 // prefetched by <Link prefetch>. Deduped per slug for the page's lifetime; the decoded images are kept so they stay in memory.
 import { getProductBySlug } from "@/lib/products";
-import { smallVariant } from "@/lib/image-variant";
+import { GALLERY_SIZES, imageUrl } from "@/lib/image-loader";
+import IMAGE_WIDTHS from "@/lib/image-widths.json";
 
 const warmed = new Map<string, HTMLImageElement>();
 
-/** The URL the product gallery's main photo loads on this screen (components/product/ProductGallery.tsx). */
+/** The URL the product gallery's main photo loads on this screen (components/product/ProductGallery.tsx): the copy width the
+ *  gallery's current photo uses, or - before it has loaded - the width its srcset picks for this screen (GALLERY_SIZES). */
 export function mainPhotoUrl(src: string): string {
-  const small = smallVariant(src);
-  return small && window.matchMedia("(max-width: 640px)").matches ? encodeURI(small) : src;
+  const shown = document.querySelector<HTMLImageElement>(`img[sizes="${GALLERY_SIZES}"]`)?.currentSrc;
+  const m = shown ? /-w(\d+)\.webp(?:\?|$)/.exec(shown) : null;
+  if (m) return imageUrl(src, Number(m[1]));
+  if (shown) return imageUrl(src, 99999); // the gallery shows an original
+  const slot = window.matchMedia("(max-width: 1023px)").matches ? window.innerWidth : 520;
+  const need = slot * (window.devicePixelRatio || 1);
+  return imageUrl(src, IMAGE_WIDTHS.widths.find((w) => w >= need) ?? 99999);
 }
 
 export function warmProductPhoto(slug: string, priority: "low" | "high" = "low"): void {

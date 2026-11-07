@@ -142,7 +142,6 @@ export function SalesNotification() {
             quality={70}
             sizes="48px"
             className="object-contain object-center p-1"
-            unoptimized
           />
           {/* Live pulse dot - bottom-right corner of image */}
           <div className="absolute bottom-0.5 right-0.5">

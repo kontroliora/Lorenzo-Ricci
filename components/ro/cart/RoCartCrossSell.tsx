@@ -7,7 +7,6 @@ import { localizeProduct, RO_SLUGS } from "@/lib/ro/catalog";
 import { fmtRON, ronOf } from "@/lib/ro/config";
 import { useLeatherStock } from "@/lib/use-gifts";
 import { opoCrossSell, opoSuggestions } from "@/lib/one-plus-one";
-import { smallOrOriginal } from "@/lib/image-variant";
 import { roCartLine } from "@/components/ro/product/cart-line";
 import type { Product } from "@/lib/types";
 
@@ -41,7 +40,7 @@ export function RoCartCrossSell() {
           return (
             <div key={p.slug} className="flex items-center gap-3">
               <div className="relative w-12 h-14 flex-shrink-0 bg-white/5 overflow-hidden">
-                <Image src={smallOrOriginal(p.coverImage.src)} alt={p.coverImage.alt} fill quality={60} sizes="48px" className="object-cover object-center" />
+                <Image src={p.coverImage.src} alt={p.coverImage.alt} fill quality={60} sizes="48px" className="object-cover object-center" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-sans text-[11px] font-medium text-white leading-snug truncate">{p.name}</p>

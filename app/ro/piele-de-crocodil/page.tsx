@@ -7,6 +7,7 @@ import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 import { localizeProduct } from "@/lib/ro/catalog";
 import { roEligible, RO_CATEGORY_LABEL } from "@/lib/ro/config";
 import { roToBgPath } from "@/lib/ro/route-map";
+import { LISTING_CARD_SIZES } from "@/lib/image-loader";
 
 const PATH = "/ro/piele-de-crocodil";
 
@@ -96,7 +97,7 @@ export default async function RoLeatherPage() {
             </div>
             <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${gap}`}>
               {items.map((p) => (
-                <RoProductCard key={p.id} product={p} />
+                <RoProductCard key={p.id} product={p} sizes={LISTING_CARD_SIZES} />
               ))}
             </div>
           </div>

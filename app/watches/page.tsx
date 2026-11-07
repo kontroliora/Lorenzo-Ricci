@@ -6,6 +6,7 @@ import { soldOutLast } from "@/lib/sold-out-order";
 import { ProductCard } from "@/components/product/ProductCard";
 import { displayPrice } from "@/lib/price";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
+import { LISTING_CARD_SIZES } from "@/lib/image-loader";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
 // lib/price-overrides.ts) — page stays statically generated; the admin discount
@@ -55,7 +56,7 @@ export default async function WatchesPage() {
       <div className="max-w-7xl mx-auto px-5 sm:px-8 mt-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
           {watches.map((watch, i) => (
-            <ProductCard key={watch.id} product={watch} priority={i < 2} />
+            <ProductCard key={watch.id} product={watch} priority={i < 2} sizes={LISTING_CARD_SIZES} />
           ))}
         </div>
 
@@ -67,7 +68,7 @@ export default async function WatchesPage() {
             { src: "/beautiful/eclipse-box.webp", label: "Golden Eclipse", alt: "Lorenzo Ricci Golden Eclipse позлатен хронограф с луксозна подаръчна кутия - 18K PVD" },
           ].map(({ src, label, alt }) => (
             <div key={label} className="relative overflow-hidden group">
-              <Image src={src} alt={alt} fill quality={85} sizes="33vw"
+              <Image src={src} alt={alt} fill quality={85} sizes="(max-width: 640px) 75vw, 33vw"
                 className="object-cover object-center transition-transform duration-700 group-hover:scale-105" />
               <div className="absolute inset-0 bg-black/25 group-hover:bg-black/10 transition-colors duration-500" />
               <div className="absolute bottom-4 left-4">

@@ -15,7 +15,7 @@ export function RoEditorialJewellery() {
             alt="Lorenzo Ricci - Povestea noastră"
             fill
             quality={90}
-            sizes="(max-width: 1024px) 100vw, 50vw"
+            sizes="(max-width: 1024px) 200vw, 80vw" // object-cover in a tall box: drawn ~1.6-1.9x wider than the box
             className="object-cover object-center transition-transform duration-[1200ms] group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -55,7 +55,7 @@ export function RoEditorialJewellery() {
                 alt="Lorenzo Ricci - măiestrie"
                 fill
                 quality={85}
-                sizes="25vw"
+                sizes="(max-width: 1024px) 160vw, 25vw"
                 className="object-cover object-center transition-transform duration-700 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-black/30 group-hover:bg-black/15 transition-colors duration-500" />
@@ -69,7 +69,7 @@ export function RoEditorialJewellery() {
                 alt="Lorenzo Ricci - detaliu și precizie"
                 fill
                 quality={85}
-                sizes="25vw"
+                sizes="(max-width: 1024px) 160vw, 25vw"
                 className="object-cover object-center transition-transform duration-700 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-black/20 group-hover:bg-black/5 transition-colors duration-500" />

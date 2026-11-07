@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "check:mail": "node scripts/check-mail-policy.mjs"
+    "check:mail": "node scripts/check-mail-policy.mjs",
+    "prebuild": "node scripts/make-image-variants.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

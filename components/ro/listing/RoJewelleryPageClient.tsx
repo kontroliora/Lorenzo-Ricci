@@ -16,9 +16,16 @@ interface Props {
 
 const BASE = "/ro/bijuterii";
 
-export function RoJewelleryPageClient({ bracelets, necklaces }: Props) {
-  const params = useSearchParams();
-  const category = params.get("category"); // "bracelets" | "necklaces" | null
+/** Reads ?category= (tabs). Needs a <Suspense> around it; its fallback is RoJewelleryPageView with category null - the full page, drawn on the
+ *  server - so the page is in the HTML and nothing jumps when this takes over in the browser (it used to be an empty
+ *  fallback: the footer moved down by a whole screen, CLS 0.9-1.0). */
+export function RoJewelleryPageClient(props: Props) {
+  const category = useSearchParams().get("category");
+  return <RoJewelleryPageView {...props} category={category} />;
+}
+
+export function RoJewelleryPageView({ bracelets, necklaces, category }: Props & { category: string | null }) {
+  // category: "bracelets" | "necklaces" | null
 
   const showBracelets = !category || category === "bracelets";
   const showNecklaces = !category || category === "necklaces";

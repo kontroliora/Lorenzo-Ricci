@@ -4,6 +4,7 @@ import { soldOutLast } from "@/lib/sold-out-order";
 import { products } from "@/lib/products";
 import { ProductCard } from "@/components/product/ProductCard";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
+import { LISTING_CARD_SIZES } from "@/lib/image-loader";
 
 export const metadata: Metadata = {
   title: "Кожени изделия",
@@ -65,7 +66,7 @@ export default async function LeatherGoodsPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
             {wallets.map((w) => (
-              <ProductCard key={w.id} product={w} />
+              <ProductCard key={w.id} product={w} sizes={LISTING_CARD_SIZES} />
             ))}
           </div>
         </div>
@@ -81,7 +82,7 @@ export default async function LeatherGoodsPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {cardholders.map((c) => (
-              <ProductCard key={c.id} product={c} />
+              <ProductCard key={c.id} product={c} sizes={LISTING_CARD_SIZES} />
             ))}
           </div>
         </div>
@@ -98,7 +99,7 @@ export default async function LeatherGoodsPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
               {bags.map((b) => (
-                <ProductCard key={b.id} product={b} />
+                <ProductCard key={b.id} product={b} sizes={LISTING_CARD_SIZES} />
               ))}
             </div>
           </div>

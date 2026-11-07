@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
-import { smallOrOriginal } from "@/lib/image-variant";
 import { COLLECTION_GROUP_ORDER, type CollectionGroup } from "@/lib/new-collection";
 import { CollectionQuickView } from "@/components/product/CollectionQuickView";
 
@@ -92,7 +91,7 @@ export function CollectionFreePicker({ items, currentName, matchSlug, selected, 
                     <span className={`relative block w-full aspect-square sm:w-[90px] sm:h-[90px] sm:aspect-auto overflow-hidden bg-white border-2 transition-all duration-150 ${
                       on ? "border-navy shadow-[0_0_0_3px_rgba(15,40,80,0.15)]" : o.available ? "border-border group-hover:border-navy/40" : "border-border"
                     }`}>
-                      <Image src={smallOrOriginal(o.image.src)} alt={o.image.alt} fill quality={60} sizes="(max-width: 639px) 80px, 90px" className={`object-contain p-1 ${o.available ? "" : "grayscale opacity-40"}`} />
+                      <Image src={o.image.src} alt={o.image.alt} fill quality={60} sizes="(max-width: 639px) 80px, 90px" className={`object-contain p-1 ${o.available ? "" : "grayscale opacity-40"}`} />
                       {on && <Check />}
                       {!o.available && (
                         <svg aria-hidden viewBox="0 0 90 90" className="absolute inset-0 w-full h-full pointer-events-none">
@@ -117,7 +116,7 @@ export function CollectionFreePicker({ items, currentName, matchSlug, selected, 
       {picked && (
         <div data-testid="opo-picked-line" className="mt-4 flex items-center gap-3 px-3 py-2 border border-navy/30 bg-navy/[0.03]">
           <span className="relative flex-shrink-0 w-10 h-10 bg-white">
-            <Image src={smallOrOriginal(picked.image.src)} alt="" fill sizes="40px" quality={60} className="object-contain" />
+            <Image src={picked.image.src} alt="" fill sizes="40px" quality={60} className="object-contain" />
           </span>
           <p className="flex-1 min-w-0 font-sans text-xs text-charcoal leading-snug">
             <span className="text-ink-muted">{text.second} </span>

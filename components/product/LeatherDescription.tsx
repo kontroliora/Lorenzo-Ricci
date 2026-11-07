@@ -82,7 +82,6 @@ export function LeatherDescription({ videoSrc, crocodileSpecies, isBag, image }:
                   quality={90}
                   sizes="(min-width: 768px) 448px, 100vw"
                   className="object-cover object-center"
-                  unoptimized
                 />
               )}
             </div>

@@ -121,7 +121,7 @@ export default function StoryPage() {
               alt="Колекция луксозни часовници Lorenzo Ricci - Chrono Black, Golden Eclipse, Polar Frost, сапфирен кристал"
               fill
               quality={85}
-              sizes="(max-width: 1024px) 100vw, 50vw"
+              sizes="(max-width: 1024px) 200vw, 90vw"
               className="object-cover object-right"
             />
           </div>

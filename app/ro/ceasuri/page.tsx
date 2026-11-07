@@ -8,6 +8,7 @@ import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 import { localizeProduct } from "@/lib/ro/catalog";
 import { roEligible, ronOf, ronOriginalOf, fmtRON } from "@/lib/ro/config";
 import { roToBgPath } from "@/lib/ro/route-map";
+import { LISTING_CARD_SIZES } from "@/lib/image-loader";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via lib/price-overrides.ts) - the page stays
 // statically generated; the admin discount route revalidates it. All six watches are listed (same set as RO_SLUGS), with
@@ -72,7 +73,7 @@ export default async function RoWatchesPage() {
       <div className="max-w-7xl mx-auto px-5 sm:px-8 mt-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
           {watches.map((watch, i) => (
-            <RoProductCard key={watch.id} product={watch} priority={i < 2} />
+            <RoProductCard key={watch.id} product={watch} priority={i < 2} sizes={LISTING_CARD_SIZES} />
           ))}
         </div>
 
@@ -84,7 +85,7 @@ export default async function RoWatchesPage() {
             { src: "/beautiful/eclipse-box.webp", label: "Golden Eclipse", alt: "Lorenzo Ricci Golden Eclipse - cronograf placat cu aur, cu cutie cadou de lux, 18K PVD" },
           ].map(({ src, label, alt }) => (
             <div key={label} className="relative overflow-hidden group">
-              <Image src={src} alt={alt} fill quality={85} sizes="33vw"
+              <Image src={src} alt={alt} fill quality={85} sizes="(max-width: 640px) 75vw, 33vw"
                 className="object-cover object-center transition-transform duration-700 group-hover:scale-105" />
               <div className="absolute inset-0 bg-black/25 group-hover:bg-black/10 transition-colors duration-500" />
               <div className="absolute bottom-4 left-4">

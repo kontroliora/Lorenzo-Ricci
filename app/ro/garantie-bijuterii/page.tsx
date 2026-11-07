@@ -266,7 +266,6 @@ export default function GarantieBijuteriiPage() {
             quality={85}
             sizes="(min-width: 768px) 768px, 100vw"
             className="object-cover object-center"
-            unoptimized
           />
           <div className="absolute inset-0 bg-charcoal-deep/40" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">

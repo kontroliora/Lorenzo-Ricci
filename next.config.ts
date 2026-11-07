@@ -3,13 +3,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    // Stopgap while Vercel's image-optimisation quota is exhausted (every /_next/image call
-    // answers 402 OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED and product photos stay blank):
-    // serve the files in /public as they are. Remove once the plan/quota is fixed.
-    unoptimized: true,
+    // No Vercel image optimiser (its quota ran out on 05.10.2026: /_next/image answered 402 and photos stayed blank). Instead
+    // every photo has pre-made resized copies (scripts/make-image-variants.mjs, run before each build) and this loader points
+    // each srcset entry at the right one. The widths below are exactly the copy widths of lib/image-widths.json; 2048 = original.
+    loader: "custom",
+    loaderFile: "./lib/image-loader.ts",
     formats: ["image/webp", "image/avif"],
-    deviceSizes: [390, 768, 1024, 1280, 1920],
-    imageSizes: [64, 128, 256, 384, 512],
+    deviceSizes: [400, 600, 800, 1200, 2048],
+    imageSizes: [192],
     qualities: [60, 70, 75, 80, 85, 90],
     minimumCacheTTL: 86400,
     dangerouslyAllowSVG: false,

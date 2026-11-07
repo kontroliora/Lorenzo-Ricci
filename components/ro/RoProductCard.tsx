@@ -1,8 +1,9 @@
 "use client";
 import Image from "next/image";
-import { smallOrOriginal } from "@/lib/image-variant";
+import { GRID_CARD_SIZES } from "@/lib/image-loader";
 import Link from "next/link";
 import { useState } from "react";
+import { useCanHover } from "@/lib/use-can-hover";
 import type { Product } from "@/lib/types";
 import { useRoCart } from "@/lib/ro/store";
 import { fmtRON, ronOf, ronOriginalOf, roNeedsPrepayment, roShipsFree } from "@/lib/ro/config";
@@ -19,6 +20,8 @@ import { hasCyrillic, roDisplayName, roSafeText } from "@/components/ro/listing/
 // Price in lei: the current price, and while the product is on sale the old price crossed out next to it plus the sale
 // badge, exactly like the Bulgarian card. Link under /ro/produse/<slug>, own cart (useRoCart).
 interface RoProductCardProps {
+  /** `sizes` of the card photos: the default fits 2-4 cards per row; one-per-row listings pass LISTING_CARD_SIZES. */
+  sizes?: string;
   product: Product;
   priority?: boolean;
   learnMore?: boolean;
@@ -31,8 +34,9 @@ interface RoProductCardProps {
 export const roBadge = (badge?: string): string | undefined =>
   badge && !hasCyrillic(badge) ? badge : undefined;
 
-export function RoProductCard({ product, priority = false, learnMore = false }: RoProductCardProps) {
+export function RoProductCard({ product, priority = false, learnMore = false, sizes = GRID_CARD_SIZES }: RoProductCardProps) {
   const [hovered, setHovered] = useState(false);
+  const canHover = useCanHover();
   const [added, setAdded] = useState(false);
   const [isNight, setIsNight] = useState(false);
   const addItem = useRoCart((s) => s.addItem);
@@ -100,12 +104,12 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
           <>
             {/* Day image - no transition class for instant switch */}
             <Image
-              src={smallOrOriginal(product.coverImage.src)}
+              src={product.coverImage.src}
               alt={coverAlt}
               fill
               priority={priority}
               quality={85}
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              sizes={sizes}
               className={`object-contain object-center p-4 ${isNight ? "opacity-0" : "opacity-100"}`}
             />
             {/* Night image - no transition class for instant switch */}
@@ -115,7 +119,7 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
                 alt={nightAlt}
                 fill
                 quality={85}
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                sizes={sizes}
                 className={`object-contain object-center p-4 ${isNight ? "opacity-100" : "opacity-0"}`}
               />
             )}
@@ -150,27 +154,30 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
           <>
             {/* Non-watch: hover image swap */}
             <Image
-              src={smallOrOriginal(product.coverImage.src)}
+              src={product.coverImage.src}
               alt={coverAlt}
               fill
               priority={priority}
               quality={85}
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              sizes={sizes}
               className={`object-contain object-center p-4 transition-all duration-700 ease-out ${
                 hovered ? "opacity-0 scale-105" : "opacity-100 scale-100"
               }`}
             />
-            <Image
-              src={secondImage.src}
-              alt={secondAlt}
-              fill
-              quality={80}
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              // Women's collection: the hover photo (on model) fills the card edge to edge - no padding, same box as photo no. 1.
-              className={`${isCollectionSlug(product.slug) ? "object-cover" : "object-contain p-4"} object-center transition-all duration-700 ease-out ${
-                hovered ? "opacity-100 scale-100" : "opacity-0 scale-95"
-              }`}
-            />
+            {/* Hover photo: only where a mouse can hover (lib/use-can-hover.ts) - phones never see it, so they no longer download it. */}
+            {(canHover || hovered) && (
+              <Image
+                src={secondImage.src}
+                alt={secondAlt}
+                fill
+                quality={80}
+                sizes={sizes}
+                // Women's collection: the hover photo (on model) fills the card edge to edge - no padding, same box as photo no. 1.
+                className={`${isCollectionSlug(product.slug) ? "object-cover" : "object-contain p-4"} object-center transition-all duration-700 ease-out ${
+                  hovered ? "opacity-100 scale-100" : "opacity-0 scale-95"
+                }`}
+              />
+            )}
           </>
         )}
 

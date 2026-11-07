@@ -79,7 +79,7 @@ function BoldedText({ text }: { text: string }) {
 // colour's main photo at the exact size this device already loaded, so it paints from cache after the tap.
 // Deduped per slug for the page's lifetime.
 // The other product's main photo, downloaded and decoded ahead at the URL this screen's gallery uses (lib/warm-product.ts;
-// the old /_next/image rewrite stopped working when images.unoptimized was switched on). A tap / hover asks for it first.
+// the resized copy its srcset picks, lib/image-loader.ts). A tap / hover asks for it first.
 function prefetchMainImage(slug: string) { warmProductPhoto(slug, "high"); }
 
 // Grouped, not one flat list: a product's swatch row is whichever group its own slug belongs to.

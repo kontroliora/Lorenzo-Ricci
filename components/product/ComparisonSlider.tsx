@@ -55,7 +55,7 @@ export function ComparisonSlider() {
         width={1200}
         height={800}
         quality={85}
-        sizes="(min-width: 768px) 50vw, 100vw"
+        sizes="(min-width: 1280px) 1216px, 100vw"
         className="w-full h-auto block pointer-events-none"
       />
 
@@ -70,7 +70,7 @@ export function ComparisonSlider() {
           width={1200}
           height={800}
           quality={85}
-          sizes="(min-width: 768px) 50vw, 100vw"
+          sizes="(min-width: 1280px) 1216px, 100vw"
           className="w-full h-auto block pointer-events-none"
         />
       </div>
