@@ -25,4 +25,6 @@ Processing, every time photos are added or renumbered:
 3. Run `node scripts/collection-photos.mjs`: every white-background photo (p, d) gets a pure #FFFFFF background and the
    same product size (80% of the width for bracelets, 80% of the height for necklaces, never cut), in place, here and in the
    folder. On-model and box photos are left alone. Done files are recorded in `scripts/collection-photos.json` and skipped on the
-   next run; `--force` redoes all, `--out <dir>` is a dry run.
+   next run; `--force` redoes all, `--out <dir>` is a dry run. Every run also rewrites `lib/collection-photo-versions.json`
+   (a content hash per photo, sent as `?v=` in the photo URL), so run it after ANY photo change: photos are cached a day by
+   URL, and a replaced or renumbered file under the same name would otherwise keep showing the old picture.

@@ -16,7 +16,7 @@ import { getProductBySlug } from "@/lib/products";
 import { PAGE_LOW_STOCK_MAX, savingsEur } from "@/lib/home-card-hints";
 import { campaignLabel } from "@/lib/sale-campaign";
 import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
-import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine } from "@/components/product/PriceExtras";
+import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches, isCollectionSlug } from "@/lib/new-collection";
@@ -402,6 +402,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
         </div>
         <SavingsLine text={saved !== null ? `Спестявате €${saved}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Безплатна доставка" : null} />
         {isCollectionSlug(product.slug) && <BoxLine text="Луксозна велурена кутия LORENZO RICCI" />}
+        {isCollectionSlug(product.slug) && <WarrantyLine text="Доживотна гаранция" href={"/warranty/jewelry"} />}
         {/* 1+1 group (lib/one-plus-one.ts): "2 картодържателя за €65 ..." and the free second one, picked here */}
         {opo && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(product.slug)} size="page" />}
         {opo && (

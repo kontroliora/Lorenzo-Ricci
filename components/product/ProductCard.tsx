@@ -12,7 +12,8 @@ import { useGiftFor, useLeatherStock } from "@/lib/use-gifts";
 import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS, CARD_GIFT_CLASS } from "@/lib/home-card-hints";
 import { giftDisplayName } from "@/lib/gifts";
 import { bgShipsFree } from "@/lib/shipping-rules";
-import { FreeShippingBadge, OnePlusOneLine } from "@/components/product/PriceExtras";
+import { FreeShippingBadge, OnePlusOneLine, CardWarrantyLine } from "@/components/product/PriceExtras";
+import { isCollectionSlug } from "@/lib/new-collection";
 import { opoGroupOf, opoPriceLineBg } from "@/lib/one-plus-one";
 
 interface ProductCardProps {
@@ -252,6 +253,7 @@ export function ProductCard({ product, priority = false, learnMore = false, cove
           <p data-testid="home-savings" className={`mt-1 ${CARD_SAVINGS_CLASS}`}>Спестявате €{saved}</p>
         )}
         {opo && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(product.slug)} size="card" />}
+        {isCollectionSlug(product.slug) && <CardWarrantyLine text="Доживотна гаранция" />}
         {giftSlug && !isSoldOut && (
           <p data-testid="card-gift" className={`mt-1 ${CARD_GIFT_CLASS}`}>🎁 + подарък: {giftDisplayName(giftSlug)}</p>
         )}

@@ -8,7 +8,7 @@
 //   - the silver version's finish (only "316L неръждаема стомана", colour "Сребърен").
 // Empty spec values hide their row (ProductInfo / RoProductInfo), so they can be filled in later without layout changes.
 import type { Product, ProductSpec } from "./types";
-import { COLLECTION_PHOTOS, COLLECTION_PIECES, pieceLive, type CollectionKey, type Metal, type PieceType } from "./new-collection";
+import { COLLECTION_PHOTOS, COLLECTION_PIECES, collectionPhoto, pieceLive, type CollectionKey, type Metal, type PieceType } from "./new-collection";
 
 // Placeholder for a piece with no photos yet: the brand logo.
 const PLACEHOLDER = "/logo.webp";
@@ -26,7 +26,7 @@ const photos = (slug: string, type: PieceType, key: CollectionKey, metal: Metal,
   const kinds = COLLECTION_PHOTOS[slug];
   if (!kinds) return [{ src: PLACEHOLDER, alt }];
   return [...kinds].map((k, i) => ({
-    src: `/Products/jewellery/new-collection/${key}-${type}-${metal}-${i + 1}.webp`,
+    src: collectionPhoto(`${key}-${type}-${metal}-${i + 1}.webp`),
     alt: `${alt}${PHOTO_ALT[k][lang]}`,
   }));
 };
@@ -192,6 +192,7 @@ function details(key: CollectionKey, type: PieceType, metal: Metal, skuCode: str
     { label: lang === "bg" ? "Размер на детелината" : "Dimensiunea trifoiului", value: CLOVER[key] ? (CLOVER_SIZE_ROW[type]?.[lang] ?? "") : "" },
     { label: lang === "bg" ? "Закопчаване" : "Închidere", value: CLASP_ROW[key]?.[lang] ?? "" },
     { label: lang === "bg" ? "Опаковка" : "Ambalaj", value: lang === "bg" ? "Масивна велурена кутия LORENZO RICCI" : "Cutie masivă din catifea LORENZO RICCI" },
+    { label: lang === "bg" ? "Гаранция" : "Garanție", value: lang === "bg" ? "Доживотна" : "Pe viață" }, // same terms as the other jewellery (/warranty/jewelry)
     { label: lang === "bg" ? "Артикул" : "Cod produs", value: skuCode },
   ];
 }

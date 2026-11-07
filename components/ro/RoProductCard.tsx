@@ -6,7 +6,8 @@ import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { useRoCart } from "@/lib/ro/store";
 import { fmtRON, ronOf, ronOriginalOf, roNeedsPrepayment, roShipsFree } from "@/lib/ro/config";
-import { FreeShippingBadge, OnePlusOneLine } from "@/components/product/PriceExtras";
+import { FreeShippingBadge, OnePlusOneLine, CardWarrantyLine } from "@/components/product/PriceExtras";
+import { isCollectionSlug } from "@/lib/new-collection";
 import { opoGroupOf } from "@/lib/one-plus-one";
 import { opoPriceLineRo } from "@/lib/ro/config";
 import { useLeatherStock } from "@/lib/use-gifts";
@@ -252,6 +253,7 @@ export function RoProductCard({ product, priority = false, learnMore = false, co
           <p data-testid="home-savings" className={`mt-1 ${CARD_SAVINGS_CLASS}`}>Economisiți {fmtRON(saved)}</p>
         )}
         {opo && <OnePlusOneLine badge={opo.text.ro.badge} line={opoPriceLineRo(product.slug)} size="card" />}
+        {isCollectionSlug(product.slug) && <CardWarrantyLine text="Garanție pe viață" />}
         {shipsFree && (
           <div className="mt-1.5"><FreeShippingBadge text="Livrare gratuită" size="card" /></div>
         )}

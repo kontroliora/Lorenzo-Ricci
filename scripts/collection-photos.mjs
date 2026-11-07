@@ -15,6 +15,8 @@
 // (necklaces), never more than 90% of the other side, centred on a 2000×2000 white square. Nothing of the product is cut: when the
 // source already cuts it at an edge (a necklace chain running out of the top), it stays against that same edge.
 // Done files are listed with their hash in scripts/collection-photos.json, so a re-run leaves them alone (no second re-encode).
+// Every run also rewrites lib/collection-photo-versions.json (a hash per photo, used as ?v= in the photo URLs): run it after ANY
+// photo change (added, replaced, renumbered), even one with no white-background photo.
 import sharp from "sharp";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from "node:fs";
@@ -138,6 +140,12 @@ for (const p of photos) for (const [i, kind] of [...p.kinds].entries()) {
   writeFileSync(file, buf); manifest[name] = sha(buf);
   const src = srcOf(name); if (src) copyFileSync(file, src); else console.warn("  no source folder file for", name);
   console.log("done", name); done++;
+}
+// Version tag per photo (content hash): the site requests "<file>.webp?v=<hash>", so a replaced or renumbered photo is never
+// served from Cloudflare's cache under its old content (photos are cached a day by name).
+if (!out) {
+  const versions = Object.fromEntries(readdirSync(PUB).filter((f) => f.endsWith(".webp")).sort().map((f) => [f, sha(readFileSync(path.join(PUB, f))).slice(0, 10)]));
+  writeFileSync(path.join(ROOT, "lib/collection-photo-versions.json"), JSON.stringify(versions, null, 1) + "\n");
 }
 if (!out) writeFileSync(MANIFEST, JSON.stringify(Object.fromEntries(Object.entries(manifest).sort()), null, 1) + "\n");
 console.log(`${done} processed, ${skipped} already done`);

@@ -11,6 +11,9 @@
  * Flip to true once stock is set (supabase/wallet_inventory_new_collection_2026-11.sql). Even then a piece without photos
  * (not in COLLECTION_PHOTOS below) stays hidden: see pieceLive().
  */
+import PHOTO_VERSIONS_JSON from "./collection-photo-versions.json";
+const PHOTO_VERSIONS = PHOTO_VERSIONS_JSON as Record<string, string>;
+
 export const NEW_COLLECTION_LIVE = true;
 
 // The 1+1 of the collection is the "jewellery" group of lib/one-plus-one.ts (switch, end date, wording, maths), counted apart from
@@ -105,10 +108,17 @@ export function homeCollectionPicks<T extends { slug: string; inStock: boolean }
 /** Home "Нова колекция" cards: necklaces zoomed on the pendant (it sits at 45-79% of the photo height, under the chain). */
 export const NECKLACE_CARD_ZOOM = { scale: 1.6, origin: "50% 63%" } as const
 
+/**
+ * URL of a new-collection photo, with its version tag (content hash from lib/collection-photo-versions.json, written by
+ * scripts/collection-photos.mjs). Photos are cached a day by URL, so a replaced or renumbered file needs a new URL.
+ */
+export const collectionPhoto = (file: string): string =>
+  `/Products/jewellery/new-collection/${file}${PHOTO_VERSIONS[file] ? `?v=${PHOTO_VERSIONS[file]}` : ""}`;
+
 /** The two on-model photos of the home section's large image: a necklace on the neck, a bracelet on the wrist (Lumen Сребро). */
 export const HOME_HERO_PHOTOS = {
-  necklace: "/Products/jewellery/new-collection/lumen-necklace-silver-2.webp",
-  bracelet: "/Products/jewellery/new-collection/lumen-bracelet-silver-1.webp",
+  necklace: collectionPhoto("lumen-necklace-silver-2.webp"),
+  bracelet: collectionPhoto("lumen-bracelet-silver-1.webp"),
 } as const;
 
 export const NEW_COLLECTION_SLUGS: ReadonlySet<string> = new Set(COLLECTION_PIECES.map((p) => p.slug));

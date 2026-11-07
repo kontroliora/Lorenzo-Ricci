@@ -30,7 +30,7 @@ import { roReviewsCount, roRatingText } from "@/components/ro/product/ro-text";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { PAGE_LOW_STOCK_MAX, savingsRon } from "@/lib/home-card-hints";
 import { campaignLabelRo } from "@/lib/sale-campaign";
-import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine } from "@/components/product/PriceExtras";
+import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches, isCollectionSlug } from "@/lib/new-collection";
@@ -422,6 +422,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         </div>
         <SavingsLine text={saved !== null ? `Economisiți ${fmtRON(saved)}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Livrare gratuită" : null} />
         {isCollectionSlug(product.slug) && <BoxLine text="Cutie luxoasă din catifea LORENZO RICCI" />}
+        {isCollectionSlug(product.slug) && <WarrantyLine text="Garanție pe viață" href={WARRANTY_HREF} />}
         {/* 1+1 group (lib/one-plus-one.ts): "2 port-carduri pentru 341 lei ..." and the free second one, picked here */}
         {opo && <OnePlusOneLine badge={opo.text.ro.badge} line={opoPriceLineRo(product.slug)} size="page" />}
         {opo && (
