@@ -2,6 +2,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useGallerySwipe } from "@/lib/use-gallery-swipe";
+import { PHOTO_PREVIEW_EVENT } from "@/lib/warm-product";
 import type { ProductImage } from "@/lib/types";
 import { smallVariant, smallOrOriginal } from "@/lib/image-variant";
 
@@ -24,6 +25,20 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
   }, [galleryKey]);
   const [imageError, setImageError] = useState<Record<number, boolean>>({});
   const box = useRef<HTMLDivElement>(null);
+  // A sibling product was tapped (lib/warm-product.ts previewProductPhoto): its photo covers this one at once, until this
+  // gallery receives the new product's photos (key changes) - or after 4 s if the navigation never happens.
+  const [preview, setPreview] = useState<{ key: string; src: string } | null>(null);
+  useEffect(() => {
+    let timer: number | undefined;
+    const on = (e: Event) => {
+      setPreview({ key: galleryKey, src: (e as CustomEvent<string>).detail });
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setPreview(null), 4000);
+    };
+    window.addEventListener(PHOTO_PREVIEW_EVENT, on);
+    return () => { window.removeEventListener(PHOTO_PREVIEW_EVENT, on); window.clearTimeout(timer); };
+  }, [galleryKey]);
+  const previewSrc = preview && preview.key === galleryKey ? preview.src : null;
   // The photos next to the visible one are loaded ahead, so a swipe never shows an empty box.
   const n = images.length;
   const near = (i: number) => n <= 1 || i === activeIdx || i === (activeIdx + 1) % n || i === (activeIdx - 1 + n) % n;
@@ -148,6 +163,11 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
           />
           );
         })}
+
+        {previewSrc && (
+          // eslint-disable-next-line @next/next/no-img-element -- an already decoded URL, shown as is
+          <img data-photo-preview src={previewSrc} alt="" aria-hidden className="absolute inset-0 h-full w-full object-contain object-center bg-white" />
+        )}
 
         {/* Nav arrows - mobile: dark, desktop: navy */}
         <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-3 pointer-events-none">

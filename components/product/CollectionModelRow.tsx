@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { ModelRow } from "@/lib/new-collection";
-import { warmWhenIdle } from "@/lib/warm-product";
+import { previewProductPhoto, warmWhenIdle } from "@/lib/warm-product";
 
 // The women's collection's second selector row under "Цвят" (BG + RO): "Камък" (round stone swatches, clover pieces) or
 // "Камъни" (small photo + label, nail bangles). Every option is an existing product page, like the metal swatches.
@@ -23,7 +23,7 @@ export function CollectionModelRow({ row, current, hrefPrefix, onPrefetch }: {
   useEffect(() => (optionSlugs ? warmWhenIdle(optionSlugs.split(",")) : undefined), [optionSlugs]);
   const tap = (e: React.MouseEvent, slug: string) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; // new tab / window: no optimistic state
-    if (slug !== current) setPending(slug);
+    if (slug !== current) { setPending(slug); previewProductPhoto(slug); }
   };
   const selected = row.options.find((o) => o.slug === shown);
   return (

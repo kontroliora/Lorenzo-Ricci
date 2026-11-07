@@ -22,7 +22,7 @@ import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
-import { warmProductPhoto } from "@/lib/warm-product";
+import { previewProductPhoto, warmProductPhoto } from "@/lib/warm-product";
 import { opoGroupOf, opoPriceLineBg, opoPairPrice, opoPairPriceBg } from "@/lib/one-plus-one";
 import { useLeatherStock } from "@/lib/use-gifts";
 
@@ -151,7 +151,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   const shownVariant = pendingVariant ?? product.slug;
   const tapVariant = (e: React.MouseEvent, slug: string) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-    if (slug !== product.slug) setPendingVariant(slug);
+    if (slug !== product.slug) { setPendingVariant(slug); previewProductPhoto(slug); }
   };
   const opoStock = useLeatherStock(!!opoGroupOf(product.slug)); // the group's live stock (one batched call)
   // A product with no description content (e.g. the Yachting watches until they're

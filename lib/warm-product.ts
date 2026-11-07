@@ -34,3 +34,16 @@ export function warmWhenIdle(slugs: string[]): () => void {
   if (document.readyState === "complete") idle(); else window.addEventListener("load", idle, { once: true });
   return () => { cancelled = true; window.removeEventListener("load", idle); };
 }
+
+/**
+ * Tap on a sibling product (colour / type / stone): the gallery shows that product's main photo AT ONCE (it is pre-decoded by
+ * warmProductPhoto), on top of the current photos, until the new page's own gallery replaces it (components/product/
+ * ProductGallery.tsx, RoProductGallery.tsx listen). The page itself then renders behind it.
+ */
+export const PHOTO_PREVIEW_EVENT = "lr:photo-preview";
+export function previewProductPhoto(slug: string): void {
+  const p = getProductBySlug(slug);
+  if (!p) return;
+  warmProductPhoto(slug, "high");
+  window.dispatchEvent(new CustomEvent(PHOTO_PREVIEW_EVENT, { detail: mainPhotoUrl(p.images[0]?.src ?? p.coverImage.src) }));
+}
