@@ -19,7 +19,7 @@ const PHOTO_ALT: Record<string, Lang> = {
   p: { bg: "", ro: "" },
   m: { bg: " – на модел", ro: " – purtat" },
   b: { bg: " в кутия", ro: " în cutie" },
-  c: { bg: " – луксозна кутия за подарък", ro: " – cutie de cadou de lux" },
+  c: { bg: " – кутия LORENZO RICCI", ro: " – cutie LORENZO RICCI" },
   d: { bg: " – детайл", ro: " – detaliu" },
 };
 const photos = (slug: string, type: PieceType, key: CollectionKey, metal: Metal, alt: string, lang: "bg" | "ro") => {
@@ -53,16 +53,16 @@ const TEXT: Record<CollectionKey, DesignText> = {
     short: { necklace: { bg: "Зелена детелина до сърцето", ro: "Un trifoi verde aproape de inimă" }, bracelet: { bg: "Зелена детелина на китката", ro: "Un trifoi verde la încheietură" } },
     description: {
       necklace: {
-        bg: "Четирилистна детелина с наситено зелена вложка в {metal} рамка. Малък символ на късмет, който стои точно там, където трябва – близо до сърцето. Подарък, който се помни дълго след като кутията е отворена.",
-        ro: "Un trifoi cu patru foi, cu inserție de un verde intens, într-o ramă {metal}. Un mic simbol al norocului, purtat exact acolo unde îi este locul – aproape de inimă. Un cadou care rămâne în amintire mult după ce cutia a fost deschisă.",
+        bg: "Четирилистна детелина с наситено зелена вложка в гранулиран обков. Носи се самостоятелно или с други колиета.",
+        ro: "Un trifoi cu patru foi, cu inserție de un verde intens, într-o ramă granulată. Se poartă singur sau alături de alte coliere.",
       },
       bracelet: {
-        bg: "Детелини с наситено зелена вложка в {metal} рамка, подредени по фината верижка. Носят се сами или до часовник и внасят свежест във всяка визия. Подарък с пожелание за късмет.",
-        ro: "Trifoi cu inserție de un verde intens, în ramă {metal}, așezați de-a lungul unui lănțișor fin. Se poartă singuri sau alături de un ceas și aduc prospețime oricărei ținute. Un cadou cu urare de noroc.",
+        bg: "Детелини с наситено зелена вложка по цялата верижка. Изглежда добре сама или на слоеве с часовник и други гривни.",
+        ro: "Trifoi cu inserție de un verde intens de-a lungul întregului lănțișor. Arată bine singură sau în straturi, alături de un ceas și de alte brățări.",
       },
     },
     features: {
-      necklace: [{ bg: "Четирилистна детелина с наситено зелена вложка", ro: "Trifoi cu patru foi, cu inserție de un verde intens" }, { bg: "Фин гранулиран обков около детелината", ro: "Ramă fină granulată în jurul trifoiului" }, { bg: "Регулируема дължина с удължител", ro: "Lungime reglabilă, cu prelungitor" }, { bg: "Носи се самостоятелно или на слоеве с часовник", ro: "Se poartă singur sau în straturi, alături de un ceas" }],
+      necklace: [{ bg: "Четирилистна детелина с наситено зелена вложка", ro: "Trifoi cu patru foi, cu inserție de un verde intens" }, { bg: "Фин гранулиран обков около детелината", ro: "Ramă fină granulată în jurul trifoiului" }, { bg: "Регулируема дължина с удължител", ro: "Lungime reglabilă, cu prelungitor" }, { bg: "Изчистен акцент за всеки ден и за вечер", ro: "Un accent curat, de zi și de seară" }],
       bracelet: [{ bg: "Четирилистни детелини с наситено зелена вложка", ro: "Trifoi cu patru foi, cu inserție de un verde intens" }, { bg: "Фин гранулиран обков около всяка детелина", ro: "Ramă fină granulată în jurul fiecărui trifoi" }, { bg: "Регулируема дължина с удължител", ro: "Lungime reglabilă, cu prelungitor" }, { bg: "Носи се самостоятелно или на слоеве с часовник", ro: "Se poartă singură sau în straturi, alături de un ceas" }],
     },
     extraSpecs: [INLAY("Зелена", "Verde")],
@@ -93,8 +93,8 @@ const TEXT: Record<CollectionKey, DesignText> = {
         ro: "Un trifoi cu inserție alb-sidefie, care prinde lumina și o redă într-o strălucire blândă, irizată. Într-o ramă {metal}, delicat, dar cu prezență. Pentru momentele care merită lumină.",
       },
       bracelet: {
-        bg: "Детелини с перлено бяла вложка в {metal} рамка, подредени по фината верижка. Мекият им блясък се променя с всяко движение на ръката. Нежен подарък, който се носи всеки ден.",
-        ro: "Trifoi cu inserție alb-sidefie, în ramă {metal}, așezați de-a lungul unui lănțișor fin. Strălucirea lor blândă se schimbă la fiecare mișcare a mâinii. Un cadou delicat, de purtat în fiecare zi.",
+        bg: "Детелини с перлено бяла вложка, която прелива на светлина. Лека и изчистена, за всеки ден.",
+        ro: "Trifoi cu inserție alb-sidefie, care se irizează în lumină. Ușoară și simplă, de purtat în fiecare zi.",
       },
     },
     features: {
@@ -138,8 +138,8 @@ const TEXT: Record<CollectionKey, DesignText> = {
     description: {
       necklace: { bg: "", ro: "" },
       bracelet: {
-        bg: "Гривна-змия, която обвива китката с плавна извивка, а камъните следват линията на тялото ѝ. Смел символ, изработен с прецизност. Подарък с характер за жената, която се помни.",
-        ro: "O brățară-șarpe care înconjoară încheietura într-o curbă fluidă, iar pietrele urmează linia corpului său. Un simbol îndrăzneț, realizat cu precizie. Un cadou cu caracter pentru femeia care nu se uită.",
+        bg: "Змия, увита около китката, с люспи, покрити с камъни. Смел акцент, който се забелязва.",
+        ro: "Un șarpe înfășurat în jurul încheieturii, cu solzi acoperiți cu pietre. Un accent îndrăzneț, care nu trece neobservat.",
       },
     },
     features: {
