@@ -61,14 +61,14 @@ export function CollectionFreePicker({ items, currentName, matchSlug, selected, 
 
       {COLLECTION_GROUP_ORDER.map((g) => {
         // The other half of the set (same clover model and metal) leads its group, with a small gold "Комплект" above it;
-        // the row keeps that label's height on every thumbnail so the photos stay aligned.
+        // the label sits above the first row only (padding on the group), so later rows keep their normal spacing.
         const list = items.filter((i) => i.group === g).sort((a, b) => Number(b.slug === matchSlug) - Number(a.slug === matchSlug));
         if (list.length === 0) return null;
         const hasSet = list.some((i) => i.slug === matchSlug);
         return (
           <div key={g} className="mt-3">
             <p className="font-sans text-[10px] tracking-widest uppercase text-ink-muted mb-2">{text.groups[g]}</p>
-            <div role="radiogroup" aria-label={text.groups[g]} className="grid grid-cols-4 gap-x-2 gap-y-3 sm:flex sm:flex-wrap sm:gap-2.5 pb-1.5">
+            <div role="radiogroup" aria-label={text.groups[g]} className={`grid grid-cols-4 gap-x-2 gap-y-3 sm:flex sm:flex-wrap sm:gap-2.5 pb-1.5 ${hasSet ? "pt-[18px]" : ""}`}>
               {list.map((o) => {
                 const on = selected === o.slug;
                 return (
@@ -82,11 +82,11 @@ export function CollectionFreePicker({ items, currentName, matchSlug, selected, 
                     title={o.available ? o.name : `${o.name} – ${text.soldOut}`}
                     onClick={() => setViewing(o.slug)}
                     data-testid={`opo-pick-${o.slug}`}
-                    className={`group min-w-0 w-full sm:flex-shrink-0 sm:w-[90px] text-center ${o.available ? "cursor-pointer" : "cursor-not-allowed"}`}
+                    className={`group relative min-w-0 w-full sm:flex-shrink-0 sm:w-[90px] text-center ${o.available ? "cursor-pointer" : "cursor-not-allowed"}`}
                   >
-                    {hasSet && (
-                      <span className="block h-4 mb-0.5 font-sans text-[9px] sm:text-[10px] leading-4 tracking-[0.1em] sm:tracking-[0.12em] uppercase text-gold-dark font-medium">
-                        {o.slug === matchSlug ? text.setLabel : ""}
+                    {o.slug === matchSlug && (
+                      <span className="absolute -top-[18px] left-0 right-0 h-4 font-sans text-[9px] sm:text-[10px] leading-4 tracking-[0.1em] sm:tracking-[0.12em] uppercase text-gold-dark font-medium whitespace-nowrap">
+                        {text.setLabel}
                       </span>
                     )}
                     <span className={`relative block w-full aspect-square sm:w-[90px] sm:h-[90px] sm:aspect-auto overflow-hidden bg-white border-2 transition-all duration-150 ${
