@@ -11,7 +11,7 @@
  * Flip to true once stock is set (supabase/wallet_inventory_new_collection_2026-11.sql). Even then a piece without photos
  * (not in COLLECTION_PHOTOS below) stays hidden: see pieceLive().
  */
-export const NEW_COLLECTION_LIVE = false;
+export const NEW_COLLECTION_LIVE = true;
 
 // The 1+1 of the collection is the "jewellery" group of lib/one-plus-one.ts (switch, end date, wording, maths), counted apart from
 // the cardholders' group. Only the sets' line lives here.
