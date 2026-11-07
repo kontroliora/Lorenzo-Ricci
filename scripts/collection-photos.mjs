@@ -5,7 +5,8 @@
 //   node scripts/collection-photos.mjs --force         redo every white-background photo
 //
 // Run it after adding or renumbering photos (step of the photo processing, see public/Products/README.md).
-// Which photo is a white-background one comes from lib/new-collection.ts COLLECTION_PHOTOS: "p" (product on white) and
+// Bracelets only: the necklaces keep the owner's original photos exactly as given (no resize, zoom, re-centring or background
+// change). Which photo is a white-background one comes from lib/new-collection.ts COLLECTION_PHOTOS: "p" (product on white) and
 // "d" (detail / another angle on white). On-model ("m") and box ("b", "c") photos are never touched; the numbering and order
 // stay exactly as they are.
 //
@@ -44,7 +45,7 @@ const manifest = existsSync(MANIFEST) ? JSON.parse(readFileSync(MANIFEST, "utf8"
 const sha = (buf) => createHash("sha1").update(buf).digest("hex");
 
 /** The source folder holding a file (the folder names are the product names; found by the file's own name). */
-const srcDirs = existsSync(SRC) ? readdirSync(SRC, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => path.join(SRC, d.name)) : [];
+const srcDirs = existsSync(SRC) ? readdirSync(SRC, { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== "_originals").map((d) => path.join(SRC, d.name)) : [];
 const srcOf = (file) => srcDirs.map((d) => path.join(d, file)).find((p) => existsSync(p));
 
 async function normalise(file, type) {
@@ -66,7 +67,8 @@ async function normalise(file, type) {
     if (x > 0) push(x - 1, y); if (x < W - 1) push(x + 1, y); if (y > 0) push(x, y - 1); if (y < H - 1) push(x, y + 1); }
 
   // 1b. Background shut in by the product (inside a bangle or a chain loop): the near-white areas the edge fill can't reach.
-  //     An area counts as background when it is big (over 0.5% of the photo) and as light as the backdrop (average ≥ #EEEEEE);
+  //     An area counts as background when it is big (over 2% of the photo: the inside of a bangle or a chain loop; a clover's
+  //     interior is under 2% and is never touched, however light) and as light as the backdrop (average ≥ #EEEEEE);
   //     mother-of-pearl clovers average ~#E2 and stay as they are. STATS=1 prints each area's numbers.
   const comp = new Int32Array(W * H).fill(-1); const comps = [];
   for (let k0 = 0; k0 < W * H; k0++) {
@@ -80,7 +82,7 @@ async function normalise(file, type) {
   }
   const bgIds = new Set();
   comps.forEach((c, id) => {
-    const flat = c.n > W * H * 0.005 && c.mean >= 238;
+    const flat = c.n > W * H * 0.02 && c.mean >= 238;
     if (process.env.STATS && c.n > W * H * 0.002) console.log(`   ${path.basename(file)} area ${c.n} mean ${c.mean.toFixed(1)} sd ${c.sd.toFixed(2)} at ${c.x},${c.y} -> ${flat ? "background" : "kept"}`);
     if (flat) bgIds.add(id);
   });
@@ -139,11 +141,15 @@ if (out) mkdirSync(out, { recursive: true });
 let done = 0, skipped = 0;
 for (const p of photos) for (const [i, kind] of [...p.kinds].entries()) {
   if (kind !== "p" && kind !== "d") continue;
+  if (p.type === "necklace") continue; // necklaces: the owner's original photos exactly as given, never processed (owner, 07.11.2026)
   const name = `${p.key}-${p.type}-${p.metal}-${i + 1}.webp`, file = path.join(PUB, name);
   if (!existsSync(file)) { console.warn("missing", name); continue; }
   if (!force && !out && manifest[name] === sha(readFileSync(file))) { skipped++; continue; }
   const buf = await normalise(file, p.type);
   if (out) { writeFileSync(path.join(out, name), buf); console.log("->", name); done++; continue; }
+  // Keep the untouched original once (New Jewellery/_originals/<name>), so a photo can always be redone from it.
+  const keep = path.join(SRC, "_originals", name);
+  if (existsSync(SRC) && !existsSync(keep)) { mkdirSync(path.dirname(keep), { recursive: true }); copyFileSync(file, keep); }
   writeFileSync(file, buf); manifest[name] = sha(buf);
   const src = srcOf(name); if (src) copyFileSync(file, src); else console.warn("  no source folder file for", name);
   console.log("done", name); done++;

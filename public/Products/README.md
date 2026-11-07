@@ -22,9 +22,10 @@ Processing, every time photos are added or renumbered:
    `{model}-{necklace|bracelet}-{gold|silver}-{n}.webp` with the owner's n; same file in the folder and here.
 2. List the piece in `lib/new-collection.ts` `COLLECTION_PHOTOS`, one letter per photo in that order
    (p white background, m on model, b open box, c closed box, d detail on white). A piece without photos stays hidden.
-3. Run `node scripts/collection-photos.mjs`: every white-background photo (p, d) gets a pure #FFFFFF background and the
+3. Run `node scripts/collection-photos.mjs`: every bracelet white-background photo (p, d) gets a pure #FFFFFF background and the
    same product size (80% of the width for bracelets, 80% of the height for necklaces, never cut), in place, here and in the
-   folder. On-model and box photos are left alone. Done files are recorded in `scripts/collection-photos.json` and skipped on the
+   folder. On-model and box photos, and every necklace photo (the owner's originals, used exactly as given), are left alone. Before it changes a photo it keeps the untouched
+   original in `New Jewellery/_originals/`, so any photo can be redone. A new photo's own source file is only deleted after that. Done files are recorded in `scripts/collection-photos.json` and skipped on the
    next run; `--force` redoes all, `--out <dir>` is a dry run. Every run also rewrites `lib/collection-photo-versions.json`
    (a content hash per photo, sent as `?v=` in the photo URL), so run it after ANY photo change: photos are cached a day by
    URL, and a replaced or renumbered file under the same name would otherwise keep showing the old picture.

@@ -20,11 +20,9 @@ interface ProductCardProps {
   product: Product;
   priority?: boolean;
   learnMore?: boolean;
-  /** Zoom the cover photo (not the hover one), e.g. on a necklace's pendant in the home "Дамска колекция" row. */
-  coverZoom?: { scale: number; origin: string };
 }
 
-export function ProductCard({ product, priority = false, learnMore = false, coverZoom }: ProductCardProps) {
+export function ProductCard({ product, priority = false, learnMore = false }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const [added, setAdded] = useState(false);
   const [isNight, setIsNight] = useState(false);
@@ -134,19 +132,17 @@ export function ProductCard({ product, priority = false, learnMore = false, cove
         ) : (
           <>
             {/* Non-watch: hover image swap */}
-            <div className="absolute inset-0" style={coverZoom ? { transform: `scale(${coverZoom.scale})`, transformOrigin: coverZoom.origin } : undefined}>
-              <Image
-                src={smallOrOriginal(product.coverImage.src)}
-                alt={product.coverImage.alt}
-                fill
-                priority={priority}
-                quality={85}
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className={`object-contain object-center p-4 transition-all duration-700 ease-out ${
-                  hovered ? "opacity-0 scale-105" : "opacity-100 scale-100"
-                }`}
-              />
-            </div>
+            <Image
+              src={smallOrOriginal(product.coverImage.src)}
+              alt={product.coverImage.alt}
+              fill
+              priority={priority}
+              quality={85}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className={`object-contain object-center p-4 transition-all duration-700 ease-out ${
+                hovered ? "opacity-0 scale-105" : "opacity-100 scale-100"
+              }`}
+            />
             <Image
               src={secondImage.src}
               alt={secondImage.alt}

@@ -72,13 +72,13 @@ export const COLLECTION_PHOTOS: Readonly<Record<string, string>> = {
   "necklace-lumen-silver": "pmbc",
   "necklace-noctis-silver": "pmbc",
   "necklace-noctis-gold": "pmbc",
-  // Clover bracelets: no white-background photo where it showed 5 clovers (ours have 4); those stay out of the shop.
+  // Clover bracelets: never a photo showing 5 clovers (ours have 4).
   "bracelet-verdis-gold": "pmbdc",
-  "bracelet-verdis-silver": "mbc",
-  "bracelet-lumen-gold": "mbdc",
+  "bracelet-verdis-silver": "pmbc",
+  "bracelet-lumen-gold": "pmbdc",
   "bracelet-lumen-silver": "mbc",
-  "bracelet-noctis-gold": "mbc",
-  "bracelet-noctis-silver": "mbc",
+  "bracelet-noctis-gold": "pmbc",
+  "bracelet-noctis-silver": "pmbc",
   "bracelet-linea-gold": "pmbdc",
   "bracelet-linea-silver": "pdmbc",
   "bracelet-solaris-gold": "pmcbd",
