@@ -76,7 +76,7 @@ export const fmtRON = (ron: number): string =>
   `${ron.toLocaleString("ro-RO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} lei`;
 
 /** A 1+1 group's fixed price as the Romanian site writes it ("341 lei"). */
-export const opoPriceRo = (g: OnePlusOneGroup): string => fmtRON(ronPrice(g.fixedPrice ?? 0));
+export const opoPriceRo = (g: OnePlusOneGroup): string => fmtRON(ronPrice(g.fixedPrice ?? g.fromPrice ?? 0)); // fixed price, or a group's cheapest pair
 
 /** The 1+1 line under a Romanian price (lib/one-plus-one.ts), in lei: "2 port-carduri pentru 341 lei – 170,50 lei bucata. ..." */
 export function opoPriceLineRo(slug: string): string | null {

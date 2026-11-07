@@ -7,13 +7,13 @@ import { useReveal } from "@/lib/useReveal";
 // three jewellery promises (PVD gold plating, 316L steel, lifetime guarantee), worded exactly like the Bulgarian ones.
 const BANNERS = [
   {
-    href: "/ro/bijuterii?category=bracelets",
+    href: "/ro/bijuterii?category=bracelets#bracelets",
     src: "/beautiful/banner-bracelets.jpg",
     alt: "Lorenzo Ricci brățări, placare cu aur de 18K",
     title: "Brățări",
   },
   {
-    href: "/ro/bijuterii?category=necklaces",
+    href: "/ro/bijuterii?category=necklaces#necklaces",
     src: "/beautiful/banner-necklaces.jpg",
     alt: "Lorenzo Ricci coliere, placare cu aur de 18K",
     title: "Coliere",
@@ -35,7 +35,7 @@ export function RoJewellerySection() {
         {/* Header */}
         <div className="text-center mb-8 sm:mb-16">
           <p className="section-tag mb-4">Bijuterii</p>
-          <h2 className="section-title mb-4">Colecția de bijuterii</h2>
+          <h2 className="section-title mb-4">Colecția clasică</h2>
           <div className="gold-divider" />
           <p className="font-sans text-sm font-light text-ink-muted max-w-md mx-auto mt-6 tracking-wide leading-relaxed">
             Placare cu aur de 18K · Design italian · Stil etern

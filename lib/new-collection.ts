@@ -80,6 +80,29 @@ export const COLLECTION_PHOTOS: Readonly<Record<string, string>> = {
 /** The piece is in the shop: the collection is switched on AND the piece has its photos. */
 export const pieceLive = (slug: string): boolean => NEW_COLLECTION_LIVE && !!COLLECTION_PHOTOS[slug];
 
+/**
+ * The home page's "Нова колекция" row (BG + RO): this showcase order (gold and silver, necklaces and bracelets mixed), then any
+ * other piece; only pieces in the shop (photos) and in stock; at most `max`.
+ */
+const HOME_ORDER = [
+  "necklace-verdis-gold", "bracelet-spira-gold", "necklace-lumen-gold", "bracelet-solaris-gold",
+  "necklace-noctis-silver", "bracelet-verdis-silver", "bracelet-linea-gold", "necklace-lumen-silver",
+  "bracelet-lumen-silver", "necklace-verdis-silver", "bracelet-linea-silver", "bracelet-solaris-silver", "bracelet-spira-silver",
+];
+export function homeCollectionPicks<T extends { slug: string; inStock: boolean }>(shop: T[], soldOut: ReadonlySet<string>, max = 8): T[] {
+  const rank = (slug: string) => { const i = HOME_ORDER.indexOf(slug); return i < 0 ? HOME_ORDER.length : i; };
+  return shop
+    .filter((p) => isCollectionSlug(p.slug) && p.inStock && !soldOut.has(p.slug))
+    .sort((a, b) => rank(a.slug) - rank(b.slug))
+    .slice(0, max);
+}
+
+/** The two on-model photos of the home section's large image: a necklace on the neck, a bracelet on the wrist (Lumen Сребро). */
+export const HOME_HERO_PHOTOS = {
+  necklace: "/Products/jewellery/new-collection/lumen-necklace-silver-2.webp",
+  bracelet: "/Products/jewellery/new-collection/lumen-bracelet-silver-2.webp",
+} as const;
+
 export const NEW_COLLECTION_SLUGS: ReadonlySet<string> = new Set(COLLECTION_PIECES.map((p) => p.slug));
 export const isCollectionSlug = (slug: string | undefined | null): boolean => !!slug && NEW_COLLECTION_SLUGS.has(slug);
 

@@ -4,6 +4,8 @@ import { RoFeaturedWatches } from "@/components/ro/home/RoFeaturedWatches";
 import { RoLeatherSection } from "@/components/ro/home/RoLeatherSection";
 import { RoMilanoAvorioFlagship } from "@/components/ro/home/RoMilanoAvorioFlagship";
 import { RoJewellerySection } from "@/components/ro/home/RoJewellerySection";
+import { RoNewCollectionSection } from "@/components/ro/home/RoNewCollectionSection";
+import { homeCollectionPicks } from "@/lib/new-collection";
 import { RoEditorialJewellery } from "@/components/ro/home/RoEditorialJewellery";
 import { RoBrandValues } from "@/components/ro/home/RoBrandValues";
 import { RoTestimonialsSection } from "@/components/ro/home/RoTestimonialsSection";
@@ -69,6 +71,8 @@ export default async function RoHomePage() {
   // Campaign hero (same phase config and 5% rule as the Bulgarian banner/hero): the discount is the biggest live one among the products sold in Romania.
   const salePct = maxDiscountRounded(catalog, soldOut);
   const saleLabel = campaignLabelRo();
+  // "Noua colecție": up to 8 pieces sold in Romania, in stock, showcase order (lib/new-collection.ts).
+  const newPieces = homeCollectionPicks(catalog, soldOut);
 
   return (
     <>
@@ -76,6 +80,7 @@ export default async function RoHomePage() {
       <RoFeaturedWatches watches={watches} />
       <RoLeatherSection products={leather} />
       {flagship && <RoMilanoAvorioFlagship product={flagship} />}
+      <RoNewCollectionSection pieces={newPieces} />
       <RoJewellerySection />
       <RoEditorialJewellery />
       <RoBrandValues />

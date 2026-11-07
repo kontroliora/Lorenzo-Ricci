@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Product } from "@/lib/types";
@@ -16,6 +17,15 @@ export function JewelleryPageClient({ bracelets, necklaces }: Props) {
 
   const showBracelets = !category || category === "bracelets";
   const showNecklaces = !category || category === "necklaces";
+
+  // A link with an #anchor (the menu's #nova-kolekcia / #noua-colectie, the home banners' #bracelets / #necklaces): this grid is
+  // drawn in the browser, after the browser's own jump to the anchor, so jump once it exists (the CSS scroll-margin clears the header).
+  useEffect(() => {
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    if (!id) return;
+    const t = window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: "start" }), 50);
+    return () => window.clearTimeout(t);
+  }, [category]);
 
   // The 2026 collection (lib/new-collection.ts) gets its own section first. The existing range follows under the info block
   // whose "750 IT" stamp line belongs to it only - the new pieces carry no stamp (owner, 07.11.2026).
@@ -114,7 +124,7 @@ export function JewelleryPageClient({ bracelets, necklaces }: Props) {
 
         {/* The 2026 collection */}
         {newPieces.length > 0 && (
-          <div id="nova-kolekcia" data-testid="new-collection" className="mb-20 scroll-mt-24">
+          <div id="nova-kolekcia" data-testid="new-collection" className="mb-20 scroll-mt-[132px]">
             <div className="flex items-center justify-between mb-10">
               <div>
                 <p className="section-tag mb-2">Lorenzo Ricci</p>
@@ -136,7 +146,7 @@ export function JewelleryPageClient({ bracelets, necklaces }: Props) {
 
         {/* Bracelets */}
         {showBracelets && oldBracelets.length > 0 && (
-          <div id="bracelets" className="mb-20 scroll-mt-24">
+          <div id="bracelets" className="mb-20 scroll-mt-[132px]">
             <div className="flex items-center justify-between mb-10">
               <div>
                 <p className="section-tag mb-2">Lorenzo Ricci</p>
@@ -154,7 +164,7 @@ export function JewelleryPageClient({ bracelets, necklaces }: Props) {
 
         {/* Necklaces */}
         {showNecklaces && oldNecklaces.length > 0 && (
-          <div id="necklaces" className="scroll-mt-24">
+          <div id="necklaces" className="scroll-mt-[132px]">
             <div className="flex items-center justify-between mb-10">
               <div>
                 <p className="section-tag mb-2">Lorenzo Ricci</p>

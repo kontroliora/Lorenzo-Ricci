@@ -11,8 +11,8 @@ export function JewellerySection() {
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         {/* Header */}
         <div className="text-center mb-8 sm:mb-16">
-          <p className="section-tag mb-4">Колекция Бижута</p>
-          <h2 className="section-title mb-4">Колекция Бижута</h2>
+          <p className="section-tag mb-4">Бижута</p>
+          <h2 className="section-title mb-4">Класическа колекция</h2>
           <div className="gold-divider" />
           <p className="font-sans text-sm font-light text-ink-muted max-w-md mx-auto mt-6 tracking-wide leading-relaxed">
             18К позлата · Италиански дизайн · Вечен стил
@@ -23,7 +23,7 @@ export function JewellerySection() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-16">
           {/* Гривни */}
           <Link
-            href="/jewellery?category=bracelets"
+            href="/jewellery?category=bracelets#bracelets"
             className="group relative overflow-hidden h-[360px] sm:h-[420px] block"
           >
             <Image
@@ -51,7 +51,7 @@ export function JewellerySection() {
 
           {/* Колиета */}
           <Link
-            href="/jewellery?category=necklaces"
+            href="/jewellery?category=necklaces#necklaces"
             className="group relative overflow-hidden h-[360px] sm:h-[420px] block"
           >
             <Image

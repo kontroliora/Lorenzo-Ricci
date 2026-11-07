@@ -40,7 +40,7 @@ export function Header() {
             <div className="hidden lg:flex items-center gap-10">
               <NavLink href="/watches">Часовници</NavLink>
 
-              <NavLink href="/jewellery">Бижута</NavLink>
+              <NavLink href="/jewellery#nova-kolekcia">Бижута</NavLink>
 
               <NavLink href="/leather-goods">Кожени изделия</NavLink>
             </div>
@@ -116,7 +116,7 @@ export function Header() {
                 </Link>
               ))}
 
-              <Link href="/jewellery" onClick={closeMobile}
+              <Link href="/jewellery#nova-kolekcia" onClick={closeMobile}
                 className="py-1 font-serif text-4xl text-white/80 hover:text-white transition-colors duration-300">
                 Бижута
               </Link>

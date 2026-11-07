@@ -14,7 +14,7 @@
 //
 // Adding a group: add an entry to ONE_PLUS_ONE_GROUPS - nothing else has to change.
 
-import { NEW_COLLECTION_SLUGS } from "./new-collection";
+import { NEW_COLLECTION_SLUGS, COLLECTION_PIECES } from "./new-collection";
 
 export type OpoLang = "bg" | "ro";
 
@@ -27,6 +27,8 @@ export interface OnePlusOneGroup {
   endsAt?: string;
   /** EUR price of every product of the group while it runs (replaces price / originalPrice / sale badge). */
   fixedPrice?: number;
+  /** A group without a fixed price: the cheapest a pair can cost (its lowest price), for "2 от €109" in the top bar. */
+  fromPrice?: number;
   text: Record<OpoLang, {
     badge: string;
     /** The line under the price; `price` is the group's fixed price formatted for the market (e.g. "€65" / "341 lei"). A group
@@ -103,6 +105,7 @@ export const ONE_PLUS_ONE_GROUPS: OnePlusOneGroup[] = [
     id: "jewellery",
     slugs: NEW_COLLECTION_SLUGS,
     enabled: JEWELLERY_ONE_PLUS_ONE,
+    fromPrice: Math.min(...COLLECTION_PIECES.map((p) => p.price)), // €109: two pieces cost the dearer one, so "2 от", never "2 за"
     endsAt: "2026-12-31T23:59:59+02:00", // 31.12.2026 23:59 Sofia (EET, UTC+2)
     text: {
       bg: {
@@ -111,7 +114,7 @@ export const ONE_PLUS_ONE_GROUPS: OnePlusOneGroup[] = [
         crossSell: { odd: "Добавете още едно бижу – безплатно", even: "Добавете още 2 бижута – едното е безплатно" },
         banner: () => "Второто бижу от новата колекция е подарък",
         cta: "Към бижутата",
-        bar: () => ({ desktop: "1+1 на новите бижута – второто е подарък", mobile: "1+1 на новите бижута" }),
+        bar: ({ one }) => ({ desktop: `1+1 на новите бижута – 2 от ${one}`, mobile: `1+1 нови бижута – 2 от ${one}` }),
         pickTitle: "Изберете второто бижу – безплатно:",
         addPair: ({ one }) => `Добави 2 в количката – ${one}`,
         shortName: jewelleryModel,
@@ -122,7 +125,7 @@ export const ONE_PLUS_ONE_GROUPS: OnePlusOneGroup[] = [
         crossSell: { odd: "Adăugați încă o bijuterie – gratuit", even: "Adăugați încă 2 bijuterii – una este gratuită" },
         banner: () => "A doua bijuterie din noua colecție este cadou",
         cta: "Vedeți bijuteriile",
-        bar: () => ({ desktop: "1+1 la noile bijuterii – a doua este cadou", mobile: "1+1 bijuterii noi" }),
+        bar: ({ one }) => ({ desktop: `1+1 la noile bijuterii – 2 de la ${one}`, mobile: `1+1 bijuterii – de la ${one}` }), // short: the BG · RO switch sits beside it on phones
         pickTitle: "Alegeți a doua bijuterie – gratuit:",
         addPair: ({ one }) => `Adaugă 2 în coș – ${one}`,
         shortName: jewelleryModel,
@@ -251,8 +254,12 @@ export const cardholderOpo = (now?: Date): OnePlusOneGroup | undefined => {
   return g && groupActive(g, now) && typeof g.fixedPrice === "number" ? g : undefined;
 };
 
-/** A group's fixed price as the BG site writes it ("€65"). */
-export const opoPriceBg = (g: OnePlusOneGroup): string => eur(g.fixedPrice ?? 0);
+/** A group's price as the BG site writes it: its fixed price ("€65"), or the cheapest pair of a group without one ("€109"). */
+export const opoPriceBg = (g: OnePlusOneGroup): string => eur(g.fixedPrice ?? g.fromPrice ?? 0);
+
+/** The running groups for the top bar's rotation, newest first (the new jewellery, then the cardholders). */
+export const opoBarGroups = (now?: Date): OnePlusOneGroup[] =>
+  ONE_PLUS_ONE_GROUPS.filter((g) => groupActive(g, now) && typeof (g.fixedPrice ?? g.fromPrice) === "number").reverse();
 
 /** What a pair costs with the 1+1 (the cheaper one free = the dearer price), in the cart's own unit (EUR, or lei). */
 export const opoPairPrice = (a: number, b: number): number => Math.max(a, b);

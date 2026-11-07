@@ -3,6 +3,8 @@ import { FeaturedWatches } from "@/components/home/FeaturedWatches";
 import { WalletsSection } from "@/components/home/WalletsSection";
 import { MilanoAvorioFlagship } from "@/components/home/MilanoAvorioFlagship";
 import { JewellerySection } from "@/components/home/JewellerySection";
+import { NewCollectionSection } from "@/components/home/NewCollectionSection";
+import { homeCollectionPicks } from "@/lib/new-collection";
 import { EditorialJewellery } from "@/components/home/EditorialJewellery";
 import { BrandValues } from "@/components/home/BrandValues";
 import { TestimonialsSection } from "@/components/home/TestimonialsSection";
@@ -42,6 +44,9 @@ export default async function HomePage() {
   const salePct = maxDiscountRounded(applyOverrides(products, overrides), new Set(soldOut));
   const saleLabel = campaignLabel();
 
+  // "Нова колекция" (the 2026 collection): up to 8 pieces in the shop and in stock, showcase order (lib/new-collection.ts).
+  const newPieces = homeCollectionPicks(applyOverrides(products, overrides), new Set(soldOut));
+
   return (
     <>
       <Hero campaign={saleLabel && salePct >= 5 ? { label: saleLabel, pct: salePct } : null} />
@@ -49,6 +54,7 @@ export default async function HomePage() {
       <FeaturedWatches soldOut={soldOut} />
       <WalletsSection soldOut={soldOut} />
       {milanoAvorio && <MilanoAvorioFlagship product={milanoAvorio} />}
+      <NewCollectionSection pieces={newPieces} />
       <JewellerySection />
       <EditorialJewellery />
       <BrandValues />
