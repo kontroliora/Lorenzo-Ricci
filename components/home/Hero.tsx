@@ -169,14 +169,14 @@ export function Hero({ campaign = null }: { campaign?: { label: string; pct: num
         active={slide === 1}
         mounted={ready}
         tag="Lorenzo Ricci · 2026"
-        title="Нова колекция"
+        title="Дамска колекция"
         badge="1+1 БЕЗПЛАТНО"
         line="Второто бижу е подарък"
         cta="Разгледай колекцията"
-        href="/jewellery#nova-kolekcia"
-        alts={{ necklace: "Колие Lumen – Сребро на модел, нова колекция Lorenzo Ricci", bracelet: "Гривна Lumen – Сребро на модел, нова колекция Lorenzo Ricci" }}
+        href="/jewellery#damska-kolekcia"
+        alts={{ necklace: "Колие Lumen – Сребро на модел, дамска колекция Lorenzo Ricci", bracelet: "Гривна Lumen – Сребро на модел, дамска колекция Lorenzo Ricci" }}
       />
-      {ready && <HeroDots slide={slide} onSelect={setSlide} labels={["Часовници", "Нова колекция"]} />}
+      {ready && <HeroDots slide={slide} onSelect={setSlide} labels={["Часовници", "Дамска колекция"]} />}
       {/* Scroll indicator */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
         <div className="w-px h-12 bg-gradient-to-b from-white/40 to-transparent mx-auto" />

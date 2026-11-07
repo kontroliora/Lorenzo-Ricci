@@ -169,14 +169,14 @@ export function RoHero({ campaign = null }: { campaign?: { label: string; pct: n
         active={slide === 1}
         mounted={ready}
         tag="Lorenzo Ricci · 2026"
-        title="Noua colecție"
+        title="Colecția pentru femei"
         badge="1+1 GRATUIT"
         line="A doua bijuterie este cadou"
         cta="Descoperiți colecția"
-        href="/ro/bijuterii#noua-colectie"
-        alts={{ necklace: "Colier Lumen – Argintiu purtat, noua colecție Lorenzo Ricci", bracelet: "Brățară Lumen – Argintiu purtată, noua colecție Lorenzo Ricci" }}
+        href="/ro/bijuterii#colectia-pentru-femei"
+        alts={{ necklace: "Colier Lumen – Argintiu purtat, colecția pentru femei Lorenzo Ricci", bracelet: "Brățară Lumen – Argintiu purtată, colecția pentru femei Lorenzo Ricci" }}
       />
-      {ready && <HeroDots slide={slide} onSelect={setSlide} labels={["Ceasuri", "Noua colecție"]} />}
+      {ready && <HeroDots slide={slide} onSelect={setSlide} labels={["Ceasuri", "Colecția pentru femei"]} />}
       {/* Scroll indicator */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
         <div className="w-px h-12 bg-gradient-to-b from-white/40 to-transparent mx-auto" />

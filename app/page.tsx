@@ -44,7 +44,7 @@ export default async function HomePage() {
   const salePct = maxDiscountRounded(applyOverrides(products, overrides), new Set(soldOut));
   const saleLabel = campaignLabel();
 
-  // "Нова колекция" (the 2026 collection): up to 8 pieces in the shop and in stock, showcase order (lib/new-collection.ts).
+  // "Дамска колекция" (the 2026 collection): one row of 4 in the shop and in stock, showcase order (lib/new-collection.ts).
   const newPieces = homeCollectionPicks(applyOverrides(products, overrides), new Set(soldOut));
 
   return (

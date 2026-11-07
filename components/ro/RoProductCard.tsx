@@ -22,7 +22,7 @@ interface RoProductCardProps {
   product: Product;
   priority?: boolean;
   learnMore?: boolean;
-  /** Zoom the cover photo (not the hover one), e.g. on a necklace's pendant in the home "Нова колекция" row. */
+  /** Zoom the cover photo (not the hover one), e.g. on a necklace's pendant in the home "Дамска колекция" row. */
   coverZoom?: { scale: number; origin: string };
 }
 

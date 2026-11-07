@@ -112,7 +112,7 @@ export const ONE_PLUS_ONE_GROUPS: OnePlusOneGroup[] = [
         badge: "1+1 БЕЗПЛАТНО",
         line: () => "Второто бижу е подарък",
         crossSell: { odd: "Добавете още едно бижу – безплатно", even: "Добавете още 2 бижута – едното е безплатно" },
-        banner: () => "Второто бижу от новата колекция е подарък",
+        banner: () => "Второто бижу от дамската колекция е подарък",
         cta: "Към бижутата",
         bar: ({ one }) => ({ desktop: `1+1 на новите бижута – 2 от ${one}`, mobile: `1+1 нови бижута – 2 от ${one}` }),
         pickTitle: "Изберете второто бижу – безплатно:",
@@ -123,7 +123,7 @@ export const ONE_PLUS_ONE_GROUPS: OnePlusOneGroup[] = [
         badge: "1+1 GRATUIT",
         line: () => "A doua bijuterie este cadou",
         crossSell: { odd: "Adăugați încă o bijuterie – gratuit", even: "Adăugați încă 2 bijuterii – una este gratuită" },
-        banner: () => "A doua bijuterie din noua colecție este cadou",
+        banner: () => "A doua bijuterie din colecția pentru femei este cadou",
         cta: "Vedeți bijuteriile",
         bar: ({ one }) => ({ desktop: `1+1 la noile bijuterii – 2 de la ${one}`, mobile: `1+1 bijuterii – de la ${one}` }), // short: the BG · RO switch sits beside it on phones
         pickTitle: "Alegeți a doua bijuterie – gratuit:",

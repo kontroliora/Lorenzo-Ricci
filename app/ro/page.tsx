@@ -71,7 +71,7 @@ export default async function RoHomePage() {
   // Campaign hero (same phase config and 5% rule as the Bulgarian banner/hero): the discount is the biggest live one among the products sold in Romania.
   const salePct = maxDiscountRounded(catalog, soldOut);
   const saleLabel = campaignLabelRo();
-  // "Noua colecție": up to 8 pieces sold in Romania, in stock, showcase order (lib/new-collection.ts).
+  // "Colecția pentru femei": one row of 4 sold in Romania, in stock, showcase order (lib/new-collection.ts).
   const newPieces = homeCollectionPicks(catalog, soldOut);
 
   return (

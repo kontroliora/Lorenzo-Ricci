@@ -16,7 +16,7 @@ import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 // hamburger menu serves everything below it.
 const LEFT_NAV = [
   { href: "/ro/ceasuri", label: "Ceasuri" },
-  { href: "/ro/bijuterii#noua-colectie", label: "Bijuterii" }, // lands on "Noua colecție"
+  { href: "/ro/bijuterii#colectia-pentru-femei", label: "Bijuterii" }, // lands on "Colecția pentru femei"
   { href: "/ro/piele-de-crocodil", label: "Articole din piele de crocodil" },
 ] as const;
 

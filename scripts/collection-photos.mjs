@@ -11,8 +11,8 @@
 //
 // Per photo: the near-white background (the photo's own off-white / grey backdrop and anything ≥ #EEEEEE, connected to the edge) becomes
 // pure #FFFFFF over the whole image, the product and its soft shadow stay natural; the product is
-// found (everything that is not background) and scaled so it fills 80% of the frame width (bracelets) or 80% of the height
-// (necklaces), never more than 90% of the other side, centred on a 2000×2000 white square. Nothing of the product is cut: when the
+// found (everything that is not background) and scaled so it fills 80% of the frame width (bracelets) or 65% of the height
+// (necklaces, centred a little below the middle, a chain cut by the source fading out at the top), never more than 90% of the other side, centred on a 2000×2000 white square. Nothing of the product is cut: when the
 // source already cuts it at an edge (a necklace chain running out of the top), it stays against that same edge.
 // Done files are listed with their hash in scripts/collection-photos.json, so a re-run leaves them alone (no second re-encode).
 // Every run also rewrites lib/collection-photo-versions.json (a hash per photo, used as ?v= in the photo URLs): run it after ANY
@@ -28,7 +28,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PUB = path.join(ROOT, "public/Products/jewellery/new-collection");
 const SRC = path.join(ROOT, "../New Jewellery"); // the owner's source folders ("Гривна Spira - Злато", ...), kept in sync
 const MANIFEST = path.join(ROOT, "scripts/collection-photos.json");
-const N = 2000, FILL = 0.8, MAX_OTHER = 0.9;
+const N = 2000, FILL = 0.8, MAX_OTHER = 0.9, NECK_FILL = 0.65, NECK_CENTRE = 0.54;
 
 const args = process.argv.slice(2);
 const out = args.includes("--out") ? path.resolve(args[args.indexOf("--out") + 1]) : null;
@@ -113,13 +113,20 @@ async function normalise(file, type) {
   top = Math.max(0, top - m); left = Math.max(0, left - m); bot = Math.min(H - 1, bot + m); right = Math.min(W - 1, right + m);
   const bw = right - left + 1, bh = bot - top + 1;
 
-  // 5. Scale: 80% of the width (bracelets) or the height (necklaces), the other side at most 90%; never cut.
-  const s = type === "necklace" ? Math.min((FILL * N) / bh, (MAX_OTHER * N) / bw) : Math.min((FILL * N) / bw, (MAX_OTHER * N) / bh);
+  // 5. Scale. Bracelets: 80% of the width (the height at most 90%), centred; a side the source already cuts stays on that edge.
+  //    Necklaces: pendant + the V of chain fill 65% of the height (the width at most 90%), centred a little below the middle;
+  //    a chain the source cuts at the top fades softly into the white over its top 12%, so no hard cut floats in the frame.
+  const neck = type === "necklace";
+  const s = neck ? Math.min((NECK_FILL * N) / bh, (MAX_OTHER * N) / bw) : Math.min((FILL * N) / bw, (MAX_OTHER * N) / bh);
   const w = Math.round(bw * s), h = Math.round(bh * s);
-  // A product the source already cuts at an edge (within 3px) stays against that edge; otherwise centred.
   const touch = { t: top <= 3 + m, b: bot >= H - 4 - m, l: left <= 3 + m, r: right >= W - 4 - m };
-  const x0 = touch.l && !touch.r ? 0 : touch.r && !touch.l ? N - w : Math.round((N - w) / 2);
-  const y0 = touch.t && !touch.b ? 0 : touch.b && !touch.t ? N - h : Math.round((N - h) / 2);
+  const x0 = !neck && touch.l && !touch.r ? 0 : !neck && touch.r && !touch.l ? N - w : Math.round((N - w) / 2);
+  const y0 = neck ? Math.round(NECK_CENTRE * N - h / 2) : touch.t && !touch.b ? 0 : touch.b && !touch.t ? N - h : Math.round((N - h) / 2);
+  if (neck && touch.t) {
+    const fade = Math.round(bh * 0.12);
+    for (let y = top; y < top + fade; y++) { const a = 1 - (y - top) / fade; // 1 at the cut .. 0
+      for (let x = left; x <= right; x++) { const i = px(x, y); for (let c = 0; c < 3; c++) img[i + c] = Math.round(img[i + c] + (255 - img[i + c]) * a * a); } }
+  }
 
   const piece = await sharp(img, { raw: { width: W, height: H, channels: 3 } })
     .extract({ left, top, width: bw, height: bh }).resize(w, h, { kernel: "lanczos3" }).png().toBuffer();

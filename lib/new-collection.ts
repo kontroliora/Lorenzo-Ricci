@@ -90,23 +90,22 @@ export const COLLECTION_PHOTOS: Readonly<Record<string, string>> = {
 /** The piece is in the shop: the collection is switched on AND the piece has its photos. */
 export const pieceLive = (slug: string): boolean => NEW_COLLECTION_LIVE && !!COLLECTION_PHOTOS[slug];
 
-/**
- * The home page's "Нова колекция" row (BG + RO): 4 necklaces + 4 bracelets, alternating necklace / bracelet and gold / silver,
- * each in the shop (photos), in stock and with a white-background photo as its no. 1 (the card shows photo no. 1, so the row
- * looks uniform). Each list is in showcase order; a piece that drops out is replaced by the next one of the same list.
- */
-const HOME_NECKLACES = ["necklace-verdis-gold", "necklace-lumen-silver", "necklace-noctis-gold", "necklace-verdis-silver", "necklace-lumen-gold", "necklace-noctis-silver"];
-const HOME_BRACELETS = ["bracelet-solaris-silver", "bracelet-spira-gold", "bracelet-linea-silver", "bracelet-verdis-gold", "bracelet-solaris-gold", "bracelet-spira-silver", "bracelet-linea-gold"];
-export const whiteCover = (slug: string): boolean => COLLECTION_PHOTOS[slug]?.[0] === "p";
-export function homeCollectionPicks<T extends { slug: string; inStock: boolean }>(shop: T[], soldOut: ReadonlySet<string>, max = 8): T[] {
-  const ok = (slug: string) => shop.find((p) => p.slug === slug && p.inStock && !soldOut.has(slug) && whiteCover(slug));
-  const take = (list: string[]) => list.map(ok).filter((p): p is T => !!p).slice(0, max / 2);
-  const [n, b] = [take(HOME_NECKLACES), take(HOME_BRACELETS)];
-  return Array.from({ length: Math.max(n.length, b.length) }, (_, i) => [n[i], b[i]]).flat().filter((p): p is T => !!p).slice(0, max);
-}
+/** Collection order everywhere (home, /jewellery, picker): by model Verdis → Noctis → Lumen → Linea → Solaris → Spira, and within a
+ *  model necklace gold, necklace silver, bracelet gold, bracelet silver (= COLLECTION_PIECES order). */
+export const collectionRank = (slug: string): number => { const i = COLLECTION_PIECES.findIndex((p) => p.slug === slug); return i < 0 ? 999 : i; };
 
-/** Home "Нова колекция" cards: necklaces zoomed on the pendant (it sits at 45-79% of the photo height, under the chain). */
-export const NECKLACE_CARD_ZOOM = { scale: 1.6, origin: "50% 63%" } as const
+/**
+ * The home page's "Дамска колекция" row (BG + RO): one row of 4 = the first 4 pieces in collection order (the full Verdis set)
+ * that are in the shop, in stock and have a white-background photo as no. 1 (the card shows photo no. 1, so the row looks uniform);
+ * a piece without one is skipped and the next one in the same order takes its place.
+ */
+export const whiteCover = (slug: string): boolean => COLLECTION_PHOTOS[slug]?.[0] === "p";
+export function homeCollectionPicks<T extends { slug: string; inStock: boolean }>(shop: T[], soldOut: ReadonlySet<string>, max = 4): T[] {
+  return shop
+    .filter((p) => isCollectionSlug(p.slug) && p.inStock && !soldOut.has(p.slug) && whiteCover(p.slug))
+    .sort((a, b) => collectionRank(a.slug) - collectionRank(b.slug))
+    .slice(0, max);
+}
 
 /**
  * URL of a new-collection photo, with its version tag (content hash from lib/collection-photo-versions.json, written by

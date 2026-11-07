@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Product } from "@/lib/types";
-import { isCollectionSlug } from "@/lib/new-collection";
+import { collectionRank, isCollectionSlug } from "@/lib/new-collection";
 import { ProductCard } from "@/components/product/ProductCard";
 
 interface Props {
@@ -18,18 +18,27 @@ export function JewelleryPageClient({ bracelets, necklaces }: Props) {
   const showBracelets = !category || category === "bracelets";
   const showNecklaces = !category || category === "necklaces";
 
-  // A link with an #anchor (the menu's #nova-kolekcia / #noua-colectie, the home banners' #bracelets / #necklaces): this grid is
+  // A link with an #anchor (the menu's #damska-kolekcia / #colectia-pentru-femei, the home banners' #bracelets / #necklaces): this grid is
   // drawn in the browser, after the browser's own jump to the anchor, so jump once it exists (the CSS scroll-margin clears the header).
+  // The section was renamed (#nova-kolekcia -> #damska-kolekcia): old links (ads, bookmarks, shared links) are rewritten to the new anchor.
   useEffect(() => {
-    const id = decodeURIComponent(window.location.hash.slice(1));
-    if (!id) return;
-    const t = window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: "start" }), 50);
-    return () => window.clearTimeout(t);
+    let t = 0;
+    const jump = () => {
+      let id = decodeURIComponent(window.location.hash.slice(1));
+      if (!id) return;
+      if (id === "nova-kolekcia") { id = "damska-kolekcia"; window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}#${id}`); }
+      window.clearTimeout(t);
+      t = window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: "start" }), 50);
+    };
+    jump();
+    window.addEventListener("hashchange", jump);
+    return () => { window.clearTimeout(t); window.removeEventListener("hashchange", jump); };
   }, [category]);
 
   // The 2026 collection (lib/new-collection.ts) gets its own section first. The existing range follows under the info block
   // whose "750 IT" stamp line belongs to it only - the new pieces carry no stamp (owner, 07.11.2026).
-  const newPieces = [...(showBracelets ? bracelets : []), ...(showNecklaces ? necklaces : [])].filter((p) => isCollectionSlug(p.slug));
+  const newPieces = [...(showBracelets ? bracelets : []), ...(showNecklaces ? necklaces : [])].filter((p) => isCollectionSlug(p.slug))
+    .sort((a, b) => collectionRank(a.slug) - collectionRank(b.slug)); // by model, necklaces before bracelets
   const oldBracelets = bracelets.filter((p) => !isCollectionSlug(p.slug));
   const oldNecklaces = necklaces.filter((p) => !isCollectionSlug(p.slug));
   const showOldRange = (showBracelets && oldBracelets.length > 0) || (showNecklaces && oldNecklaces.length > 0);
@@ -124,11 +133,11 @@ export function JewelleryPageClient({ bracelets, necklaces }: Props) {
 
         {/* The 2026 collection */}
         {newPieces.length > 0 && (
-          <div id="nova-kolekcia" data-testid="new-collection" className="mb-20 scroll-mt-[132px]">
+          <div id="damska-kolekcia" data-testid="new-collection" className="mb-20 scroll-mt-[132px]">
             <div className="flex items-center justify-between mb-10">
               <div>
                 <p className="section-tag mb-2">Lorenzo Ricci</p>
-                <h2 className="font-serif text-display-sm text-charcoal">Нова колекция</h2>
+                <h2 className="font-serif text-display-sm text-charcoal">Дамска колекция</h2>
               </div>
               <div className="h-px flex-1 bg-border ml-8" />
             </div>
