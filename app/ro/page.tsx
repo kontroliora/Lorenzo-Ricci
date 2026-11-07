@@ -77,10 +77,11 @@ export default async function RoHomePage() {
   return (
     <>
       <RoHero campaign={saleLabel && salePct >= 5 ? { label: saleLabel, pct: salePct } : null} />
+      {/* The new collection is the main campaign: right under the hero, above the watches and leather */}
+      <RoNewCollectionSection pieces={newPieces} />
       <RoFeaturedWatches watches={watches} />
       <RoLeatherSection products={leather} />
       {flagship && <RoMilanoAvorioFlagship product={flagship} />}
-      <RoNewCollectionSection pieces={newPieces} />
       <RoJewellerySection />
       <RoEditorialJewellery />
       <RoBrandValues />

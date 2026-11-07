@@ -59,6 +59,7 @@ export const COLLECTION_PIECES: { slug: string; design: CollectionDesign; type: 
  * The photos of each piece: public/Products/jewellery/new-collection/{design}-{type}-{metal}-{n}.webp (2000×2000), n = 1 is
  * the cover. One letter per photo, in order, naming what it shows (its alt text, lib/new-collection-products.ts):
  * p = product on white, m = on a model, b = in the box, c = the closed box, d = detail / another angle.
+ * The order is the owner's own numbering of the photos in the source folders (New Jewellery/), never re-sorted by kind.
  * A piece missing here has NO photos: it shows the logo placeholder and stays hidden even with NEW_COLLECTION_LIVE on.
  */
 export const COLLECTION_PHOTOS: Readonly<Record<string, string>> = {
@@ -69,39 +70,40 @@ export const COLLECTION_PHOTOS: Readonly<Record<string, string>> = {
   "necklace-noctis-silver": "pmbc",
   "necklace-noctis-gold": "pmbc",
   // Clover bracelets: no white-background photo where it showed 5 clovers (ours have 4); those stay out of the shop.
-  "bracelet-verdis-gold": "pmbcd",
+  "bracelet-verdis-gold": "pmbdc",
   "bracelet-verdis-silver": "mbc",
-  "bracelet-lumen-gold": "mbcd",
+  "bracelet-lumen-gold": "mbdc",
   "bracelet-lumen-silver": "mbc",
   "bracelet-noctis-gold": "mbc",
   "bracelet-noctis-silver": "mbc",
-  "bracelet-linea-gold": "pmbcd",
-  "bracelet-linea-silver": "pmbcd",
-  "bracelet-solaris-gold": "pmbcd",
-  "bracelet-solaris-silver": "pmbcd",
-  "bracelet-spira-gold": "pmbcd",
-  "bracelet-spira-silver": "pmbcd",
+  "bracelet-linea-gold": "pmbdc",
+  "bracelet-linea-silver": "pdmbc",
+  "bracelet-solaris-gold": "pmcbd",
+  "bracelet-solaris-silver": "pmbdc",
+  "bracelet-spira-gold": "pmdbc",
+  "bracelet-spira-silver": "pmbdc",
 };
 
 /** The piece is in the shop: the collection is switched on AND the piece has its photos. */
 export const pieceLive = (slug: string): boolean => NEW_COLLECTION_LIVE && !!COLLECTION_PHOTOS[slug];
 
 /**
- * The home page's "Нова колекция" row (BG + RO): this showcase order (gold and silver, necklaces and bracelets mixed), then any
- * other piece; only pieces in the shop (photos) and in stock; at most `max`.
+ * The home page's "Нова колекция" row (BG + RO): 4 necklaces + 4 bracelets, alternating necklace / bracelet and gold / silver,
+ * each in the shop (photos), in stock and with a white-background photo as its no. 1 (the card shows photo no. 1, so the row
+ * looks uniform). Each list is in showcase order; a piece that drops out is replaced by the next one of the same list.
  */
-const HOME_ORDER = [
-  "necklace-verdis-gold", "bracelet-spira-gold", "necklace-lumen-gold", "bracelet-solaris-gold",
-  "necklace-noctis-silver", "bracelet-verdis-silver", "bracelet-linea-gold", "necklace-lumen-silver",
-  "bracelet-lumen-silver", "necklace-verdis-silver", "bracelet-linea-silver", "bracelet-solaris-silver", "bracelet-spira-silver",
-];
+const HOME_NECKLACES = ["necklace-verdis-gold", "necklace-lumen-silver", "necklace-noctis-gold", "necklace-verdis-silver", "necklace-lumen-gold", "necklace-noctis-silver"];
+const HOME_BRACELETS = ["bracelet-solaris-silver", "bracelet-spira-gold", "bracelet-linea-silver", "bracelet-verdis-gold", "bracelet-solaris-gold", "bracelet-spira-silver", "bracelet-linea-gold"];
+export const whiteCover = (slug: string): boolean => COLLECTION_PHOTOS[slug]?.[0] === "p";
 export function homeCollectionPicks<T extends { slug: string; inStock: boolean }>(shop: T[], soldOut: ReadonlySet<string>, max = 8): T[] {
-  const rank = (slug: string) => { const i = HOME_ORDER.indexOf(slug); return i < 0 ? HOME_ORDER.length : i; };
-  return shop
-    .filter((p) => isCollectionSlug(p.slug) && p.inStock && !soldOut.has(p.slug))
-    .sort((a, b) => rank(a.slug) - rank(b.slug))
-    .slice(0, max);
+  const ok = (slug: string) => shop.find((p) => p.slug === slug && p.inStock && !soldOut.has(slug) && whiteCover(slug));
+  const take = (list: string[]) => list.map(ok).filter((p): p is T => !!p).slice(0, max / 2);
+  const [n, b] = [take(HOME_NECKLACES), take(HOME_BRACELETS)];
+  return Array.from({ length: Math.max(n.length, b.length) }, (_, i) => [n[i], b[i]]).flat().filter((p): p is T => !!p).slice(0, max);
 }
+
+/** Home "Нова колекция" cards: necklaces zoomed on the pendant (it sits at 45-79% of the photo height, under the chain). */
+export const NECKLACE_CARD_ZOOM = { scale: 1.6, origin: "50% 63%" } as const
 
 /** The two on-model photos of the home section's large image: a necklace on the neck, a bracelet on the wrist (Lumen Сребро). */
 export const HOME_HERO_PHOTOS = {

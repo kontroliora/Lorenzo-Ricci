@@ -21,6 +21,8 @@ interface RoProductCardProps {
   product: Product;
   priority?: boolean;
   learnMore?: boolean;
+  /** Zoom the cover photo (not the hover one), e.g. on a necklace's pendant in the home "Нова колекция" row. */
+  coverZoom?: { scale: number; origin: string };
 }
 
 /**
@@ -30,7 +32,7 @@ interface RoProductCardProps {
 export const roBadge = (badge?: string): string | undefined =>
   badge && !hasCyrillic(badge) ? badge : undefined;
 
-export function RoProductCard({ product, priority = false, learnMore = false }: RoProductCardProps) {
+export function RoProductCard({ product, priority = false, learnMore = false, coverZoom }: RoProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const [added, setAdded] = useState(false);
   const [isNight, setIsNight] = useState(false);
@@ -148,17 +150,19 @@ export function RoProductCard({ product, priority = false, learnMore = false }: 
         ) : (
           <>
             {/* Non-watch: hover image swap */}
-            <Image
-              src={smallOrOriginal(product.coverImage.src)}
-              alt={coverAlt}
-              fill
-              priority={priority}
-              quality={85}
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className={`object-contain object-center p-4 transition-all duration-700 ease-out ${
-                hovered ? "opacity-0 scale-105" : "opacity-100 scale-100"
-              }`}
-            />
+            <div className="absolute inset-0" style={coverZoom ? { transform: `scale(${coverZoom.scale})`, transformOrigin: coverZoom.origin } : undefined}>
+              <Image
+                src={smallOrOriginal(product.coverImage.src)}
+                alt={coverAlt}
+                fill
+                priority={priority}
+                quality={85}
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className={`object-contain object-center p-4 transition-all duration-700 ease-out ${
+                  hovered ? "opacity-0 scale-105" : "opacity-100 scale-100"
+                }`}
+              />
+            </div>
             <Image
               src={secondImage.src}
               alt={secondAlt}

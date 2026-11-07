@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { getImageProps } from "next/image";
 import { useCallback, useEffect, useState } from "react";
+import { HeroCollectionSlide, HeroDots, useHeroSlides } from "@/components/home/HeroCollectionSlide";
 
 // The static cover is the page's LCP (fetched at high priority) and the poster under the video. The
 // looping video is mounted only after the page has loaded and the browser is idle, so it never competes
@@ -21,6 +22,8 @@ export function Hero({ campaign = null }: { campaign?: { label: string; pct: num
   const [variant, setVariant] = useState<"mobile" | "desktop" | null>(null);
   const [playing, setPlaying] = useState(false);
   const [failed, setFailed] = useState(false);
+  // Two slides: the watches (first, the LCP) and the new collection (mounted after load), alternating.
+  const { slide, setSlide, ready, setPaused, swipe } = useHeroSlides(2);
 
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 100);
@@ -68,7 +71,7 @@ export function Hero({ campaign = null }: { campaign?: { label: string; pct: num
   const { props: desktop } = getImageProps({ ...common, src: "/covers/desktop cover.webp" });
 
   return (
-    <section className="relative w-full h-screen min-h-[600px] max-h-[1000px] overflow-hidden">
+    <section className="relative w-full h-screen min-h-[600px] max-h-[1000px] overflow-hidden" {...swipe} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
       {/* Static cover: shown at once, stays under the video, and stays if the video never starts */}
       <picture>
         <source media={DESKTOP_MIN} srcSet={desktop.srcSet} sizes={desktop.sizes} />
@@ -100,10 +103,11 @@ export function Hero({ campaign = null }: { campaign?: { label: string; pct: num
       {/* Gradient overlay - adds depth top & bottom */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
 
-      {/* Content */}
+      {/* Content (the watch slide); hidden while the new-collection slide shows */}
       <div
+        aria-hidden={slide !== 0}
         className={`relative z-10 h-full flex flex-col items-center justify-center text-center px-5 transition-all duration-1000 drop-shadow-lg ${
-          loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+          loaded && slide === 0 ? "opacity-100 translate-y-0" : slide !== 0 ? "opacity-0 pointer-events-none" : "opacity-0 translate-y-6"
         }`}
       >
         <p className="font-sans text-[10px] font-light tracking-[0.32em] uppercase text-white/55 mb-6 animate-fade-up">
@@ -161,6 +165,18 @@ export function Hero({ campaign = null }: { campaign?: { label: string; pct: num
         </div>
       </div>
 
+      <HeroCollectionSlide
+        active={slide === 1}
+        mounted={ready}
+        tag="Lorenzo Ricci · 2026"
+        title="Нова колекция"
+        badge="1+1 БЕЗПЛАТНО"
+        line="Второто бижу е подарък"
+        cta="Разгледай колекцията"
+        href="/jewellery#nova-kolekcia"
+        alts={{ necklace: "Колие Lumen – Сребро на модел, нова колекция Lorenzo Ricci", bracelet: "Гривна Lumen – Сребро на модел, нова колекция Lorenzo Ricci" }}
+      />
+      {ready && <HeroDots slide={slide} onSelect={setSlide} labels={["Часовници", "Нова колекция"]} />}
       {/* Scroll indicator */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
         <div className="w-px h-12 bg-gradient-to-b from-white/40 to-transparent mx-auto" />

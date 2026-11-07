@@ -51,10 +51,11 @@ export default async function HomePage() {
     <>
       <Hero campaign={saleLabel && salePct >= 5 ? { label: saleLabel, pct: salePct } : null} />
       {saleLabel && salePct >= 5 && <SaleBanner label={saleLabel} pct={salePct} />}
+      {/* The new collection is the main campaign: right under the hero and the sale bar, above the watches and leather */}
+      <NewCollectionSection pieces={newPieces} />
       <FeaturedWatches soldOut={soldOut} />
       <WalletsSection soldOut={soldOut} />
       {milanoAvorio && <MilanoAvorioFlagship product={milanoAvorio} />}
-      <NewCollectionSection pieces={newPieces} />
       <JewellerySection />
       <EditorialJewellery />
       <BrandValues />

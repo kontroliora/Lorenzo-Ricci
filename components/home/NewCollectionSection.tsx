@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { ProductCard } from "@/components/product/ProductCard";
-import { HOME_HERO_PHOTOS } from "@/lib/new-collection";
+import { HOME_HERO_PHOTOS, NECKLACE_CARD_ZOOM } from "@/lib/new-collection";
 
 // Home page (BG): the 2026 women's collection, right above "Мъжка колекция". Title, the 1+1 line, a large two-photo image
 // (necklace on the neck + bracelet on the wrist), the button to its section on /jewellery, then up to 8 pieces (in the shop and in
@@ -10,9 +10,9 @@ import { HOME_HERO_PHOTOS } from "@/lib/new-collection";
 export function NewCollectionSection({ pieces }: { pieces: Product[] }) {
   if (pieces.length === 0) return null;
   return (
-    <section data-testid="home-new-collection" className="py-20 sm:py-32 bg-white border-t border-border">
+    <section data-testid="home-new-collection" className="py-14 sm:py-20 bg-white border-t border-border">
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
-        <div className="text-center mb-8 sm:mb-12">
+        <div className="text-center mb-6 sm:mb-8">
           <p className="section-tag mb-4">Lorenzo Ricci</p>
           <h2 className="section-title mb-4">Нова колекция</h2>
           <div className="gold-divider" />
@@ -28,20 +28,20 @@ export function NewCollectionSection({ pieces }: { pieces: Product[] }) {
               [HOME_HERO_PHOTOS.necklace, "Колие Lumen – Сребро на модел, нова колекция Lorenzo Ricci"],
               [HOME_HERO_PHOTOS.bracelet, "Гривна Lumen – Сребро на модел, нова колекция Lorenzo Ricci"],
             ] as const).map(([src, alt]) => (
-              <div key={src} className="relative aspect-[4/5] overflow-hidden bg-ivory-warm">
+              <div key={src} className="relative aspect-[4/3] sm:aspect-[3/2] overflow-hidden bg-ivory-warm">
                 <Image
                   src={src}
                   alt={alt}
                   fill
                   quality={85}
-                  sizes="(max-width: 640px) 50vw, 600px"
+                  sizes="(max-width: 640px) 50vw, 640px"
                   className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                 />
               </div>
             ))}
           </div>
         </Link>
-        <div className="mt-6 sm:mt-8 mb-12 sm:mb-16 flex justify-center">
+        <div className="mt-5 sm:mt-6 mb-8 sm:mb-10 flex justify-center">
           <Link href="/jewellery#nova-kolekcia" className="btn-primary w-full sm:w-auto text-center" data-testid="home-new-collection-cta">
             Разгледай колекцията
           </Link>
@@ -49,7 +49,7 @@ export function NewCollectionSection({ pieces }: { pieces: Product[] }) {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-8">
           {pieces.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard key={p.id} product={p} coverZoom={p.subcategory === "necklace" ? NECKLACE_CARD_ZOOM : undefined} />
           ))}
         </div>
       </div>
