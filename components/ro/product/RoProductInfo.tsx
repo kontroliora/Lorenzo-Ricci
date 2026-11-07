@@ -36,6 +36,7 @@ import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
+import { warmProductPhoto } from "@/lib/warm-product";
 import { opoGroupOf } from "@/lib/one-plus-one";
 import { opoPriceLineRo } from "@/lib/ro/config";
 import { opoPairPrice } from "@/lib/one-plus-one";
@@ -77,21 +78,9 @@ function BoldedText({ text }: { text: string }) {
 // Colour switching must feel instant on phones: <Link prefetch> handles the route; this fetches the other
 // colour's main photo at the exact size this device already loaded, so it paints from cache after the tap.
 // Deduped per slug for the page's lifetime.
-const prefetchedSlugs = new Set<string>();
-function prefetchMainImage(slug: string) {
-  if (prefetchedSlugs.has(slug)) return;
-  const p = getProductBySlug(slug);
-  if (!p) return;
-  const src = p.images[0]?.src ?? p.coverImage.src;
-  // The gallery's main <img>: its currentSrc carries the w= and q= the browser chose.
-  const gallery = document.querySelector<HTMLImageElement>('img[sizes="(max-width: 640px) 100vw, 60vw"]');
-  const current = gallery?.currentSrc || gallery?.src;
-  if (!current || !current.includes("/_next/image?")) return;
-  prefetchedSlugs.add(slug);
-  const img = new Image();
-  img.setAttribute("fetchpriority", "low");
-  img.src = current.replace(/([?&]url=)[^&]*/, `$1${encodeURIComponent(src)}`);
-}
+// The other product's main photo, downloaded and decoded ahead at the URL this screen's gallery uses (lib/warm-product.ts;
+// the old /_next/image rewrite stopped working when images.unoptimized was switched on). A tap / hover asks for it first.
+function prefetchMainImage(slug: string) { warmProductPhoto(slug, "high"); }
 
 // Grouped, not one flat list: a product's swatch row is whichever group its own slug belongs to.
 // Only products sold in Romania (RO_SLUGS) are offered as swatches, so a swatch never links to a 404.
@@ -177,6 +166,14 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   const [added, setAdded] = useState(false);
   // 1+1 group: the free second item picked on the page (null = none; may be this same model)
   const [pick, setPick] = useState<string | null>(null);
+  // Colour swatch tapped: shown as selected at once while the (prefetched) sibling page loads.
+  const [pendingVariant, setPendingVariant] = useState<string | null>(null);
+  useEffect(() => { setPendingVariant(null); }, [product.slug]);
+  const shownVariant = pendingVariant ?? product.slug;
+  const tapVariant = (e: React.MouseEvent, slug: string) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    if (slug !== product.slug) setPendingVariant(slug);
+  };
   const opoStock = useLeatherStock(!!opoGroupOf(product.slug)); // the group's live stock (one batched call)
   // A product with no description content gets no Descriere tab and opens on the specs instead of an empty tab.
   const hasDescription = Boolean(
@@ -234,7 +231,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   useEffect(() => {
     if (variants.length === 0 || variants.length > 4) return;
     const others = variants.filter((v) => v.slug !== product.slug);
-    const id = window.setTimeout(() => others.forEach((v) => prefetchMainImage(v.slug)), 1500);
+    const id = window.setTimeout(() => others.forEach((v) => warmProductPhoto(v.slug)), 1500);
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.slug]);
@@ -418,10 +415,11 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
                 title={v.label}
                 aria-label={v.label}
                 prefetch={true}
+                onClick={(e) => tapVariant(e, v.slug)}
                 onTouchStart={() => prefetchMainImage(v.slug)}
                 onMouseEnter={() => prefetchMainImage(v.slug)}
                 className={`relative w-6 h-6 rounded-full border-2 transition-all duration-200 ${
-                  product.slug === v.slug
+                  shownVariant === v.slug
                     ? "border-navy scale-110 shadow-[0_0_0_2px_rgba(15,40,80,0.15)]"
                     : "border-border hover:border-navy/40"
                 } ${variantOff(v) ? "opacity-50" : ""}`}

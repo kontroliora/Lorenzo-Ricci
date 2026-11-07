@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useGallerySwipe } from "@/lib/use-gallery-swipe";
 import type { ProductImage } from "@/lib/types";
 import { smallVariant, smallOrOriginal } from "@/lib/image-variant";
 
@@ -10,9 +11,22 @@ interface RoProductGalleryProps {
 }
 
 export function RoProductGallery({ images, productName }: RoProductGalleryProps) {
-  const [activeIdx, setActiveIdx] = useState(0);
+  // The photo index belongs to one product: switching to a sibling product (colour / type / stone) starts at its photo 1 in the
+  // same render, with no frame of the old index on the new photos.
+  const galleryKey = images[0]?.src ?? "";
+  const [idxState, setIdxState] = useState({ key: galleryKey, idx: 0 });
+  const activeIdx = idxState.key === galleryKey ? idxState.idx : 0;
+  const setActiveIdx = useCallback((f: number | ((i: number) => number)) => {
+    setIdxState((s) => {
+      const cur = s.key === galleryKey ? s.idx : 0;
+      return { key: galleryKey, idx: typeof f === "function" ? f(cur) : f };
+    });
+  }, [galleryKey]);
   const [imageError, setImageError] = useState<Record<number, boolean>>({});
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+  // The photos next to the visible one are loaded ahead, so a swipe never shows an empty box.
+  const n = images.length;
+  const near = (i: number) => n <= 1 || i === activeIdx || i === (activeIdx + 1) % n || i === (activeIdx - 1 + n) % n;
 
   const active = images[activeIdx];
 
@@ -23,19 +37,12 @@ export function RoProductGallery({ images, productName }: RoProductGalleryProps)
   const prev = () => setActiveIdx((i) => (i - 1 + images.length) % images.length);
   const next = () => setActiveIdx((i) => (i + 1) % images.length);
 
-  // Swipe left/right on the main image changes the photo (phones). A mostly
-  // vertical drag is left to the page so scrolling still works (touch-pan-y).
-  const onTouchStart = (e: React.TouchEvent) => {
-    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  };
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStart.current) return;
-    const dx = e.changedTouches[0].clientX - touchStart.current.x;
-    const dy = e.changedTouches[0].clientY - touchStart.current.y;
-    touchStart.current = null;
-    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
-    if (dx < 0) next(); else prev();
-  };
+  // Swipe left/right on the main image changes the photo (phones); a vertical drag still scrolls the page, and a horizontal one
+  // locks the page so it cannot drift (lib/use-gallery-swipe.ts).
+  const onSwipe = useCallback((d: "next" | "prev") => {
+    setActiveIdx((i) => (i + (d === "next" ? 1 : -1) + n) % n);
+  }, [n, setActiveIdx]);
+  useGallerySwipe(box, onSwipe);
 
   return (
     <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4">
@@ -69,8 +76,7 @@ export function RoProductGallery({ images, productName }: RoProductGalleryProps)
       <div className="flex-1 min-w-0 w-full sm:w-auto sm:self-start">
       <div
         className="relative w-full aspect-square overflow-hidden bg-white border border-border touch-pan-y"
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
+        ref={box}
       >
         {/* All gallery images pre-rendered and stacked.
             The browser fetches every image on page load; switching is a CSS opacity
@@ -93,7 +99,7 @@ export function RoProductGallery({ images, productName }: RoProductGalleryProps)
                   src={img.src}
                   alt={img.alt}
                   fetchPriority={i === 0 ? "high" : undefined}
-                  loading={i === 0 ? "eager" : "lazy"}
+                  loading={i === 0 || near(i) ? "eager" : "lazy"}
                   decoding="async"
                   className={`absolute inset-0 h-full w-full object-contain object-center transition-opacity duration-150 ${
                     i === activeIdx ? "opacity-100" : "opacity-0"
@@ -115,6 +121,7 @@ export function RoProductGallery({ images, productName }: RoProductGalleryProps)
             // bandwidth on 4G. The rest load normally behind it.
             priority={i === 0}
             fetchPriority={i === 0 ? "high" : undefined}
+            loading={i !== 0 && near(i) ? "eager" : undefined}
             quality={80}
             sizes="(max-width: 640px) 100vw, 60vw"
             className={`object-contain object-center transition-opacity duration-150 ${

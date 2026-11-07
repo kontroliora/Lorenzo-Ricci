@@ -22,6 +22,7 @@ import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
+import { warmProductPhoto } from "@/lib/warm-product";
 import { opoGroupOf, opoPriceLineBg, opoPairPrice, opoPairPriceBg } from "@/lib/one-plus-one";
 import { useLeatherStock } from "@/lib/use-gifts";
 
@@ -62,21 +63,9 @@ function BoldedText({ text }: { text: string }) {
   );
 }
 
-const prefetchedSlugs = new Set<string>();
-function prefetchMainImage(slug: string) {
-  if (prefetchedSlugs.has(slug)) return;
-  const p = getProductBySlug(slug);
-  if (!p) return;
-  const src = p.images[0]?.src ?? p.coverImage.src;
-  // The gallery's main <img>: its currentSrc carries the w= and q= the browser chose.
-  const gallery = document.querySelector<HTMLImageElement>('img[sizes="(max-width: 640px) 100vw, 60vw"]');
-  const current = gallery?.currentSrc || gallery?.src;
-  if (!current || !current.includes("/_next/image?")) return;
-  prefetchedSlugs.add(slug);
-  const img = new Image();
-  img.setAttribute("fetchpriority", "low");
-  img.src = current.replace(/([?&]url=)[^&]*/, `$1${encodeURIComponent(src)}`);
-}
+// The other product's main photo, downloaded and decoded ahead at the URL this screen's gallery uses (lib/warm-product.ts;
+// the old /_next/image rewrite stopped working when images.unoptimized was switched on). A tap / hover asks for it first.
+function prefetchMainImage(slug: string) { warmProductPhoto(slug, "high"); }
 
 // Grouped, not one flat list: a product's swatch row is whichever group its own
 // slug belongs to, so the Yachting trio switches only among itself and the
@@ -156,6 +145,14 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   const [added, setAdded] = useState(false);
   // 1+1 group: the free second item picked on the page (null = none; may be this same model)
   const [pick, setPick] = useState<string | null>(null);
+  // Colour swatch tapped: shown as selected at once while the (prefetched) sibling page loads.
+  const [pendingVariant, setPendingVariant] = useState<string | null>(null);
+  useEffect(() => { setPendingVariant(null); }, [product.slug]);
+  const shownVariant = pendingVariant ?? product.slug;
+  const tapVariant = (e: React.MouseEvent, slug: string) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    if (slug !== product.slug) setPendingVariant(slug);
+  };
   const opoStock = useLeatherStock(!!opoGroupOf(product.slug)); // the group's live stock (one batched call)
   // A product with no description content (e.g. the Yachting watches until they're
   // measured) gets no Описание tab and opens on the specs instead of an empty tab.
@@ -186,7 +183,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   useEffect(() => {
     if (!variants || variants.length > 4) return;
     const others = variants.filter((v) => v.slug !== product.slug);
-    const id = window.setTimeout(() => others.forEach((v) => prefetchMainImage(v.slug)), 1500);
+    const id = window.setTimeout(() => others.forEach((v) => warmProductPhoto(v.slug)), 1500);
     return () => window.clearTimeout(id);
   }, [variants, product.slug]);
 
@@ -391,6 +388,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
                   href={`/products/${v.slug}`}
                   title={v.label}
                   prefetch={true}
+                  onClick={(e) => tapVariant(e, v.slug)}
                   onTouchStart={() => prefetchMainImage(v.slug)}
                   onMouseEnter={() => prefetchMainImage(v.slug)}
                   aria-label={v.label}
@@ -398,7 +396,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
                 >
                   <span
                     className={`relative block w-6 h-6 rounded-full border-2 transition-all duration-200 ${
-                      product.slug === v.slug
+                      shownVariant === v.slug
                         ? "border-navy scale-110 shadow-[0_0_0_2px_rgba(15,40,80,0.15)]"
                         : "border-border hover:border-navy/40"
                     } ${variantOff(v) ? "opacity-50" : ""}`}
