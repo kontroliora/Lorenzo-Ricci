@@ -161,21 +161,35 @@ const materialSpecs = (metal: Metal, lang: "bg" | "ro"): ProductSpec[] =>
       : [{ label: "Material", value: "Oțel inoxidabil 316L" }];
 
 // "Детайли" under the bullets (ProductDetails): Метал · Вложка / Камъни · Дължина · Закопчаване · Артикул. A row with no value is
-// hidden, so the pending answers (silver finish, stones, lengths - owner) only need their value filled in here.
+// hidden, so the pending answers (silver finish, stones, bangle sizes - owner) only need their value filled in here.
 const METAL_ROW: Record<Metal, Lang> = {
   gold: { bg: "316L неръждаема стомана с 18K PVD покритие", ro: "Oțel inoxidabil 316L cu placare 18K PVD" }, // the old gold jewellery's wording
   silver: { bg: "316L неръждаема стомана", ro: "Oțel inoxidabil 316L" }, // finish pending (owner)
 };
+// Supplier's measurements (owner, 07.11.2026): the clover pieces only - Linea / Solaris / Spira have none yet (rows hidden).
+const CLOVER: Record<CollectionKey, boolean> = { verdis: true, noctis: true, lumen: true, linea: false, solaris: false, spira: false };
+const LENGTH_ROW: Record<PieceType, Lang> = {
+  necklace: { bg: "38 cm + 6 cm удължител", ro: "38 cm + 6 cm prelungitor" },
+  bracelet: { bg: "16,5 cm + 5 cm удължител", ro: "16,5 cm + 5 cm prelungitor" },
+};
+const CLOVER_SIZE_ROW: Partial<Record<PieceType, Lang>> = { bracelet: { bg: "1,3 cm", ro: "1,3 cm" } }; // necklace: not given yet
+const CLOVER_CLASP: Lang = { bg: "Карабинер с удължител", ro: "Carabină cu prelungitor" };
+const lengthOf = (key: CollectionKey, type: PieceType, lang: "bg" | "ro"): string => (CLOVER[key] ? LENGTH_ROW[type][lang] : "");
+
 const CLASP_ROW: Partial<Record<CollectionKey, Lang>> = {
+  verdis: CLOVER_CLASP,
+  noctis: CLOVER_CLASP,
+  lumen: CLOVER_CLASP,
   linea: { bg: "Скрита закопчалка", ro: "Închizătoare ascunsă" },
   solaris: { bg: "Скрита закопчалка", ro: "Închizătoare ascunsă" },
   spira: { bg: "Скрита закопчалка", ro: "Închizătoare ascunsă" },
 };
-function details(key: CollectionKey, metal: Metal, skuCode: string, lang: "bg" | "ro"): ProductSpec[] {
+function details(key: CollectionKey, type: PieceType, metal: Metal, skuCode: string, lang: "bg" | "ro"): ProductSpec[] {
   return [
     { label: lang === "bg" ? "Метал" : "Metal", value: METAL_ROW[metal][lang] },
     ...(TEXT[key].extraSpecs ?? []).map((s) => ({ label: s.label[lang], value: s.value?.[lang] ?? "" })), // Вложка / Камъни
-    { label: lang === "bg" ? "Дължина" : "Lungime", value: "" }, // pending the owner's measurement
+    { label: lang === "bg" ? "Дължина" : "Lungime", value: lengthOf(key, type, lang) },
+    { label: lang === "bg" ? "Размер на детелината" : "Dimensiunea trifoiului", value: CLOVER[key] ? (CLOVER_SIZE_ROW[type]?.[lang] ?? "") : "" },
     { label: lang === "bg" ? "Закопчаване" : "Închidere", value: CLASP_ROW[key]?.[lang] ?? "" },
     { label: lang === "bg" ? "Артикул" : "Cod produs", value: skuCode },
   ];
@@ -188,7 +202,7 @@ function specs(key: CollectionKey, type: PieceType, metal: Metal, lang: "bg" | "
   return [
     ...materialSpecs(metal, lang),
     ...(TEXT[key].extraSpecs ?? []).map((s) => ({ label: s.label[lang], value: s.value?.[lang] ?? "" })),
-    { label: lang === "bg" ? "Дължина" : "Lungime", value: "" }, // pending the owner's measurement
+    { label: lang === "bg" ? "Дължина" : "Lungime", value: lengthOf(key, type, lang) }, // same as "Детайли"
     { label: lang === "bg" ? "Пол" : "Gen", value: lang === "bg" ? "Дамски" : "Damă" },
     { label: lang === "bg" ? "Цвят" : "Culoare", value: COLOR[metal][lang] },
   ];
@@ -222,7 +236,7 @@ export const NEW_COLLECTION_PRODUCTS: Product[] = COLLECTION_PIECES.map(({ slug,
     description: fill(t.description[type].bg, metal, "bg"),
     features: t.features[type].map((f) => f.bg),
     specs: specs(design.key, type, metal, "bg"),
-    details: details(design.key, metal, sku(type, design.key, metal), "bg"),
+    details: details(design.key, type, metal, sku(type, design.key, metal), "bg"),
     deliveryNote: DELIVERY_NOTE.bg,
     coverImage: photos(slug, type, design.key, metal, alt, "bg")[0],
     images: photos(slug, type, design.key, metal, alt, "bg"),
@@ -251,7 +265,7 @@ export const NEW_COLLECTION_RO: Record<string, {
       description: fill(t.description[type].ro, metal, "ro"),
       features: t.features[type].map((f) => f.ro),
       specs: specs(design.key, type, metal, "ro"),
-      details: details(design.key, metal, sku(type, design.key, metal), "ro"),
+      details: details(design.key, type, metal, sku(type, design.key, metal), "ro"),
       deliveryNote: DELIVERY_NOTE.ro,
       warranty: "Garanție pe viață",
       coverAlt: `${name} Lorenzo Ricci`,
