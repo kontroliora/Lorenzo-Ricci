@@ -7,7 +7,8 @@ import { CollectionQuickView } from "@/components/product/CollectionQuickView";
 
 // The women's collection's free second piece (1+1), BG + RO (owner, 08.11.2026):
 //   1. One line: "1. [this piece] ✓   2. Изберете второто бижу – безплатно:" (the page's piece is the first of the two).
-//   2. Every piece, grouped Детелини / Пирони / Змия; the other half of the set (same clover model and metal, necklace <->
+//   2. Phones (< 640px): a 4-column grid, every piece visible without swiping; desktop: fixed 90px thumbnails that wrap.
+//      Every piece, grouped Детелини / Пирони / Змия; the other half of the set (same clover model and metal, necklace <->
 //      bracelet) is the first thumbnail of Детелини with a small gold "Комплект" above it. Sold out = greyed, not clickable.
 //   3. A tap on a piece opens a quick view (modal on desktop, bottom sheet on phones); the piece is picked only by its
 //      "Избери за второ бижу" button.
@@ -67,7 +68,7 @@ export function CollectionFreePicker({ items, currentName, matchSlug, selected, 
         return (
           <div key={g} className="mt-3">
             <p className="font-sans text-[10px] tracking-widest uppercase text-ink-muted mb-2">{text.groups[g]}</p>
-            <div role="radiogroup" aria-label={text.groups[g]} className="flex gap-2.5 overflow-x-auto sm:overflow-visible sm:flex-wrap pb-1.5 snap-x -mr-5 pr-5 sm:mr-0 sm:pr-0">
+            <div role="radiogroup" aria-label={text.groups[g]} className="grid grid-cols-4 gap-x-2 gap-y-3 sm:flex sm:flex-wrap sm:gap-2.5 pb-1.5">
               {list.map((o) => {
                 const on = selected === o.slug;
                 return (
@@ -81,17 +82,17 @@ export function CollectionFreePicker({ items, currentName, matchSlug, selected, 
                     title={o.available ? o.name : `${o.name} – ${text.soldOut}`}
                     onClick={() => setViewing(o.slug)}
                     data-testid={`opo-pick-${o.slug}`}
-                    className={`group flex-shrink-0 w-[90px] snap-start text-center ${o.available ? "cursor-pointer" : "cursor-not-allowed"}`}
+                    className={`group min-w-0 w-full sm:flex-shrink-0 sm:w-[90px] text-center ${o.available ? "cursor-pointer" : "cursor-not-allowed"}`}
                   >
                     {hasSet && (
-                      <span className="block h-4 mb-0.5 font-sans text-[10px] leading-4 tracking-[0.12em] uppercase text-gold-dark font-medium">
+                      <span className="block h-4 mb-0.5 font-sans text-[9px] sm:text-[10px] leading-4 tracking-[0.1em] sm:tracking-[0.12em] uppercase text-gold-dark font-medium">
                         {o.slug === matchSlug ? text.setLabel : ""}
                       </span>
                     )}
-                    <span className={`relative block w-[90px] h-[90px] overflow-hidden bg-white border-2 transition-all duration-150 ${
+                    <span className={`relative block w-full aspect-square sm:w-[90px] sm:h-[90px] sm:aspect-auto overflow-hidden bg-white border-2 transition-all duration-150 ${
                       on ? "border-navy shadow-[0_0_0_3px_rgba(15,40,80,0.15)]" : o.available ? "border-border group-hover:border-navy/40" : "border-border"
                     }`}>
-                      <Image src={smallOrOriginal(o.image.src)} alt={o.image.alt} fill quality={60} sizes="90px" className={`object-contain p-1 ${o.available ? "" : "grayscale opacity-40"}`} />
+                      <Image src={smallOrOriginal(o.image.src)} alt={o.image.alt} fill quality={60} sizes="(max-width: 639px) 80px, 90px" className={`object-contain p-1 ${o.available ? "" : "grayscale opacity-40"}`} />
                       {on && <Check />}
                       {!o.available && (
                         <svg aria-hidden viewBox="0 0 90 90" className="absolute inset-0 w-full h-full pointer-events-none">
@@ -99,7 +100,7 @@ export function CollectionFreePicker({ items, currentName, matchSlug, selected, 
                         </svg>
                       )}
                     </span>
-                    <span className={`block mt-1 font-sans text-[11px] leading-tight min-h-[2.5em] ${
+                    <span className={`block mt-1 font-sans text-[10px] sm:text-[11px] leading-tight min-h-[2.5em] break-words ${
                       on ? "text-navy font-medium" : o.available ? "text-ink-soft" : "text-ink-faint line-through"
                     }`}>
                       {o.name}
