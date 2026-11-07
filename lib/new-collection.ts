@@ -67,8 +67,14 @@ export const COLLECTION_PHOTOS: Readonly<Record<string, string>> = {
   "necklace-lumen-gold": "pmbc",
   "necklace-lumen-silver": "pmbc",
   "necklace-noctis-silver": "pmbc",
-  "bracelet-verdis-silver": "pmbcd",
-  "bracelet-lumen-silver": "pmbcd",
+  "necklace-noctis-gold": "pmbc",
+  // Clover bracelets: no white-background photo where it showed 5 clovers (ours have 4); those stay out of the shop.
+  "bracelet-verdis-gold": "pmbcd",
+  "bracelet-verdis-silver": "mbc",
+  "bracelet-lumen-gold": "mbcd",
+  "bracelet-lumen-silver": "mbc",
+  "bracelet-noctis-gold": "mbc",
+  "bracelet-noctis-silver": "mbc",
   "bracelet-linea-gold": "pmbcd",
   "bracelet-linea-silver": "pmbcd",
   "bracelet-solaris-gold": "pmbcd",
@@ -100,7 +106,7 @@ export function homeCollectionPicks<T extends { slug: string; inStock: boolean }
 /** The two on-model photos of the home section's large image: a necklace on the neck, a bracelet on the wrist (Lumen Сребро). */
 export const HOME_HERO_PHOTOS = {
   necklace: "/Products/jewellery/new-collection/lumen-necklace-silver-2.webp",
-  bracelet: "/Products/jewellery/new-collection/lumen-bracelet-silver-2.webp",
+  bracelet: "/Products/jewellery/new-collection/lumen-bracelet-silver-1.webp",
 } as const;
 
 export const NEW_COLLECTION_SLUGS: ReadonlySet<string> = new Set(COLLECTION_PIECES.map((p) => p.slug));

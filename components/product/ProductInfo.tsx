@@ -401,7 +401,7 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
           {opo && shipsFree && <FreeShippingBadge text="Безплатна доставка" size="page" />}
         </div>
         <SavingsLine text={saved !== null ? `Спестявате €${saved}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Безплатна доставка" : null} />
-        {isCollectionSlug(product.slug) && <BoxLine text={`Луксозна велурена кутия${shipsFree ? " · Безплатна доставка" : ""}`} />}
+        {isCollectionSlug(product.slug) && <BoxLine text="Луксозна велурена кутия LORENZO RICCI" />}
         {/* 1+1 group (lib/one-plus-one.ts): "2 картодържателя за €65 ..." and the free second one, picked here */}
         {opo && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(product.slug)} size="page" />}
         {opo && (
