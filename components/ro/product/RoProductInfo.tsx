@@ -33,7 +33,8 @@ import { campaignLabelRo } from "@/lib/sale-campaign";
 import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
-import { collectionSwatches, isCollectionSlug } from "@/lib/new-collection";
+import { collectionSwatches, isCollectionSlug, type ModelRow } from "@/lib/new-collection";
+import { CollectionModelRow } from "@/components/product/CollectionModelRow";
 import { opoGroupOf } from "@/lib/one-plus-one";
 import { opoPriceLineRo } from "@/lib/ro/config";
 import { opoPairPrice } from "@/lib/one-plus-one";
@@ -157,9 +158,10 @@ interface RoProductInfoProps {
   reviewCount?: number; // number of reviews of the same product, as the Bulgarian store shows it (lib/reviews.ts)
   reviewAvg?: number;
   reviewsTranslated?: boolean; // every one of those reviews has a Romanian text: the numbers then need no "(Bulgaria)" label
+  modelRow?: ModelRow | null;  // women's collection: "Piatră" / "Pietre" row (lib/new-collection.ts collectionModelRow)
 }
 
-export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviewsTranslated = false }: RoProductInfoProps) {
+export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviewsTranslated = false, modelRow = null }: RoProductInfoProps) {
   const addItem = useRoCart((s) => s.addItem);
   const cartItems = useRoCart((s) => s.items);
   const [added, setAdded] = useState(false);
@@ -415,6 +417,9 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           </div>
         </div>
       )}
+
+      {/* Women's collection: stone / stones row (other models, same type and metal) */}
+      {modelRow && <CollectionModelRow row={modelRow} current={product.slug} hrefPrefix="/ro/produse/" onPrefetch={prefetchMainImage} />}
 
       {/* Rating: the product's reviews from the Bulgarian store (same numbers it shows). Labelled "(Bulgaria)" until every
           one of those reviews has a Romanian text. */}

@@ -177,3 +177,41 @@ export function collectionRelated<T extends { slug: string; inStock: boolean }>(
     .sort((a, b) => tier(a.slug) - tier(b.slug) || collectionRank(a.slug) - collectionRank(b.slug))
     .slice(0, limit);
 }
+
+// ─── Model rows under the gold / silver swatches (owner, 08.11.2026) ─────────
+//
+// Clover pieces: a "Камък" row (Verdis green / Noctis black / Lumen white mother-of-pearl) that keeps the type and the metal.
+// Nail bangles: a "Камъни" row (Linea fewer stones / Solaris more stones) that keeps the metal. Spira: none.
+// An option whose piece is hidden (pieceLive) or sold out (getSoldOutSlugs: catalogue switch + stock 0) is left out; the
+// current piece always shows. A row with fewer than 2 options is not shown at all.
+
+export type ModelOption = { slug: string; label: string; color?: string; background?: string; image?: string };
+export type ModelRow = { title: string; kind: "swatch" | "image"; options: ModelOption[] };
+
+const STONE_OPTIONS: Partial<Record<CollectionKey, { bg: string; ro: string; color: string; background?: string }>> = {
+  verdis: { bg: "Зелен", ro: "Verde", color: "#1E6B47" },
+  noctis: { bg: "Черен", ro: "Negru", color: "#151515" },
+  // Mother-of-pearl: white with a soft iridescent sheen
+  lumen:  { bg: "Бял",   ro: "Alb",   color: "#F4F1EC", background: "radial-gradient(circle at 30% 28%, #FFFFFF 0%, #F3EEF4 38%, #E6EEF0 68%, #EDE6DA 100%)" },
+};
+const BANGLE_OPTIONS: Partial<Record<CollectionKey, { bg: string; ro: string }>> = {
+  linea:   { bg: "С малко камъни",  ro: "Cu mai puține pietre" },
+  solaris: { bg: "С повече камъни", ro: "Cu mai multe pietre" },
+};
+
+export function collectionModelRow(slug: string, lang: "bg" | "ro", soldOut: ReadonlySet<string>, allowed: (slug: string) => boolean = () => true): ModelRow | null {
+  const me = COLLECTION_PIECES.find((p) => p.slug === slug);
+  if (!me) return null;
+  const isStone = !!STONE_OPTIONS[me.design.key];
+  if (!isStone && !BANGLE_OPTIONS[me.design.key]) return null;
+  const keys = Object.keys(isStone ? STONE_OPTIONS : BANGLE_OPTIONS) as CollectionKey[];
+  const options = keys
+    .map((key) => ({ key, slug: collectionSlug(me.type, key, me.metal) }))
+    .filter(({ slug: s }) => s === slug || (NEW_COLLECTION_SLUGS.has(s) && pieceLive(s) && !soldOut.has(s) && allowed(s)))
+    .map(({ key, slug: s }): ModelOption => {
+      if (isStone) { const o = STONE_OPTIONS[key]!; return { slug: s, label: o[lang], color: o.color, background: o.background }; }
+      return { slug: s, label: BANGLE_OPTIONS[key]![lang], image: collectionPhoto(`${key}-${me.type}-${me.metal}-1.webp`) };
+    });
+  if (options.length < 2) return null;
+  return { title: isStone ? (lang === "bg" ? "Камък" : "Piatră") : (lang === "bg" ? "Камъни" : "Pietre"), kind: isStone ? "swatch" : "image", options };
+}

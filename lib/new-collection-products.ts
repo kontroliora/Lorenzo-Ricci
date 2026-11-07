@@ -129,7 +129,7 @@ const TEXT: Record<CollectionKey, DesignText> = {
     },
     features: {
       necklace: [],
-      bracelet: [{ bg: "Гривна пирон с камъни по цялата дължина", ro: "Brățară-cui cu pietre pe toată lungimea" }, { bg: "Блести от всеки ъгъл", ro: "Strălucește din orice unghi" }, { bg: "Отваря се със скрита закопчалка", ro: "Se deschide cu o închizătoare ascunsă" }, { bg: "Ефектна сама или до Linea", ro: "Spectaculoasă singură sau alături de Linea" }],
+      bracelet: [{ bg: "Гривна пирон с камъни до половината", ro: "Brățară-cui cu pietre până la jumătate" }, { bg: "Повече блясък от Linea", ro: "Mai multă strălucire decât Linea" }, { bg: "Отваря се със скрита закопчалка", ro: "Se deschide cu o închizătoare ascunsă" }, { bg: "Ефектна сама или до Linea", ro: "Spectaculoasă singură sau alături de Linea" }],
     },
     extraSpecs: [STONES],
   },

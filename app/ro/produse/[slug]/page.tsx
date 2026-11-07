@@ -20,7 +20,7 @@ import { RoLeatherDescription } from "@/components/ro/product/RoLeatherDescripti
 import { RoProductReviews, type RoReviewPool } from "@/components/ro/product/RoProductReviews";
 import { roSafeProduct, roMissingText } from "@/components/ro/product/ro-text";
 import { roReviewView } from "@/components/ro/product/review-data";
-import { collectionRelated, isCollectionSlug } from "@/lib/new-collection";
+import { collectionModelRow, collectionRelated, isCollectionSlug } from "@/lib/new-collection";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { RoProductCard } from "@/components/ro/RoProductCard";
 
@@ -252,6 +252,7 @@ export default async function RoProductPage({ params }: Props) {
               reviewCount={ownReviews.count}
               reviewAvg={ownReviews.avg}
               reviewsTranslated={ownReviews.allTranslated}
+              modelRow={isCollectionSlug(slug) ? collectionModelRow(slug, "ro", new Set(await getSoldOutSlugs()), (s) => RO_SLUGS.includes(s)) : null}
             />
             {bundle && <RoBundleUpsell product={slim(product)} partners={bundle.partners} discountPct={bundle.discountPct} onePlusOne={bundle.onePlusOne} />}
           </div>

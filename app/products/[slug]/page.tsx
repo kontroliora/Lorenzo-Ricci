@@ -25,7 +25,7 @@ import { getPriceOverrides, applyOverride, applyOverrides } from "@/lib/price-ov
 import { getLiveStock } from "@/lib/live-stock";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { productJsonLd, jsonLdString } from "@/lib/product-jsonld";
-import { collectionRelated, isCollectionSlug } from "@/lib/new-collection";
+import { collectionModelRow, collectionRelated, isCollectionSlug } from "@/lib/new-collection";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
 // lib/price-overrides.ts) — every product page stays statically generated
@@ -171,7 +171,7 @@ export default async function ProductPage({ params }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-16">
           <ProductGallery images={galleryImages} productName={product.name} />
           <div>
-            <ProductInfo product={product} reviewCount={reviewSummary[slug]?.count ?? reviews.length} />
+            <ProductInfo product={product} reviewCount={reviewSummary[slug]?.count ?? reviews.length} modelRow={inCollection ? collectionModelRow(product.slug, "bg", soldOut) : null} />
             <BundleUpsell product={product} />
           </div>
         </div>

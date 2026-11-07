@@ -19,7 +19,8 @@ import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
 import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
-import { collectionSwatches, isCollectionSlug } from "@/lib/new-collection";
+import { collectionSwatches, isCollectionSlug, type ModelRow } from "@/lib/new-collection";
+import { CollectionModelRow } from "@/components/product/CollectionModelRow";
 import { opoGroupOf, opoPriceLineBg, opoPairPrice, opoPairPriceBg } from "@/lib/one-plus-one";
 import { useLeatherStock } from "@/lib/use-gifts";
 
@@ -137,9 +138,10 @@ const SHOW_VIBER = false;
 interface ProductInfoProps {
   product: Product;
   reviewCount?: number;
+  modelRow?: ModelRow | null; // women's collection: "Камък" / "Камъни" row (lib/new-collection.ts collectionModelRow)
 }
 
-export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
+export function ProductInfo({ product, reviewCount = 0, modelRow = null }: ProductInfoProps) {
   const { addItem, items: cartItems } = useCartStore();
   const [added, setAdded] = useState(false);
   // 1+1 group: the free second item picked on the page (null = none; may be this same model)
@@ -395,6 +397,9 @@ export function ProductInfo({ product, reviewCount = 0 }: ProductInfoProps) {
             </div>
           </div>
       )}
+
+      {/* Women's collection: stone / stones row (other models, same type and metal) */}
+      {modelRow && <CollectionModelRow row={modelRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} />}
 
       {/* Rating */}
       {reviewCount > 0 && (
