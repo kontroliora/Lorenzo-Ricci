@@ -3,11 +3,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { EUR_RON } from "@/lib/ro/config";
 import { isUnpaidCardAttempt } from "@/lib/order-status";
-import type { Market } from "@/lib/sofia-time";
+import { shiftDay, sofiaMidnight, type Market } from "@/lib/sofia-time";
 
-// ── Thresholds (owner, 06.11.2026) ───────────────────────────────────────────
-export const MAX_COST_PER_ORDER = 25;   // € - above this an ad is red
-export const ZERO_ORDER_SPEND = 15;     // € spent today with 0 orders - red + alert
+import { MAX_COST_PER_ORDER, MIN_AD_AGE_DAYS, RULE_DAYS, ZERO_ORDER_SPEND_3D } from "@/lib/ad-rule";
+export { MAX_COST_PER_ORDER, MIN_AD_AGE_DAYS, RULE_DAYS, ZERO_ORDER_SPEND_3D };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -61,6 +60,8 @@ export type AdRow = {
   orders: number; revenue: number;        // our orders matched by utm_campaign = ad id
   costPerOrder: number | null; roas: number | null; basis: "ours" | "meta";
   todaySpend: number; todayOrders: number;
+  spend3: number; orders3: number;         // last RULE_DAYS Sofia days, today included (the ad rule)
+  ageDays: number | null;                  // since Meta's created_time; null = not known yet (meta_ads.created_time missing)
   visitors: number;                        // page_views sessions with utm_campaign = ad id (or utm_content)
   red: string[];                           // why it is red
 };
@@ -80,7 +81,7 @@ export type AdPerformance = {
 };
 
 type AdMeta = { ad_id: string; ad_name: string | null; adset_id: string | null; adset_name: string | null; campaign_id: string | null; campaign_name: string | null;
-  effective_status: string | null; market: string; product_slug: string | null; landing_url: string | null; url_tags: string | null };
+  effective_status: string | null; market: string; product_slug: string | null; landing_url: string | null; url_tags: string | null; created_time?: string | null };
 type Ins = { date: string; ad_id: string; campaign_id: string | null; market: string; spend: number; impressions: number; clicks: number; link_clicks: number; purchases: number; purchase_value: number; updated_at: string };
 
 async function selectAll<T>(sb: SupabaseClient, table: string, cols: string, apply: (q: ReturnType<ReturnType<SupabaseClient["from"]>["select"]>) => typeof q): Promise<T[]> {
@@ -94,8 +95,11 @@ async function selectAll<T>(sb: SupabaseClient, table: string, cols: string, app
   return out;
 }
 
+const AD_META_COLS = "ad_id, ad_name, adset_id, adset_name, campaign_id, campaign_name, effective_status, market, product_slug, landing_url, url_tags";
 export async function fetchAdMeta(sb: SupabaseClient): Promise<AdMeta[]> {
-  return selectAll<AdMeta>(sb, "meta_ads", "ad_id, ad_name, adset_id, adset_name, campaign_id, campaign_name, effective_status, market, product_slug, landing_url, url_tags", (q) => q);
+  // created_time comes with supabase/monitoring_v2.sql; before that column exists, read without it (age unknown).
+  const probe = await sb.from("meta_ads").select("created_time").limit(1);
+  return selectAll<AdMeta>(sb, "meta_ads", probe.error ? AD_META_COLS : `${AD_META_COLS}, created_time`, (q) => q);
 }
 
 /** Per-ad / per-campaign performance for Sofia days [since, until]; orders in [startISO, endISO]. today = Sofia date of now. */
@@ -105,9 +109,13 @@ export async function computeAdPerformance(sb: SupabaseClient, a: {
 }): Promise<AdPerformance> {
   const metas = await fetchAdMeta(sb);
   const meta = new Map(metas.map((m) => [m.ad_id, m]));
+  // The ad rule always looks at the last RULE_DAYS days, whatever period is shown.
+  const ruleDay = shiftDay(a.today, RULE_DAYS - 1);
+  const ruleStartISO = sofiaMidnight(ruleDay).toISOString();
+  const minDay = [a.since, a.today, ruleDay].sort()[0];
   const ins = await selectAll<Ins>(sb, "meta_ad_insights", "date, ad_id, campaign_id, market, spend, impressions, clicks, link_clicks, purchases, purchase_value, updated_at",
-    (q) => q.gte("date", a.since <= a.today ? a.since : a.today).lte("date", a.until >= a.today ? a.until : a.today));
-  const orders = a.orders ?? await fetchOrders(sb, a.todayStartISO < a.startISO ? a.todayStartISO : a.startISO, a.endISO);
+    (q) => q.gte("date", minDay).lte("date", a.until >= a.today ? a.until : a.today));
+  const orders = a.orders ?? await fetchOrders(sb, [a.todayStartISO, a.startISO, ruleStartISO].sort()[0], a.endISO);
 
   // utm_campaign on an order / visit -> what it names: an ad id, an ad set id, a campaign id or a campaign name.
   const byAd = new Set(metas.map((m) => m.ad_id));
@@ -128,17 +136,19 @@ export async function computeAdPerformance(sb: SupabaseClient, a: {
 
   const inWindow = (o: MarketingOrder) => o.created_at >= a.startISO && o.created_at <= a.endISO;
   const isToday = (o: MarketingOrder) => o.created_at >= a.todayStartISO;
+  const inRule = (o: MarketingOrder) => o.created_at >= ruleStartISO;
   const ords = inMarket(orders, a.market);
 
-  const adOrders = new Map<string, { n: number; rev: number; today: number }>();
+  const adOrders = new Map<string, { n: number; rev: number; today: number; n3: number }>();
   const campOrders = new Map<string, { n: number; rev: number }>();
   let unmatchedN = 0, unmatchedRev = 0, metaN = 0, metaRev = 0;
   for (const o of ords) {
     const hit = resolve(o.utm_campaign);
     if (hit?.ad) {
-      const e = adOrders.get(hit.ad) ?? { n: 0, rev: 0, today: 0 };
+      const e = adOrders.get(hit.ad) ?? { n: 0, rev: 0, today: 0, n3: 0 };
       if (inWindow(o)) { e.n++; e.rev += o.totalEur; }
       if (isToday(o)) e.today++;
+      if (inRule(o)) e.n3++;
       adOrders.set(hit.ad, e);
     } else if (hit?.campaign && inWindow(o)) {
       const e = campOrders.get(hit.campaign) ?? { n: 0, rev: 0 };
@@ -151,7 +161,7 @@ export async function computeAdPerformance(sb: SupabaseClient, a: {
   for (const v of a.utmVisitors ?? []) for (const k of [v.content, v.campaign]) if (k && byAd.has(k)) { visitors.set(k, (visitors.get(k) ?? 0) + v.sessions); break; }
 
   // Sum the daily rows per ad: window and today separately.
-  type Acc = { spend: number; impressions: number; clicks: number; link_clicks: number; purchases: number; value: number; todaySpend: number; todayPurchases: number };
+  type Acc = { spend: number; impressions: number; clicks: number; link_clicks: number; purchases: number; value: number; todaySpend: number; todayPurchases: number; spend3: number; purchases3: number };
   const acc = new Map<string, Acc>();
   let lastSync: string | null = null;
   for (const r of ins) {
@@ -159,30 +169,36 @@ export async function computeAdPerformance(sb: SupabaseClient, a: {
     const market = (m?.market ?? r.market) as "bg" | "ro";
     if (a.market !== "all" && market !== a.market) continue;
     if (!lastSync || r.updated_at > lastSync) lastSync = r.updated_at;
-    const e = acc.get(r.ad_id) ?? { spend: 0, impressions: 0, clicks: 0, link_clicks: 0, purchases: 0, value: 0, todaySpend: 0, todayPurchases: 0 };
+    const e = acc.get(r.ad_id) ?? { spend: 0, impressions: 0, clicks: 0, link_clicks: 0, purchases: 0, value: 0, todaySpend: 0, todayPurchases: 0, spend3: 0, purchases3: 0 };
     if (r.date >= a.since && r.date <= a.until) {
       e.spend += Number(r.spend) || 0; e.impressions += r.impressions; e.clicks += r.clicks; e.link_clicks += r.link_clicks;
       e.purchases += r.purchases; e.value += Number(r.purchase_value) || 0;
     }
     if (r.date === a.today) { e.todaySpend += Number(r.spend) || 0; e.todayPurchases += r.purchases; }
+    if (r.date >= ruleDay && r.date <= a.today) { e.spend3 += Number(r.spend) || 0; e.purchases3 += r.purchases; }
     acc.set(r.ad_id, e);
   }
 
   const ads: AdRow[] = [];
   for (const [ad_id, e] of acc) {
     const m = meta.get(ad_id);
-    if (e.spend <= 0 && e.todaySpend <= 0 && e.impressions === 0) continue;
-    const ours = adOrders.get(ad_id) ?? { n: 0, rev: 0, today: 0 };
+    if (e.spend <= 0 && e.todaySpend <= 0 && e.impressions === 0 && e.spend3 <= 0) continue;
+    const ours = adOrders.get(ad_id) ?? { n: 0, rev: 0, today: 0, n3: 0 };
     const useOurs = tagging === "on" && tagged(m);
     const orders = useOurs ? ours.n : e.purchases;
     const revenue = useOurs ? round2(ours.rev) : round2(e.value);
     const todayOrders = useOurs ? ours.today : e.todayPurchases;
     const spend = round2(e.spend);
     const costPerOrder = orders > 0 ? round2(spend / orders) : null;
+    const spend3 = round2(e.spend3);
+    const orders3 = useOurs ? ours.n3 : e.purchases3;
+    const created = m?.created_time ? Date.parse(m.created_time) : NaN;
+    const ageDays = Number.isFinite(created) ? Math.floor(((Date.now() - created) / 86_400_000) * 10) / 10 : null;
     const red: string[] = [];
-    if (costPerOrder != null && costPerOrder > MAX_COST_PER_ORDER) red.push(`€${costPerOrder.toFixed(2)} на поръчка (> €${MAX_COST_PER_ORDER})`);
-    if (e.todaySpend > ZERO_ORDER_SPEND && todayOrders === 0) red.push(`днес €${e.todaySpend.toFixed(2)} и 0 поръчки`);
-    if (orders === 0 && spend > MAX_COST_PER_ORDER && !red.length) red.push(`€${spend.toFixed(2)} без поръчка`);
+    if (ageDays != null && ageDays >= MIN_AD_AGE_DAYS) {
+      if (orders3 === 0 && spend3 >= ZERO_ORDER_SPEND_3D) red.push(`3 дни: €${spend3.toFixed(2)} разход, 0 поръчки`);
+      else if (orders3 > 0 && spend3 / orders3 > MAX_COST_PER_ORDER) red.push(`3 дни: €${(spend3 / orders3).toFixed(2)} на поръчка (> €${MAX_COST_PER_ORDER})`);
+    }
     ads.push({
       ad_id, ad_name: m?.ad_name ?? ad_id, adset_name: m?.adset_name ?? "", campaign_id: m?.campaign_id ?? "", campaign_name: m?.campaign_name ?? "—",
       status: m?.effective_status ?? "?", market: (m?.market ?? "bg") as "bg" | "ro", product_slug: m?.product_slug ?? null, landing_url: m?.landing_url ?? null,
@@ -192,7 +208,7 @@ export async function computeAdPerformance(sb: SupabaseClient, a: {
       cpm: e.impressions > 0 ? round2((e.spend / e.impressions) * 1000) : null,
       metaPurchases: e.purchases, metaValue: round2(e.value),
       orders, revenue, costPerOrder, roas: spend > 0 ? round2(revenue / spend) : null, basis: useOurs ? "ours" : "meta",
-      todaySpend: round2(e.todaySpend), todayOrders,
+      todaySpend: round2(e.todaySpend), todayOrders, spend3, orders3, ageDays,
       visitors: visitors.get(ad_id) ?? 0,
       red,
     });

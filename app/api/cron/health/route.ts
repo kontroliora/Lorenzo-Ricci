@@ -46,9 +46,16 @@ export async function GET(req: NextRequest) {
   const sb = supabaseAdmin();
   try {
     const first = !(await sb.from("health_status").select("key").eq("key", "_run").maybeSingle()).data;
+    // 30 days of Meta history + every live ad, once: on the very first run, and once more for the accounts whose first run
+    // happened before the Meta keys were set (marker '_meta_backfill'; written only when the pull succeeded, so it retries).
+    const backfill = first || !(await sb.from("health_status").select("key").eq("key", "_meta_backfill").maybeSingle()).data;
     let meta: Awaited<ReturnType<typeof syncMeta>> | { error: string };
-    try { meta = await syncMeta(sb, first ? 30 : 2, first); }   // first run: 30 days of history + every live ad
+    try { meta = await syncMeta(sb, backfill ? 30 : 2, backfill); }
     catch (e) { meta = { error: e instanceof Error ? e.message : String(e) }; }
+    if (backfill && !("error" in meta)) {
+      await sb.from("health_status").upsert({ key: "_meta_backfill", ok: true, title: "meta backfill 30d", detail: JSON.stringify(meta).slice(0, 300), checked_at: new Date().toISOString() }, { onConflict: "key" });
+      if (!first) await sendTelegram(`📊 <b>Lorenzo Ricci</b>: Meta историята е изтеглена: ${meta.ads} реклами, ${meta.rows} реда за ${meta.since} – ${meta.until}, €${meta.spend.toFixed(2)} разход.`);
+    }
     // A failing Meta pull is a problem of its own (bar + Telegram), with Meta's error message.
     const metaCheck = { key: "meta_api", ok: !("error" in meta), title: "Meta синхронизацията не работи", detail: "error" in meta ? meta.error.slice(0, 200) : undefined };
     const r = await runHealth(sb, { extra: [metaCheck], source: req.headers.get("user-agent")?.includes("vercel-cron") ? "vercel-cron" : "manual" });

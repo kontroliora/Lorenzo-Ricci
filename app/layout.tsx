@@ -31,6 +31,7 @@ import { LazyCartDrawer, LazySalesNotification } from "@/components/layout/Defer
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
+import { ClientErrorReporter } from "@/components/analytics/ClientErrorReporter";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { HideOnAdmin } from "@/components/layout/HideOnAdmin";
@@ -112,6 +113,8 @@ export default async function RootLayout({
         {/* Vercel Web Analytics: page views for the whole site, Bulgarian and /ro (one root layout). */}
         <Analytics />
         <PageViewTracker />
+        {/* Browser JS errors -> /api/client-error -> health alerts (rate-limited, no personal data). */}
+        <ClientErrorReporter />
         <SpeedInsights />
       </body>
     </html>

@@ -34,7 +34,7 @@ async function getAll<T>(path: string, params: Record<string, string>, limit = 2
 }
 
 type RawAd = {
-  id: string; name?: string; effective_status?: string;
+  id: string; name?: string; effective_status?: string; created_time?: string;
   adset?: { id?: string; name?: string; targeting?: { geo_locations?: { countries?: string[] } } };
   campaign?: { id?: string; name?: string };
   creative?: Record<string, unknown> & { url_tags?: string };
@@ -42,6 +42,7 @@ type RawAd = {
 export type MetaAd = {
   ad_id: string; ad_name: string | null; adset_id: string | null; adset_name: string | null; campaign_id: string | null; campaign_name: string | null;
   effective_status: string | null; market: "bg" | "ro"; landing_url: string | null; product_slug: string | null; url_tags: string | null;
+  created_time: string | null;
 };
 
 /** The ad's landing page on our site (first lorenzo-ricci.com link anywhere in the creative) and the product it shows. */
@@ -55,7 +56,7 @@ export function landingOf(creative: unknown): { url: string | null; slug: string
   return { url, slug, ro: path === "/ro" || path.startsWith("/ro/") };
 }
 
-const AD_FIELDS = "name,effective_status,adset{name,targeting{geo_locations}},campaign{name},creative{url_tags,object_story_spec,asset_feed_spec{link_urls}}";
+const AD_FIELDS = "name,effective_status,created_time,adset{name,targeting{geo_locations}},campaign{name},creative{url_tags,object_story_spec,asset_feed_spec{link_urls}}";
 const LIVE_STATUSES = ["ACTIVE", "PAUSED", "CAMPAIGN_PAUSED", "ADSET_PAUSED", "WITH_ISSUES", "PENDING_REVIEW", "DISAPPROVED", "IN_PROCESS", "PREAPPROVED"];
 
 function toAd(a: RawAd): MetaAd {
@@ -70,6 +71,7 @@ function toAd(a: RawAd): MetaAd {
     market: ro ? "ro" : "bg",
     landing_url: land.url, product_slug: land.slug,
     url_tags: typeof a.creative?.url_tags === "string" ? a.creative.url_tags : null,
+    created_time: a.created_time ? new Date(a.created_time).toISOString() : null,
   };
 }
 
@@ -150,7 +152,11 @@ export async function syncMeta(sb: SupabaseClient, days: number, full = days >= 
     if (extra.size) ads.push(...(await fetchAdsByIds([...extra].slice(0, 100))));
   }
   if (ads.length) {
-    const { error } = await sb.from("meta_ads").upsert(ads.map((a) => ({ ...a, updated_at: now })), { onConflict: "ad_id" });
+    let { error } = await sb.from("meta_ads").upsert(ads.map((a) => ({ ...a, updated_at: now })), { onConflict: "ad_id" });
+    // Until supabase/monitoring_v2.sql adds meta_ads.created_time, store the ads without it (the ad rule then waits).
+    if (error && /created_time/.test(error.message)) {
+      ({ error } = await sb.from("meta_ads").upsert(ads.map(({ created_time: _c, ...a }) => ({ ...a, updated_at: now })), { onConflict: "ad_id" }));
+    }
     if (error) throw new Error(`meta_ads: ${error.message}`);
   }
   const marketRows = await sb.from("meta_ads").select("ad_id, market");
