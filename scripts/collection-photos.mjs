@@ -10,8 +10,8 @@
 // "d" (detail / another angle on white). On-model ("m") and box ("b", "c") photos are never touched; the numbering and order
 // stay exactly as they are.
 //
-// Per photo: the near-white background (the photo's own off-white / grey backdrop and anything ≥ #EEEEEE, connected to the edge) becomes
-// pure #FFFFFF over the whole image, the product and its soft shadow stay natural; the product is
+// Per photo: the background is only changed where that is safe (see steps 1-3: a clean or a styled backdrop is left alone, a near-white
+// tint is whitened by an edge flood outside a product mask - never a pixel of the product, its highlights or its shadow); the product is
 // found (everything that is not background) and scaled so it fills 80% of the frame width (bracelets) or 65% of the height
 // (necklaces, centred a little below the middle, a chain cut by the source fading out at the top), never more than 90% of the other side, centred on a 2000×2000 white square. Nothing of the product is cut: when the
 // source already cuts it at an edge (a necklace chain running out of the top), it stays against that same edge.
@@ -34,6 +34,7 @@ const N = 2000, FILL = 0.8, MAX_OTHER = 0.9, NECK_FILL = 0.65, NECK_CENTRE = 0.5
 const args = process.argv.slice(2);
 const out = args.includes("--out") ? path.resolve(args[args.indexOf("--out") + 1]) : null;
 const force = args.includes("--force");
+const only = args.includes("--only") ? args[args.indexOf("--only") + 1].split(",") : null; // e.g. --only a-1.webp,b-2.webp (redo just these)
 
 const ts = readFileSync(path.join(ROOT, "lib/new-collection.ts"), "utf8");
 const at = ts.indexOf("export const COLLECTION_PHOTOS");
@@ -53,54 +54,56 @@ async function normalise(file, type) {
   const { width: W, height: H } = info;
   const px = (x, y) => (y * W + x) * 3;
 
-  // 1. Background = near-white, colourless pixels connected to the border (flood fill). White inside the product
-  //    (mother-of-pearl clovers inside their rims) is never reached, so it is never bleached.
+  // 1-3. Background, made safe for silver (owner, 07.11.2026: the earlier whitening washed out bright silver links).
+  //   - The photo's own background colour = the median of a 12px band round the edge.
+  //   - Already clean (every channel >= 250): no pixel is singled out; a backdrop of #FAFAFA-#FEFEFE gets one uniform lift of the
+  //     whole photo (at most 2%) so it meets the white padding without a visible square.
+  //   - A darker / styled backdrop (< 236, e.g. window light on a grey surface): nothing is changed either - it cannot be cleaned
+  //     without touching pixels next to the metal.
+  //   - A near-white tinted backdrop (236-249): only pixels reached by a flood fill FROM THE IMAGE EDGES, each within 10 levels of
+  //     that colour and of its neighbour (low tolerance), and outside a protective mask (everything that differs from the backdrop,
+  //     widened by 8px) become #FFFFFF. Nothing connected to or inside the product - its bright highlights, the soft shadow, the
+  //     band round its edge - is ever changed.
   const img = Buffer.from(data);
-  const FLOOR = 196, SAT = 26;
-  const mnOf = (i) => Math.min(img[i], img[i + 1], img[i + 2]);
-  const near = (i) => { const mn = mnOf(i), mx = Math.max(img[i], img[i + 1], img[i + 2]); return mn >= FLOOR && mx - mn <= SAT; };
-  const isBg = new Uint8Array(W * H); const stack = [];
-  const push = (x, y) => { const k = y * W + x; if (!isBg[k] && near(k * 3)) { isBg[k] = 1; stack.push(k); } };
-  for (let x = 0; x < W; x++) { push(x, 0); push(x, H - 1); }
-  for (let y = 0; y < H; y++) { push(0, y); push(W - 1, y); }
-  while (stack.length) { const k = stack.pop(); const x = k % W, y = (k / W) | 0;
-    if (x > 0) push(x - 1, y); if (x < W - 1) push(x + 1, y); if (y > 0) push(x, y - 1); if (y < H - 1) push(x, y + 1); }
-
-  // 1b. Background shut in by the product (inside a bangle or a chain loop): the near-white areas the edge fill can't reach.
-  //     An area counts as background when it is big (over 2% of the photo: the inside of a bangle or a chain loop; a clover's
-  //     interior is under 2% and is never touched, however light) and as light as the backdrop (average ≥ #EEEEEE);
-  //     mother-of-pearl clovers average ~#E2 and stay as they are. STATS=1 prints each area's numbers.
-  const comp = new Int32Array(W * H).fill(-1); const comps = [];
-  for (let k0 = 0; k0 < W * H; k0++) {
-    if (isBg[k0] || comp[k0] >= 0 || !near(k0 * 3)) continue;
-    const id = comps.length, list = [k0]; comp[k0] = id; let n = 0, sum = 0, sq = 0;
-    while (list.length) { const k = list.pop(); const m = mnOf(k * 3); n++; sum += m; sq += m * m;
-      const x = k % W, y = (k / W) | 0;
-      for (const q of [x > 0 ? k - 1 : -1, x < W - 1 ? k + 1 : -1, y > 0 ? k - W : -1, y < H - 1 ? k + W : -1])
-        if (q >= 0 && comp[q] < 0 && !isBg[q] && near(q * 3)) { comp[q] = id; list.push(q); } }
-    const mean = sum / n; comps.push({ n, mean, sd: Math.sqrt(Math.max(0, sq / n - mean * mean)), x: k0 % W, y: (k0 / W) | 0 });
+  const band = [[], [], []];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (x > 11 && x < W - 12 && y > 11 && y < H - 12) continue;
+    const i = px(x, y); for (let c = 0; c < 3; c++) band[c].push(data[i + c]);
   }
-  const bgIds = new Set();
-  comps.forEach((c, id) => {
-    const flat = c.n > W * H * 0.02 && c.mean >= 238;
-    if (process.env.STATS && c.n > W * H * 0.002) console.log(`   ${path.basename(file)} area ${c.n} mean ${c.mean.toFixed(1)} sd ${c.sd.toFixed(2)} at ${c.x},${c.y} -> ${flat ? "background" : "kept"}`);
-    if (flat) bgIds.add(id);
-  });
-  if (bgIds.size) for (let k = 0; k < W * H; k++) if (comp[k] >= 0 && bgIds.has(comp[k])) isBg[k] = 1;
-
-  // 2. The level of the photo's own background (an off-white / grey square inside earlier white padding, or a grey studio
-  //    backdrop): the 20th percentile of the background pixels that are not already pure white. Everything from that level
-  //    (and anything at #EEEEEE or lighter) up becomes pure #FFFFFF over the WHOLE image, so no square or edge is left;
-  //    below it a short ramp keeps the soft shadow natural; darker pixels (the shadow core, the product) are untouched.
-  const hist = new Uint32Array(256); let inner = 0;
-  for (let k = 0; k < W * H; k++) if (isBg[k]) { const m = mnOf(k * 3); if (m < 253) { hist[m]++; inner++; } }
-  let FULL = 238;
-  if (inner > W * H * 0.01) { let acc = 0, p20 = 255; for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= inner * 0.2) { p20 = v; break; } } FULL = Math.max(205, Math.min(238, p20 - 2)); }
-  const LO = FULL - 36;
-  for (let k = 0; k < W * H; k++) if (isBg[k]) {
-    const i = k * 3; const a = Math.min(1, Math.max(0, (mnOf(i) - LO) / (FULL - LO))); // 0 at LO .. 1 at FULL and above
-    for (let c = 0; c < 3; c++) img[i + c] = Math.round(img[i + c] + (255 - img[i + c]) * a);
+  const bg = band.map((v) => v.sort((p, q) => p - q)[v.length >> 1]);
+  const bgMin = Math.min(...bg);
+  let bgAction = "untouched (clean)";
+  if (bgMin >= 250 && Math.max(...bg) < 255) {
+    // Almost white (#FAFAFA-#FEFEFE): one uniform 0.4-2% lift of the whole photo puts its backdrop on pure white, so no faint square
+    // shows where it meets the white padding. No mask, no pixel singled out: the metal gets the same imperceptible lift as the rest.
+    for (let i = 0; i < img.length; i += 3) for (let c = 0; c < 3; c++) img[i + c] = Math.min(255, Math.round((img[i + c] * 255) / bg[c]));
+    bgAction = `uniform lift ${bg.join(",")} -> 255 (${(100 * (255 / bgMin - 1)).toFixed(1)}%)`;
   }
+  if (bgMin < 250 && bgMin >= 236) {
+    const TOL = 10, STEP = 4, GROW = 8;
+    const diff = (i) => Math.max(Math.abs(img[i] - bg[0]), Math.abs(img[i + 1] - bg[1]), Math.abs(img[i + 2] - bg[2]));
+    const core = new Uint8Array(W * H); for (let k = 0; k < W * H; k++) core[k] = diff(k * 3) > TOL ? 1 : 0;
+    // protective mask = core widened by GROW px (two separable passes of a max filter)
+    const tmp = new Uint8Array(W * H), mask = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) { let last = -1e9; for (let x = 0; x < W; x++) { if (core[y * W + x]) last = x; tmp[y * W + x] = x - last <= GROW ? 1 : 0; }
+      last = 1e9; for (let x = W - 1; x >= 0; x--) { if (core[y * W + x]) last = x; if (last - x <= GROW) tmp[y * W + x] = 1; } }
+    for (let x = 0; x < W; x++) { let last = -1e9; for (let y = 0; y < H; y++) { if (tmp[y * W + x]) last = y; mask[y * W + x] = y - last <= GROW ? 1 : 0; }
+      last = 1e9; for (let y = H - 1; y >= 0; y--) { if (tmp[y * W + x]) last = y; if (last - y <= GROW) mask[y * W + x] = 1; } }
+    const seen = new Uint8Array(W * H); const stack = [];
+    const ok = (k, from) => !seen[k] && !mask[k] && (from < 0 || Math.max(Math.abs(img[k * 3] - img[from * 3]), Math.abs(img[k * 3 + 1] - img[from * 3 + 1]), Math.abs(img[k * 3 + 2] - img[from * 3 + 2])) <= STEP);
+    const seed = (x, y) => { const k = y * W + x; if (ok(k, -1)) { seen[k] = 1; stack.push(k); } };
+    for (let x = 0; x < W; x++) { seed(x, 0); seed(x, H - 1); } for (let y = 0; y < H; y++) { seed(0, y); seed(W - 1, y); }
+    let n = 0;
+    while (stack.length) { const k = stack.pop(); n++; const x = k % W, y = (k / W) | 0;
+      for (const q of [x > 0 ? k - 1 : -1, x < W - 1 ? k + 1 : -1, y > 0 ? k - W : -1, y < H - 1 ? k + W : -1]) if (q >= 0 && ok(q, k)) { seen[q] = 1; stack.push(q); } }
+    for (let k = 0; k < W * H; k++) if (seen[k]) { const i = k * 3; img[i] = img[i + 1] = img[i + 2] = 255; }
+    bgAction = `tint ${bg.join(",")} -> white on ${(100 * n / (W * H)).toFixed(1)}% of the photo (edge flood, product masked)`;
+  } else if (bgMin < 236) {
+    // A styled photo (product on a lit surface, not on white): there is no product-on-white to resize either - left exactly as it is.
+    console.log(`   ${path.basename(file)}: styled backdrop ${bg.join(",")} - photo left exactly as it is`);
+    return null;
+  }
+  console.log(`   ${path.basename(file)}: background ${bgAction}`);
 
   // 4. The product: everything clearly darker or more coloured than white (a faint shadow does not count).
   //    Rows / columns need a few such pixels, so dust and JPEG noise don't stretch the box.
@@ -130,10 +133,24 @@ async function normalise(file, type) {
       for (let x = left; x <= right; x++) { const i = px(x, y); for (let c = 0; c < 3; c++) img[i + c] = Math.round(img[i + c] + (255 - img[i + c]) * a * a); } }
   }
 
+  // The WHOLE photo is scaled and placed so the product lands at (x0, y0) - not a crop of the product: its soft shadow and the
+  // backdrop around it then run out naturally, with no crop edge cutting the shadow (owner: "a visible square").
+  const SW = Math.round(W * s), SH = Math.round(H * s);
+  const offX = x0 - Math.round(left * s), offY = y0 - Math.round(top * s);
+  const vx = Math.max(0, -offX), vy = Math.max(0, -offY);
+  const vw = Math.min(SW, N - offX) - vx, vh = Math.min(SH, N - offY) - vy;
+  // Where the scaled photo stops short of the canvas, its own edge meets the white padding: that edge must be white (>= 253 almost
+  // everywhere) or a visible line appears (a grey "floor" cut off) - such a photo is left exactly as it is.
+  const sides = [offX > 0 && [0, 0, 1, H], offY > 0 && [0, 0, W, 1], offX + SW < N && [W - 1, 0, 1, H], offY + SH < N && [0, H - 1, W, 1]].filter(Boolean);
+  for (const [sx, sy, sw, sh] of sides) {
+    const v = []; for (let y = sy; y < sy + sh; y++) for (let x = sx; x < sx + sw; x++) { const i = px(x, y); v.push(Math.min(img[i], img[i + 1], img[i + 2])); }
+    v.sort((p, q) => p - q);
+    if (v[Math.floor(v.length * 0.05)] < 253) { console.log(`   ${path.basename(file)}: backdrop not white at its own edge - photo left exactly as it is`); return null; }
+  }
   const piece = await sharp(img, { raw: { width: W, height: H, channels: 3 } })
-    .extract({ left, top, width: bw, height: bh }).resize(w, h, { kernel: "lanczos3" }).png().toBuffer();
+    .resize(SW, SH, { kernel: "lanczos3" }).extract({ left: vx, top: vy, width: vw, height: vh }).png().toBuffer();
   return sharp({ create: { width: N, height: N, channels: 3, background: "#ffffff" } })
-    .composite([{ input: piece, left: x0, top: y0 }]).flatten({ background: "#ffffff" })
+    .composite([{ input: piece, left: Math.max(0, offX), top: Math.max(0, offY) }]).flatten({ background: "#ffffff" })
     .webp({ quality: 88, effort: 6 }).toBuffer();
 }
 
@@ -144,8 +161,13 @@ for (const p of photos) for (const [i, kind] of [...p.kinds].entries()) {
   if (p.type === "necklace") continue; // necklaces: the owner's original photos exactly as given, never processed (owner, 07.11.2026)
   const name = `${p.key}-${p.type}-${p.metal}-${i + 1}.webp`, file = path.join(PUB, name);
   if (!existsSync(file)) { console.warn("missing", name); continue; }
-  if (!force && !out && manifest[name] === sha(readFileSync(file))) { skipped++; continue; }
+  if (only && !only.includes(name)) continue;
+  if (!force && !only && !out && manifest[name] === sha(readFileSync(file))) { skipped++; continue; }
   const buf = await normalise(file, p.type);
+  if (buf === null) { // kept exactly as is: record it, and make the owner's folder copy the same file
+    if (!out) { manifest[name] = sha(readFileSync(file)); const src = srcOf(name); if (src) copyFileSync(file, src); }
+    skipped++; continue;
+  }
   if (out) { writeFileSync(path.join(out, name), buf); console.log("->", name); done++; continue; }
   // Keep the untouched original once (New Jewellery/_originals/<name>), so a photo can always be redone from it.
   const keep = path.join(SRC, "_originals", name);
