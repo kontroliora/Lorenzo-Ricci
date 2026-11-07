@@ -9,7 +9,6 @@ import { CartCrossSell } from "./CartCrossSell";
 import { CartGiftRow } from "./GiftRow";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 import { promoBase, bundleLineText } from "@/lib/bundles";
-import { OnePlusOneNudge } from "./OnePlusOneNudge";
 import { opoExcludedFromPromo } from "@/lib/one-plus-one";
 import { isOnSale } from "@/lib/price";
 import { cardDiscountEur } from "@/lib/card-discount";
@@ -351,7 +350,6 @@ export function CartDrawer() {
                 </Fragment>
                 );
               })}
-              <OnePlusOneNudge />
               <CartCrossSell />
             </div>
 

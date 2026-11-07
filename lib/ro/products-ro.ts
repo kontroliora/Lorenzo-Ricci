@@ -402,7 +402,6 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "necklace-aurelius": {
-    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_LIFETIME,
     shortDescription: "Spiritul Romei eterne",
     description:

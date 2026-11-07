@@ -535,12 +535,10 @@ const catalog: Product[] = [
     name: "Колие Aurelius Cross",
     category: "jewellery",
     subcategory: "necklace",
-    // Sale from 27.09.2026 (owner): −20%. originalPrice = the lowest price of the previous 30
-    // days (EU Omnibus) - €42, unchanged in the git history since at least 28.08.2026.
-    price: 33.6,
-    originalPrice: 42,
+    // 07.11.2026 (owner): €33.60 -> €34.00, NO struck price and no sale badge. EU Omnibus: a "was" price must be the lowest
+    // price of the previous 30 days, and that is €33.60 (on sale since 27.09.2026) - below €34, so €42 can no longer be shown.
+    price: 34,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     warranty: "Доживотна гаранция",
     shortDescription: "Дух на вечния Рим",

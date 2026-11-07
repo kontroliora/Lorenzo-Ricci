@@ -27,15 +27,14 @@ export interface OnePlusOneGroup {
   endsAt?: string;
   /** EUR price of every product of the group while it runs (replaces price / originalPrice / sale badge). */
   fixedPrice?: number;
-  /** When the cart suggests one more: "odd" (1, 3, 5 items - the next one is free) or "single" (exactly one). */
-  nudge: "odd" | "single";
   text: Record<OpoLang, {
     badge: string;
     /** The line under the price; `price` is the group's fixed price formatted for the market (e.g. "€65" / "341 lei"). A group
      *  without a fixed price gets empty strings: its wording must not use them. */
     line: (price: { one: string; half: string }) => string;
-    /** The cart's suggestion when one more item would be free. */
-    addOne: string;
+    /** The cart's "Често поръчвано заедно" title while the cart holds this group: `odd` = the next item is free,
+     *  `even` = two more and one of them is free. */
+    crossSell: { odd: string; even: string };
     /** The home-page banner above the group's row: the badge, then this ("2 картодържателя ... за €65"). */
     banner: (price: { one: string }) => string;
     /** The banner's button (to the group's listing). */
@@ -74,12 +73,11 @@ export const ONE_PLUS_ONE_GROUPS: OnePlusOneGroup[] = [
     slugs: new Set<string>(CARDHOLDER_SLUGS),
     enabled: CARDHOLDER_ONE_PLUS_ONE,
     fixedPrice: 65,
-    nudge: "odd",
     text: {
       bg: {
         badge: "1+1 БЕЗПЛАТНО",
         line: ({ one, half }) => `2 картодържателя за ${one} – по ${half} на брой. Един за Вас, един за подарък.`,
-        addOne: "Добавете още един картодържател – безплатно",
+        crossSell: { odd: "Добавете още един картодържател – безплатно", even: "Добавете още 2 картодържателя – единият е безплатен" },
         banner: ({ one }) => `2 картодържателя от крокодилска кожа за ${one}`,
         cta: "Към картодържателите",
         bar: ({ one }) => ({ desktop: `1+1 на картодържатели – 2 за ${one}`, mobile: `1+1 картодържатели – 2 за ${one}` }),
@@ -90,7 +88,7 @@ export const ONE_PLUS_ONE_GROUPS: OnePlusOneGroup[] = [
       ro: {
         badge: "1+1 GRATUIT",
         line: ({ one, half }) => `2 port-carduri pentru ${one} – ${half} bucata. Unul pentru dumneavoastră, unul cadou.`,
-        addOne: "Adăugați încă un port-card – gratuit",
+        crossSell: { odd: "Adăugați încă un port-card – gratuit", even: "Adăugați încă 2 port-carduri – unul este gratuit" },
         banner: ({ one }) => `2 port-carduri din piele de crocodil pentru ${one}`,
         cta: "Vedeți port-cardurile",
         bar: ({ one }) => ({ desktop: `1+1 la port-carduri – 2 pentru ${one}`, mobile: `1+1 port-carduri – ${one}` }), // short: the BG · RO switch sits beside it on phones
@@ -106,12 +104,11 @@ export const ONE_PLUS_ONE_GROUPS: OnePlusOneGroup[] = [
     slugs: NEW_COLLECTION_SLUGS,
     enabled: JEWELLERY_ONE_PLUS_ONE,
     endsAt: "2026-12-31T23:59:59+02:00", // 31.12.2026 23:59 Sofia (EET, UTC+2)
-    nudge: "single",
     text: {
       bg: {
         badge: "1+1 БЕЗПЛАТНО",
         line: () => "Второто бижу е подарък",
-        addOne: "Добавете още едно бижу – то е безплатно",
+        crossSell: { odd: "Добавете още едно бижу – безплатно", even: "Добавете още 2 бижута – едното е безплатно" },
         banner: () => "Второто бижу от новата колекция е подарък",
         cta: "Към бижутата",
         bar: () => ({ desktop: "1+1 на новите бижута – второто е подарък", mobile: "1+1 на новите бижута" }),
@@ -122,7 +119,7 @@ export const ONE_PLUS_ONE_GROUPS: OnePlusOneGroup[] = [
       ro: {
         badge: "1+1 GRATUIT",
         line: () => "A doua bijuterie este cadou",
-        addOne: "Adăugați încă o bijuterie – este gratuită",
+        crossSell: { odd: "Adăugați încă o bijuterie – gratuit", even: "Adăugați încă 2 bijuterii – una este gratuită" },
         banner: () => "A doua bijuterie din noua colecție este cadou",
         cta: "Vedeți bijuteriile",
         bar: () => ({ desktop: "1+1 la noile bijuterii – a doua este cadou", mobile: "1+1 bijuterii noi" }),
@@ -195,13 +192,34 @@ export function onePlusOne(lines: OpoLine[], opts: { now?: Date; ignoreSchedule?
   return { total: round2(groups.reduce((s, g) => s + g.discount, 0)), groups };
 }
 
-/** The running groups whose next item would be free right now (the cart suggests one more of them). */
-export function opoNudges(lines: OpoLine[], now?: Date): OnePlusOneGroup[] {
-  return ONE_PLUS_ONE_GROUPS.filter((g) => {
-    if (!groupActive(g, now)) return false;
-    const n = unitsOf(g, lines).length;
-    return g.nudge === "odd" ? n % 2 === 1 : n === 1;
-  });
+/**
+ * The cart's "Често поръчвано заедно" while it holds items of a running group: that group, and whether its count is odd (the next
+ * item is free) or even (two more, one of them free). Several groups in the cart: the one whose next item is free first, then the
+ * newest group (last in ONE_PLUS_ONE_GROUPS). undefined = no running group in the cart (the usual suggestions).
+ */
+export function opoCrossSell(lines: OpoLine[], now?: Date): { group: OnePlusOneGroup; odd: boolean } | undefined {
+  const present = ONE_PLUS_ONE_GROUPS
+    .map((g, i) => ({ g, i, n: groupActive(g, now) ? unitsOf(g, lines).length : 0 }))
+    .filter((x) => x.n > 0)
+    .sort((a, b) => (b.n % 2) - (a.n % 2) || b.i - a.i);
+  return present.length ? { group: present[0].g, odd: present[0].n % 2 === 1 } : undefined;
+}
+
+/**
+ * Which of the group's products to suggest: not in the cart, `available` (in the shop, in stock - the caller's live check), the
+ * closest to what the cart holds first (most shared slug parts: "necklace-verdis-gold" -> its bracelet / other metal first),
+ * otherwise the group's own order. At most `max`.
+ */
+export function opoSuggestions(group: OnePlusOneGroup, cartSlugs: string[], available: (slug: string) => boolean, max = 3): string[] {
+  const inCart = new Set(cartSlugs);
+  const parts = cartSlugs.filter((s) => group.slugs.has(s)).map((s) => new Set(s.split("-")));
+  const score = (slug: string) => Math.max(0, ...parts.map((ps) => slug.split("-").filter((x) => ps.has(x)).length));
+  return [...group.slugs]
+    .filter((slug) => !inCart.has(slug) && available(slug))
+    .map((slug, i) => ({ slug, i, s: score(slug) }))
+    .sort((a, b) => b.s - a.s || a.i - b.i)
+    .slice(0, max)
+    .map((x) => x.slug);
 }
 
 /** Items of a running group never take a promo code. */

@@ -6,6 +6,8 @@ import { useCartStore } from "@/lib/store";
 import { getProductBySlug } from "@/lib/products";
 import { usePriceOverrides } from "@/lib/use-price-overrides";
 import type { Product } from "@/lib/types";
+import { opoLines } from "@/lib/bundles";
+import { opoCrossSell, opoSuggestions } from "@/lib/one-plus-one";
 
 const WALLET_FOR_CARDHOLDER: Record<string, string> = {
   "cardholder-bianco":     "wallet-alabastro",
@@ -78,11 +80,16 @@ export function CartCrossSell() {
   if (items.length === 0) return null;
 
   const cartIds = items.map((i) => i.product.id);
-  const suggestionIds = computeSuggestions(cartIds);
+  const available = (slug: string) => { const p = getProductBySlug(slug); return !!p && p.inStock && (stock?.[slug] ?? 1) > 0; };
+  // A cart with items of a running 1+1 group (the new jewellery, the cardholders): more of that same group - the next one is free
+  // (odd count) or one of the next two is (even). Anything else: the usual pairings below.
+  const opo = opoCrossSell(opoLines(items));
+  const suggestionIds = opo ? opoSuggestions(opo.group, items.map((i) => i.product.slug), available) : computeSuggestions(cartIds);
+  const title = opo ? opo.group.text.bg.crossSell[opo.odd ? "odd" : "even"] : "Често поръчвано заедно";
 
   const suggestions = suggestionIds
     .map((slug) => getProductBySlug(slug))
-    .filter((p): p is Product => !!p && p.inStock && (stock?.[p.slug] ?? 1) > 0)
+    .filter((p): p is Product => !!p && available(p.slug))
     .map(applyOverride);
 
   if (suggestions.length === 0) return null;
@@ -104,10 +111,12 @@ export function CartCrossSell() {
   };
 
   return (
-    <div className="mt-2 pt-4 border-t border-white/8">
-      <p className="font-sans text-[9px] font-medium tracking-[0.28em] uppercase text-white/35 mb-3">
-        Често поръчвано заедно
-      </p>
+    <div data-testid="cart-cross-sell" data-group={opo?.group.id ?? ""} className="mt-2 pt-4 border-t border-white/8">
+      {opo ? (
+        <p className="font-sans text-xs text-[#D4AF37] tracking-wide mb-3">◈ {title}</p>
+      ) : (
+        <p className="font-sans text-[9px] font-medium tracking-[0.28em] uppercase text-white/35 mb-3">{title}</p>
+      )}
       <div className="flex flex-col gap-3">
         {suggestions.map((product) => {
           const isAdded = addedIds.has(product.id);
