@@ -12,7 +12,7 @@ export function JewellerySection() {
         {/* Header */}
         <div className="text-center mb-8 sm:mb-16">
           <p className="section-tag mb-4">Бижута</p>
-          <h2 className="section-title mb-4">Класическа колекция</h2>
+          <h2 className="section-title mb-4">Мъжка колекция</h2>
           <div className="gold-divider" />
           <p className="font-sans text-sm font-light text-ink-muted max-w-md mx-auto mt-6 tracking-wide leading-relaxed">
             18К позлата · Италиански дизайн · Вечен стил

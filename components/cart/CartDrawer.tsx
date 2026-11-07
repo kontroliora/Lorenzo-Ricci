@@ -9,7 +9,7 @@ import { CartCrossSell } from "./CartCrossSell";
 import { CartGiftRow } from "./GiftRow";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 import { promoBase, bundleLineText } from "@/lib/bundles";
-import { opoExcludedFromPromo } from "@/lib/one-plus-one";
+import { opoExcludedFromPromo, opoLineId } from "@/lib/one-plus-one";
 import { isOnSale } from "@/lib/price";
 import { cardDiscountEur } from "@/lib/card-discount";
 
@@ -371,6 +371,10 @@ export function CartDrawer() {
                   </span>
                 </div>
               ))}
+              {/* The new collection's 1+1: each piece ships in its own velvet box */}
+              {activeBundles.some((b) => b.id === opoLineId("jewellery")) && (
+                <p data-testid="cart-box-line" className="-mt-1 mb-2 font-sans text-[11px] text-white/50 tracking-wide">Всяко бижу в собствена велурена кутия</p>
+              )}
 
               {/* Promo code */}
               <div className="mb-4">

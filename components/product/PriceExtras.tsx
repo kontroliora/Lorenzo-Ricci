@@ -2,7 +2,7 @@
 // and the free-delivery badge, and one delivery line. The pages decide the text and when to show them (savings: on sale and not sold out).
 // Colours pass WCAG AA on the page's ivory: green 6.1, white on the badge red 6.6, white on the free-delivery green 5.4, ink-soft 9.3.
 import Link from "next/link";
-import { Truck } from "lucide-react";
+import { Package, Truck } from "lucide-react";
 
 const PAGE_BADGE = "inline-flex items-center whitespace-nowrap text-white font-sans text-[11px] font-medium tracking-[0.14em] uppercase leading-none px-2.5 py-1.5";
 
@@ -39,6 +39,16 @@ export function SavingsLine({ text, campaign, freeShipping = null }: { text: str
       )}
       {freeShipping && <FreeShippingBadge text={freeShipping} size="page" />}
     </div>
+  );
+}
+
+/** New-collection pieces: the velvet box as a selling point, a small line with a box icon right under the price and its badges. */
+export function BoxLine({ text }: { text: string }) {
+  return (
+    <p data-testid="page-box-line" className="mt-2.5 flex items-center gap-1.5 font-sans text-[13px] leading-snug text-ink-soft">
+      <Package aria-hidden className="h-3.5 w-3.5 shrink-0 text-[#B8963E]" strokeWidth={1.75} />
+      {text}
+    </p>
   );
 }
 

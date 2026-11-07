@@ -18,7 +18,7 @@ export function RoNewCollectionSection({ pieces }: { pieces: Product[] }) {
           <div className="gold-divider" />
           <p className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 font-sans text-sm text-ink-soft tracking-wide">
             <span className="font-sans text-[11px] font-semibold tracking-[0.16em] uppercase bg-[#B3121F] text-white px-2.5 py-1">1+1 GRATUIT</span>
-            <span>A doua bijuterie este cadou</span>
+            <span>Într-o cutie luxoasă din catifea</span>
           </p>
         </div>
 

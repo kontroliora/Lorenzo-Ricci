@@ -4,7 +4,7 @@ import type { Product } from "@/lib/types";
 import { ProductCard } from "@/components/product/ProductCard";
 import { HOME_HERO_PHOTOS } from "@/lib/new-collection";
 
-// Home page (BG): the 2026 women's collection, right above "Класическа колекция". Title, the 1+1 line, a large two-photo image
+// Home page (BG): the 2026 women's collection, right above "Мъжка колекция". Title, the 1+1 line, a large two-photo image
 // (necklace on the neck + bracelet on the wrist), the button to its section on /jewellery, then up to 8 pieces (in the shop and in
 // stock - app/page.tsx picks them with homeCollectionPicks). Renders nothing when no piece is on sale.
 export function NewCollectionSection({ pieces }: { pieces: Product[] }) {
@@ -18,7 +18,7 @@ export function NewCollectionSection({ pieces }: { pieces: Product[] }) {
           <div className="gold-divider" />
           <p className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 font-sans text-sm text-ink-soft tracking-wide">
             <span className="font-sans text-[11px] font-semibold tracking-[0.16em] uppercase bg-[#B3121F] text-white px-2.5 py-1">1+1 БЕЗПЛАТНО</span>
-            <span>Второто бижу е подарък</span>
+            <span>В луксозна велурена кутия</span>
           </p>
         </div>
 

@@ -191,12 +191,13 @@ function details(key: CollectionKey, type: PieceType, metal: Metal, skuCode: str
     { label: lang === "bg" ? "Дължина" : "Lungime", value: lengthOf(key, type, lang) },
     { label: lang === "bg" ? "Размер на детелината" : "Dimensiunea trifoiului", value: CLOVER[key] ? (CLOVER_SIZE_ROW[type]?.[lang] ?? "") : "" },
     { label: lang === "bg" ? "Закопчаване" : "Închidere", value: CLASP_ROW[key]?.[lang] ?? "" },
+    { label: lang === "bg" ? "Опаковка" : "Ambalaj", value: lang === "bg" ? "Масивна велурена кутия LORENZO RICCI" : "Cutie masivă din catifea LORENZO RICCI" },
     { label: lang === "bg" ? "Артикул" : "Cod produs", value: skuCode },
   ];
 }
 
 /** The neutral box line under "Детайли" (self-purchase and gifts alike). */
-const DELIVERY_NOTE: Lang = { bg: "Доставя се в кутия LORENZO RICCI", ro: "Se livrează în cutie LORENZO RICCI" };
+const DELIVERY_NOTE: Lang = { bg: "Доставя се в луксозна велурена кутия LORENZO RICCI", ro: "Se livrează într-o cutie luxoasă din catifea LORENZO RICCI" };
 
 function specs(key: CollectionKey, type: PieceType, metal: Metal, lang: "bg" | "ro"): ProductSpec[] {
   return [

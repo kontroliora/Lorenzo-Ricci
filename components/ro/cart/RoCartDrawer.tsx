@@ -8,6 +8,7 @@ import { RO_FREE_SHIPPING_RON, fmtRON } from "@/lib/ro/config";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 import { RoCheckoutForm } from "./RoCheckoutForm";
 import { bundleLineLabel } from "./shared";
+import { opoLineId } from "@/lib/one-plus-one";
 import { RoCartCrossSell } from "./RoCartCrossSell";
 
 // Romania cart drawer (port of components/cart/CartDrawer.tsx): lei, card payment only (no ramburs), sets with their discount,
@@ -244,6 +245,10 @@ export function RoCartDrawer() {
                   <span className="font-sans text-xs text-green-400 tracking-wide">-{fmtRON(discount)}</span>
                 </div>
               ))}
+              {/* The new collection's 1+1: each piece ships in its own velvet box */}
+              {bundles.some((b) => b.id === opoLineId("jewellery")) && (
+                <p data-testid="cart-box-line" className="-mt-1 mb-2 font-sans text-[11px] text-white/50 tracking-wide">Fiecare bijuterie în propria cutie din catifea</p>
+              )}
 
               <div className="flex items-center justify-between mb-2">
                 <span className="font-sans text-xs text-white/40 tracking-wide">Livrare</span>

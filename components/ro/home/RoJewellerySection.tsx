@@ -35,7 +35,7 @@ export function RoJewellerySection() {
         {/* Header */}
         <div className="text-center mb-8 sm:mb-16">
           <p className="section-tag mb-4">Bijuterii</p>
-          <h2 className="section-title mb-4">Colecția clasică</h2>
+          <h2 className="section-title mb-4">Colecția pentru bărbați</h2>
           <div className="gold-divider" />
           <p className="font-sans text-sm font-light text-ink-muted max-w-md mx-auto mt-6 tracking-wide leading-relaxed">
             Placare cu aur de 18K · Design italian · Stil etern
