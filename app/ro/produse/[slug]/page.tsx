@@ -20,6 +20,7 @@ import { RoLeatherDescription } from "@/components/ro/product/RoLeatherDescripti
 import { RoProductReviews, type RoReviewPool } from "@/components/ro/product/RoProductReviews";
 import { roSafeProduct, roMissingText } from "@/components/ro/product/ro-text";
 import { roReviewView } from "@/components/ro/product/review-data";
+import { isCollectionSlug } from "@/lib/new-collection";
 
 // Romanian storefront (/ro/produse/<slug>): the whole Bulgarian catalogue (watches, jewellery, crocodile leather goods) in lei, with the
 // same sale as the Bulgarian site (current price + crossed-out old price + badge, both converted to whole lei).
@@ -257,7 +258,7 @@ export default async function RoProductPage({ params }: Props) {
 
         {/* Jewellery description - two product images + quality comparison */}
         {/* 18K PVD gold block: not on a silver piece of the 2026 collection */}
-        {isJewellery && product.metal !== "silver" && <RoJewelleryDescription />}
+        {isJewellery && product.metal !== "silver" && <RoJewelleryDescription stamp={!isCollectionSlug(product.slug)} />}
 
         {/* Leather description - material & craft */}
         {!isWatch && !isJewellery && !product.hideLeatherDescription && (

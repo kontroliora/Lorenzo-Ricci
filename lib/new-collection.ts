@@ -37,7 +37,7 @@ export interface CollectionDesign {
 export const COLLECTION_DESIGNS: CollectionDesign[] = [
   { key: "verdis",  name: "Verdis",  kind: "clover", necklace: { metals: ["gold", "silver"], price: 109 }, bracelet: { metals: ["gold", "silver"], price: 109 } },
   { key: "noctis",  name: "Noctis",  kind: "clover", necklace: { metals: ["gold", "silver"], price: 109 }, bracelet: { metals: ["gold", "silver"], price: 109 } },
-  { key: "lumen",   name: "Lumen",   kind: "clover", necklace: { metals: ["gold", "silver"], price: 109 }, bracelet: { metals: ["silver"], price: 109 } },
+  { key: "lumen",   name: "Lumen",   kind: "clover", necklace: { metals: ["gold", "silver"], price: 109 }, bracelet: { metals: ["gold", "silver"], price: 109 } },
   { key: "linea",   name: "Linea",   kind: "bangle", bracelet: { metals: ["gold", "silver"], price: 109 } },
   { key: "solaris", name: "Solaris", kind: "bangle", bracelet: { metals: ["gold", "silver"], price: 115 } },
   { key: "spira",   name: "Spira",   kind: "bangle", bracelet: { metals: ["gold", "silver"], price: 115 } },

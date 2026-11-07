@@ -25,6 +25,7 @@ import { getPriceOverrides, applyOverride, applyOverrides } from "@/lib/price-ov
 import { getLiveStock } from "@/lib/live-stock";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { productJsonLd, jsonLdString } from "@/lib/product-jsonld";
+import { isCollectionSlug } from "@/lib/new-collection";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
 // lib/price-overrides.ts) — every product page stays statically generated
@@ -177,7 +178,7 @@ export default async function ProductPage({ params }: Props) {
         )}
 
         {/* Jewellery description - two product images + quality comparison (18K PVD gold: not on a silver piece) */}
-        {product.category === "jewellery" && product.metal !== "silver" && <JewelleryDescription />}
+        {product.category === "jewellery" && product.metal !== "silver" && <JewelleryDescription stamp={!isCollectionSlug(product.slug)} />}
 
         {/* Leather description - material & craft Q&A */}
         {(product.category === "wallets" || product.category === "cardholders" || product.category === "bags") && !product.hideLeatherDescription && (

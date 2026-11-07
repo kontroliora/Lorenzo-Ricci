@@ -145,7 +145,8 @@ function ComparisonBlock() {
 }
 
 // ── Main export ───────────────────────────────────────────────────────────
-export function RoJewelleryDescription() {
+/** `stamp` = false: leave out the ITALY / 750 stamp block (pieces without the stamp). */
+export function RoJewelleryDescription({ stamp = true }: { stamp?: boolean } = {}) {
   return (
     <div className="w-full mt-16">
 
@@ -158,14 +159,17 @@ export function RoJewelleryDescription() {
           heading="Acoperire PVD 18K în 4 straturi, față de placarea standard"
           body="Produsele noastre sunt realizate prin tehnologia inovatoare PVD (Physical Vapor Deposition), într-un mediu de vid. Procesul constă în depunerea a 4 straturi dense de aur autentic de 18 karate pe oțel medical de înaltă calitate (316L). Aceasta asigură o rezistență de până la 10 ori mai mare decât cea a placării galvanice obișnuite și protejează bijuteria de decolorare, uzură și întunecare în contactul zilnic cu apa, transpirația sau parfumul."
         />
-        <FeatureBlock
-          imageSrc={DESC2}
-          imageAlt="Lorenzo Ricci - ștampila ITALY și 750, estetică italiană"
-          tag="Estetică italiană · Marcaj 750"
-          heading="Eleganță în detalii: ștampila ITALY și 750"
-          body="Ca omagiu adus tradiției bijuteriei italiene, fiecare piesă poartă gravate cu precizie marcajele clasice „ITALY” și „750”. Marcajul „750” atestă puritatea aurului de 18 karate din stratul exterior al produsului. Acest detaliu oferă o finisare autentică și o senzație de greutate, îmbinând estetica milaneză atemporală cu o rezistență modernă, fără compromisuri."
-          reverse
-        />
+        {/* The ITALY / 750 stamp: only on pieces that carry it (the 2026 collection has none - owner, 06.11.2026) */}
+        {stamp && (
+          <FeatureBlock
+            imageSrc={DESC2}
+            imageAlt="Lorenzo Ricci - ștampila ITALY și 750, estetică italiană"
+            tag="Estetică italiană · Marcaj 750"
+            heading="Eleganță în detalii: ștampila ITALY și 750"
+            body="Ca omagiu adus tradiției bijuteriei italiene, fiecare piesă poartă gravate cu precizie marcajele clasice „ITALY” și „750”. Marcajul „750” atestă puritatea aurului de 18 karate din stratul exterior al produsului. Acest detaliu oferă o finisare autentică și o senzație de greutate, îmbinând estetica milaneză atemporală cu o rezistență modernă, fără compromisuri."
+            reverse
+          />
+        )}
       </div>
 
       {/* Image comparison slider */}
