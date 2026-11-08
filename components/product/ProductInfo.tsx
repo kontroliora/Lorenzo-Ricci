@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Award, RefreshCw, Truck, Eye } from "lucide-react";
+import { Award, RefreshCw, Truck, Eye, BadgeCheck } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
@@ -641,7 +641,8 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
           { label: "30 дни замяна",              Icon: RefreshCw, href: undefined },
           { label: "Доставка за 1–2 работни дни с Еконт", Icon: Truck,  href: undefined },
           { label: "Преглед и тест",              Icon: Eye,       href: undefined },
-        ].map(({ label, Icon, href }, i) => {
+          { label: "Оригинален продукт",          Icon: BadgeCheck, href: undefined },
+        ].map(({ label, Icon, href }, i, all) => {
           const inner = (
             <>
               <Icon className="w-4 h-4 text-ink-muted flex-shrink-0" strokeWidth={1.5} />
@@ -652,7 +653,11 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
               </p>
             </>
           );
-          const cls = `py-4 px-5 flex items-center gap-3 ${i < 2 ? "border-b border-border" : ""} ${i % 2 === 0 ? "border-r border-border" : ""}`;
+          // An odd count: the last cell spans both columns (no empty half-cell); every row but the last has a bottom border.
+          const odd = all.length % 2 === 1;
+          const isLoneLast = odd && i === all.length - 1;
+          const lastRowStart = odd ? all.length - 1 : all.length - 2;
+          const cls = `py-4 px-5 flex items-center gap-3 ${i < lastRowStart ? "border-b border-border" : ""} ${i % 2 === 0 && !isLoneLast ? "border-r border-border" : ""} ${isLoneLast ? "col-span-2" : ""}`;
           return href ? (
             <Link key={label} href={href} className={`${cls} group hover:bg-ivory-warm transition-colors duration-200`}>
               {inner}

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Award, RefreshCw, Truck, Banknote, CreditCard, type LucideIcon } from "lucide-react";
+import { Award, RefreshCw, Truck, Banknote, CreditCard, BadgeCheck, type LucideIcon } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { getProductBySlug } from "@/lib/products";
 import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
@@ -364,6 +364,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
     prepay
       ? { label: "Plată în avans, stabilită direct cu noi", Icon: Banknote }
       : { label: "Plată securizată cu cardul", Icon: CreditCard },
+    { label: "Produs original", Icon: BadgeCheck },
   ];
   const odd = trust.length % 2 === 1;
   const lastRowStart = odd ? trust.length - 1 : trust.length - 2;
