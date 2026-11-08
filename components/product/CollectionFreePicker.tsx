@@ -36,7 +36,8 @@ export type FreePickerText = {
   again: string; remove: string;
 };
 
-export function CollectionFreePicker({ items, currentName, selfSlug, matchSlug, selected, onSelect, onRemove, text }: {
+export function CollectionFreePicker({ items, currentName, selfSlug, matchSlug, selected, onSelect, onRemove, text, embedded = false }: {
+  embedded?: boolean;      // inside box 2 of CollectionTwoBoxes: no step line, no picked line (the box shows both)
   items: FreeItem[];
   currentName: string;     // the page's own piece: item no. 1
   selfSlug: string;        // ... and its slug: its thumbnail reads "Още едно такова" (the same piece again)
@@ -55,12 +56,12 @@ export function CollectionFreePicker({ items, currentName, selfSlug, matchSlug, 
   };
 
   return (
-    <div data-testid="opo-picker" className="mt-4 scroll-mt-28">
+    <div data-testid="opo-picker" className={embedded ? "" : "mt-4 scroll-mt-28"}>
       {/* "1. this piece ✓   2. pick the second one": the page's own piece is the first of the two */}
-      <p data-testid="opo-steps" className="font-sans text-[12px] sm:text-[13px] font-medium tracking-wide text-charcoal mb-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+      {!embedded && <p data-testid="opo-steps" className="font-sans text-[12px] sm:text-[13px] font-medium tracking-wide text-charcoal mb-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <span>1. {currentName} <span className="text-navy">✓</span></span>
         <span>2. {text.title}</span>
-      </p>
+      </p>}
 
       {COLLECTION_GROUP_ORDER.map((g) => {
         // The other half of the set (same clover model and metal) leads its group, with a small gold "Комплект" above it;
@@ -118,7 +119,7 @@ export function CollectionFreePicker({ items, currentName, selfSlug, matchSlug, 
         );
       })}
 
-      {picked && (
+      {picked && !embedded && (
         <div data-testid="opo-picked-line" className="mt-4 flex items-center gap-3 px-3 py-2 border border-navy/30 bg-navy/[0.03]">
           <span className="relative flex-shrink-0 w-10 h-10 bg-white">
             <Image src={picked.image.src} alt="" fill sizes="40px" quality={60} className="object-contain" />

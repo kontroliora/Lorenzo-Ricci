@@ -22,6 +22,7 @@ import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, collectionFreeRanking, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
+import { CollectionTwoBoxes, TWO_BOX_BG } from "@/components/product/CollectionTwoBoxes";
 import { previewProductPhoto, warmProductPhoto } from "@/lib/warm-product";
 import { opoGroupOf, opoPriceLineBg, opoPairPrice, opoPairPriceBg } from "@/lib/one-plus-one";
 import { useLeatherStock } from "@/lib/use-gifts";
@@ -346,6 +347,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
 
   // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
   const inCollection = isCollectionSlug(product.slug);
+  const twoBoxes = inCollection && !!opo; // women's collection with its 1+1 running and in stock
   const cta = (
     <>
     <button
@@ -371,30 +373,8 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
     </>
   );
 
-  return (
-    <div className="flex flex-col gap-6">
-      {/* Category */}
-      <p className="font-sans text-[10px] text-ink-muted tracking-widest uppercase">
-        {product.category === "watches" ? "Часовници"
-          : product.category === "wallets" ? "Портфейли"
-          : product.category === "cardholders" ? "Кардхолдъри"
-          : product.category === "bags" ? "Чанти"
-          : "Бижута"} / {product.name}
-      </p>
-
-      {/* Name (no catalogue badge above it: the badges sit by the price) */}
-      <div>
-        <h1 className="font-serif text-display-md text-charcoal leading-tight">{product.name}</h1>
-        <p className="font-sans text-[10px] text-ink-muted tracking-[0.2em] mt-1.5">
-          Арт. {product.sku}
-        </p>
-      </div>
-
-      {/* Women's collection: "Вид" row (necklace / bracelet of the same model and metal) above the colour */}
-      {typeRow && <CollectionModelRow row={typeRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} />}
-
-      {/* Color variant selector - watches, wallets, cardholders */}
-      {variants && (
+  // The colour row (also used inside box 1 of the women's collection's two boxes).
+  const colourRow = variants ? (
           <div className="flex items-center gap-3">
             <span className="font-sans text-[10px] text-ink-muted tracking-widest uppercase">Цвят:</span>
             <div className="flex flex-wrap items-center gap-2 min-w-0 [@media(pointer:coarse)]:gap-0">
@@ -435,10 +415,34 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
               ))}
             </div>
           </div>
-      )}
+      ) : null;
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Category */}
+      <p className="font-sans text-[10px] text-ink-muted tracking-widest uppercase">
+        {product.category === "watches" ? "Часовници"
+          : product.category === "wallets" ? "Портфейли"
+          : product.category === "cardholders" ? "Кардхолдъри"
+          : product.category === "bags" ? "Чанти"
+          : "Бижута"} / {product.name}
+      </p>
+
+      {/* Name (no catalogue badge above it: the badges sit by the price) */}
+      <div>
+        <h1 className="font-serif text-display-md text-charcoal leading-tight">{product.name}</h1>
+        <p className="font-sans text-[10px] text-ink-muted tracking-[0.2em] mt-1.5">
+          Арт. {product.sku}
+        </p>
+      </div>
+
+      {/* Women's collection: "Вид" row (necklace / bracelet of the same model and metal) above the colour */}
+      {!twoBoxes && typeRow && <CollectionModelRow row={typeRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} />}
+
+      {!twoBoxes && colourRow}
 
       {/* Women's collection: stone / stones row (other models, same type and metal) */}
-      {modelRow && <CollectionModelRow row={modelRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} />}
+      {!twoBoxes && modelRow && <CollectionModelRow row={modelRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} />}
 
       {/* Rating */}
       {reviewCount > 0 && (
@@ -473,16 +477,41 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
         {inCollection && <BoxLine text="Луксозна велурена кутия LORENZO RICCI" />}
         {inCollection && <WarrantyLine text="Доживотна гаранция" href={"/warranty/jewelry"} />}
         {/* 1+1 group (lib/one-plus-one.ts): "2 картодържателя за €65 ..." and the free second one, picked here */}
-        {opo && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(product.slug)} size="page" />}
-        {opo && (
+        {opo && !twoBoxes && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(product.slug)} size="page" />}
+        {opo && !twoBoxes && (
           isCollectionSlug(product.slug)
             ? <CollectionFreePicker items={freeItems} currentName={product.name} selfSlug={product.slug} matchSlug={collectionMatchOf(product.slug)} selected={picked?.slug ?? null} onSelect={choosePick} onRemove={removePick} text={FREE_PICKER_BG} />
             : <OnePlusOnePicker title={opo.text.bg.pickTitle} options={pickOptions} selected={picked?.slug ?? null} onSelect={setPick} soldOutLabel="Изчерпан" />
         )}
       </div>
 
-      {/* Women's collection: the button right after the picker */}
-      {inCollection && cta}
+      {/* Women's collection: two numbered boxes (your piece + its selectors, the free second piece), the summary and the button
+          (components/product/CollectionTwoBoxes.tsx). Sold out (no 1+1): the plain button. */}
+      {twoBoxes ? (
+        <CollectionTwoBoxes
+          t={TWO_BOX_BG}
+          current={{ name: product.name, image: product.coverImage, priceText: opoPairPriceBg(product.price, 0) /* "€109", like the totals */, type: product.slug.startsWith("necklace") ? "necklace" : "bracelet" }}
+          selectors={(typeRow || colourRow || modelRow) ? (
+            <div className="flex flex-col gap-4">
+              {typeRow && <CollectionModelRow row={typeRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} />}
+              {colourRow}
+              {modelRow && <CollectionModelRow row={modelRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} />}
+            </div>
+          ) : null}
+          items={freeItems}
+          selfSlug={product.slug}
+          matchSlug={collectionMatchOf(product.slug)}
+          pickerText={FREE_PICKER_BG}
+          picked={picked ? freeItems.find((i) => i.slug === picked.slug) ?? null : null}
+          declined={declined}
+          onSelect={choosePick}
+          onRemove={removePick}
+          onRestore={() => { setPick(null); setDeclined(false); }}
+          totalText={opoPairPriceBg(product.price, picked ? pickedPrice : 0)}
+          struckText={picked ? opoPairPriceBg(product.price + pickedPrice, 0) : null /* the two prices together, same € format */}
+          cta={cta}
+        />
+      ) : inCollection && cta}
 
       {/* Delivery in one line, right under the price; inspection before paying only where cash on delivery exists.
           The "free over €60" part only while the green badge doesn't already say it. */}
