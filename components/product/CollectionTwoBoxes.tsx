@@ -12,19 +12,22 @@ import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/comp
 //   Then the summary right above the main button: [photo 1] + [photo 2]  Общо: €109  ~~€218~~, and the button the page passes.
 // The page owns the pick (default, removed or chosen) and the cart; this is the layout.
 
+// Titles (owner, 08.11.2026): "Изберете първо бижу" / "Изберете второ бижу". Box 2's full title does not fit one line at 375px
+// (measured: BG and RO both wrap), so phones (< 640px) show the short pair "Първо бижу" / "Второ бижу – БЕЗПЛАТНО" (the green word
+// moves into the title and the right-hand one is hidden there).
 export type TwoBoxText = {
-  yours: string; second: string; free: string;
+  yours: string; yoursShort: string; second: string; secondShort: string; free: string;
   withSet: (type: "necklace" | "bracelet") => string; again: string;
   change: string; close: string; remove: string; none: string; restore: string; total: string;
 };
 
 export const TWO_BOX_BG: TwoBoxText = {
-  yours: "Вашето бижу", second: "Второ бижу", free: "Безплатно",
+  yours: "Изберете първо бижу", yoursShort: "Първо бижу", second: "Изберете второ бижу", secondShort: "Второ бижу –", free: "Безплатно",
   withSet: (t) => `✓ Комплект с ${t === "necklace" ? "вашето колие" : "вашата гривна"}`, again: "✓ Още едно такова",
   change: "Смени", close: "Затвори", remove: "Махни", none: "Без второ бижу — губите безплатното", restore: "Добави безплатно бижу", total: "Общо:",
 };
 export const TWO_BOX_RO: TwoBoxText = {
-  yours: "Bijuteria dumneavoastră", second: "A doua bijuterie", free: "Gratuit",
+  yours: "Alegeți prima bijuterie", yoursShort: "Prima bijuterie", second: "Alegeți a doua bijuterie", secondShort: "A doua bijuterie –", free: "Gratuit",
   withSet: (t) => `✓ Set cu ${t === "necklace" ? "colierul dumneavoastră" : "brățara dumneavoastră"}`, again: "✓ Încă unul la fel",
   change: "Schimbați", close: "Închideți", remove: "Eliminați", none: "Fără a doua bijuterie — pierdeți bijuteria gratuită", restore: "Adăugați bijuteria gratuită", total: "Total:",
 };
@@ -64,7 +67,7 @@ export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, mat
     <div className="flex flex-col gap-4">
       {/* ── Box 1: your piece ── */}
       <section data-testid="box-yours" className="border border-border bg-white">
-        <BoxHeader n={1} title={t.yours} right={<span className="font-serif text-xl text-navy leading-none">{current.priceText}</span>} />
+        <BoxHeader n={1} title={t.yours} short={t.yoursShort} right={<span className="font-serif text-xl text-navy leading-none">{current.priceText}</span>} />
         <div className="px-4 sm:px-5 py-4 flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <span className="relative flex-shrink-0 w-14 h-14 bg-white border border-border">
@@ -78,7 +81,7 @@ export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, mat
 
       {/* ── Box 2: the free second piece ── */}
       <section ref={box2} data-testid="box-second" className="border border-border bg-white scroll-mt-28">
-        <BoxHeader n={2} title={t.second} right={<span className="font-sans text-[11px] tracking-[0.18em] uppercase font-semibold text-[#2F6B3B]">{t.free}</span>} />
+        <BoxHeader n={2} title={t.second} short={<>{t.secondShort} <span className="font-semibold text-[#2F6B3B]">{t.free}</span></>} rightDesktopOnly right={<span className="font-sans text-[11px] tracking-[0.18em] uppercase font-semibold text-[#2F6B3B]">{t.free}</span>} />
         <div className="px-4 sm:px-5 py-4">
           {picked ? (
             <div data-testid="second-card" className="flex items-center gap-4">
@@ -134,12 +137,15 @@ export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, mat
   );
 }
 
-function BoxHeader({ n, title, right }: { n: number; title: string; right: ReactNode }) {
+function BoxHeader({ n, title, short, right, rightDesktopOnly = false }: { n: number; title: string; short: ReactNode; right: ReactNode; rightDesktopOnly?: boolean }) {
   return (
     <div className="flex items-center gap-3 px-4 sm:px-5 py-3 border-b border-border bg-ivory">
       <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-navy text-white font-sans text-xs font-medium">{n}</span>
-      <span className="flex-1 min-w-0 font-sans text-[11px] sm:text-xs tracking-[0.18em] uppercase font-medium text-charcoal">{title}</span>
-      {right}
+      <h3 data-testid="box-title" className="flex-1 min-w-0 font-sans text-[11px] sm:text-xs tracking-[0.18em] uppercase font-medium text-charcoal">
+        <span className="hidden sm:inline">{title}</span>
+        <span className="sm:hidden">{short}</span>
+      </h3>
+      {rightDesktopOnly ? <span className="hidden sm:inline-flex">{right}</span> : right}
     </div>
   );
 }
