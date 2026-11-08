@@ -282,3 +282,32 @@ export function collectionFreeRanking(held: string[], available: (slug: string) 
 /** Units of collection pieces in a list of cart / order lines (gift lines left out). */
 export const collectionUnits = (lines: { slug?: unknown; quantity?: unknown; qty?: unknown; gift?: unknown }[]): number =>
   lines.reduce((n, l) => n + (!l.gift && typeof l.slug === "string" && NEW_COLLECTION_SLUGS.has(l.slug) ? Math.max(0, Math.floor(Number(l.quantity ?? l.qty ?? 1)) || 0) : 0), 0);
+
+// ─── Cart drawer: the 3 free-piece suggestions (owner, 08.11.2026) ───────────────────────────────────────────────────────────
+
+/** The collection's best seller(s) for the cart's third suggestion, first available one wins. Owner-editable: put the real
+ *  best seller first (no sales ranking is computed in code). */
+export const COLLECTION_BEST_SELLERS: string[] = ["necklace-verdis-gold", "bracelet-verdis-gold", "necklace-lumen-gold", "bracelet-solaris-gold"];
+
+export type FreeTag = "set" | "again" | "best" | null;
+
+/** The cart's 3 suggestions for the free piece, in this order: the matching piece of the last collection piece in the cart
+ *  ("Комплект": a clover piece's other half; a bangle's other metal, untagged), that same piece again ("Още едно такова"), the best
+ *  seller; anything missing (sold out / not addable) is filled from collectionFreeRanking. `canAdd` = the caller's live check
+ *  (in the shop, stock above what the cart already holds). */
+export function collectionCartTop3(cartSlugs: string[], canAdd: (slug: string) => boolean): { slug: string; tag: FreeTag }[] {
+  const own = cartSlugs.filter((s) => NEW_COLLECTION_SLUGS.has(s));
+  const last = own[own.length - 1];
+  const out: { slug: string; tag: FreeTag }[] = [];
+  const push = (slug: string | null | undefined, tag: FreeTag) => {
+    if (slug && out.length < 3 && !out.some((o) => o.slug === slug) && canAdd(slug)) out.push({ slug, tag });
+  };
+  if (last) {
+    const partner = collectionPartnerOf(last);
+    push(partner, partner && partner === collectionMatchOf(last) ? "set" : null);
+    push(last, "again");
+  }
+  for (const s of COLLECTION_BEST_SELLERS) { if (out.some((o) => o.tag === "best")) break; push(s, "best"); }
+  for (const s of collectionFreeRanking(own, canAdd)) push(s, null);
+  return out;
+}

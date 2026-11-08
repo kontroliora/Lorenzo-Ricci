@@ -9,6 +9,8 @@ import { useLeatherStock } from "@/lib/use-gifts";
 import { opoCrossSell, opoSuggestions } from "@/lib/one-plus-one";
 import { roCartLine } from "@/components/ro/product/cart-line";
 import type { Product } from "@/lib/types";
+import { COLLECTION_PIECES, collectionCartTop3, collectionGroupOf, pieceLive } from "@/lib/new-collection";
+import { CartFreeJewel, FREE_JEWEL_RO, type FreeJewelItem } from "@/components/cart/CartFreeJewel";
 
 // Romanian counterpart of components/cart/CartCrossSell.tsx, for a cart holding items of a running 1+1 group (the new jewellery,
 // the port-carduri): more of that same group, sold in Romania, in stock and not in the cart yet - "the next one is free" (odd count)
@@ -25,6 +27,26 @@ export function RoCartCrossSell() {
     const p = getProductBySlug(slug);
     return !!p && p.inStock && RO_SLUGS.includes(slug) && (stock?.[slug] ?? 1) > 0;
   };
+  // Women's collection, odd count: the next piece is free - the 3 suggestions + the full grid (components/cart/CartFreeJewel.tsx).
+  if (opo.group.id === "jewellery" && opo.odd) {
+    const held = (slug: string) => items.filter((i) => i.slug === slug).reduce((n, i) => n + i.quantity, 0);
+    const canAdd = (slug: string) => {
+      const p = getProductBySlug(slug);
+      return !!p && p.inStock && pieceLive(slug) && RO_SLUGS.includes(slug) && (stock?.[slug] ?? p.stock ?? 1) > held(slug);
+    };
+    const all: FreeJewelItem[] = COLLECTION_PIECES.flatMap(({ slug }) => {
+      const raw = getProductBySlug(slug);
+      const group = collectionGroupOf(slug);
+      if (!raw || !group || !pieceLive(slug) || !RO_SLUGS.includes(slug)) return [];
+      const p = localizeProduct(raw);
+      return [{ slug, name: p.name, image: p.coverImage, group, available: canAdd(slug), priceText: fmtRON(ronOf(p)) }];
+    });
+    const top = collectionCartTop3(items.map((i) => i.slug), canAdd)
+      .flatMap(({ slug, tag }) => { const item = all.find((i) => i.slug === slug); return item ? [{ item, tag }] : []; });
+    const addFree = (slug: string) => { const raw = getProductBySlug(slug); if (raw) addItem(roCartLine(localizeProduct(raw), stock?.[slug])); };
+    return <CartFreeJewel title={opo.group.text.ro.crossSell.odd} top={top} all={all} text={FREE_JEWEL_RO} onAdd={addFree} />;
+  }
+
   const suggestions = opoSuggestions(opo.group, items.map((i) => i.slug), available)
     .map((slug) => getProductBySlug(slug))
     .filter((p): p is Product => !!p)

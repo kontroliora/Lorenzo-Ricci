@@ -8,6 +8,8 @@ import { usePriceOverrides } from "@/lib/use-price-overrides";
 import type { Product } from "@/lib/types";
 import { opoLines } from "@/lib/bundles";
 import { opoCrossSell, opoSuggestions } from "@/lib/one-plus-one";
+import { COLLECTION_PIECES, collectionCartTop3, collectionGroupOf, pieceLive } from "@/lib/new-collection";
+import { CartFreeJewel, FREE_JEWEL_BG, type FreeJewelItem } from "./CartFreeJewel";
 
 const WALLET_FOR_CARDHOLDER: Record<string, string> = {
   "cardholder-bianco":     "wallet-alabastro",
@@ -86,6 +88,27 @@ export function CartCrossSell() {
   const opo = opoCrossSell(opoLines(items));
   const suggestionIds = opo ? opoSuggestions(opo.group, items.map((i) => i.product.slug), available) : computeSuggestions(cartIds);
   const title = opo ? opo.group.text.bg.crossSell[opo.odd ? "odd" : "even"] : "Често поръчвано заедно";
+
+  // Women's collection, odd count: the next piece is free - the 3 suggestions + the full grid (components/cart/CartFreeJewel.tsx).
+  if (opo && opo.group.id === "jewellery" && opo.odd) {
+    const held = (slug: string) => items.filter((i) => i.product.slug === slug).reduce((n, i) => n + i.quantity, 0);
+    const canAdd = (slug: string) => {
+      const p = getProductBySlug(slug);
+      return !!p && p.inStock && pieceLive(slug) && (stock?.[slug] ?? p.stock ?? 1) > held(slug);
+    };
+    const all: FreeJewelItem[] = COLLECTION_PIECES.flatMap(({ slug }) => {
+      const raw = getProductBySlug(slug);
+      const group = collectionGroupOf(slug);
+      if (!raw || !group || !pieceLive(slug)) return [];
+      const p = applyOverride(raw);
+      return [{ slug, name: p.name, image: p.coverImage, group, available: canAdd(slug),
+        priceText: `€${Number.isInteger(p.price) ? p.price : p.price.toFixed(2).replace(".", ",")}` }];
+    });
+    const top = collectionCartTop3(items.map((i) => i.product.slug), canAdd)
+      .flatMap(({ slug, tag }) => { const item = all.find((i) => i.slug === slug); return item ? [{ item, tag }] : []; });
+    const addFree = (slug: string) => { const p = getProductBySlug(slug); if (p) addItem({ ...applyOverride(p), stock: stock?.[slug] ?? p.stock }); };
+    return <CartFreeJewel title={title} top={top} all={all} text={FREE_JEWEL_BG} onAdd={addFree} />;
+  }
 
   const suggestions = suggestionIds
     .map((slug) => getProductBySlug(slug))
