@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { RO_STORE_ENABLED } from "@/lib/ro-store";
 import { Resend } from "resend";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { buildRecoveryEmail, type RecoverySession } from "@/lib/recovery-email";
@@ -100,6 +101,8 @@ export async function GET(req: NextRequest) {
     const ro = lang === "ro";
     if (!mayEmail("abandoned_cart", lang, ro ? "ro" : "bg")) continue;
     if (ro && session.recovery_consent !== true) continue;
+    // Romanian store off (lib/ro-store.ts): no reminder leads into a closed store. The cart stays; it can be mailed once the store reopens.
+    if (ro && !RO_STORE_ENABLED) continue;
     const live = ro ? repriceRoRecovery(session.items, findProduct) : repriceBgRecovery(session.items, findProduct);
     if (!live) {
       console.log(`[AbandonedCart] Nothing orderable left in ${session.session_id}`);

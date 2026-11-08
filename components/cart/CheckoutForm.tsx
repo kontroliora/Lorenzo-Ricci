@@ -9,7 +9,7 @@ import { giftDisplayName } from "@/lib/gifts";
 import { useGiftLines } from "@/lib/use-gifts";
 import { trackFbEvent, rememberMatchKeys } from "@/lib/fbq";
 import { logCheckoutFailure } from "@/lib/checkout-log";
-import { requiresPrepayment, PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
+import { eurText, requiresPrepayment, PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import { CARD_PAYMENTS_ENABLED, PENDING_ORDER_KEY, type PaymentMethod } from "@/lib/payments";
 import { saveCardCartSnapshot } from "@/lib/card-cart-snapshot";
 import { newOrderRef } from "@/lib/order-ref";
@@ -201,7 +201,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   // delivery as cash on delivery (lib/shipping-rules.ts: free from €60 for both), so it always equals the "Плати €X" button.
   const cardSaving       = cardDiscountEur(total, promoDiscount);
   const cardTotal        = total - cardSaving + shippingCost;
-  const eurBg            = (n: number) => `€${n.toFixed(2).replace(".", ",")}`;
+  const eurBg            = (n: number) => eurText(n); // the site's € format (owner, 09.11.2026): €79, €75,05
   const isHomeAddress    = shippingId === "home-address";
   // "До офис или автомат на Еконт": pick from Econt's official list. While it loads a placeholder shows; if it cannot be loaded
   // the old manual field is shown instead (and the order is saved with the typed text, no office code).
