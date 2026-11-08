@@ -389,7 +389,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         <div className="flex w-full flex-col gap-2.5 rounded-[8px] border border-border bg-[#FAFAF8] p-4 text-left">
           <div className="flex justify-between font-sans text-sm">
             <span className="text-ink-muted">Сума за плащане</span>
-            <span className="font-semibold text-navy">€{submittedTotal.toFixed(2)}</span>
+            <span className="font-semibold text-navy">{eurBg(submittedTotal)}</span>
           </div>
           <div className="flex justify-between font-sans text-sm">
             <span className="text-ink-muted">Начин на плащане</span>
@@ -436,22 +436,22 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       imageAlt: product.coverImage.alt,
       name: product.name,
       quantity,
-      price: `${product.currency}${(product.price * quantity).toFixed(2)}`,
-      compareAt: onSale ? `${product.currency}${((product.originalPrice as number) * quantity).toFixed(2)}` : undefined,
+      price: eurBg(product.price * quantity),
+      compareAt: onSale ? eurBg((product.originalPrice as number) * quantity) : undefined,
     };
     return gift
       ? [line, { key: `gift-${product.id}`, name: `Подарък: ${giftDisplayName(gift.giftSlug)}`, quantity: gift.qty, price: "Подарък", gift: true }]
       : [line];
   });
   const summaryRows: SummaryRow[] = [
-    ...activeBundles.map((b) => ({ key: `bundle-${b.id}`, label: bundleLineText(b), value: `-€${b.discount.toFixed(2)}`, tone: "discount" as const })),
+    ...activeBundles.map((b) => ({ key: `bundle-${b.id}`, label: bundleLineText(b), value: `-${eurBg(b.discount)}`, tone: "discount" as const })),
     ...(promoCode && promoDiscount > 0
-      ? [{ key: "promo", label: `Промо ${promoCode} -${Math.round(promoRate * 100)}%`, value: `-€${promoDiscount.toFixed(2)}`, tone: "discount" as const }]
+      ? [{ key: "promo", label: `Промо ${promoCode} -${Math.round(promoRate * 100)}%`, value: `-${eurBg(promoDiscount)}`, tone: "discount" as const }]
       : []),
     ...(cardDiscount > 0
-      ? [{ key: "card-discount", label: `−5% при плащане с карта${cardDiscountIsCapped(total, "EUR") ? ` (максимум €${CARD_DISCOUNT_CAP_EUR})` : ""}`, value: `-€${cardDiscount.toFixed(2)}`, tone: "discount" as const }]
+      ? [{ key: "card-discount", label: `−5% при плащане с карта${cardDiscountIsCapped(total, "EUR") ? ` (максимум €${CARD_DISCOUNT_CAP_EUR})` : ""}`, value: `-${eurBg(cardDiscount)}`, tone: "discount" as const }]
       : []),
-    { key: "shipping", label: "Доставка", value: freeShipping ? "Безплатна" : `€${shippingCost.toFixed(2)}`, tone: freeShipping ? ("free" as const) : undefined },
+    { key: "shipping", label: "Доставка", value: freeShipping ? "Безплатна" : eurBg(shippingCost), tone: freeShipping ? ("free" as const) : undefined },
   ];
   const inputProps = (key: string) => ({
     id: `bg-${key}`,
@@ -475,7 +475,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         lines={summaryLines}
         rows={summaryRows}
         totalLabel="Общо"
-        total={`€${grandTotal.toFixed(2)}`}
+        total={eurBg(grandTotal)}
         toggleLabel="Покажи поръчката"
         hideLabel="Скрий поръчката"
       />
@@ -538,9 +538,9 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
                 right={freeShipping ? (
                   <span className="flex flex-col items-end leading-tight">
                     <span className="text-[#2F6B3B]">Безплатна</span>
-                    <span className="text-xs font-normal text-ink-muted line-through">€{option.price.toFixed(2)}</span>
+                    <span className="text-xs font-normal text-ink-muted line-through">{eurBg(option.price)}</span>
                   </span>
-                ) : `€${option.price.toFixed(2)}`}
+                ) : eurBg(option.price)}
               />
             ))}
           </div>

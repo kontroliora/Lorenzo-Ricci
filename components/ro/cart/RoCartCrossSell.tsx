@@ -59,7 +59,7 @@ export function RoCartCrossSell() {
   if (suggestions.length === 0) return null;
 
   return (
-    <div data-testid="cart-cross-sell" data-group={opo.group.id} className="mt-4 pt-4 border-t border-border">
+    <div data-testid="cart-cross-sell" data-group={opo.group.id} className="pt-4">
       <p className="font-sans text-[13px] font-semibold text-navy mb-3">{opo.group.text.ro.crossSell[opo.odd ? "odd" : "even"]}</p>
       <div className="flex flex-col gap-3">
         {suggestions.map((p) => {
