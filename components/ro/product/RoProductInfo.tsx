@@ -36,7 +36,7 @@ import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
-import { CollectionTwoBoxes, TWO_BOX_RO } from "@/components/product/CollectionTwoBoxes";
+import { CollectionTwoBoxes, TWO_BOX_RO, TWO_BOX_CARD_RO } from "@/components/product/CollectionTwoBoxes";
 import { previewProductPhoto, warmProductPhoto } from "@/lib/warm-product";
 import { opoGroupOf } from "@/lib/one-plus-one";
 import { opoPriceLineRo } from "@/lib/ro/config";
@@ -151,6 +151,9 @@ const FREE_PICKER_RO: FreePickerText = {
 // Women's collection, no free piece picked yet: the main and the sticky button send the customer to box 2; a small link adds 1 only.
 const CHOOSE_LABEL_RO = "↑ ALEGEȚI BIJUTERIA GRATUITĂ";
 const ADD_ONE_RO = "sau adăugați doar 1";
+// Cardholders (owner, 09.11.2026): the same two boxes as the women's collection.
+const CHOOSE_LABEL_CARD_RO = "↑ ALEGEȚI PORT-CARDUL GRATUIT";
+const FREE_PICKER_CARD_RO: FreePickerText = { ...FREE_PICKER_RO, title: "Alegeți al doilea – gratuit:", groups: {}, again: "Încă unul la fel", chooseSecond: "Alegeți ca al doilea" };
 
 // Prepayment threshold in lei, for the wording of the delivery tab (the rule itself is roNeedsPrepayment).
 const PREPAYMENT_THRESHOLD_RON = Math.round(PREPAYMENT_THRESHOLD_EUR * EUR_RON);
@@ -317,17 +320,19 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   const choosePick = (slug: string | null) => setPick(slug);
   const removePick = () => setPick(null);
   // Women's collection: the redesigned picker (set card, groups, quick view), localized names / texts / lei prices.
-  const freeItems: FreeItem[] = opo && isCollectionSlug(product.slug)
+  // Cardholders' 1+1 (owner, 09.11.2026): the same boxes, one grid (no groups), in the group's own order.
+  const cardOpo = opo?.id === "cardholders";
+  const freeItems: FreeItem[] = opo && (isCollectionSlug(product.slug) || cardOpo)
     ? pickOptions.flatMap((o) => {
         const raw = getProductBySlug(o.slug);
-        const group = collectionGroupOf(o.slug);
+        const group = cardOpo ? "all" as const : collectionGroupOf(o.slug);
         if (!raw || !group) return [];
         const p = o.slug === product.slug ? product : localizeProduct(raw);
         const name = safeText(p.name) ?? o.name;
         return [{ slug: o.slug, name, image: o.image,
           images: p.images.map((im) => ({ src: im.src, alt: safeText(im.alt) ?? name })), available: o.available, group,
           priceText: fmtRON(ronOf(p)), description: safeText(p.description) ?? safeText(p.shortDescription) ?? "", href: `/ro/produse/${o.slug}` }];
-      }).sort((a, b) => collectionRank(a.slug) - collectionRank(b.slug))
+      }).sort((a, b) => (cardOpo ? 0 : collectionRank(a.slug) - collectionRank(b.slug)))
     : [];
   // The pair costs the dearer of the two in lei (the cheaper one is free): 341 lei for two cardholders, a piece's lei for jewellery.
   const pickedRaw = picked ? getProductBySlug(picked.slug) : undefined;
@@ -371,10 +376,10 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
 
   // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
   const inCollection = isCollectionSlug(product.slug);
-  const twoBoxes = inCollection && !!opo; // women's collection with its 1+1 running and in stock
+  const twoBoxes = (inCollection || cardOpo) && !!opo; // women's collection / cardholders with their 1+1 running and in stock
   // Nothing picked yet (and something is pickable): the buttons point to box 2 instead of adding.
   const mustChoose = twoBoxes && !picked && freeItems.some((i) => i.available);
-  const chooseLabel = mustChoose ? CHOOSE_LABEL_RO : null;
+  const chooseLabel = mustChoose ? (cardOpo ? CHOOSE_LABEL_CARD_RO : CHOOSE_LABEL_RO) : null;
   const goToBox2 = () => document.querySelector("[data-testid=box-second]")?.scrollIntoView({ behavior: "smooth", block: "start" });
   const cta = (
     <>
@@ -382,7 +387,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
       data-main-cta="true"
       onClick={!effectiveInStock ? undefined : chooseLabel && !added ? goToBox2 : handleAdd}
       disabled={!effectiveInStock}
-      className={`w-full justify-center text-center ${chooseLabel && !added ? "max-sm:px-3 max-sm:tracking-[0.1em]" : ""} ${
+      className={`w-full justify-center text-center ${chooseLabel && !added ? (chooseLabel.length > 30 ? "max-sm:px-2 max-sm:text-[11px] max-sm:tracking-[0.05em]" /* the cardholders' long label: one line at 375px */ : "max-sm:px-3 max-sm:tracking-[0.1em]") : ""} ${
         effectiveInStock
           ? "btn-primary"
           : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-muted border border-border cursor-not-allowed"
@@ -407,9 +412,10 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
 
   // The colour row (also used inside box 1 of the women's collection's two boxes).
   const colourRow = variants.length > 1 ? (
-        <div className="flex items-center gap-3">
-          <span className="font-sans text-[10px] text-ink-muted tracking-widest uppercase">Culoare:</span>
-          <div className="flex items-center gap-2 max-[373px]:flex-wrap">
+        <div className="flex items-start gap-3">
+          {/* label on the first swatch row (the cardholders' 11 colours wrap inside box 1) */}
+          <span className="flex-shrink-0 font-sans text-[10px] leading-6 text-ink-muted tracking-widest uppercase">Culoare:</span>
+          <div className="flex flex-wrap items-center gap-2">
             {variants.map((v) => (
               <Link
                 key={v.slug}
@@ -513,7 +519,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           (components/product/CollectionTwoBoxes.tsx). Sold out (no 1+1): the plain button. */}
       {twoBoxes ? (
         <CollectionTwoBoxes
-          t={TWO_BOX_RO}
+          t={cardOpo ? TWO_BOX_CARD_RO : TWO_BOX_RO}
           current={{ name: product.name, image: product.coverImage, priceText: fmtRON(ron), type: product.slug.startsWith("necklace") ? "necklace" : "bracelet" }}
           selectors={(typeRow || colourRow || modelRow) ? (
             <div className="flex flex-col gap-4">
@@ -524,8 +530,8 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           ) : null}
           items={freeItems}
           selfSlug={product.slug}
-          matchSlug={collectionMatchOf(product.slug)}
-          pickerText={FREE_PICKER_RO}
+          matchSlug={cardOpo ? null : collectionMatchOf(product.slug)}
+          pickerText={cardOpo ? FREE_PICKER_CARD_RO : FREE_PICKER_RO}
           picked={picked ? freeItems.find((i) => i.slug === picked.slug) ?? null : null}
           onSelect={choosePick}
           totalText={picked ? fmtRON(opoPairPrice(ron, pickedRon)) : fmtRON(ron)}
@@ -602,7 +608,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
       )}
 
       {/* CTA (a women's-collection piece has it right after the picker, further up) */}
-      {!inCollection && cta}
+      {!twoBoxes && !inCollection && cta}
 
       {/* Phones: the natural-variation note goes under the button (see above). */}
       {product.materialNote && (

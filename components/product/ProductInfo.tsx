@@ -22,7 +22,7 @@ import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
-import { CollectionTwoBoxes, TWO_BOX_BG } from "@/components/product/CollectionTwoBoxes";
+import { CollectionTwoBoxes, TWO_BOX_BG, TWO_BOX_CARD_BG } from "@/components/product/CollectionTwoBoxes";
 import { previewProductPhoto, warmProductPhoto } from "@/lib/warm-product";
 import { opoGroupOf, opoPriceLineBg, opoPairPrice, opoPairPriceBg } from "@/lib/one-plus-one";
 import { useLeatherStock } from "@/lib/use-gifts";
@@ -134,6 +134,9 @@ const FREE_PICKER_BG: FreePickerText = {
 // Women's collection, no free piece picked yet: the main and the sticky button send the customer to box 2; a small link adds 1 only.
 const CHOOSE_LABEL_BG = "↑ ИЗБЕРЕТЕ БЕЗПЛАТНОТО БИЖУ";
 const ADD_ONE_BG = "или добави само 1";
+// Cardholders (owner, 09.11.2026): the same two boxes as the women's collection.
+const CHOOSE_LABEL_CARD_BG = "↑ ИЗБЕРЕТЕ БЕЗПЛАТНИЯ КАРТОДЪРЖАТЕЛ";
+const FREE_PICKER_CARD_BG: FreePickerText = { ...FREE_PICKER_BG, title: "Изберете втория – безплатно:", groups: {}, again: "Още един такъв", chooseSecond: "Избери за втори" };
 
 // Show the low-stock line only when AVAILABLE units are at or below PAGE_LOW_STOCK_MAX (lib/home-card-hints.ts).
 
@@ -300,14 +303,16 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   const removePick = () => setPick(null);
   // Women's collection: the redesigned picker (set card, groups, quick view) gets the same options with more to show.
   const country = useCountry();
-  const freeItems: FreeItem[] = opo && isCollectionSlug(product.slug)
+  // Cardholders' 1+1 (owner, 09.11.2026): the same boxes, one grid (no groups), in the group's own order.
+  const cardOpo = opo?.id === "cardholders";
+  const freeItems: FreeItem[] = opo && (isCollectionSlug(product.slug) || cardOpo)
     ? pickOptions.flatMap((o) => {
         const p = getProductBySlug(o.slug);
-        const group = collectionGroupOf(o.slug);
+        const group = cardOpo ? "all" as const : collectionGroupOf(o.slug);
         if (!p || !group) return [];
         return [{ slug: o.slug, name: p.name, image: p.coverImage, images: p.images, available: o.available, group,
           priceText: displayPrice(p, country).text, description: p.description || p.shortDescription, href: `/products/${o.slug}` }];
-      }).sort((a, b) => collectionRank(a.slug) - collectionRank(b.slug))
+      }).sort((a, b) => (cardOpo ? 0 : collectionRank(a.slug) - collectionRank(b.slug)))
     : [];
   // The pair costs the dearer of the two (the cheaper one is free): €65 for two cardholders, €109 / €115 for jewellery.
   const pickedPrice = picked ? (getProductBySlug(picked.slug)?.price ?? product.price) : product.price;
@@ -343,10 +348,10 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
 
   // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
   const inCollection = isCollectionSlug(product.slug);
-  const twoBoxes = inCollection && !!opo; // women's collection with its 1+1 running and in stock
+  const twoBoxes = (inCollection || cardOpo) && !!opo; // women's collection / cardholders with their 1+1 running and in stock
   // Nothing picked yet (and something is pickable): the buttons point to box 2 instead of adding.
   const mustChoose = twoBoxes && !picked && freeItems.some((i) => i.available);
-  const chooseLabel = mustChoose ? CHOOSE_LABEL_BG : null;
+  const chooseLabel = mustChoose ? (cardOpo ? CHOOSE_LABEL_CARD_BG : CHOOSE_LABEL_BG) : null;
   const goToBox2 = () => document.querySelector("[data-testid=box-second]")?.scrollIntoView({ behavior: "smooth", block: "start" });
   const cta = (
     <>
@@ -354,7 +359,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
       data-main-cta="true"
       onClick={!effectiveInStock ? undefined : chooseLabel && !added ? goToBox2 : handleAdd}
       disabled={!effectiveInStock}
-      className={`w-full justify-center text-center ${chooseLabel && !added ? "max-sm:px-3 max-sm:tracking-[0.1em]" : ""} ${
+      className={`w-full justify-center text-center ${chooseLabel && !added ? (chooseLabel.length > 30 ? "max-sm:px-2 max-sm:text-[11px] max-sm:tracking-[0.05em]" /* the cardholders' long label: one line at 375px */ : "max-sm:px-3 max-sm:tracking-[0.1em]") : ""} ${
         effectiveInStock
           ? "btn-primary"
           : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-muted border border-border cursor-not-allowed"
@@ -378,8 +383,9 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
 
   // The colour row (also used inside box 1 of the women's collection's two boxes).
   const colourRow = variants ? (
-          <div className="flex items-center gap-3">
-            <span className="font-sans text-[10px] text-ink-muted tracking-widest uppercase">Цвят:</span>
+          <div className="flex items-start gap-3">
+            {/* label on the first swatch row (11 cardholder colours wrap inside box 1 on phones); same height as a swatch target */}
+            <span className="flex-shrink-0 font-sans text-[10px] leading-6 [@media(pointer:coarse)]:leading-[44px] text-ink-muted tracking-widest uppercase">Цвят:</span>
             <div className="flex flex-wrap items-center gap-2 min-w-0 [@media(pointer:coarse)]:gap-0">
               {variants.map((v) => (
                 <Link
@@ -498,7 +504,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
           (components/product/CollectionTwoBoxes.tsx). Sold out (no 1+1): the plain button. */}
       {twoBoxes ? (
         <CollectionTwoBoxes
-          t={TWO_BOX_BG}
+          t={cardOpo ? TWO_BOX_CARD_BG : TWO_BOX_BG}
           current={{ name: product.name, image: product.coverImage, priceText: opoPairPriceBg(product.price, 0) /* "€109", like the totals */, type: product.slug.startsWith("necklace") ? "necklace" : "bracelet" }}
           selectors={(typeRow || colourRow || modelRow) ? (
             <div className="flex flex-col gap-4">
@@ -509,8 +515,8 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
           ) : null}
           items={freeItems}
           selfSlug={product.slug}
-          matchSlug={collectionMatchOf(product.slug)}
-          pickerText={FREE_PICKER_BG}
+          matchSlug={cardOpo ? null : collectionMatchOf(product.slug)}
+          pickerText={cardOpo ? FREE_PICKER_CARD_BG : FREE_PICKER_BG}
           picked={picked ? freeItems.find((i) => i.slug === picked.slug) ?? null : null}
           onSelect={choosePick}
           totalText={opoPairPriceBg(product.price, picked ? pickedPrice : 0)}
@@ -591,7 +597,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
       )}
 
       {/* CTA (a women's-collection piece has it right after the picker, further up) */}
-      {!inCollection && cta}
+      {!twoBoxes && !inCollection && cta}
 
       {/* Phones: the natural-variation note goes under the button (see above). */}
       {product.materialNote && (

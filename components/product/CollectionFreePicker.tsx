@@ -25,14 +25,14 @@ export type FreeItem = {
   image: { src: string; alt: string };
   images: { src: string; alt: string }[];
   available: boolean;
-  group: CollectionGroup;
+  group: CollectionGroup | "all"; // "all" = one grid without a heading (the cardholders' 1+1)
   priceText: string;       // its own price, shown struck through
   description: string;
   href: string;
 };
 
 export type FreePickerText = {
-  title: string; setLabel: string; free: string; groups: Record<CollectionGroup, string>;
+  title: string; setLabel: string; free: string; groups: Partial<Record<CollectionGroup, string>>;
   chooseSecond: string; details: string; soldOut: string; second: string; freeShort: string; change: string; close: string;
   again: string; remove: string; zoom: string;
 };
@@ -64,7 +64,7 @@ export function CollectionFreePicker({ items, currentName, selfSlug, matchSlug, 
         <span>2. {text.title}</span>
       </p>}
 
-      {COLLECTION_GROUP_ORDER.map((g) => {
+      {[...COLLECTION_GROUP_ORDER, "all" as const].map((g) => {
         // The other half of the set (same clover model and metal) leads its group, with a small gold "Комплект" above it;
         // the label sits above the first row only (padding on the group), so later rows keep their normal spacing.
         const lead = (slug: string) => (slug === selfSlug ? 2 : slug === matchSlug ? 1 : 0); // the same piece again, then the set's other half
@@ -73,8 +73,8 @@ export function CollectionFreePicker({ items, currentName, selfSlug, matchSlug, 
         const hasSet = list.some((i) => i.slug === matchSlug);
         return (
           <div key={g} className="mt-3">
-            <p className="font-sans text-[10px] tracking-widest uppercase text-ink-muted mb-2">{text.groups[g]}</p>
-            <div role="radiogroup" aria-label={text.groups[g]} className={`grid grid-cols-4 gap-x-2 gap-y-3 sm:flex sm:flex-wrap sm:gap-2.5 pb-1.5 ${hasSet ? "pt-[18px]" : ""}`}>
+            {g !== "all" && <p className="font-sans text-[10px] tracking-widest uppercase text-ink-muted mb-2">{text.groups[g]}</p>}
+            <div role="radiogroup" aria-label={g === "all" ? text.title : text.groups[g]} className={`grid grid-cols-4 gap-x-2 gap-y-3 sm:flex sm:flex-wrap sm:gap-2.5 pb-1.5 ${hasSet ? "pt-[18px]" : ""}`}>
               {list.map((o) => {
                 const on = selected === o.slug;
                 return (

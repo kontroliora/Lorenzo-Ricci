@@ -32,6 +32,14 @@ export const TWO_BOX_RO: TwoBoxText = {
   remove: "Eliminați", total: "Total:",
 };
 
+// Cardholders (owner, 09.11.2026): the same two boxes for the cardholders' 1+1 (€65 for two).
+export const TWO_BOX_CARD_BG: TwoBoxText = {
+  ...TWO_BOX_BG, yours: "Изберете първи картодържател", yoursShort: "Първи картодържател", second: "Изберете втори", secondShort: "Втори –", again: "✓ Още един такъв",
+};
+export const TWO_BOX_CARD_RO: TwoBoxText = {
+  ...TWO_BOX_RO, yours: "Alegeți primul port-card", yoursShort: "Primul port-card", second: "Alegeți al doilea", secondShort: "Al doilea –",
+};
+
 export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, matchSlug, pickerText, picked, onSelect, totalText, struckText, cta }: {
   t: TwoBoxText;
   current: { name: string; image: { src: string; alt: string }; priceText: string; type: "necklace" | "bracelet" };
