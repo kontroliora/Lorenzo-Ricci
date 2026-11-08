@@ -86,7 +86,7 @@ export function CollectionFreePicker({ items, currentName, selfSlug, matchSlug, 
                     aria-disabled={!o.available}
                     disabled={!o.available}
                     title={o.slug === selfSlug ? `${text.again} – ${o.name}` : o.available ? o.name : `${o.name} – ${text.soldOut}`}
-                    onClick={() => onSelect(o.slug)}
+                    onClick={() => onSelect(on ? null : o.slug)} // a tap on the selected one clears it
                     data-testid={`opo-pick-${o.slug}`}
                     className={`group relative w-full text-center ${o.available ? "cursor-pointer" : "cursor-not-allowed"}`}
                   >

@@ -11,11 +11,12 @@ interface Props {
   onAdd: () => void;
   /** "Adaugă 2 în coș – 341 lei" while a 1+1 second item is picked. */
   pairLabel?: string | null;
-  /** Women's collection with the free piece removed: "ADAUGĂ DOAR 1 – pierdeți bijuteria gratuită" (grey, smaller), as on the page. */
-  soloLabel?: string | null;
+  /** Women's collection, no free piece picked yet: "↑ ALEGEȚI …" - the tap calls onChoose (scroll to box 2), nothing is added. */
+  chooseLabel?: string | null;
+  onChoose?: () => void;
 }
 
-export function RoStickyCartBar({ product, effectiveInStock, onAdd, pairLabel = null, soloLabel = null }: Props) {
+export function RoStickyCartBar({ product, effectiveInStock, onAdd, pairLabel = null, chooseLabel = null, onChoose }: Props) {
   const [visible, setVisible] = useState(false);
   const [added, setAdded]     = useState(false);
   // Sale: the old price in lei (undefined when the product is not on sale)
@@ -48,6 +49,7 @@ export function RoStickyCartBar({ product, effectiveInStock, onAdd, pairLabel = 
 
   const handleAdd = () => {
     if (!effectiveInStock) return;
+    if (chooseLabel) { onChoose?.(); return; }
     onAdd();
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -100,8 +102,8 @@ export function RoStickyCartBar({ product, effectiveInStock, onAdd, pairLabel = 
             tabIndex={visible ? 0 : -1}
             data-testid="sticky-cta"
             className={`flex-shrink-0 ${
-              effectiveInStock && soloLabel && !added
-                ? "max-w-[210px] sm:max-w-none min-h-[44px] font-sans text-[10px] sm:text-[11px] leading-tight tracking-[0.04em] px-3 sm:px-6 py-2 bg-ink-faint/15 text-ink-soft border border-border"
+              effectiveInStock && chooseLabel && !added
+                ? "btn-primary max-w-[190px] sm:max-w-none text-[10px] sm:text-[11px] leading-tight tracking-[0.12em] sm:tracking-[0.22em] px-3 sm:px-8 py-2.5 sm:py-3"
                 : effectiveInStock
                 ? "btn-primary text-[10px] sm:text-[11px] px-5 sm:px-8 py-3"
                 : "font-sans text-[10px] sm:text-[11px] tracking-[0.22em] uppercase px-5 sm:px-8 py-3 bg-ink-faint/20 text-ink-faint border border-border cursor-not-allowed"
@@ -111,8 +113,8 @@ export function RoStickyCartBar({ product, effectiveInStock, onAdd, pairLabel = 
               "EPUIZAT"
             ) : added ? (
               "✓ ADĂUGAT"
-            ) : soloLabel ? (
-              soloLabel
+            ) : chooseLabel ? (
+              chooseLabel
             ) : pairLabel ? (
               <>
                 <span className="hidden sm:inline">{pairLabel}</span>
