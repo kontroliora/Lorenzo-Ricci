@@ -123,7 +123,7 @@ export function RoCartDrawer() {
       <div
         ref={drawerRef}
         tabIndex={-1}
-        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] ${showCheckout ? "bg-charcoal-deep" : "bg-white"} z-[80] flex flex-col shadow-2xl outline-none transition-transform duration-400 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] bg-white z-[80] flex flex-col shadow-2xl outline-none transition-transform duration-400 ease-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         role="dialog"
@@ -132,18 +132,18 @@ export function RoCartDrawer() {
         aria-hidden={!isOpen}
         inert={!isOpen}
       >
-        {/* Header - checkout step: same dark theme, with the way back to the cart in it */}
+        {/* Header - checkout step: same light style as the cart, with the way back to the cart in it */}
         {showCheckout ? (
-          <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
+          <div className="flex items-center justify-between border-b border-border px-5 py-4">
             <button
               onClick={() => setShowCheckout(false)}
-              className="flex items-center gap-2 min-h-[44px] -my-2 pr-3 font-sans text-sm font-medium text-[#C9C9C9] transition-colors hover:text-white"
+              className="flex items-center gap-2 min-h-[44px] -my-2 pr-3 font-sans text-sm font-medium text-navy/70 transition-colors hover:text-navy"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M8.5 2.5 4 7l4.5 4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
               Coș
             </button>
-            <h2 className="font-serif text-xl text-white">Comandă</h2>
-            <button onClick={close} aria-label="Închide" className="flex items-center justify-center min-h-[44px] min-w-[44px] -my-2 -mr-3 text-2xl leading-none text-[#A0A0A0] transition-colors hover:text-white">×</button>
+            <h2 className="font-serif text-[20px] text-navy">Comandă</h2>
+            <button onClick={close} aria-label="Închide" className="flex items-center justify-center min-h-[44px] min-w-[44px] -my-2 -mr-3 text-2xl leading-none text-navy/60 transition-colors hover:text-navy">×</button>
           </div>
         ) : (
         <div className="border-b border-border">

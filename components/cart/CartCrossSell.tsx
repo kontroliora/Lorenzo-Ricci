@@ -9,6 +9,7 @@ import type { Product } from "@/lib/types";
 import { opoLines } from "@/lib/bundles";
 import { opoCrossSell, opoSuggestions } from "@/lib/one-plus-one";
 import { COLLECTION_PIECES, collectionCartTop3, collectionGroupOf, pieceLive } from "@/lib/new-collection";
+import { useCollectionBestSellers } from "@/lib/use-best-sellers";
 import { CartFreeJewel, FREE_JEWEL_BG, type FreeJewelItem } from "./CartFreeJewel";
 
 const WALLET_FOR_CARDHOLDER: Record<string, string> = {
@@ -78,6 +79,7 @@ export function CartCrossSell() {
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const applyOverride = usePriceOverrides();
   const stock = useLeatherStock(true);   // live counts: a product at 0 is never suggested (owner, 28.10.2026)
+  const bestSellers = useCollectionBestSellers(items.length > 0); // the collection's most sold pieces (orders, last 14 days)
 
   if (items.length === 0) return null;
 
@@ -104,7 +106,7 @@ export function CartCrossSell() {
       return [{ slug, name: p.name, image: p.coverImage, group, available: canAdd(slug),
         priceText: `€${Number.isInteger(p.price) ? p.price : p.price.toFixed(2).replace(".", ",")}` }];
     });
-    const top = collectionCartTop3(items.map((i) => i.product.slug), canAdd)
+    const top = collectionCartTop3(items.map((i) => i.product.slug), canAdd, bestSellers)
       .flatMap(({ slug, tag }) => { const item = all.find((i) => i.slug === slug); return item ? [{ item, tag }] : []; });
     const addFree = (slug: string) => { const p = getProductBySlug(slug); if (p) addItem({ ...applyOverride(p), stock: stock?.[slug] ?? p.stock }); };
     return <CartFreeJewel title="Добавете второ бижу – безплатно" top={top} all={all} text={FREE_JEWEL_BG} onAdd={addFree} />;

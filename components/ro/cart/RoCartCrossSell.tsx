@@ -10,6 +10,7 @@ import { opoCrossSell, opoSuggestions } from "@/lib/one-plus-one";
 import { roCartLine } from "@/components/ro/product/cart-line";
 import type { Product } from "@/lib/types";
 import { COLLECTION_PIECES, collectionCartTop3, collectionGroupOf, pieceLive } from "@/lib/new-collection";
+import { useCollectionBestSellers } from "@/lib/use-best-sellers";
 import { CartFreeJewel, FREE_JEWEL_RO, type FreeJewelItem } from "@/components/cart/CartFreeJewel";
 
 // Romanian counterpart of components/cart/CartCrossSell.tsx, for a cart holding items of a running 1+1 group (the new jewellery,
@@ -20,6 +21,7 @@ export function RoCartCrossSell() {
   const addItem = useRoCart((s) => s.addItem);
   const stock = useLeatherStock(true);
   const [added, setAdded] = useState<string | null>(null);
+  const bestSellers = useCollectionBestSellers(items.length > 0); // the collection's most sold pieces (orders, last 14 days)
 
   const opo = opoCrossSell(items.map((i) => ({ slug: i.slug, unit: i.ron, quantity: i.quantity, onSale: i.onSale })));
   if (!opo) return null;
@@ -41,7 +43,7 @@ export function RoCartCrossSell() {
       const p = localizeProduct(raw);
       return [{ slug, name: p.name, image: p.coverImage, group, available: canAdd(slug), priceText: fmtRON(ronOf(p)) }];
     });
-    const top = collectionCartTop3(items.map((i) => i.slug), canAdd)
+    const top = collectionCartTop3(items.map((i) => i.slug), canAdd, bestSellers)
       .flatMap(({ slug, tag }) => { const item = all.find((i) => i.slug === slug); return item ? [{ item, tag }] : []; });
     const addFree = (slug: string) => { const raw = getProductBySlug(slug); if (raw) addItem(roCartLine(localizeProduct(raw), stock?.[slug])); };
     return <CartFreeJewel title="Adăugați a doua bijuterie – gratuit" top={top} all={all} text={FREE_JEWEL_RO} onAdd={addFree} />;

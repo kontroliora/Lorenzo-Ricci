@@ -195,24 +195,24 @@ export function CartDrawer() {
       {/* Drawer */}
       <div
         ref={drawerRef}
-        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] ${showCheckout ? "bg-charcoal-deep" : "bg-white"} z-[80] flex flex-col shadow-2xl transition-transform duration-400 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] bg-white z-[80] flex flex-col shadow-2xl transition-transform duration-400 ease-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         role="dialog"
         aria-label="Количка"
       >
-        {/* Header - checkout step: same dark theme, with the way back to the cart in it */}
+        {/* Header - checkout step: same light style as the cart, with the way back to the cart in it */}
         {showCheckout ? (
-          <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
+          <div className="flex items-center justify-between border-b border-border px-5 py-4">
             <button
               onClick={() => setShowCheckout(false)}
-              className="flex items-center gap-2 min-h-[44px] -my-2 pr-3 font-sans text-sm font-medium text-[#C9C9C9] transition-colors hover:text-white"
+              className="flex items-center gap-2 min-h-[44px] -my-2 pr-3 font-sans text-sm font-medium text-navy/70 transition-colors hover:text-navy"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M8.5 2.5 4 7l4.5 4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
               Количка
             </button>
-            <h2 className="font-serif text-xl text-white">Поръчка</h2>
-            <button onClick={closeCart} aria-label="Затвори" className="flex items-center justify-center min-h-[44px] min-w-[44px] -my-2 -mr-3 text-2xl leading-none text-[#A0A0A0] transition-colors hover:text-white">×</button>
+            <h2 className="font-serif text-[20px] text-navy">Поръчка</h2>
+            <button onClick={closeCart} aria-label="Затвори" className="flex items-center justify-center min-h-[44px] min-w-[44px] -my-2 -mr-3 text-2xl leading-none text-navy/60 transition-colors hover:text-navy">×</button>
           </div>
         ) : (
         <>
@@ -233,34 +233,14 @@ export function CartDrawer() {
         )}
 
 
-        {/* Countdown timer in the checkout step (owner decision, 2026-10-15): the same running countdown as in the cart, as a slim
-            dark bar with yellow text right under the header - always visible, and never over the order summary. */}
+        {/* Countdown in the checkout step: the same one thin line as in the cart */}
         {items.length > 0 && showCheckout && (
-          <div className={`flex items-center gap-2.5 border-b border-white/8 px-5 py-2.5 ${timeLeft === 0 ? "bg-red-950/30" : "bg-amber-950/20"}`}>
-            <svg
-              width="15" height="15" viewBox="0 0 24 24" fill="none"
-              stroke={timeLeft === 0 ? "#FCA5A5" : "#FCD34D"}
-              strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
-              className="flex-shrink-0"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
-            </svg>
-            {timeLeft > 0 ? (
-              <p className="font-sans text-[13px] font-normal leading-snug text-[#FDE68A]">
-                Вашата количка ще се пази още{" "}
-                <span className="font-bold text-[#FCD34D]">{timerMM}:{timerSS}</span>{" "}
-                минути.
-              </p>
-            ) : (
-              <p className="font-sans text-[13px] font-normal leading-snug text-[#FCA5A5]">
-                Времето за резервация изтече.
-              </p>
-            )}
+          <div className="pt-3">
+            <ReserveLine expired={timeLeft === 0}>
+              {timeLeft > 0 ? <>Резервирано за <span className="font-semibold text-navy tabular-nums">{timerMM}:{timerSS}</span></> : "Времето за резервация изтече."}
+            </ReserveLine>
           </div>
         )}
-
 
         {showCheckout ? (
           <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">

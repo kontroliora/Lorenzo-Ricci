@@ -285,17 +285,17 @@ export const collectionUnits = (lines: { slug?: unknown; quantity?: unknown; qty
 
 // ─── Cart drawer: the 3 free-piece suggestions (owner, 08.11.2026) ───────────────────────────────────────────────────────────
 
-/** The collection's best seller(s) for the cart's third suggestion, first available one wins. Owner-editable: put the real
- *  best seller first (no sales ranking is computed in code). */
-export const COLLECTION_BEST_SELLERS: string[] = ["necklace-verdis-gold", "bracelet-verdis-gold", "necklace-lumen-gold", "bracelet-solaris-gold"];
+/** When no order data is there (or it cannot be read): the best seller the cart suggests. The real ranking comes from orders
+ *  (app/api/collection-best-seller, lib/use-best-sellers.ts). */
+export const COLLECTION_BEST_SELLER_FALLBACK = "necklace-verdis-gold";
 
 export type FreeTag = "set" | "again" | "best" | null;
 
 /** The cart's 3 suggestions for the free piece, in this order: the matching piece of the last collection piece in the cart
  *  ("Комплект": a clover piece's other half; a bangle's other metal, untagged), that same piece again ("Още едно такова"), the best
- *  seller; anything missing (sold out / not addable) is filled from collectionFreeRanking. `canAdd` = the caller's live check
+ *  seller (`bestSellers`, most sold first); anything missing (sold out / not addable) is filled from collectionFreeRanking. `canAdd` = the caller's live check
  *  (in the shop, stock above what the cart already holds). */
-export function collectionCartTop3(cartSlugs: string[], canAdd: (slug: string) => boolean): { slug: string; tag: FreeTag }[] {
+export function collectionCartTop3(cartSlugs: string[], canAdd: (slug: string) => boolean, bestSellers: string[] = [COLLECTION_BEST_SELLER_FALLBACK]): { slug: string; tag: FreeTag }[] {
   const own = cartSlugs.filter((s) => NEW_COLLECTION_SLUGS.has(s));
   const last = own[own.length - 1];
   const out: { slug: string; tag: FreeTag }[] = [];
@@ -307,7 +307,7 @@ export function collectionCartTop3(cartSlugs: string[], canAdd: (slug: string) =
     push(partner, partner && partner === collectionMatchOf(last) ? "set" : null);
     push(last, "again");
   }
-  for (const s of COLLECTION_BEST_SELLERS) { if (out.some((o) => o.tag === "best")) break; push(s, "best"); }
+  for (const s of bestSellers) { if (out.some((o) => o.tag === "best")) break; push(s, "best"); }
   for (const s of collectionFreeRanking(own, canAdd)) push(s, null);
   return out;
 }

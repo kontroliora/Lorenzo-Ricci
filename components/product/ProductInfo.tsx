@@ -16,7 +16,7 @@ import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { getProductBySlug } from "@/lib/products";
 import { PAGE_LOW_STOCK_MAX, savingsEur } from "@/lib/home-card-hints";
 import { campaignLabel } from "@/lib/sale-campaign";
-import { bgShipsFree } from "@/lib/shipping-rules";
+import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
 import { SavingsLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
@@ -478,6 +478,12 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
           {opo && shipsFree && <FreeShippingBadge text="Безплатна доставка" size="page" />}
         </div>
         <SavingsLine text={saved !== null ? `Спестявате €${saved}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Безплатна доставка" : null} />
+        {/* Under €60 (owner, 08.11.2026): how much more for free delivery, counted on what the button adds */}
+        {effectiveInStock && !shipsFree && cardGoods < BG_FREE_SHIPPING_EUR && (
+          <p data-testid="free-ship-line" className="font-sans text-[13px] leading-snug text-ink-soft">
+            Безплатна доставка при поръчка над €{BG_FREE_SHIPPING_EUR} (още {eurComma(BG_FREE_SHIPPING_EUR - cardGoods).replace(/,00$/, "")})
+          </p>
+        )}
         {inCollection && <BoxLine text="Луксозна велурена кутия LORENZO RICCI" />}
         {inCollection && <WarrantyLine text="Доживотна гаранция" href={"/warranty/jewelry"} />}
         {/* 1+1 group (lib/one-plus-one.ts): "2 картодържателя за €65 ..." and the free second one, picked here */}

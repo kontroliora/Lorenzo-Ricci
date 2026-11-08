@@ -331,8 +331,8 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
       />
 
       <div>
-        <h3 className="font-serif text-xl text-white">{needsPrepayment ? "Comandă cu plată în avans" : "Date pentru livrare"}</h3>
-        {needsPrepayment && <p className="mt-1 font-sans text-sm text-[#B0B0B0]">Se stabilește direct cu noi</p>}
+        <h3 className="font-serif text-xl text-navy">{needsPrepayment ? "Comandă cu plată în avans" : "Date pentru livrare"}</h3>
+        {needsPrepayment && <p className="mt-1 font-sans text-sm text-ink-muted">Se stabilește direct cu noi</p>}
       </div>
 
       {/* ── Fields (none for an advance-payment cart: those orders are arranged over Viber / phone / e-mail) ── */}
@@ -377,8 +377,8 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
             subtitle={RO_DELIVERY_TEXT}
             right={freeShipping ? (
             <span className="flex flex-col items-end leading-tight">
-              <span className="text-[#4ADE80]">Gratuită</span>
-              <span className="text-xs font-normal text-[#A0A0A0] line-through">{fmtRON(RO_SHIPPING_FEE_RON)}</span>
+              <span className="text-[#2F6B3B]">Gratuită</span>
+              <span className="text-xs font-normal text-ink-muted line-through">{fmtRON(RO_SHIPPING_FEE_RON)}</span>
             </span>
           ) : fmtRON(shippingCost)}
           />
@@ -390,8 +390,8 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
             subtitle={`Ridicați de la locker sau birou · ${RO_DELIVERY_TEXT}`}
             right={freeShipping ? (
             <span className="flex flex-col items-end leading-tight">
-              <span className="text-[#4ADE80]">Gratuită</span>
-              <span className="text-xs font-normal text-[#A0A0A0] line-through">{fmtRON(RO_SHIPPING_FEE_RON)}</span>
+              <span className="text-[#2F6B3B]">Gratuită</span>
+              <span className="text-xs font-normal text-ink-muted line-through">{fmtRON(RO_SHIPPING_FEE_RON)}</span>
             </span>
           ) : fmtRON(shippingCost)}
           />
@@ -404,7 +404,7 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
             <select
               value={form.county}
               onChange={(e) => { set("county", e.target.value); clearError("county"); }}
-              className={`${coInput(!!errors.county)} cursor-pointer appearance-none pr-10 ${form.county ? "" : "text-[#9A9A9A]"}`}
+              className={`${coInput(!!errors.county)} cursor-pointer appearance-none pr-10 ${form.county ? "" : "text-[#8A8A8A]"}`}
               autoComplete="address-level1"
               {...fieldProps("county")}
             >
@@ -414,7 +414,7 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
             <svg
               width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
               strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-              className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#A0A0A0]"
+              className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-muted"
             >
               <polyline points="6 9 12 15 18 9" />
             </svg>
@@ -475,9 +475,9 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
             <SecureNote>Plata este procesată în siguranță de Stripe. Nu stocăm datele cardului.</SecureNote>
           </CoRadioCard>
         ) : (
-          <p role="status" className="rounded-[8px] border border-[#606060] bg-[#141414] px-4 py-4 font-sans text-sm leading-relaxed text-[#C9C9C9]">
+          <p role="status" className="rounded-[8px] border border-border bg-[#FAFAF8] px-4 py-4 font-sans text-sm leading-relaxed text-ink-soft">
             Plata cu cardul nu este disponibilă momentan, de aceea nu se pot plasa comenzi. Vă rugăm să reveniți puțin mai târziu sau să ne scrieți la{" "}
-            <a href={`mailto:${PREPAYMENT_EMAIL}`} className="font-medium text-white underline underline-offset-2">{PREPAYMENT_EMAIL}</a>.
+            <a href={`mailto:${PREPAYMENT_EMAIL}`} className="font-medium text-navy underline underline-offset-2">{PREPAYMENT_EMAIL}</a>.
           </p>
         )}
       </CoSection>
@@ -485,15 +485,15 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
       </>)}
 
       {submitError && (
-        <div role="alert" className="flex flex-col items-center gap-2 rounded-[6px] border border-[#7A2A22] bg-[#2A1210] px-4 py-3 text-center font-sans text-[13px] leading-relaxed text-[#F87171]">
+        <div role="alert" className="flex flex-col items-center gap-2 rounded-[6px] border border-[#F3C5C0] bg-[#FDF2F1] px-4 py-3 text-center font-sans text-[13px] leading-relaxed text-[#B42318]">
           <p>{submitError}</p>
           {reloadHint && (
             <>
-              <p className="text-[#FCA5A5]">{reloadHint}</p>
+              <p className="text-[#B42318]">{reloadHint}</p>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="rounded-[6px] border border-[#F87171]/50 px-4 py-2 font-sans text-xs font-medium text-[#F87171] transition-colors hover:bg-[#F87171]/10"
+                className="rounded-[6px] border border-[#F87171]/50 px-4 py-2 font-sans text-xs font-medium text-[#B42318] transition-colors hover:bg-[#F87171]/10"
               >
                 Reîncărcați pagina
               </button>
@@ -503,8 +503,8 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
       )}
 
       {needsPrepayment ? (
-        <div className="flex flex-col gap-3 rounded-[8px] border border-[#606060] bg-[#141414] px-5 py-5 text-center">
-          <p className="font-sans text-sm leading-relaxed text-[#C9C9C9]">
+        <div className="flex flex-col gap-3 rounded-[8px] border border-border bg-[#FAFAF8] px-5 py-5 text-center">
+          <p className="font-sans text-sm leading-relaxed text-ink-soft">
             Produsele cu prețul de la {PREPAYMENT_THRESHOLD_TEXT} în sus se comandă cu plată în avans, stabilită direct cu noi.
             Vă rugăm să ne contactați pentru a finaliza comanda.
           </p>
@@ -515,12 +515,12 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
           >
             Contactați-ne pe Viber
           </a>
-          <p className="font-sans text-xs text-[#A0A0A0]">
-            sau la telefon <span className="font-medium text-white">{PREPAYMENT_PHONE}</span>
+          <p className="font-sans text-xs text-ink-muted">
+            sau la telefon <span className="font-medium text-navy">{PREPAYMENT_PHONE}</span>
           </p>
-          <p className="font-sans text-xs text-[#A0A0A0]">
+          <p className="font-sans text-xs text-ink-muted">
             sau prin e-mail la{" "}
-            <a href={`mailto:${PREPAYMENT_EMAIL}`} className="font-medium text-white underline underline-offset-2">
+            <a href={`mailto:${PREPAYMENT_EMAIL}`} className="font-medium text-navy underline underline-offset-2">
               {PREPAYMENT_EMAIL}
             </a>
           </p>
@@ -529,7 +529,7 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-3">
             {formSummary && (
-              <div id="ro-form-summary" role="alert" className="rounded-[6px] border border-[#7A2A22] bg-[#2A1210] px-4 py-3 text-center font-sans text-[13px] leading-relaxed text-[#F87171]">
+              <div id="ro-form-summary" role="alert" className="rounded-[6px] border border-[#F3C5C0] bg-[#FDF2F1] px-4 py-3 text-center font-sans text-[13px] leading-relaxed text-[#B42318]">
                 {formSummary}
               </div>
             )}

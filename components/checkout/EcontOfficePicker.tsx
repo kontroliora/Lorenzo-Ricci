@@ -49,7 +49,7 @@ const KINDS: { key: Kind; label: string }[] = [{ key: "all", label: "Всичк�
 function TypeBadge({ t }: { t: SlimOffice["t"] }) {
   const automat = t === "a";
   return (
-    <span className={`inline-block rounded-[4px] px-1.5 py-[1px] font-sans text-[11px] font-medium ${automat ? "bg-[#2A2308] text-[#E5C76B]" : "bg-[#2A2A2A] text-[#D6D6D6]"}`}>
+    <span className={`inline-block rounded-[4px] px-1.5 py-[1px] font-sans text-[11px] font-medium ${automat ? "bg-[#FBF6E9] text-[#6B5418]" : "bg-[#EEF0F4] text-navy"}`}>
       {OFFICE_TYPE_LABEL[t]}
     </span>
   );
@@ -117,16 +117,16 @@ export function EcontOfficePicker({
   if (selected) {
     return (
       <div className="flex flex-col gap-2">
-        <div className="flex items-start gap-3 rounded-[8px] border border-[#C9A84C] bg-[#1B180D] p-4">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="mt-[2px] flex-shrink-0">
+        <div className="flex items-start gap-3 rounded-[8px] border border-navy bg-[#F7F8FB] p-4">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F2850" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="mt-[2px] flex-shrink-0">
             <path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" />
           </svg>
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-2"><TypeBadge t={selected.t} /><span className="font-sans text-[13px] text-[#C9C9C9]">код {selected.c}</span></div>
-            <span className="break-words font-serif text-base leading-snug text-white">{selected.n}</span>
-            <span className="break-words font-sans text-[13px] leading-snug text-[#B0B0B0]">{selected.a}</span>
+            <div className="flex flex-wrap items-center gap-2"><TypeBadge t={selected.t} /><span className="font-sans text-[13px] text-ink-soft">код {selected.c}</span></div>
+            <span className="break-words font-serif text-base leading-snug text-navy">{selected.n}</span>
+            <span className="break-words font-sans text-[13px] leading-snug text-ink-muted">{selected.a}</span>
           </div>
-          <button type="button" onClick={() => onSelect(null)} className="flex-shrink-0 font-sans text-[13px] font-medium text-[#D4AF37] underline underline-offset-2 hover:text-white">Промени</button>
+          <button type="button" onClick={() => onSelect(null)} className="flex-shrink-0 font-sans text-[13px] font-medium text-navy underline underline-offset-2 hover:text-navy-light">Промени</button>
         </div>
       </div>
     );
@@ -143,16 +143,16 @@ export function EcontOfficePicker({
     <div className="flex flex-col gap-4" data-testid="econt-picker">
       {/* the message comes FIRST: a customer who pressed the order button is taken here and must see it without scrolling */}
       {error && (
-        <p id={errorId} role="alert" className="flex items-start gap-1.5 font-sans text-[13px] font-normal text-[#F87171]">
+        <p id={errorId} role="alert" className="flex items-start gap-1.5 font-sans text-[13px] font-normal text-[#B42318]">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden className="mt-[3px] flex-shrink-0">
-            <circle cx="8" cy="8" r="7" stroke="#F87171" strokeWidth="1.5" /><path d="M8 4.5v4" stroke="#F87171" strokeWidth="1.5" strokeLinecap="round" /><circle cx="8" cy="11" r="0.9" fill="#F87171" />
+            <circle cx="8" cy="8" r="7" stroke="#B42318" strokeWidth="1.5" /><path d="M8 4.5v4" stroke="#B42318" strokeWidth="1.5" strokeLinecap="round" /><circle cx="8" cy="11" r="0.9" fill="#B42318" />
           </svg>
           <span>{error}</span>
         </p>
       )}
       {/* 1. city */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor={cityId} className="font-sans text-[13px] font-medium text-[#E6E6E6]">Град на офиса или автомата</label>
+        <label htmlFor={cityId} className="font-sans text-[13px] font-medium text-charcoal">Град на офиса или автомата</label>
         <div className="relative">
           <input
             id={cityId} type="text" role="combobox" aria-expanded={cityOpen} aria-controls={listId} aria-autocomplete="list"
@@ -165,15 +165,15 @@ export function EcontOfficePicker({
             className={coInput(!!error && !city)} aria-invalid={error && !city ? true : undefined} aria-describedby={error ? errorId : undefined}
           />
           {cityOpen && suggestions.length > 0 && (
-            <ul id={listId} role="listbox" aria-label="Градове" className="absolute left-0 right-0 top-full z-10 mt-1 max-h-60 overflow-y-auto rounded-[8px] border border-[#606060] bg-[#101010] shadow-lg">
+            <ul id={listId} role="listbox" aria-label="Градове" className="absolute left-0 right-0 top-full z-10 mt-1 max-h-60 overflow-y-auto rounded-[8px] border border-[#8A8A8A] bg-white shadow-lg">
               {suggestions.map((c, i) => (
                 <li key={c.i} role="option" aria-selected={i === active}>
                   <button
                     type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => pickCity(c)}
-                    className={`flex w-full items-center justify-between gap-3 px-3.5 py-3 text-left font-sans text-[15px] text-white ${i === active ? "bg-[#1F1F1F]" : "hover:bg-[#1A1A1A]"}`}
+                    className={`flex w-full items-center justify-between gap-3 px-3.5 py-3 text-left font-sans text-[15px] text-navy ${i === active ? "bg-[#EEF0F4]" : "hover:bg-[#F3F4F7]"}`}
                   >
                     <span className="min-w-0 break-words">{c.n}</span>
-                    <span className="flex-shrink-0 text-[13px] text-[#A0A0A0]">{counts.get(c.i) ?? 0}</span>
+                    <span className="flex-shrink-0 text-[13px] text-ink-muted">{counts.get(c.i) ?? 0}</span>
                   </button>
                 </li>
               ))}
@@ -184,9 +184,9 @@ export function EcontOfficePicker({
 
       {/* 2. office or automat of that city, with search */}
       <div className="flex flex-col gap-2.5">
-        <label htmlFor={searchId} className="font-sans text-[13px] font-medium text-[#E6E6E6]">Офис или автомат на Еконт</label>
+        <label htmlFor={searchId} className="font-sans text-[13px] font-medium text-charcoal">Офис или автомат на Еконт</label>
         {!city ? (
-          <p className={`rounded-[8px] border bg-[#141414] px-3.5 py-3 font-sans text-[13px] text-[#A0A0A0] ${error ? "border-[#F87171]" : "border-[#2F2F2F]"}`}>Изберете град, за да видите офисите и автоматите.</p>
+          <p className={`rounded-[8px] border bg-[#FAFAF8] px-3.5 py-3 font-sans text-[13px] text-ink-muted ${error ? "border-[#B42318]" : "border-border"}`}>Изберете град, за да видите офисите и автоматите.</p>
         ) : (
           <>
             <input id={searchId} type="search" autoComplete="off" placeholder="Търсене по име или адрес" value={q} onChange={(e) => setQ(e.target.value)} className={coInput(false)} />
@@ -194,23 +194,23 @@ export function EcontOfficePicker({
               {KINDS.map((k) => (
                 <button
                   key={k.key} type="button" onClick={() => setKind(k.key)} aria-pressed={kind === k.key}
-                  className={`rounded-full border px-3 py-1 font-sans text-[13px] ${kind === k.key ? "border-[#C9A84C] bg-[#1B180D] text-[#E5C76B]" : "border-[#606060] text-[#C9C9C9] hover:border-[#8A8A8A]"}`}
+                  className={`rounded-full border px-3 py-1 font-sans text-[13px] ${kind === k.key ? "border-navy bg-[#F7F8FB] text-navy" : "border-[#C8C4BC] text-ink-soft hover:border-[#8A8A8A]"}`}
                 >
                   {k.label}
                 </button>
               ))}
-              <span className="ml-auto font-sans text-[13px] text-[#A0A0A0]">{offices.length} от {inCity}</span>
+              <span className="ml-auto font-sans text-[13px] text-ink-muted">{offices.length} от {inCity}</span>
             </div>
             {offices.length === 0 ? (
-              <p className="rounded-[8px] border border-[#2F2F2F] bg-[#141414] px-3.5 py-3 font-sans text-[13px] text-[#A0A0A0]">Няма офис или автомат по това търсене.</p>
+              <p className="rounded-[8px] border border-border bg-[#FAFAF8] px-3.5 py-3 font-sans text-[13px] text-ink-muted">Няма офис или автомат по това търсене.</p>
             ) : (
-              <ul aria-label="Офиси и автомати" className={`max-h-[320px] divide-y divide-[#2F2F2F] overflow-y-auto rounded-[8px] border bg-[#101010] ${error ? "border-[#F87171]" : "border-[#606060]"}`}>
+              <ul aria-label="Офиси и автомати" className={`max-h-[320px] divide-y divide-border overflow-y-auto rounded-[8px] border bg-white ${error ? "border-[#B42318]" : "border-[#8A8A8A]"}`}>
                 {offices.map((o) => (
                   <li key={o.c}>
-                    <button type="button" onClick={() => onSelect(o)} className="flex w-full flex-col items-start gap-1 px-3.5 py-3 text-left hover:bg-[#1A1A1A] focus-visible:bg-[#1F1F1F] focus-visible:outline-none">
-                      <span className="flex flex-wrap items-center gap-2"><TypeBadge t={o.t} /><span className="font-sans text-[13px] text-[#A0A0A0]">код {o.c}</span></span>
-                      <span className="break-words font-sans text-[15px] leading-snug text-white">{o.n}</span>
-                      <span className="break-words font-sans text-[13px] leading-snug text-[#B0B0B0]">{o.a}</span>
+                    <button type="button" onClick={() => onSelect(o)} className="flex w-full flex-col items-start gap-1 px-3.5 py-3 text-left hover:bg-[#F3F4F7] focus-visible:bg-[#EEF0F4] focus-visible:outline-none">
+                      <span className="flex flex-wrap items-center gap-2"><TypeBadge t={o.t} /><span className="font-sans text-[13px] text-ink-muted">код {o.c}</span></span>
+                      <span className="break-words font-sans text-[15px] leading-snug text-navy">{o.n}</span>
+                      <span className="break-words font-sans text-[13px] leading-snug text-ink-muted">{o.a}</span>
                     </button>
                   </li>
                 ))}
