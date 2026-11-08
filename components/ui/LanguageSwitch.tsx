@@ -1,6 +1,7 @@
 "use client";
 import { usePathname } from "next/navigation";
 import { LANG_COOKIE, bgToRoPath, roToBgPath } from "@/lib/ro/route-map";
+import { RO_STORE_ENABLED } from "@/lib/ro-store";
 
 // BG · RO switch. Real links (crawlable, work without JS); a click also stores the choice in the lr_lang cookie, which the geo
 // redirect (middleware.ts) respects from then on: a visitor who switches by hand is never redirected again.
@@ -20,6 +21,7 @@ export function LanguageSwitch({ current, className = "", size = "sm" }: { curre
     window.location.assign(targets[lang] + qs);
   };
   const lg = size === "lg";
+  if (!RO_STORE_ENABLED) return null; // Romanian store off (lib/ro-store.ts): no BG · RO switch anywhere
 
   return (
     <div role="group" aria-label="Limba / Език" className={`flex items-center gap-1 ${lg ? "-mx-2" : ""} ${className}`}>

@@ -1,4 +1,5 @@
 "use client";
+import { eurText } from "@/lib/price";
 import { useState } from "react";
 import Image from "next/image";
 import { useCartStore } from "@/lib/store";
@@ -102,13 +103,13 @@ function BundleCard({ label, productA, productB, discountPct, onePlusOne = false
         <div className={soldOut ? "opacity-50" : ""}>
           {savings > 0 && (
             <p className="font-sans text-[10px] text-ink-faint line-through leading-none">
-              €{fullPrice.toFixed(2)}
+              {eurText(fullPrice)}
             </p>
           )}
-          <p className="font-serif text-2xl text-navy leading-tight">€{discounted.toFixed(2)}</p>
+          <p className="font-serif text-2xl text-navy leading-tight">{eurText(discounted)}</p>
           {savings > 0 && (
             <p className="font-sans text-[10px] text-ink-faint tracking-wide mt-0.5">
-              Спестявате €{savings.toFixed(2)}
+              Спестявате {eurText(savings)}
             </p>
           )}
         </div>

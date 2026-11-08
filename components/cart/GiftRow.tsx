@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { eurText } from "@/lib/price";
 import { getProductBySlug } from "@/lib/products";
 import { giftDisplayName, type GiftLine } from "@/lib/gifts";
 
@@ -27,7 +28,7 @@ export function CartGiftRow({ gift }: { gift: GiftLine }) {
       </div>
       <div className="text-right">
         <span className="font-sans text-[12px] text-ink-muted line-through block">
-          {product.currency}{(product.price * gift.qty).toFixed(2)}
+          {eurText(product.price * gift.qty, product.currency)}
         </span>
         <span className="font-sans text-[13px] font-semibold text-[#2F6B3B] block">Подарък</span>
       </div>

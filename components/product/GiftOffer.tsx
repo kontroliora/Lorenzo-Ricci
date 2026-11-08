@@ -1,4 +1,5 @@
 "use client";
+import { eurText } from "@/lib/price";
 import Image from "next/image";
 import { getProductBySlug } from "@/lib/products";
 import { giftOfferText } from "@/lib/gifts";
@@ -29,7 +30,7 @@ export function GiftOffer({ clutchSlug }: { clutchSlug: string }) {
           {giftOfferText(clutchSlug, giftSlug)}
         </p>
         <p className="font-sans text-xs mt-1 text-ink-soft">
-          Стойност {gift.currency}{Number.isInteger(gift.price) ? gift.price : gift.price.toFixed(2)} · <span className="text-navy font-medium">Безплатно</span>
+          Стойност {eurText(gift.price, gift.currency)} · <span className="text-navy font-medium">Безплатно</span>
         </p>
       </div>
     </div>

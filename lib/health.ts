@@ -1,6 +1,7 @@
 // Health checks for the panel's top bar + Telegram alerts. Run every 15 min by /api/cron/health (Vercel Cron). Read-only towards
 // the shop: it only reads orders / checkout_events / stock, calls Stripe (list events), Econt (a status lookup) and Meta data
 // already in the database, and writes health_status. Never touches prices, checkout, stock or orders.
+import { RO_STORE_ENABLED } from "@/lib/ro-store";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getStripe } from "@/lib/stripe";
 import { products } from "@/lib/products";
@@ -30,9 +31,9 @@ async function probe(path: string, init?: RequestInit): Promise<{ status: number
 
 // ── 1. Site + checkout up ────────────────────────────────────────────────────
 async function checkSite(): Promise<Check[]> {
-  const pages = ["/", "/ro", "/products/yachting-black"];
+  const pages = ["/", ...(RO_STORE_ENABLED ? ["/ro"] : []), "/products/yachting-black"]; // RO only while the store is on (lib/ro-store.ts)
   // The order endpoints answer GET with 405 when they are deployed and alive; 5xx / timeout = the checkout cannot take orders.
-  const checkout = ["/api/order", "/api/order-ro"];
+  const checkout = ["/api/order", ...(RO_STORE_ENABLED ? ["/api/order-ro"] : [])];
   const [p, c] = await Promise.all([Promise.all(pages.map((x) => probe(x))), Promise.all(checkout.map((x) => probe(x)))]);
   const bad = (paths: string[], res: { status: number; error?: string }[]) =>
     paths.map((x, i) => ({ x, r: res[i] })).filter(({ r }) => r.status === 0 || r.status >= 500).map(({ x, r }) => `${x} → ${r.status || r.error}`);
@@ -257,7 +258,8 @@ export async function checkSynthetic(): Promise<Out> {
   const order = await get("/api/order");
   if (order.status === 0 || order.status >= 500) fail("BG checkout (/api/order)", `HTTP ${order.status || order.error}`);
 
-  // RO
+  // RO (skipped while the Romanian store is off: lib/ro-store.ts)
+  if (!RO_STORE_ENABLED) return { key: "synthetic", ok: steps.length === 0, title: "Тестов купувач: стъпка се проваля (начало → продукт → количка → поръчка)", detail: steps.join(" · ") || undefined };
   const roHome = await get("/ro");
   if (roHome.status !== 200) fail("RO начало", `HTTP ${roHome.status || roHome.error}`);
   const roProduct = pick(roHome.body, /href="\/ro\/produse\/([a-z0-9-]+)"/g);

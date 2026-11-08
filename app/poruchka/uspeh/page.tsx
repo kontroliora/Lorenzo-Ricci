@@ -1,4 +1,5 @@
 "use client";
+import { eurText } from "@/lib/price";
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -17,7 +18,7 @@ type Paid = { total: number | null; currency: string; items: { sku: string; quan
 type View = { kind: "checking" } | { kind: "paid"; paid: Paid } | { kind: "pending" } | { kind: "failed" };
 
 const money = (amount: number, currency: string) =>
-  currency === "RON" ? `${amount.toFixed(2)} lei` : `€${amount.toFixed(2)}`;
+  currency === "RON" ? `${amount.toFixed(2)} lei` : eurText(amount);
 
 function PaymentReturn() {
   const params    = useSearchParams();

@@ -17,7 +17,7 @@ import type { Product } from "./types";
 type PriceInput = Pick<Product, "price" | "originalPrice" | "currency" | "priceAED" | "priceRON">;
 
 export type PriceDisplay = {
-  text: string;            // formatted current price, e.g. "AED 4,500" / "1.200 lei" / "€279.00"
+  text: string;            // formatted current price, e.g. "AED 4,500" / "1.200 lei" / "€279" / "€33,60"
   original: string | null; // crossed-out prior price during a sale, or null (geo price / not on sale)
   isGeoPrice: boolean;     // true when showing a manually-set local price instead of EUR
 };
@@ -30,6 +30,12 @@ export type PriceDisplay = {
 // server check in lib/order-pricing.ts all use this.
 export const isOnSale = (p: Pick<Product, "price" | "originalPrice">): boolean =>
   typeof p.originalPrice === "number" && p.originalPrice > p.price;
+
+// The site's € format (owner, 09.11.2026), the same as the cart: no ".00" on whole amounts, a comma for cents: €79, €33,60.
+export const eurText = (n: number, cur = "€"): string => {
+  const r = Math.round(n * 100) / 100;
+  return `${cur}${Number.isInteger(r) ? r : r.toFixed(2).replace(".", ",")}`;
+};
 
 // Geo prices hide the strike-through: originalPrice is EUR and would mislead.
 const geoPrice = (text: string): PriceDisplay => ({ text, original: null, isGeoPrice: true });
@@ -52,8 +58,8 @@ export function displayPrice(p: PriceInput, country?: string | null): PriceDispl
 
   const cur = p.currency || "€";
   return {
-    text: `${cur}${p.price.toFixed(2)}`,
-    original: isOnSale(p) ? `${cur}${p.originalPrice!.toFixed(2)}` : null,
+    text: eurText(p.price, cur),
+    original: isOnSale(p) ? eurText(p.originalPrice!, cur) : null,
     isGeoPrice: false,
   };
 }

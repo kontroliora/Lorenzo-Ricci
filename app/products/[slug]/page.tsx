@@ -21,7 +21,7 @@ import { ProductEditorial } from "@/components/product/ProductEditorial";
 import { BundleUpsell } from "@/components/product/BundleUpsell";
 import { JewelleryDescription } from "@/components/product/JewelleryDescription";
 import { LeatherDescription } from "@/components/product/LeatherDescription";
-import { requiresPrepayment } from "@/lib/price";
+import { eurText, requiresPrepayment } from "@/lib/price";
 import { getPriceOverrides, applyOverride, applyOverrides } from "@/lib/price-overrides";
 import { getLiveStock } from "@/lib/live-stock";
 import { getSoldOutSlugs } from "@/lib/sold-out";
@@ -61,17 +61,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const keywords = product.category === "watches"
     ? ["Lorenzo Ricci", product.name, "луксозен часовник", ...(/хронограф/i.test(movement) ? ["хронограф"] : []), "японски кварцов механизъм", "сапфирено стъкло", "5 ATM"]
     : undefined;
+  // Leather goods are named 'Lorenzo Ricci "Onice"': the tab title would repeat the brand (template "%s | Lorenzo Ricci").
+  // Owner, 09.11.2026: "Картодържател Onice | Lorenzo Ricci".
+  const LEATHER_TYPE: Partial<Record<string, string>> = { cardholders: "Картодържател", wallets: "Портфейл", bags: "Чанта" };
+  const model = product.name.match(/^Lorenzo Ricci\s+"([^"]+)"\s*$/)?.[1];
+  const pageTitle = model && LEATHER_TYPE[product.category] ? `${LEATHER_TYPE[product.category]} ${model}` : product.name.replace(/\s+/g, " ").trim();
   return {
-    title: product.name,
+    title: pageTitle,
     ...(keywords && { keywords }),
-    description: `${product.name} - ${product.shortDescription}. ${product.currency}${product.price}. ${product.warranty ? `${product.warranty}. ` : ""}Безплатна доставка над €60. ${paymentNote}`,
+    description: `${product.name} - ${product.shortDescription}. ${eurText(product.price, product.currency)}. ${product.warranty ? `${product.warranty}. ` : ""}Безплатна доставка над €60. ${paymentNote}`,
     // openGraph replaces (not merges with) the one in app/layout.tsx, so type/locale/site name are repeated.
     openGraph: {
       type: "website",
       locale: "bg_BG",
       siteName: "Lorenzo Ricci",
       url: `https://lorenzo-ricci.com/products/${product.slug}`,
-      title: `${product.name} | Lorenzo Ricci`,
+      title: `${pageTitle} | Lorenzo Ricci`,
       description: product.description.slice(0, 160),
       images: [productOgImage(product)],
     },

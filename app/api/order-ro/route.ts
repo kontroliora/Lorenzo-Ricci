@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { RO_STORE_ENABLED } from "@/lib/ro-store";
 import { refreshStockPages } from "@/lib/stock-pages";
 import { ATTR_COOKIE, attributionFromCookie } from "@/lib/attribution";
 import { insertOrderResilient } from "@/lib/order-insert";
@@ -53,6 +54,8 @@ const normalizePhone = (raw: string): string | null => normalizeRoPhone(raw);
 export async function POST(req: NextRequest) {
   try {
     if (!previewOrdersAllowed()) return fail(503, "preview", "Aceasta este o versiune de previzualizare: comenzile sunt dezactivate.");
+    // Romanian store off (lib/ro-store.ts): no new orders. Existing RO orders are untouched and stay in the panel.
+    if (!RO_STORE_ENABLED) return fail(410, "ro_closed", "Magazinul din România este închis temporar. Vă rugăm să reveniți mai târziu.");
     let body: Record<string, unknown>;
     try { body = await req.json(); } catch { return fail(400, "bad_request", "Cerere invalidă. Vă rugăm să reîncercați."); }
 

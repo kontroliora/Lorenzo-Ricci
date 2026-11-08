@@ -6,7 +6,7 @@ import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
-import { displayPrice, requiresPrepayment } from "@/lib/price";
+import { displayPrice, eurText, requiresPrepayment } from "@/lib/price";
 import { PayLine } from "@/components/product/CodNote";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
@@ -114,6 +114,10 @@ const CLUTCH_VARIANTS = [
   { slug: "clutch-portofino", label: "Portofino - Кремав",    color: "#EFE6D6", inStock: true },
   { slug: "clutch-capri",     label: "Capri - Тъмносин",      color: "#1F2D4F", inStock: true },
 ];
+
+// The colour name shown after "Цвят:" (owner, 09.11.2026): "Onice - Черен" -> "Черен"; the watches' English labels in Bulgarian.
+const WATCH_COLOUR_BG: Record<string, string> = { Black: "Черен", Gold: "Златен", Blue: "Син", White: "Бял" };
+const colourNameBg = (label: string): string => WATCH_COLOUR_BG[label] ?? label.split(" - ").pop() ?? label;
 
 // Viber quick-order deep link - opens a 1:1 chat with the store number.
 // Format verified against the de-facto standard: viber://chat?number=<E.164>,
@@ -382,10 +386,11 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   );
 
   // The colour row (also used inside box 1 of the women's collection's two boxes).
+  const shownLabel = variants?.find((v) => v.slug === shownVariant)?.label;
   const colourRow = variants ? (
           <div className="flex items-start gap-3">
             {/* label on the first swatch row (11 cardholder colours wrap inside box 1 on phones); same height as a swatch target */}
-            <span className="flex-shrink-0 font-sans text-[10px] leading-6 [@media(pointer:coarse)]:leading-[44px] text-ink-muted tracking-widest uppercase">Цвят:</span>
+            <span className="flex-shrink-0 font-sans text-[10px] leading-6 [@media(pointer:coarse)]:leading-[44px] text-ink-muted tracking-widest uppercase">Цвят:{shownLabel && <span className="ml-1.5 text-xs normal-case tracking-normal text-ink">{colourNameBg(shownLabel)}</span>}</span>
             <div className="flex flex-wrap items-center gap-2 min-w-0 [@media(pointer:coarse)]:gap-0">
               {variants.map((v) => (
                 <Link
@@ -482,7 +487,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
           {opo && <OnePlusOneBadge text={opo.text.bg.badge} />}
           {opo && shipsFree && <FreeShippingBadge text="Безплатна доставка" size="page" />}
         </div>
-        <SavingsLine text={saved !== null ? `Спестявате €${saved}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Безплатна доставка" : null} />
+        <SavingsLine text={saved !== null ? `Спестявате ${eurText(saved)}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Безплатна доставка" : null} />
         {/* Under €60 (owner, 08.11.2026): how much more for free delivery, counted on what the button adds */}
         {effectiveInStock && !shipsFree && cardGoods < BG_FREE_SHIPPING_EUR && (
           <p data-testid="free-ship-line" className="font-sans text-[13px] leading-snug text-ink-soft">

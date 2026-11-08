@@ -1,4 +1,5 @@
 "use client";
+import { eurText } from "@/lib/price";
 import { useState } from "react";
 import Image from "next/image";
 import { BUNDLES, bundleHasSaleItem, bundleOpoRunning } from "@/lib/bundles";
@@ -143,11 +144,11 @@ export function BundleUpsell({ product: rawProduct }: Props) {
                 <div className="text-right">
                   {struck && (
                     <p className="font-sans text-[10px] text-ink-faint line-through leading-none">
-                      €{fullPrice.toFixed(2)}
+                      {eurText(fullPrice)}
                     </p>
                   )}
                   <p className="font-serif text-lg text-navy leading-tight">
-                    €{displayPrice.toFixed(2)}
+                    {eurText(displayPrice)}
                   </p>
                 </div>
                 <button

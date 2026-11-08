@@ -2,11 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { ATTR_COOKIE, ATTR_MAX_AGE, attributionFromSearch, encodeAttribution } from "@/lib/attribution";
 import { updateSession } from "@/lib/supabase/middleware";
 import { decideGeoRedirect, LANG_COOKIE } from "@/lib/geo-redirect";
+import { RO_ALWAYS_OPEN, RO_STORE_ENABLED } from "@/lib/ro-store";
+import { roToBgPath } from "@/lib/ro/route-map";
 
 // Two jobs: (1) the admin panel / admin API session gate (below, unchanged); (2) the first-visit redirect of Romanian
 // visitors to the Romanian store (lib/geo-redirect.ts has the rules). The storefront pages themselves stay static: only this
 // edge step looks at the visitor.
 function geoRedirect(request: NextRequest): NextResponse {
+  if (!RO_STORE_ENABLED) return NextResponse.next(); // Romanian store off (lib/ro-store.ts): nobody is sent to /ro
   const { pathname, search } = request.nextUrl;
   const h = request.headers;
   const decision = decideGeoRedirect({
@@ -44,6 +47,12 @@ export async function middleware(request: NextRequest) {
 
 async function route(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
+  // Romanian store off (lib/ro-store.ts): every /ro page -> its Bulgarian twin (302, query string kept: utm_* / fbclid).
+  if ((pathname === "/ro" || pathname.startsWith("/ro/")) && !RO_STORE_ENABLED && !RO_ALWAYS_OPEN(pathname)) {
+    const to = new URL(roToBgPath(pathname), request.url);
+    to.search = request.nextUrl.search;
+    return NextResponse.redirect(to, 302);
+  }
   // Matched only for the attribution cookie: the Romanian store and the sale page never had a geo redirect.
   if (pathname === "/ro" || pathname.startsWith("/ro/") || pathname === "/namalenia") return NextResponse.next();
 

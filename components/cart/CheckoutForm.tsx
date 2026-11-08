@@ -60,6 +60,12 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   // customer to arrange payment directly, rather than show a non-functional
   // "pay by card" control. Replace this block once a real prepayment flow exists.
   const needsPrepayment = items.some((i) => requiresPrepayment(i.product));
+  // Warranty in the trust line follows the cart (owner, 09.11.2026): watches 5 years, jewellery lifetime; both (or neither) = both.
+  const hasWatch = items.some((i) => i.product.category === "watches");
+  const hasJewel = items.some((i) => i.product.category === "jewellery");
+  const warrantyLine = hasWatch && !hasJewel ? "5 г. гаранция на часовниците"
+    : hasJewel && !hasWatch ? "Доживотна гаранция на бижутата"
+    : "5 г. гаранция на часовниците · Доживотна на бижутата";
 
   // Seed contact fields from a recovered session (abandoned-cart link) so the
   // customer doesn't retype anything. Read once at mount from the store.
@@ -699,8 +705,8 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
 
           <CoTrust
             points={isCardPay
-              ? ["5 години гаранция", "30 дни замяна*"]
-              : ["5 години гаранция", "30 дни замяна*", "Преглед преди плащане"]}
+              ? [warrantyLine, "30 дни замяна*"]
+              : [warrantyLine, "30 дни замяна*", "Преглед преди плащане"]}
             note="* За стоки на редовна цена."
             links={[
               { href: "/policies/shipping", label: "Доставка" },
