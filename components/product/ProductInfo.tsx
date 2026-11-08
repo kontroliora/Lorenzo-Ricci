@@ -10,6 +10,7 @@ import { displayPrice, requiresPrepayment } from "@/lib/price";
 import { PayLine, CodLine } from "@/components/product/CodNote";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
+import { cardDiscountEur } from "@/lib/card-discount";
 import { GiftOffer } from "@/components/product/GiftOffer";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { getProductBySlug } from "@/lib/products";
@@ -524,7 +525,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
       {/* How to pay, one line under the price (not for a prepayment product) */}
       {effectiveInStock && !requiresPrepayment(product) && (
         CARD_PAYMENTS_ENABLED
-          ? <PayLine text="Плащане с карта (−5%) или при доставка" marks={true} />
+          ? <PayLine text={`Плащане с карта: −5% отстъпка (€${(product.price - cardDiscountEur(product.price)).toFixed(2)}) · или наложен платеж`} marks={true} />
           : <PayLine text="Наложен платеж" marks={false} />
       )}
 
