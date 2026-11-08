@@ -110,6 +110,9 @@ export function CartCrossSell() {
     return <CartFreeJewel title="Добавете второ бижу – безплатно" top={top} all={all} text={FREE_JEWEL_BG} onAdd={addFree} />;
   }
 
+  // Women's collection, even count: nothing (owner, 08.11.2026 - the free-piece block simply disappears once the pair is complete).
+  if (opo && opo.group.id === "jewellery" && !opo.odd) return null;
+
   const suggestions = suggestionIds
     .map((slug) => getProductBySlug(slug))
     .filter((p): p is Product => !!p && available(p.slug))
@@ -136,7 +139,7 @@ export function CartCrossSell() {
   return (
     <div data-testid="cart-cross-sell" data-group={opo?.group.id ?? ""} className="mt-4 pt-4 border-t border-border">
       {opo ? (
-        <p className="font-sans text-[13px] font-semibold text-navy mb-3">◈ {title}</p>
+        <p className="font-sans text-[13px] font-semibold text-navy mb-3">{title}</p>
       ) : (
         <p className="font-sans text-[10px] font-medium tracking-[0.2em] uppercase text-ink-muted mb-3">{title}</p>
       )}

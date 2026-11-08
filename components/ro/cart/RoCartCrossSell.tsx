@@ -47,6 +47,9 @@ export function RoCartCrossSell() {
     return <CartFreeJewel title="Adăugați a doua bijuterie – gratuit" top={top} all={all} text={FREE_JEWEL_RO} onAdd={addFree} />;
   }
 
+  // Women's collection, even count: nothing (owner, 08.11.2026 - the free-piece block simply disappears once the pair is complete).
+  if (opo && opo.group.id === "jewellery" && !opo.odd) return null;
+
   const suggestions = opoSuggestions(opo.group, items.map((i) => i.slug), available)
     .map((slug) => getProductBySlug(slug))
     .filter((p): p is Product => !!p)
@@ -55,7 +58,7 @@ export function RoCartCrossSell() {
 
   return (
     <div data-testid="cart-cross-sell" data-group={opo.group.id} className="mt-4 pt-4 border-t border-border">
-      <p className="font-sans text-[13px] font-semibold text-navy mb-3">◈ {opo.group.text.ro.crossSell[opo.odd ? "odd" : "even"]}</p>
+      <p className="font-sans text-[13px] font-semibold text-navy mb-3">{opo.group.text.ro.crossSell[opo.odd ? "odd" : "even"]}</p>
       <div className="flex flex-col gap-3">
         {suggestions.map((p) => {
           const isAdded = added === p.slug;

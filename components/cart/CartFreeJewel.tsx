@@ -48,7 +48,7 @@ export function CartFreeJewel({ title, top, all, text, onAdd }: {
             {(first.tag === "set" || first.tag === "again") && (
               <p className="font-sans text-[9px] tracking-[0.14em] uppercase text-gold-dark font-medium leading-none mb-1">{first.tag === "set" ? text.set : text.again}</p>
             )}
-            <p className="font-sans text-[13px] text-navy leading-snug truncate">{first.item.name}</p>
+            <p className="font-sans text-[13px] text-navy leading-snug line-clamp-2">{first.item.name}</p>
             <p className="font-sans text-[12px] mt-0.5 flex gap-2">
               <span className="text-ink-muted line-through">{first.item.priceText}</span>
               <span className="text-[#2F6B3B] font-semibold">{text.free}</span>
