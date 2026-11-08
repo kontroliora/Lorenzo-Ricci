@@ -35,7 +35,8 @@ const CHECK_KEY = `${DONE_KEY}:check`;
 async function deliveryCheck(last: string | null): Promise<unknown> {
   const prev = await kv.get<{ final?: boolean; tries?: number }>(CHECK_KEY);
   if (prev?.final) return prev;
-  if (!last || Date.now() < new Date(last).getTime() + 3 * 60_000) return { waiting: "until the last e-mail is due" };
+  // Before the last one is due: a snapshot on every call (owner asked for the live status); counted tries start after it.
+  const afterLast = !!last && Date.now() >= new Date(last).getTime() + 3 * 60_000;
   const key = process.env.RESEND_API_KEY;
   if (!key) return { error: "RESEND_API_KEY not set" };
   const resend = new Resend(key);
@@ -54,10 +55,10 @@ async function deliveryCheck(last: string | null): Promise<unknown> {
     after = data.data[data.data.length - 1].id;
   }
   const DELIVERED = new Set(["delivered", "opened", "clicked"]);
-  const byRef = QUEUED_REFS.map((ref) => ({ ref, event: seen.get(ref)?.last_event ?? "not found" }));
+  const byRef = QUEUED_REFS.map((ref) => ({ ref, scheduledAt: seen.get(ref)?.scheduled_at ?? null, event: seen.get(ref)?.last_event ?? "not found" }));
   const delivered = byRef.filter((x) => DELIVERED.has(x.event)).length;
-  const tries = (prev?.tries ?? 0) + 1;
-  const result = { at: new Date().toISOString(), queued: QUEUED_REFS.length, delivered, notDelivered: byRef.filter((x) => !DELIVERED.has(x.event)), tries, final: delivered === QUEUED_REFS.length || tries >= 6 };
+  const tries = (prev?.tries ?? 0) + (afterLast ? 1 : 0);
+  const result = { at: new Date().toISOString(), queued: QUEUED_REFS.length, delivered, byRef, tries, final: afterLast && (delivered === QUEUED_REFS.length || tries >= 6) };
   console.log("[partner-backfill-check]", JSON.stringify(result));
   await kv.set(CHECK_KEY, result, { ex: 60 * 60 * 24 * 7 });
   return result;
