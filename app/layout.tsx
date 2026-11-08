@@ -28,6 +28,7 @@ import { Header } from "@/components/layout/Header";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { BgFooter } from "@/components/layout/BgFooter";
 import { LazyCartDrawer, LazySalesNotification } from "@/components/layout/DeferredChrome";
+import { CartPersistence } from "@/components/cart/CartPersistence";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
@@ -93,6 +94,7 @@ export default async function RootLayout({
   return (
     <html lang="bg" className={`scroll-smooth ${playfair.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="bg-ivory text-charcoal antialiased">
+        <CartPersistence />
         <MetaPixel />
         <ThemeProvider>
           <HideOnAdmin>

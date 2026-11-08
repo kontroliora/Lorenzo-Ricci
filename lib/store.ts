@@ -1,5 +1,6 @@
 "use client";
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import type { CartItem, Product } from "./types";
 import { calcBundleDiscount, type BundleResult } from "./bundles";
 
@@ -9,8 +10,15 @@ export interface RecoveryPrefill {
   phone?: string;
 }
 
+/** The cart reservation (the drawer's countdown): 15 minutes from the first item. A saved cart older than this is dropped on load. */
+export const CART_RESERVATION_MS = 15 * 60 * 1000;
+
 interface CartStore {
   items: CartItem[];
+  /** When the current reservation started (first item into an empty cart); null while empty. Saved with the cart. */
+  reservedAt: number | null;
+  /** Replace the lines after a reload's re-check (catalog, price overrides, live stock); never opens the drawer. */
+  replaceItems: (items: CartItem[]) => void;
   isOpen: boolean;
   addItem: (product: Product) => void;
   removeItem: (productId: string) => void;
@@ -30,9 +38,14 @@ interface CartStore {
   clearPendingCheckout: () => void;
 }
 
-export const useCartStore = create<CartStore>((set, get) => ({
+// Saved in the browser (owner, 08.11.2026) like the Romanian cart (lib/ro/store.ts): the lines and the reservation start survive a
+// reload and a closed tab. skipHydration: components/cart/CartPersistence.tsx restores it after mount, drops it when the
+// reservation ran out, and re-checks every line against the catalog, the price overrides and live stock.
+export const useCartStore = create<CartStore>()(persist((set, get) => ({
   items: [],
   isOpen: false,
+  reservedAt: null,
+  replaceItems: (items) => set({ items, reservedAt: items.length ? get().reservedAt ?? Date.now() : null }),
 
   addItem: (product) => {
     set((state) => {
@@ -47,14 +60,15 @@ export const useCartStore = create<CartStore>((set, get) => ({
           isOpen: true,
         };
       }
-      return { items: [...state.items, { product, quantity: 1 }], isOpen: true };
+      return { items: [...state.items, { product, quantity: 1 }], isOpen: true, reservedAt: state.items.length ? state.reservedAt ?? Date.now() : Date.now() };
     });
   },
 
   removeItem: (productId) => {
-    set((state) => ({
-      items: state.items.filter((i) => i.product.id !== productId),
-    }));
+    set((state) => {
+      const items = state.items.filter((i) => i.product.id !== productId);
+      return { items, reservedAt: items.length ? state.reservedAt : null };
+    });
   },
 
   updateQuantity: (productId, quantity) => {
@@ -69,7 +83,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
     }));
   },
 
-  clearCart: () => set({ items: [], recoveryPrefill: null, pendingCheckout: false }),
+  clearCart: () => set({ items: [], reservedAt: null, recoveryPrefill: null, pendingCheckout: false }),
   openCart: () => set({ isOpen: true }),
   closeCart: () => set({ isOpen: false }),
 
@@ -82,6 +96,6 @@ export const useCartStore = create<CartStore>((set, get) => ({
   pendingCheckout: false,
   recoveryPrefill: null,
   restoreCart: (items, prefill) =>
-    set({ items, isOpen: true, pendingCheckout: true, recoveryPrefill: prefill ?? null }),
+    set({ items, isOpen: true, pendingCheckout: true, recoveryPrefill: prefill ?? null, reservedAt: Date.now() }),
   clearPendingCheckout: () => set({ pendingCheckout: false }),
-}));
+}), { name: "lr-cart", partialize: (s) => ({ items: s.items, reservedAt: s.reservedAt }), skipHydration: true }));

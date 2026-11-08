@@ -1,7 +1,7 @@
 "use client";
 import { Fragment, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useCartStore } from "@/lib/store";
+import { useCartStore, CART_RESERVATION_MS } from "@/lib/store";
 import { useGiftLines } from "@/lib/use-gifts";
 import { CheckoutForm } from "./CheckoutForm";
 import { CartCrossSell } from "./CartCrossSell";
@@ -61,25 +61,17 @@ export function CartDrawer() {
   const reached = remaining === 0 && items.length > 0;
 
   // ── Cart countdown timer ────────────────────────────────────────────────────
-  const [timeLeft, setTimeLeft] = useState(CART_TIMEOUT);
-  const [timerStarted, setTimerStarted] = useState(false);
-
+  // The reservation countdown runs from the saved start (lib/store.ts reservedAt), so a reload or a reopened tab continues it
+  // instead of starting again at 15:00.
+  const reservedAt = useCartStore((s) => s.reservedAt);
+  const [nowTs, setNowTs] = useState(() => Date.now());
   useEffect(() => {
-    if (items.length > 0 && !timerStarted) {
-      setTimeLeft(CART_TIMEOUT);
-      setTimerStarted(true);
-    }
-    if (items.length === 0) {
-      setTimerStarted(false);
-      setTimeLeft(CART_TIMEOUT);
-    }
-  }, [items.length, timerStarted]);
-
-  useEffect(() => {
-    if (!timerStarted) return;
-    const id = setInterval(() => setTimeLeft((t) => Math.max(0, t - 1)), 1000);
+    if (!reservedAt) return;
+    setNowTs(Date.now());
+    const id = setInterval(() => setNowTs(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [timerStarted]);
+  }, [reservedAt]);
+  const timeLeft = reservedAt ? Math.max(0, Math.ceil((CART_RESERVATION_MS - (nowTs - reservedAt)) / 1000)) : CART_TIMEOUT;
 
   const timerMM = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const timerSS = String(timeLeft % 60).padStart(2, "0");

@@ -16,18 +16,18 @@ import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/comp
 // (measured: BG and RO both wrap), so phones (< 640px) show the short pair "Първо бижу" / "Второ бижу – БЕЗПЛАТНО" (the green word
 // moves into the title and the right-hand one is hidden there).
 export type TwoBoxText = {
-  yours: string; yoursShort: string; second: string; secondShort: string; free: string;
+  yours: string; yoursShort: string; joinTitle: string; second: string; secondShort: string; free: string;
   withSet: (type: "necklace" | "bracelet") => string; again: string;
   remove: string; total: string;
 };
 
 export const TWO_BOX_BG: TwoBoxText = {
-  yours: "Изберете първо бижу", yoursShort: "Първо бижу", second: "Изберете второ бижу", secondShort: "Второ бижу –", free: "Безплатно",
+  yours: "Изберете първо бижу", yoursShort: "Първо бижу", joinTitle: "Вашето бижу", second: "Изберете второ бижу", secondShort: "Второ бижу –", free: "Безплатно",
   withSet: (t) => `✓ Комплект с ${t === "necklace" ? "вашето колие" : "вашата гривна"}`, again: "✓ Още едно такова",
   remove: "Махни", total: "Общо:",
 };
 export const TWO_BOX_RO: TwoBoxText = {
-  yours: "Alegeți prima bijuterie", yoursShort: "Prima bijuterie", second: "Alegeți a doua bijuterie", secondShort: "A doua bijuterie –", free: "Gratuit",
+  yours: "Alegeți prima bijuterie", yoursShort: "Prima bijuterie", joinTitle: "Bijuteria dvs.", second: "Alegeți a doua bijuterie", secondShort: "A doua bijuterie –", free: "Gratuit",
   withSet: (t) => `✓ Set cu ${t === "necklace" ? "colierul dumneavoastră" : "brățara dumneavoastră"}`, again: "✓ Încă unul la fel",
   remove: "Eliminați", total: "Total:",
 };
@@ -53,7 +53,7 @@ export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, mat
     <div className="flex flex-col gap-4">
       {/* ── Box 1: your piece ── */}
       <section data-testid="box-yours" className="border border-border bg-white">
-        <BoxHeader n={1} title={t.yours} short={t.yoursShort} right={join ? join.price : <span className="font-serif text-xl text-navy leading-none">{current.priceText}</span>} />
+        <BoxHeader n={1} title={join ? t.joinTitle : t.yours} short={join ? t.joinTitle : t.yoursShort} right={join ? join.price : <span className="font-serif text-xl text-navy leading-none">{current.priceText}</span>} />
         <div className="px-4 sm:px-5 py-4 flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <span className="relative flex-shrink-0 w-14 h-14 bg-white border border-border">
