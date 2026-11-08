@@ -9,8 +9,9 @@ import { CollectionQuickView } from "@/components/product/CollectionQuickView";
 //   2. Phones (< 640px): a 4-column grid, every piece visible without swiping; desktop: fixed 90px thumbnails that wrap.
 //      Every piece, grouped Детелини / Пирони / Змия; the other half of the set (same clover model and metal, necklace <->
 //      bracelet) is the first thumbnail of Детелини with a small gold "Комплект" above it. Sold out = greyed, not clickable.
-//   3. A tap on a piece opens a quick view (modal on desktop, bottom sheet on phones); the piece is picked only by its
-//      "Избери за второ бижу" button.
+//   3. (owner, 08.11.2026) A tap on a piece PICKS it (check mark; inside box 2 the picker then collapses). The quick view (modal on
+//      desktop, bottom sheet on phones) opens only from the small magnifier at the top-right of a photo (32px touch area); its
+//      "Избери за второ бижу" button picks too.
 //   4. Picked: a check mark on it and the "Второ бижу: ... · Смени · Махни" line under the picker. Nothing goes into the cart here:
 //      the page's main button (then "Добави 2 в количката – €X") adds both.
 //   5. (owner, 08.11.2026) The 1+1 is the default: the page pre-selects the partner piece (lib/new-collection.ts collectionPartnerOf);
@@ -33,7 +34,7 @@ export type FreeItem = {
 export type FreePickerText = {
   title: string; setLabel: string; free: string; groups: Record<CollectionGroup, string>;
   chooseSecond: string; details: string; soldOut: string; second: string; freeShort: string; change: string; close: string;
-  again: string; remove: string;
+  again: string; remove: string; zoom: string;
 };
 
 export function CollectionFreePicker({ items, currentName, selfSlug, matchSlug, selected, onSelect, onRemove, text, embedded = false }: {
@@ -77,17 +78,17 @@ export function CollectionFreePicker({ items, currentName, selfSlug, matchSlug, 
               {list.map((o) => {
                 const on = selected === o.slug;
                 return (
+                  <div key={o.slug} className="relative min-w-0 w-full sm:flex-shrink-0 sm:w-[90px]">
                   <button
-                    key={o.slug}
                     type="button"
                     role="radio"
                     aria-checked={on}
                     aria-disabled={!o.available}
                     disabled={!o.available}
                     title={o.slug === selfSlug ? `${text.again} – ${o.name}` : o.available ? o.name : `${o.name} – ${text.soldOut}`}
-                    onClick={() => setViewing(o.slug)}
+                    onClick={() => onSelect(o.slug)}
                     data-testid={`opo-pick-${o.slug}`}
-                    className={`group relative min-w-0 w-full sm:flex-shrink-0 sm:w-[90px] text-center ${o.available ? "cursor-pointer" : "cursor-not-allowed"}`}
+                    className={`group relative w-full text-center ${o.available ? "cursor-pointer" : "cursor-not-allowed"}`}
                   >
                     {o.slug === matchSlug && (
                       <span className="absolute -top-[18px] left-0 right-0 h-4 font-sans text-[9px] sm:text-[10px] leading-4 tracking-[0.1em] sm:tracking-[0.12em] uppercase text-gold-dark font-medium whitespace-nowrap">
@@ -112,6 +113,24 @@ export function CollectionFreePicker({ items, currentName, selfSlug, matchSlug, 
                     </span>
                     {!o.available && <span className="block font-sans text-[10px] text-ink-faint">{text.soldOut}</span>}
                   </button>
+                  {/* Quick view only from the magnifier (top-right of the photo): a 32px touch area, a small round icon inside */}
+                  {o.available && (
+                    <button
+                      type="button"
+                      onClick={() => setViewing(o.slug)}
+                      aria-label={`${text.zoom}: ${o.name}`}
+                      title={text.zoom}
+                      data-testid={`opo-zoom-${o.slug}`}
+                      className="absolute top-0 right-0 z-10 w-8 h-8 flex items-start justify-end p-[3px] group/zoom"
+                    >
+                      <span className="w-[22px] h-[22px] rounded-full bg-white/95 border border-border shadow-sm flex items-center justify-center text-ink-soft group-hover/zoom:text-navy group-hover/zoom:border-navy/50 transition-colors">
+                        <svg aria-hidden viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                          <circle cx="10.5" cy="10.5" r="6.5" /><line x1="15.5" y1="15.5" x2="21" y2="21" />
+                        </svg>
+                      </span>
+                    </button>
+                  )}
+                  </div>
                 );
               })}
             </div>
@@ -150,5 +169,5 @@ export function CollectionFreePicker({ items, currentName, selfSlug, matchSlug, 
 }
 
 function Check() {
-  return <span aria-hidden className="absolute top-0 right-0 w-6 h-6 flex items-center justify-center bg-navy text-white text-[12px] leading-none">✓</span>;
+  return <span aria-hidden className="absolute top-0 left-0 w-6 h-6 flex items-center justify-center bg-navy text-white text-[12px] leading-none">✓</span>;
 }

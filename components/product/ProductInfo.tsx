@@ -130,7 +130,7 @@ const FREE_PICKER_BG: FreePickerText = {
   title: "Изберете второто бижу – безплатно:", setLabel: "Комплект", free: "Безплатно с 1+1",
   groups: { clover: COLLECTION_GROUP_LABEL.clover.bg, nail: COLLECTION_GROUP_LABEL.nail.bg, snake: COLLECTION_GROUP_LABEL.snake.bg },
   chooseSecond: "Избери за второ бижу", details: "Виж всички детайли", soldOut: "Изчерпан", second: "Второ бижу:", freeShort: "Безплатно",
-  change: "Смени", close: "Затвори", again: "Още едно такова", remove: "Махни",
+  change: "Смени", close: "Затвори", again: "Още едно такова", remove: "Махни", zoom: "Бърз преглед",
 };
 // Women's collection, the free piece removed ("Махни"): the main and the sticky button (smaller, grey).
 const SOLO_LABEL_BG = "ДОБАВИ САМО 1 – губите безплатното бижу";

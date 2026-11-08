@@ -146,7 +146,7 @@ const FREE_PICKER_RO: FreePickerText = {
   title: "Alegeți a doua bijuterie – gratuit:", setLabel: "Set", free: "Gratuit cu 1+1",
   groups: { clover: COLLECTION_GROUP_LABEL.clover.ro, nail: COLLECTION_GROUP_LABEL.nail.ro, snake: COLLECTION_GROUP_LABEL.snake.ro },
   chooseSecond: "Alegeți ca a doua bijuterie", details: "Vedeți toate detaliile", soldOut: "Stoc epuizat", second: "A doua bijuterie:", freeShort: "Gratuit",
-  change: "Schimbați", close: "Închideți", again: "Încă unul la fel", remove: "Eliminați",
+  change: "Schimbați", close: "Închideți", again: "Încă unul la fel", remove: "Eliminați", zoom: "Vizualizare rapidă",
 };
 // Women's collection, the free piece removed ("Eliminați"): the main and the sticky button (smaller, grey).
 const SOLO_LABEL_RO = "ADAUGĂ DOAR 1 – pierdeți bijuteria gratuită";
