@@ -6,6 +6,10 @@ import { useCartStore } from "@/lib/store";
 import { getProductBySlug } from "@/lib/products";
 import { usePriceOverrides } from "@/lib/use-price-overrides";
 import type { Product } from "@/lib/types";
+import { isOnSale } from "@/lib/price";
+
+// The cart's € format (same as the line items): no ",00", comma for cents.
+const eur = (n: number): string => `€${Number.isInteger(Math.round(n * 100) / 100) ? Math.round(n) : n.toFixed(2).replace(".", ",")}`;
 import { opoLines } from "@/lib/bundles";
 import { opoCrossSell, opoSuggestions } from "@/lib/one-plus-one";
 import { COLLECTION_PIECES, collectionCartTop3, collectionGroupOf, pieceLive } from "@/lib/new-collection";
@@ -164,30 +168,18 @@ export function CartCrossSell() {
                 <p className="font-sans text-[13px] text-navy leading-snug truncate">
                   {product.name}
                 </p>
-                <p className="font-sans text-[12px] text-ink-muted mt-0.5">
-                  {product.currency}{product.price.toFixed(2)}
+                <p data-testid="cross-price" className="font-sans text-[12px] mt-0.5 flex gap-2">
+                  {isOnSale(product) && <span className="text-ink-muted line-through">{eur(product.originalPrice as number)}</span>}
+                  <span className="text-navy font-semibold">{eur(product.price)}</span>
                 </p>
               </div>
               <button
                 onClick={() => handleAdd(product)}
-                className={`flex-shrink-0 w-11 h-11 flex items-center justify-center border transition-all duration-200 ${
-                  isAdded
-                    ? "bg-navy border-navy text-white"
-                    : "border-navy/30 text-navy hover:border-navy"
-                }`}
+                data-testid="cross-add"
+                className="flex-shrink-0 min-h-[40px] min-w-[84px] px-4 bg-navy text-white font-sans text-[11px] tracking-[0.14em] uppercase hover:bg-navy-light transition-colors"
                 aria-label={`Добави ${product.name}`}
               >
-                {isAdded ? (
-                  <svg
-                    width="12" height="12" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor"
-                    strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                ) : (
-                  <span className="text-base leading-none">+</span>
-                )}
+                {isAdded ? "✓ Добавено" : "Добави"}
               </button>
             </div>
           );

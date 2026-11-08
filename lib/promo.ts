@@ -11,6 +11,10 @@ export const PROMO_ISSUED_UNTIL = Date.parse("2026-11-03T13:30:00Z");
 // Every code still out there stops working after 31.12.2026 23:59 Sofia time (EET, UTC+2), "unlimited" ones included.
 // A code with an earlier expiry of its own keeps that earlier date.
 export const PROMO_FINAL_EXPIRY = Date.parse("2026-12-31T23:59:59+02:00");
+// Promo codes are switched off entirely (owner, 08.11.2026): the cart and the checkout have no code field, /api/promo/validate
+// refuses every code and /api/order refuses an order that still carries a promo discount (a stale tab). true = the old behaviour.
+export const PROMO_CODES_ENABLED: boolean = false;
+export const PROMO_DISABLED_ERROR = "Промо кодовете вече не се приемат. Моля, обновете страницата.";
 // Codes never apply to discounted products (no stacking; lib/bundles.ts promoBase, re-checked in lib/order-pricing.ts).
 export const PROMO_NOT_ON_SALE = "Кодът не важи за продукти на намаление";
 
@@ -21,6 +25,7 @@ type PromoRow = {
 
 // Throws when the lookup itself fails — the caller decides what that means.
 export async function checkPromoCode(code: unknown): Promise<PromoCheck> {
+  if (!PROMO_CODES_ENABLED) return { valid: false, error: PROMO_DISABLED_ERROR };
   const clean = String(code ?? "").trim().toUpperCase();
   if (!clean) return { valid: false, error: "Въведете промо код" };
 

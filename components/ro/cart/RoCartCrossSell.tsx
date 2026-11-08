@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRoCart } from "@/lib/ro/store";
 import { getProductBySlug } from "@/lib/products";
 import { localizeProduct, RO_SLUGS } from "@/lib/ro/catalog";
-import { fmtRON, ronOf } from "@/lib/ro/config";
+import { fmtRON, ronOf, ronOriginalOf } from "@/lib/ro/config";
 import { useLeatherStock } from "@/lib/use-gifts";
 import { opoCrossSell, opoSuggestions } from "@/lib/one-plus-one";
 import { roCartLine } from "@/components/ro/product/cart-line";
@@ -71,7 +71,10 @@ export function RoCartCrossSell() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-sans text-[13px] text-navy leading-snug truncate">{p.name}</p>
-                <p className="font-sans text-[12px] text-ink-muted mt-0.5">{fmtRON(ronOf(p))}</p>
+                <p data-testid="cross-price" className="font-sans text-[12px] mt-0.5 flex gap-2">
+                  {ronOriginalOf(p) !== undefined && <span className="text-ink-muted line-through">{fmtRON(ronOriginalOf(p) as number)}</span>}
+                  <span className="text-navy font-semibold">{fmtRON(ronOf(p))}</span>
+                </p>
               </div>
               <button
                 onClick={() => {
@@ -79,18 +82,11 @@ export function RoCartCrossSell() {
                   setAdded(p.slug);
                   setTimeout(() => setAdded(null), 2000);
                 }}
-                className={`flex-shrink-0 w-11 h-11 flex items-center justify-center border transition-all duration-200 ${
-                  isAdded ? "bg-navy border-navy text-white" : "border-navy/30 text-navy hover:border-navy"
-                }`}
+                data-testid="cross-add"
+                className="flex-shrink-0 min-h-[40px] min-w-[84px] px-4 bg-navy text-white font-sans text-[11px] tracking-[0.14em] uppercase hover:bg-navy-light transition-colors"
                 aria-label={`Adăugați ${p.name}`}
               >
-                {isAdded ? (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                ) : (
-                  <span className="text-base leading-none">+</span>
-                )}
+                {isAdded ? "✓ Adăugat" : "Adăugați"}
               </button>
             </div>
           );

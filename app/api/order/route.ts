@@ -18,7 +18,7 @@ import { getOfficeList } from "@/lib/econt-offices";
 import { officeLabel } from "@/lib/econt-label";
 import { validateOrderPricing } from "@/lib/order-pricing";
 import { checkOrderable } from "@/lib/order-availability";
-import { checkPromoCode, PROMO_NOT_ON_SALE } from "@/lib/promo";
+import { checkPromoCode, PROMO_CODES_ENABLED, PROMO_DISABLED_ERROR, PROMO_NOT_ON_SALE } from "@/lib/promo";
 import { reserveWithGifts, giftNotes, giftDisplayName, shortModelName, type GiftLine, type GiftReservation, type MissedGift, type ReserveFn, type Shortfall } from "@/lib/gifts";
 
 // Insert an order row. econt_office_code (supabase/orders_econt_office.sql) is optional: if the column is not there yet the order is saved
@@ -113,6 +113,15 @@ export async function POST(req: NextRequest) {
     //    the guard can re-derive the promo discount: full-price items only, no stacking.
     //    A failed lookup caps at the highest rate in use (10%) instead of blocking a
     //    paying customer; an invalid / used / expired code gets no discount at all.
+    // Promo codes are off (lib/promo.ts): an order that still claims a promo discount is refused before anything happens; a bare
+    // code without a discount is simply dropped, so no code is ever saved on an order.
+    if (!PROMO_CODES_ENABLED) {
+      if (Number(order.promoDiscount ?? 0) > 0) {
+        return NextResponse.json({ success: false, code: "promo_disabled", error: PROMO_DISABLED_ERROR }, { status: 409 });
+      }
+      order.promoCode = undefined;
+      order.promoDiscount = 0;
+    }
     let promoRate: number | null = null;
     if (Number(order.promoDiscount ?? 0) > 0) {
       try {

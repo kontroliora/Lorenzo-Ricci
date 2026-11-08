@@ -8,8 +8,8 @@ import { CheckoutForm } from "./CheckoutForm";
 import { CartCrossSell } from "./CartCrossSell";
 import { CartGiftRow } from "./GiftRow";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
-import { promoBase, opoLines } from "@/lib/bundles";
-import { opoExcludedFromPromo, opoFreeUnits } from "@/lib/one-plus-one";
+import { opoLines } from "@/lib/bundles";
+import { opoFreeUnits } from "@/lib/one-plus-one";
 import { DrawerTop, ReserveLine, ShipProgress, LineItem, SumRow, TotalRow, TrustRow } from "./drawer-ui";
 import { isOnSale } from "@/lib/price";
 import { cardDiscountEur } from "@/lib/card-discount";
@@ -21,8 +21,6 @@ import { useLeatherStock } from "@/lib/use-gifts";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
 
-// Same text as lib/promo.ts PROMO_NOT_ON_SALE (not imported: that module pulls the Supabase client into the browser bundle).
-const PROMO_NOT_ON_SALE = "Кодът не важи за продукти на намаление";
 
 const CART_TIMEOUT = 15 * 60; // 900 seconds
 
@@ -35,13 +33,6 @@ export function CartDrawer() {
   const [oddOpen, setOddOpen] = useState(false);
   const liveStock = useLeatherStock(isOpen);
   const country = useCountry();
-  const [promoInput, setPromoInput] = useState("");
-  const [promoApplied, setPromoApplied] = useState(false);
-  const [promoRate, setPromoRate] = useState(0.10); // fraction from the validated code - 10% newsletter, 5% waitlist apology
-  const [promoError, setPromoError] = useState("");
-  const [promoLoading, setPromoLoading] = useState(false);
-  // The code field is folded behind a small "Имам промо код" link; a tap opens it (and focuses the input).
-  const [promoOpen, setPromoOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   // Free gift cardholders for the clutches in the cart - display only, never cart items, so
   // they stay out of the subtotal, the free-shipping threshold and every discount.
@@ -49,10 +40,8 @@ export function CartDrawer() {
   const subtotal = totalPrice();
   const { totalDiscount } = bundleDiscount();
   const afterBundles = subtotal - totalDiscount;
-  // No stacking: the promo code applies to full-price items only (after their set
-  // discounts) - sale items are excluded. The server re-derives the same number.
-  const promoDiscount = promoApplied ? parseFloat((promoBase(items, totalDiscount) * promoRate).toFixed(2)) : 0;
-  const hasSaleItems = items.some((i) => isOnSale(i.product));
+  // Promo codes are switched off (owner, 08.11.2026 - lib/promo.ts PROMO_CODES_ENABLED): no field, no promo discount.
+  const promoDiscount = 0;
   // "Спестявате": every crossed-out price minus the current one, over the whole cart (sale items only; sets and promo are separate lines).
   const savings = Math.round(
     items.reduce((s, { product, quantity }) => s + (isOnSale(product) ? ((product.originalPrice as number) - product.price) * quantity : 0), 0) * 100,
@@ -70,35 +59,6 @@ export function CartDrawer() {
   // before promo code) so a discount code never turns free shipping into paid.
   const shippingQualifyingAmount = afterBundles;
 
-  const applyPromo = async () => {
-    const code = promoInput.trim().toUpperCase();
-    if (!code) return;
-    setPromoLoading(true);
-    setPromoError("");
-    try {
-      const res = await fetch("/api/promo/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
-      });
-      const data = await res.json() as { valid: boolean; discount?: number; error?: string };
-      if (data.valid && promoBase(items, totalDiscount) <= 0) {
-        // Only discounted products in the cart: the code covers none of them (the server refuses it the same way).
-        // Items of a 1+1 group (lib/one-plus-one.ts) never take a code either: the 1+1 is their promotion.
-        setPromoError(items.some((i) => opoExcludedFromPromo(i.product.slug)) && !items.some((i) => isOnSale(i.product)) ? "Кодът не важи за продукти с оферта 1+1" : PROMO_NOT_ON_SALE);
-      } else if (data.valid) {
-        setPromoInput(code);
-        setPromoRate(typeof data.discount === "number" ? data.discount : 0.10);
-        setPromoApplied(true);
-      } else {
-        setPromoError(data.error || "Невалиден промо код");
-      }
-    } catch {
-      setPromoError("Грешка при проверката. Опитайте отново.");
-    } finally {
-      setPromoLoading(false);
-    }
-  };
   const remaining = Math.max(0, freeShippingThreshold - shippingQualifyingAmount);
   const progress = Math.min(1, shippingQualifyingAmount / freeShippingThreshold);
   const reached = remaining === 0 && items.length > 0;
@@ -247,9 +207,6 @@ export function CartDrawer() {
             <CheckoutForm
               items={items}
               total={total}
-              promoCode={promoApplied ? promoInput : undefined}
-              promoDiscount={promoDiscount}
-              promoRate={promoRate}
               onSuccess={() => {
                 closeCart();
                 setShowCheckout(false);
@@ -293,49 +250,8 @@ export function CartDrawer() {
               <CartCrossSell />
             </div>
 
-            {/* Footer: promo link, summary, button, 3 icons */}
+            {/* Footer: summary, button, 3 icons */}
             <div className="px-5 sm:px-6 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] border-t border-border bg-white">
-              <div className="mb-2.5">
-                {!promoApplied && !promoOpen ? (
-                  <button
-                    type="button"
-                    data-testid="promo-toggle"
-                    onClick={() => setPromoOpen(true)}
-                    className="font-sans text-[12px] text-ink-muted underline underline-offset-2 hover:text-navy transition-colors py-1"
-                  >
-                    Имам промо код
-                  </button>
-                ) : !promoApplied ? (
-                  <div>
-                    <div className="flex border border-border">
-                      <input
-                        type="text"
-                        autoFocus
-                        value={promoInput}
-                        onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(""); }}
-                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPromo(); } }}
-                        placeholder="Промо код"
-                        className="flex-1 min-w-0 bg-white text-navy font-sans text-base tracking-wider uppercase px-3 py-2 focus:outline-none placeholder:text-ink-faint placeholder:normal-case placeholder:tracking-normal"
-                      />
-                      <button
-                        type="button"
-                        onClick={applyPromo}
-                        disabled={promoLoading}
-                        className="font-sans text-[11px] tracking-widest uppercase text-navy hover:bg-navy/5 px-4 border-l border-border transition-colors disabled:opacity-50"
-                      >
-                        {promoLoading ? "..." : "Приложи"}
-                      </button>
-                    </div>
-                    {promoError && <p className="font-sans text-[12px] text-[#B42318] mt-1.5">{promoError}</p>}
-                  </div>
-                ) : (
-                  <div data-testid="promo-applied">
-                    <p className="font-sans text-[12px] text-[#2F6B3B]">✓ Промо код {promoInput} приложен (−{Math.round(promoRate * 100)}%)</p>
-                    {hasSaleItems && <p className="font-sans text-[11px] text-ink-muted mt-0.5">{PROMO_NOT_ON_SALE}</p>}
-                  </div>
-                )}
-              </div>
-
               <div className="flex flex-col gap-1.5">
                 {allSavings > 0 && <SumRow label="Отстъпка" value={`−${eur(allSavings)}`} tone="discount" testId="drawer-discount" />}
                 <SumRow label="Доставка" value={reached ? "Безплатна" : "Изчислява се"} tone={reached ? "free" : undefined} testId="drawer-shipping" />
