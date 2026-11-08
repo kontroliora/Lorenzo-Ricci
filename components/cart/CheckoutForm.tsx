@@ -192,6 +192,10 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   // Paying by card: 5% off the goods (max €25), never together with a promo code. The server recomputes it (lib/card-discount.ts).
   const cardDiscount     = isCardPay ? cardDiscountEur(total, promoDiscount) : 0;
   const grandTotal       = total - cardDiscount + shippingCost;
+  // What the card option promises, whichever method is selected: the exact saving and the total if paid by card (free shipping).
+  const cardSaving       = cardDiscountEur(total, promoDiscount);
+  const cardTotal        = total - cardSaving;
+  const eurBg            = (n: number) => `€${n.toFixed(2).replace(".", ",")}`;
   const isHomeAddress    = shippingId === "home-address";
   // "До офис или автомат на Еконт": pick from Econt's official list. While it loads a placeholder shows; if it cannot be loaded
   // the old manual field is shown instead (and the order is saved with the typed text, no office code).
@@ -632,8 +636,13 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
               name="paymentMethod" value="card" selected={paymentMethod === "card"}
               onSelect={() => { setPaymentMethod("card"); setSubmitError(""); }}
               title="Плащане с карта"
-              subtitle={promoDiscount > 0 ? "Отстъпката за карта не се комбинира с промо код" : `−5% от стоката (до €${CARD_DISCOUNT_CAP_EUR})`}
-              right={promoDiscount > 0 ? undefined : <span data-testid="card-discount-badge" className="text-[#4ADE80]">−5%</span>}
+              subtitle={promoDiscount > 0 || cardSaving <= 0 ? (promoDiscount > 0 ? "Отстъпката за карта не се комбинира с промо код" : undefined) : (
+                <>
+                  <span data-testid="card-saving">Спестявате {eurBg(cardSaving)} при плащане с карта</span>
+                  <span data-testid="card-total" className="mt-0.5 block text-white">Общо с карта: {eurBg(cardTotal)}</span>
+                </>
+              )}
+              right={promoDiscount > 0 || cardSaving <= 0 ? undefined : <span data-testid="card-discount-badge" className="text-[#4ADE80]">−{eurBg(cardSaving)}</span>}
             >
               <PaymentMarks label="Приемани карти и портфейли" />
               {paymentMethod === "card" && (
@@ -678,7 +687,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
               </div>
             )}
             <CoSubmit busy={submitting} busyLabel={isCardPay ? "Пренасочване към плащане..." : "Обработване..."}>
-              {isCardPay ? `Плати €${grandTotal.toFixed(2)}` : `Завърши поръчката · €${grandTotal.toFixed(2)}`}
+              {isCardPay ? `Плати ${eurBg(grandTotal)}` : `Завърши поръчката · ${eurBg(grandTotal)}`}
             </CoSubmit>
             <CoLegal>
               С поръчката приемате условията за{" "}

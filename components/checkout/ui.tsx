@@ -93,7 +93,7 @@ export function CoRadioCard({
   name, value, selected, onSelect, icon, title, subtitle, right, children,
 }: {
   name: string; value: string; selected: boolean; onSelect: () => void;
-  icon?: ReactNode; title: string; subtitle?: string; right?: ReactNode; children?: ReactNode;
+  icon?: ReactNode; title: string; subtitle?: ReactNode; right?: ReactNode; children?: ReactNode;
 }) {
   return (
     <label
