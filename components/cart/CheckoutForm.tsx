@@ -183,7 +183,6 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   const [gifted, setGifted] = useState<{ gifts: { name: string; qty: number; forName: string }[]; notes: string[] }>({ gifts: [], notes: [] });
 
   // ── Derived values ─────────────────────────────────────────────────────────
-  // Paying by card always ships free, whatever the order size.
   const isCardPay        = paymentMethod === "card" && !needsPrepayment;
   // Threshold is checked on the pre-promo amount so a discount code never adds shipping.
   const freeShipping     = (total + promoDiscount) >= FREE_SHIPPING_THRESHOLD;
@@ -192,9 +191,10 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   // Paying by card: 5% off the goods (max €25), never together with a promo code. The server recomputes it (lib/card-discount.ts).
   const cardDiscount     = isCardPay ? cardDiscountEur(total, promoDiscount) : 0;
   const grandTotal       = total - cardDiscount + shippingCost;
-  // What the card option promises, whichever method is selected: the exact saving and the total if paid by card (free shipping).
+  // What the card option promises, whichever method is selected: the exact saving and the total if paid by card - with the same
+  // delivery as cash on delivery (lib/shipping-rules.ts: free from €60 for both), so it always equals the "Плати €X" button.
   const cardSaving       = cardDiscountEur(total, promoDiscount);
-  const cardTotal        = total - cardSaving;
+  const cardTotal        = total - cardSaving + shippingCost;
   const eurBg            = (n: number) => `€${n.toFixed(2).replace(".", ",")}`;
   const isHomeAddress    = shippingId === "home-address";
   // "До офис или автомат на Еконт": pick from Econt's official list. While it loads a placeholder shows; if it cannot be loaded
