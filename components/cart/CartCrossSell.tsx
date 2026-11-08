@@ -107,7 +107,7 @@ export function CartCrossSell() {
     const top = collectionCartTop3(items.map((i) => i.product.slug), canAdd)
       .flatMap(({ slug, tag }) => { const item = all.find((i) => i.slug === slug); return item ? [{ item, tag }] : []; });
     const addFree = (slug: string) => { const p = getProductBySlug(slug); if (p) addItem({ ...applyOverride(p), stock: stock?.[slug] ?? p.stock }); };
-    return <CartFreeJewel title={title} top={top} all={all} text={FREE_JEWEL_BG} onAdd={addFree} />;
+    return <CartFreeJewel title="Добавете второ бижу – безплатно" top={top} all={all} text={FREE_JEWEL_BG} onAdd={addFree} />;
   }
 
   const suggestions = suggestionIds
@@ -134,32 +134,32 @@ export function CartCrossSell() {
   };
 
   return (
-    <div data-testid="cart-cross-sell" data-group={opo?.group.id ?? ""} className="mt-2 pt-4 border-t border-white/8">
+    <div data-testid="cart-cross-sell" data-group={opo?.group.id ?? ""} className="mt-4 pt-4 border-t border-border">
       {opo ? (
-        <p className="font-sans text-xs text-[#D4AF37] tracking-wide mb-3">◈ {title}</p>
+        <p className="font-sans text-[13px] font-semibold text-navy mb-3">◈ {title}</p>
       ) : (
-        <p className="font-sans text-[9px] font-medium tracking-[0.28em] uppercase text-white/35 mb-3">{title}</p>
+        <p className="font-sans text-[10px] font-medium tracking-[0.2em] uppercase text-ink-muted mb-3">{title}</p>
       )}
       <div className="flex flex-col gap-3">
         {suggestions.map((product) => {
           const isAdded = addedIds.has(product.id);
           return (
             <div key={product.id} className="flex items-center gap-3">
-              <div className="relative w-12 h-14 flex-shrink-0 bg-white/5 overflow-hidden">
+              <div className="relative w-12 h-12 flex-shrink-0 bg-white border border-border overflow-hidden">
                 <Image
                   src={product.coverImage.src}
                   alt={product.coverImage.alt}
                   fill
                   quality={60}
                   sizes="48px"
-                  className="object-cover object-center"
+                  className="object-contain p-0.5"
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-sans text-[11px] font-medium text-white leading-snug truncate">
+                <p className="font-sans text-[13px] text-navy leading-snug truncate">
                   {product.name}
                 </p>
-                <p className="font-sans text-[10px] text-white/40 mt-0.5">
+                <p className="font-sans text-[12px] text-ink-muted mt-0.5">
                   {product.currency}{product.price.toFixed(2)}
                 </p>
               </div>
@@ -168,7 +168,7 @@ export function CartCrossSell() {
                 className={`flex-shrink-0 w-11 h-11 flex items-center justify-center border transition-all duration-200 ${
                   isAdded
                     ? "bg-navy border-navy text-white"
-                    : "border-white/25 text-white/50 hover:border-white/60 hover:text-white"
+                    : "border-navy/30 text-navy hover:border-navy"
                 }`}
                 aria-label={`Добави ${product.name}`}
               >

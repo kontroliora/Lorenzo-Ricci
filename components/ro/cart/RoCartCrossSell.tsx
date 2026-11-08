@@ -44,7 +44,7 @@ export function RoCartCrossSell() {
     const top = collectionCartTop3(items.map((i) => i.slug), canAdd)
       .flatMap(({ slug, tag }) => { const item = all.find((i) => i.slug === slug); return item ? [{ item, tag }] : []; });
     const addFree = (slug: string) => { const raw = getProductBySlug(slug); if (raw) addItem(roCartLine(localizeProduct(raw), stock?.[slug])); };
-    return <CartFreeJewel title={opo.group.text.ro.crossSell.odd} top={top} all={all} text={FREE_JEWEL_RO} onAdd={addFree} />;
+    return <CartFreeJewel title="Adăugați a doua bijuterie – gratuit" top={top} all={all} text={FREE_JEWEL_RO} onAdd={addFree} />;
   }
 
   const suggestions = opoSuggestions(opo.group, items.map((i) => i.slug), available)
@@ -54,19 +54,19 @@ export function RoCartCrossSell() {
   if (suggestions.length === 0) return null;
 
   return (
-    <div data-testid="cart-cross-sell" data-group={opo.group.id} className="mt-2 pt-4 border-t border-white/8">
-      <p className="font-sans text-xs text-[#D4AF37] tracking-wide mb-3">◈ {opo.group.text.ro.crossSell[opo.odd ? "odd" : "even"]}</p>
+    <div data-testid="cart-cross-sell" data-group={opo.group.id} className="mt-4 pt-4 border-t border-border">
+      <p className="font-sans text-[13px] font-semibold text-navy mb-3">◈ {opo.group.text.ro.crossSell[opo.odd ? "odd" : "even"]}</p>
       <div className="flex flex-col gap-3">
         {suggestions.map((p) => {
           const isAdded = added === p.slug;
           return (
             <div key={p.slug} className="flex items-center gap-3">
-              <div className="relative w-12 h-14 flex-shrink-0 bg-white/5 overflow-hidden">
-                <Image src={p.coverImage.src} alt={p.coverImage.alt} fill quality={60} sizes="48px" className="object-cover object-center" />
+              <div className="relative w-12 h-12 flex-shrink-0 bg-white border border-border overflow-hidden">
+                <Image src={p.coverImage.src} alt={p.coverImage.alt} fill quality={60} sizes="48px" className="object-contain p-0.5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-sans text-[11px] font-medium text-white leading-snug truncate">{p.name}</p>
-                <p className="font-sans text-[10px] text-white/40 mt-0.5">{fmtRON(ronOf(p))}</p>
+                <p className="font-sans text-[13px] text-navy leading-snug truncate">{p.name}</p>
+                <p className="font-sans text-[12px] text-ink-muted mt-0.5">{fmtRON(ronOf(p))}</p>
               </div>
               <button
                 onClick={() => {
@@ -75,7 +75,7 @@ export function RoCartCrossSell() {
                   setTimeout(() => setAdded(null), 2000);
                 }}
                 className={`flex-shrink-0 w-11 h-11 flex items-center justify-center border transition-all duration-200 ${
-                  isAdded ? "bg-navy border-navy text-white" : "border-white/25 text-white/50 hover:border-white/60 hover:text-white"
+                  isAdded ? "bg-navy border-navy text-white" : "border-navy/30 text-navy hover:border-navy"
                 }`}
                 aria-label={`Adăugați ${p.name}`}
               >

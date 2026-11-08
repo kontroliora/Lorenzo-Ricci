@@ -196,6 +196,26 @@ export function onePlusOne(lines: OpoLine[], opts: { now?: Date; ignoreSchedule?
 }
 
 /**
+ * Display only (the cart drawer's "Безплатно" row): how many units of each line the 1+1 makes free - the same n cheapest units as
+ * freeOf, ties going to the later line (the piece added last is "the free one"). Index-aligned with `lines`; totals never use this.
+ */
+export function opoFreeUnits(lines: OpoLine[], now?: Date): number[] {
+  const out = lines.map(() => 0);
+  for (const g of ONE_PLUS_ONE_GROUPS) {
+    if (!groupActive(g, now)) continue;
+    const units: { line: number; unit: number }[] = [];
+    lines.forEach((l, line) => {
+      if (!g.slugs.has(l.slug) || l.onSale || !(l.unit > 0)) return;
+      const q = Math.max(0, Math.min(Math.floor(l.quantity), 1000));
+      for (let i = 0; i < q; i++) units.push({ line, unit: l.unit });
+    });
+    const sorted = units.sort((a, b) => b.unit - a.unit || a.line - b.line);
+    for (const u of sorted.slice(sorted.length - Math.floor(sorted.length / 2))) out[u.line] += 1;
+  }
+  return out;
+}
+
+/**
  * The cart's "Често поръчвано заедно" while it holds items of a running group: that group, and whether its count is odd (the next
  * item is free) or even (two more, one of them free). Several groups in the cart: the one whose next item is free first, then the
  * newest group (last in ONE_PLUS_ONE_GROUPS). undefined = no running group in the cart (the usual suggestions).

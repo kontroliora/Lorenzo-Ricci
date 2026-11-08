@@ -8,8 +8,9 @@ import { CheckoutForm } from "./CheckoutForm";
 import { CartCrossSell } from "./CartCrossSell";
 import { CartGiftRow } from "./GiftRow";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
-import { promoBase, bundleLineText } from "@/lib/bundles";
-import { opoExcludedFromPromo, opoLineId } from "@/lib/one-plus-one";
+import { promoBase, opoLines } from "@/lib/bundles";
+import { opoExcludedFromPromo, opoFreeUnits } from "@/lib/one-plus-one";
+import { DrawerTop, ReserveLine, ShipProgress, LineItem, SumRow, TotalRow, TrustRow } from "./drawer-ui";
 import { isOnSale } from "@/lib/price";
 import { cardDiscountEur } from "@/lib/card-discount";
 import { CollectionOddModal, ODD_MODAL_BG } from "./CollectionOddModal";
@@ -46,7 +47,7 @@ export function CartDrawer() {
   // they stay out of the subtotal, the free-shipping threshold and every discount.
   const giftLines = useGiftLines(items);
   const subtotal = totalPrice();
-  const { totalDiscount, active: activeBundles } = bundleDiscount();
+  const { totalDiscount } = bundleDiscount();
   const afterBundles = subtotal - totalDiscount;
   // No stacking: the promo code applies to full-price items only (after their set
   // discounts) - sale items are excluded. The server re-derives the same number.
@@ -60,6 +61,10 @@ export function CartDrawer() {
   // "С карта": the same 5% (max €25) the checkout takes off for a card payment (lib/card-discount.ts); none with a promo code.
   const cardSaving = CARD_PAYMENTS_ENABLED ? cardDiscountEur(total, promoDiscount) : 0;
   const count = totalItems();
+  // The redesigned cart step (owner, 08.11.2026): one red "Отстъпка" = every saving together (sale prices, sets incl. 1+1, promo).
+  const allSavings = Math.round((savings + totalDiscount + promoDiscount) * 100) / 100;
+  const freeUnits = opoFreeUnits(opoLines(items));
+  const eur = (n: number) => `€${Number.isInteger(Math.round(n * 100) / 100) ? Math.round(n) : n.toFixed(2).replace(".", ",")}`;
   const freeShippingThreshold = 60;
   // Free-shipping qualification is checked on the pre-promo amount (after bundle,
   // before promo code) so a discount code never turns free shipping into paid.
@@ -190,7 +195,7 @@ export function CartDrawer() {
       {/* Drawer */}
       <div
         ref={drawerRef}
-        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] bg-charcoal-deep z-[80] flex flex-col shadow-2xl transition-transform duration-400 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] ${showCheckout ? "bg-charcoal-deep" : "bg-white"} z-[80] flex flex-col shadow-2xl transition-transform duration-400 ease-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         role="dialog"
@@ -210,29 +215,23 @@ export function CartDrawer() {
             <button onClick={closeCart} aria-label="Затвори" className="flex items-center justify-center min-h-[44px] min-w-[44px] -my-2 -mr-3 text-2xl leading-none text-[#A0A0A0] transition-colors hover:text-white">×</button>
           </div>
         ) : (
-        <div className="flex items-center justify-between px-6 py-5 border-b border-white/8">
-          <div>
-            <h2 className="font-serif text-xl text-white">Количка</h2>
-            {count > 0 && (
-              <p className="font-sans text-xs text-white/40 mt-0.5">
-                {count} {count === 1 ? "продукт" : "продукта"}
-              </p>
-            )}
-          </div>
-          <button
-            onClick={closeCart}
-            aria-label="Затвори"
-            className="w-11 h-11 -mr-3 flex items-center justify-center text-white/40 hover:text-white transition-colors text-2xl leading-none"
-          >
-            ×
-          </button>
-        </div>
+        <>
+          <DrawerTop title={count > 0 ? `Количка · ${count} ${count === 1 ? "продукт" : "продукта"}` : "Количка"} onClose={closeCart} closeLabel="Затвори" />
+          {items.length > 0 ? (
+            <ReserveLine expired={timeLeft === 0}>
+              {timeLeft > 0 ? <>Резервирано за <span className="font-semibold text-navy tabular-nums">{timerMM}:{timerSS}</span></> : "Времето за резервация изтече."}
+            </ReserveLine>
+          ) : <div className="border-b border-border" />}
+        </>
         )}
 
-        {/* Free shipping progress (cart step only) */}
-        {items.length > 0 && !showCheckout && (
-          <FreeShippingRing progress={progress} remaining={remaining} reached={reached} />
+        {/* Free delivery: progress only while below the threshold (nothing once it is reached) */}
+        {items.length > 0 && !showCheckout && !reached && (
+          <ShipProgress progress={progress}>
+            Добавете още <span className="font-semibold text-navy">{eur(remaining)}</span> за безплатна доставка
+          </ShipProgress>
         )}
+
 
         {/* Countdown timer in the checkout step (owner decision, 2026-10-15): the same running countdown as in the cart, as a slim
             dark bar with yellow text right under the header - always visible, and never over the order summary. */}
@@ -262,32 +261,6 @@ export function CartDrawer() {
           </div>
         )}
 
-        {/* Countdown timer (cart step) */}
-        {items.length > 0 && !showCheckout && (
-          <div className={`px-6 py-2.5 flex items-center gap-3 border-b border-white/8 transition-colors duration-500 ${timeLeft === 0 ? "bg-red-950/30" : "bg-amber-950/20"}`}>
-            <svg
-              width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke={timeLeft === 0 ? "rgba(252,165,165,0.7)" : "rgba(251,191,36,0.65)"}
-              strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
-              className="flex-shrink-0"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
-            </svg>
-            {timeLeft > 0 ? (
-              <p className="font-sans text-[11px] text-white/55 tracking-wide leading-snug">
-                Вашата количка ще се пази още{" "}
-                <span className="font-bold text-amber-300">{timerMM}:{timerSS}</span>{" "}
-                минути.
-              </p>
-            ) : (
-              <p className="font-sans text-[11px] text-red-300/80 tracking-wide leading-snug">
-                Времето за резервация изтече.
-              </p>
-            )}
-          </div>
-        )}
 
         {showCheckout ? (
           <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
@@ -304,134 +277,57 @@ export function CartDrawer() {
             />
           </div>
         ) : items.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
-            <div className="text-5xl text-white/20">◻</div>
-            <p className="font-serif text-xl text-white/50">Количката е празна</p>
-            <p className="font-sans text-xs text-white/30 tracking-wide text-center">
-              Добавете продукти, за да продължите
-            </p>
-            <button onClick={closeCart} className="btn-outline mt-4">
-              Продължи пазаруването
-            </button>
+          <div data-testid="drawer-empty" className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
+            <p className="font-serif text-[22px] text-navy">Количката е празна</p>
+            <p className="font-sans text-[13px] text-ink-muted">Добавете продукти, за да продължите</p>
+            <button onClick={closeCart} className="btn-outline mt-3">Продължи пазаруването</button>
           </div>
         ) : (
           <>
-            {/* Items + Cross-sell */}
-            <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-4">
-              {items.map(({ product, quantity }) => {
+            {/* Items + the 1+1 upsell / cross-sell */}
+            <div className="flex-1 overflow-y-auto px-5 sm:px-6 pb-4">
+              {items.map(({ product, quantity }, idx) => {
                 const gift = giftLines.find((g) => g.clutchSlug === product.slug);
+                const free = freeUnits[idx] ?? 0;   // units the 1+1 makes free: "€109" struck + "Безплатно" (display only)
+                const paid = quantity - free;
                 return (
-                <Fragment key={product.id}>
-                <div
-                  className={`flex gap-4 ${gift ? "" : "pb-4 border-b border-white/8 last:border-0"}`}
-                >
-                  <div className="relative w-20 h-24 flex-shrink-0 bg-white/5 overflow-hidden">
-                    <Image
-                      src={product.coverImage.src}
-                      alt={product.coverImage.alt}
-                      fill
-                      quality={70}
-                      sizes="80px"
-                      className="object-cover object-center"
+                  <Fragment key={product.id}>
+                    <LineItem
+                      image={product.coverImage}
+                      name={product.name}
+                      quantity={quantity}
+                      canInc={!(product.stock != null && quantity >= product.stock)}
+                      onDec={() => updateQuantity(product.id, quantity - 1)}
+                      onInc={() => updateQuantity(product.id, quantity + 1)}
+                      onRemove={() => removeItem(product.id)}
+                      priceText={paid > 0 ? eur(product.price * paid) : null}
+                      originalText={paid > 0 && isOnSale(product) ? eur((product.originalPrice as number) * paid) : null}
+                      free={free > 0 ? { count: free, unitText: eur(product.price) } : null}
+                      freeText="Безплатно"
+                      labels={{ dec: "Намали количеството", inc: "Увеличи количеството", remove: "Премахни" }}
                     />
-                  </div>
-
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <h4 className="font-serif text-base text-white leading-tight">{product.name}</h4>
-                      {product.warranty && (
-                        <p className="font-sans text-[11px] text-white/40 mt-0.5 tracking-wide">
-                          {product.warranty}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-0 border border-white/10">
-                        <button
-                          onClick={() => updateQuantity(product.id, quantity - 1)}
-                          className="w-11 h-11 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-colors text-lg"
-                        >
-                          −
-                        </button>
-                        <span className="w-8 text-center font-sans text-xs text-white">
-                          {quantity}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(product.id, quantity + 1)}
-                          disabled={product.stock != null && quantity >= product.stock}
-                          className="w-11 h-11 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-colors text-lg disabled:opacity-20 disabled:cursor-not-allowed"
-                        >
-                          +
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          {isOnSale(product) && (
-                            <span className="font-sans text-[11px] text-white/30 line-through block">
-                              {product.currency}{(product.originalPrice! * quantity).toFixed(2)}
-                            </span>
-                          )}
-                          <span className="font-serif text-base text-white block">
-                            {product.currency}{(product.price * quantity).toFixed(2)}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => removeItem(product.id)}
-                          aria-label="Премахни"
-                          className="p-3 -m-3 text-white/25 hover:text-white transition-colors text-sm"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {gift && <CartGiftRow gift={gift} />}
-                </Fragment>
+                    {gift && <CartGiftRow gift={gift} />}
+                  </Fragment>
                 );
               })}
               <CartCrossSell />
             </div>
 
-            {/* Footer */}
-            <div className="px-6 py-5 border-t border-white/8">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-sans text-xs text-white/40 tracking-wide">Подсума</span>
-                <span className="font-serif text-base text-white">€{subtotal.toFixed(2)}</span>
-              </div>
-
-              {/* Bundle discount lines */}
-              {activeBundles.map((b) => (
-                <div key={b.id} className="flex items-center justify-between mb-2">
-                  <span className="font-sans text-xs text-green-400 tracking-wide">
-                    ◈ {bundleLineText(b)}
-                  </span>
-                  <span className="font-sans text-xs text-green-400 tracking-wide">
-                    -€{b.discount.toFixed(2)}
-                  </span>
-                </div>
-              ))}
-              {/* The new collection's 1+1: each piece ships in its own velvet box */}
-              {activeBundles.some((b) => b.id === opoLineId("jewellery")) && (
-                <p data-testid="cart-box-line" className="-mt-1 mb-2 font-sans text-[11px] text-white/50 tracking-wide">Всяко бижу в собствена велурена кутия</p>
-              )}
-
-              {/* Promo code */}
-              <div className="mb-4">
+            {/* Footer: promo link, summary, button, 3 icons */}
+            <div className="px-5 sm:px-6 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] border-t border-border bg-white">
+              <div className="mb-2.5">
                 {!promoApplied && !promoOpen ? (
                   <button
                     type="button"
                     data-testid="promo-toggle"
                     onClick={() => setPromoOpen(true)}
-                    className="font-sans text-[12px] text-white/45 underline underline-offset-2 hover:text-white/70 transition-colors py-1"
+                    className="font-sans text-[12px] text-ink-muted underline underline-offset-2 hover:text-navy transition-colors py-1"
                   >
                     Имам промо код
                   </button>
                 ) : !promoApplied ? (
                   <div>
-                    <div className="flex border border-white/10">
+                    <div className="flex border border-border">
                       <input
                         type="text"
                         autoFocus
@@ -439,84 +335,50 @@ export function CartDrawer() {
                         onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(""); }}
                         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPromo(); } }}
                         placeholder="Промо код"
-                        className="flex-1 min-w-0 bg-transparent text-white font-sans text-base tracking-wider uppercase px-3 py-2.5 focus:outline-none placeholder:text-white/20 placeholder:normal-case placeholder:tracking-normal"
+                        className="flex-1 min-w-0 bg-white text-navy font-sans text-base tracking-wider uppercase px-3 py-2 focus:outline-none placeholder:text-ink-faint placeholder:normal-case placeholder:tracking-normal"
                       />
                       <button
                         type="button"
                         onClick={applyPromo}
                         disabled={promoLoading}
-                        className="font-sans text-[10px] tracking-widest uppercase bg-white/6 hover:bg-white/12 text-white/50 hover:text-white px-4 border-l border-white/10 transition-colors disabled:opacity-50"
+                        className="font-sans text-[11px] tracking-widest uppercase text-navy hover:bg-navy/5 px-4 border-l border-border transition-colors disabled:opacity-50"
                       >
                         {promoLoading ? "..." : "Приложи"}
                       </button>
                     </div>
-                    {promoError && (
-                      <p className="font-sans text-[11px] text-red-300 mt-1.5 tracking-wide">{promoError}</p>
-                    )}
+                    {promoError && <p className="font-sans text-[12px] text-[#B42318] mt-1.5">{promoError}</p>}
                   </div>
                 ) : (
-                  <>
-                    <div className="flex items-center gap-2 text-emerald-400/80 mb-1.5">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                      <span className="font-sans text-[11px] tracking-wide">Промо код {promoInput} приложен</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="font-sans text-xs text-emerald-400/70 tracking-wide">◈ {promoInput} -{Math.round(promoRate * 100)}%</span>
-                      <span className="font-sans text-xs text-emerald-400/70">-€{promoDiscount.toFixed(2)}</span>
-                    </div>
-                    {hasSaleItems && (
-                      <p className="font-sans text-[11px] text-white/60 tracking-wide mt-1">
-                        {PROMO_NOT_ON_SALE}
-                      </p>
-                    )}
-                  </>
+                  <div data-testid="promo-applied">
+                    <p className="font-sans text-[12px] text-[#2F6B3B]">✓ Промо код {promoInput} приложен (−{Math.round(promoRate * 100)}%)</p>
+                    {hasSaleItems && <p className="font-sans text-[11px] text-ink-muted mt-0.5">{PROMO_NOT_ON_SALE}</p>}
+                  </div>
                 )}
               </div>
 
-              {shippingQualifyingAmount >= freeShippingThreshold ? (
-                <div className="flex items-center justify-between mb-4">
-                  <span className="font-sans text-xs text-white/40 tracking-wide">Доставка</span>
-                  <span className="font-sans text-xs text-white tracking-wide">БЕЗПЛАТНА</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between mb-4">
-                  <span className="font-sans text-xs text-white/40 tracking-wide">Доставка</span>
-                  <span className="font-sans text-xs text-white/50 tracking-wide">Изчислява се</span>
-                </div>
-              )}
-
-              {(totalDiscount > 0 || promoDiscount > 0 || savings > 0 || cardSaving > 0) && (
-                <div className="mb-4 pt-2 border-t border-white/8">
-                  {/* Only when there is a discount: how much the crossed-out prices save, in the site's accent colour */}
-                  {savings > 0 && (
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-sans text-xs text-[#D4AF37] tracking-wide">Спестявате</span>
-                      <span className="font-sans text-xs font-medium text-[#D4AF37] tracking-wide">-€{savings.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between">
-                  <span className="font-sans text-xs font-medium text-white tracking-wide">Общо</span>
-                  <span className="font-serif text-lg text-white">€{total.toFixed(2)}</span>
-                  </div>
-                  {cardSaving > 0 && (
-                    <p data-testid="drawer-card-total" className="mt-1 text-right font-sans text-[12px] text-white/70 tracking-wide">
-                      С карта: €{(total - cardSaving).toFixed(2)} (−5%)
-                    </p>
-                  )}
-                </div>
-              )}
+              <div className="flex flex-col gap-1.5">
+                {allSavings > 0 && <SumRow label="Отстъпка" value={`−${eur(allSavings)}`} tone="discount" testId="drawer-discount" />}
+                <SumRow label="Доставка" value={reached ? "Безплатна" : "Изчислява се"} tone={reached ? "free" : undefined} testId="drawer-shipping" />
+                <TotalRow label="Общо" value={eur(total)} />
+                {cardSaving > 0 && (
+                  <p data-testid="drawer-card-total" className="text-right font-sans text-[12px] text-ink-muted">
+                    С карта: {eur(total - cardSaving)} (спестявате {eur(cardSaving)})
+                  </p>
+                )}
+              </div>
 
               <button
                 data-testid="drawer-checkout"
                 onClick={() => (oddSuggestions.length > 0 ? setOddOpen(true) : goCheckout())}
-                className="btn-primary w-full text-center justify-center"
+                className="btn-primary w-full mt-4 py-4 text-[12px] font-semibold"
               >
-                {CARD_PAYMENTS_ENABLED ? "Поръчай сега" : "Поръчай сега - Наложен платеж"}
+                Продължи към плащане
               </button>
-
-              <p className="text-center font-sans text-[13px] leading-snug text-[#C9C9C9] mt-3">
-                {CARD_PAYMENTS_ENABLED ? "Карта или наложен платеж · Доставка с Еконт" : "Наложен платеж · Доставка с Еконт · Преглед преди плащане"}
-              </p>
+              <TrustRow items={[
+                { icon: "cash", label: "Наложен платеж" },
+                { icon: "truck", label: "Доставка с Еконт" },
+                { icon: "eye", label: "Преглед преди плащане" },
+              ]} />
             </div>
           </>
         )}
@@ -525,83 +387,5 @@ export function CartDrawer() {
         <CollectionOddModal suggestions={oddSuggestions} text={ODD_MODAL_BG} onAdd={addFree} onContinue={goCheckout} onClose={() => setOddOpen(false)} />
       )}
     </>
-  );
-}
-
-// ─── Free Shipping Ring ──────────────────────────────────────────────────────
-const RADIUS = 17;
-const CIRC = 2 * Math.PI * RADIUS; // ≈ 106.8
-
-function FreeShippingRing({
-  progress,
-  remaining,
-  reached,
-}: {
-  progress: number;
-  remaining: number;
-  reached: boolean;
-}) {
-  const offset = CIRC * (1 - progress);
-
-  return (
-    <div
-      className={`px-6 py-3 flex items-center gap-4 transition-colors duration-500 ${
-        reached ? "bg-navy/20" : "bg-white/3"
-      }`}
-    >
-      {/* Circular ring */}
-      <div className="flex-shrink-0 relative w-10 h-10">
-        <svg width="40" height="40" viewBox="0 0 40 40" className="-rotate-90">
-          {/* Track */}
-          <circle
-            cx="20" cy="20" r={RADIUS}
-            fill="none"
-            stroke="rgba(255,255,255,0.08)"
-            strokeWidth="3"
-          />
-          {/* Progress arc */}
-          <circle
-            cx="20" cy="20" r={RADIUS}
-            fill="none"
-            stroke={reached ? "#4ade80" : "rgba(255,255,255,0.55)"}
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeDasharray={CIRC}
-            strokeDashoffset={offset}
-            style={{ transition: "stroke-dashoffset 0.6s ease, stroke 0.4s ease" }}
-          />
-        </svg>
-        {/* Icon in centre */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          {reached ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          ) : (
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="1" y="3" width="15" height="13" rx="1" />
-              <path d="M16 8h4l3 5v3h-7V8z" />
-              <circle cx="5.5" cy="18.5" r="2.5" />
-              <circle cx="18.5" cy="18.5" r="2.5" />
-            </svg>
-          )}
-        </div>
-      </div>
-
-      {/* Text */}
-      <div>
-        {reached ? (
-          <p className="font-sans text-[11px] text-green-400 font-medium tracking-wide leading-snug">
-            Достигнахте сумата за безплатна доставка!
-          </p>
-        ) : (
-          <p className="font-sans text-[11px] text-white/60 tracking-wide leading-snug">
-            Добави още{" "}
-            <span className="text-white font-medium">€{remaining.toFixed(2)}</span>{" "}
-            за БЕЗПЛАТНА доставка
-          </p>
-        )}
-      </div>
-    </div>
   );
 }
