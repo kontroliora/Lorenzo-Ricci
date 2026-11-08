@@ -39,6 +39,8 @@ export function CartDrawer() {
   const [promoRate, setPromoRate] = useState(0.10); // fraction from the validated code - 10% newsletter, 5% waitlist apology
   const [promoError, setPromoError] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
+  // The code field is folded behind a small "Имам промо код" link; a tap opens it (and focuses the input).
+  const [promoOpen, setPromoOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   // Free gift cardholders for the clutches in the cart - display only, never cart items, so
   // they stay out of the subtotal, the free-shipping threshold and every discount.
@@ -418,11 +420,21 @@ export function CartDrawer() {
 
               {/* Promo code */}
               <div className="mb-4">
-                {!promoApplied ? (
+                {!promoApplied && !promoOpen ? (
+                  <button
+                    type="button"
+                    data-testid="promo-toggle"
+                    onClick={() => setPromoOpen(true)}
+                    className="font-sans text-[12px] text-white/45 underline underline-offset-2 hover:text-white/70 transition-colors py-1"
+                  >
+                    Имам промо код
+                  </button>
+                ) : !promoApplied ? (
                   <div>
                     <div className="flex border border-white/10">
                       <input
                         type="text"
+                        autoFocus
                         value={promoInput}
                         onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(""); }}
                         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPromo(); } }}

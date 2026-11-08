@@ -7,7 +7,7 @@ import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
 import { displayPrice, requiresPrepayment } from "@/lib/price";
-import { PayLine, CodLine } from "@/components/product/CodNote";
+import { PayLine } from "@/components/product/CodNote";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { cardDiscountEur } from "@/lib/card-discount";
@@ -16,8 +16,8 @@ import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { getProductBySlug } from "@/lib/products";
 import { PAGE_LOW_STOCK_MAX, savingsEur } from "@/lib/home-card-hints";
 import { campaignLabel } from "@/lib/sale-campaign";
-import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
-import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
+import { bgShipsFree } from "@/lib/shipping-rules";
+import { SavingsLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
@@ -312,6 +312,9 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
     : [];
   // The pair costs the dearer of the two (the cheaper one is free): €65 for two cardholders, €109 / €115 for jewellery.
   const pickedPrice = picked ? (getProductBySlug(picked.slug)?.price ?? product.price) : product.price;
+  // The pay line's card price: 5% (max €25) off what the button adds - the 1+1 pair price once a second piece is picked (same base as the checkout).
+  const cardGoods = picked ? opoPairPrice(product.price, pickedPrice) : product.price;
+  const eurComma = (n: number) => `€${n.toFixed(2).replace(".", ",")}`;
   const pairLabel = picked && opo ? opo.text.bg.addPair({ one: opoPairPriceBg(product.price, pickedPrice) }) : null;
 
   const handleAdd = () => {
@@ -371,7 +374,6 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
       </button>
     )}
   
-    {effectiveInStock && !requiresPrepayment(product) && <CodLine text={CARD_PAYMENTS_ENABLED ? "Карта или наложен платеж · Доставка с Еконт" : "Без предплащане · Доставка с Еконт · Плащате при получаване"} />}
     </>
   );
 
@@ -512,18 +514,10 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
         />
       ) : inCollection && cta}
 
-      {/* Delivery in one line, right under the price; inspection before paying only where cash on delivery exists.
-          The "free over €60" part only while the green badge doesn't already say it. */}
-      {effectiveInStock && (
-        <DeliveryLine
-          text={`${shipsFree ? "" : `Безплатна доставка над €${BG_FREE_SHIPPING_EUR} · `}Доставка за 1–2 работни дни с Еконт${requiresPrepayment(product) ? "" : " · Преглед преди плащане"}`}
-        />
-      )}
-
       {/* How to pay, one line under the price (not for a prepayment product) */}
       {effectiveInStock && !requiresPrepayment(product) && (
         CARD_PAYMENTS_ENABLED
-          ? <PayLine text={`Плащане с карта: −5% отстъпка (€${(product.price - cardDiscountEur(product.price)).toFixed(2)}) · или наложен платеж`} marks={true} />
+          ? <PayLine text={`С карта плащате ${eurComma(cardGoods - cardDiscountEur(cardGoods))} (спестявате ${eurComma(cardDiscountEur(cardGoods))}) · или наложен платеж`} marks={true} />
           : <PayLine text="Наложен платеж" marks={false} />
       )}
 
