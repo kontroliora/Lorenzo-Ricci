@@ -3,7 +3,8 @@ import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { buildPartnerEmail, partnerFromRow, sendPartnerEmail } from "@/lib/partner-email";
+import { Resend } from "resend";
+import { PARTNER_RECIPIENTS, buildPartnerEmail, partnerFromRow, sendPartnerEmail } from "@/lib/partner-email";
 
 // ONE-OFF backfill (owner, 08.11.2026): the partner e-mail (lib/partner-email.ts) for every order of 08.11.2026 (Sofia time, BG + RO)
 // that holds a women's-collection piece and was placed BEFORE the partner e-mail went live. Only the partner e-mail: no customer
@@ -25,6 +26,43 @@ const sameSecret = (a: string, b: string): boolean => {
   return x.length === y.length && timingSafeEqual(x, y);
 };
 
+// The 16 orders the run of 08.11.2026 17:21 UTC queued (its log line).
+const QUEUED_REFS = ["LR-GAQGGDGG", "LR-AP5YYZFT", "LR-UFS3HW3G", "LR-LAPUGYQ3", "LR-N92UUQPS", "LR-WVNEMLCT", "LR-DGAQ8FBK", "LR-ZK48JCYU",
+  "LR-QZY7QKT8", "LR-53AXTVBV", "LR-6987EMCN", "LR-8M6X9C4V", "LR-UK5MT7LR", "LR-VS5MHCEY", "LR-6HN7VT9C", "LR-UT3L7A44"];
+const CHECK_KEY = `${DONE_KEY}:check`;
+
+/** Once the last queued e-mail is due (+3 min): Resend's last event of each queued partner e-mail, logged. Stops when all are delivered or after 6 tries. */
+async function deliveryCheck(last: string | null): Promise<unknown> {
+  const prev = await kv.get<{ final?: boolean; tries?: number }>(CHECK_KEY);
+  if (prev?.final) return prev;
+  if (!last || Date.now() < new Date(last).getTime() + 3 * 60_000) return { waiting: "until the last e-mail is due" };
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return { error: "RESEND_API_KEY not set" };
+  const resend = new Resend(key);
+  const seen = new Map<string, { last_event: string; scheduled_at?: string | null; id: string }>();
+  let after: string | undefined;
+  for (let page = 0; page < 5; page++) {
+    const { data, error } = await resend.emails.list({ limit: 100, ...(after ? { after } : {}) });
+    if (error || !data) return { error: error?.message ?? "no data" };
+    for (const e of data.data) {
+      const to = Array.isArray(e.to) ? e.to : [e.to];
+      if (!to.some((t) => PARTNER_RECIPIENTS.includes(String(t)))) continue;
+      const ref = QUEUED_REFS.find((r) => String(e.subject ?? "").includes(`Поръчка ${r} `));
+      if (ref && !seen.has(ref)) seen.set(ref, { last_event: String(e.last_event), scheduled_at: e.scheduled_at ?? null, id: e.id });
+    }
+    if (!data.has_more || !data.data.length) break;
+    after = data.data[data.data.length - 1].id;
+  }
+  const DELIVERED = new Set(["delivered", "opened", "clicked"]);
+  const byRef = QUEUED_REFS.map((ref) => ({ ref, event: seen.get(ref)?.last_event ?? "not found" }));
+  const delivered = byRef.filter((x) => DELIVERED.has(x.event)).length;
+  const tries = (prev?.tries ?? 0) + 1;
+  const result = { at: new Date().toISOString(), queued: QUEUED_REFS.length, delivered, notDelivered: byRef.filter((x) => !DELIVERED.has(x.event)), tries, final: delivered === QUEUED_REFS.length || tries >= 6 };
+  console.log("[partner-backfill-check]", JSON.stringify(result));
+  await kv.set(CHECK_KEY, result, { ex: 60 * 60 * 24 * 7 });
+  return result;
+}
+
 /** Irregular gaps between 1 and 10 minutes: about a third short (1-2.5 min, so 2-3 land close together), the rest 3-10 min. */
 const gapMs = (): number => (Math.random() < 0.35 ? 60 + Math.random() * 90 : 180 + Math.random() * 420) * 1000;
 
@@ -33,8 +71,8 @@ export async function GET(req: NextRequest) {
   const auth = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
   if (!cronSecret || !sameSecret(auth, cronSecret)) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
 
-  const done = await kv.get(DONE_KEY);
-  if (done) return NextResponse.json({ ok: true, skipped: "already done", done });
+  const done = await kv.get<{ last?: string | null }>(DONE_KEY);
+  if (done) return NextResponse.json({ ok: true, skipped: "already done", done, check: await deliveryCheck(done.last ?? null) });
   if (!(await kv.set(`${DONE_KEY}:lock`, Date.now(), { nx: true, ex: 300 }))) return NextResponse.json({ ok: true, skipped: "running" });
 
   try {
