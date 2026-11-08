@@ -1,5 +1,4 @@
 "use client";
-import type React from "react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { Product } from "@/lib/types";
@@ -18,11 +17,9 @@ interface Props {
   /** Women's collection, no free piece picked yet: "↑ ИЗБЕРЕТЕ …" - the tap calls onChoose (scroll to box 2), nothing is added. */
   chooseLabel?: string | null;
   onChoose?: () => void;
-  /** Women's collection completing the cart's 1+1: what the total really goes up by, in place of the plain price. */
-  priceNode?: React.ReactNode;
 }
 
-export function StickyCartBar({ product, effectiveInStock, onAdd, pairLabel = null, chooseLabel = null, onChoose, priceNode }: Props) {
+export function StickyCartBar({ product, effectiveInStock, onAdd, pairLabel = null, chooseLabel = null, onChoose }: Props) {
   const [visible, setVisible] = useState(false);
   const [added, setAdded]     = useState(false);
   const { addItem } = useCartStore();
@@ -107,7 +104,7 @@ export function StickyCartBar({ product, effectiveInStock, onAdd, pairLabel = nu
             <p className="font-sans text-[10px] tracking-widest uppercase text-ink-faint mb-0.5 truncate hidden sm:block">
               {product.name}
             </p>
-            {priceNode ? <div data-testid="sticky-price" className="flex items-baseline gap-2.5">{priceNode}</div> : <div className="flex items-baseline gap-2.5">
+            <div className="flex items-baseline gap-2.5">
               <span className="font-serif text-xl text-navy leading-none">
                 {price.text}
               </span>
@@ -116,7 +113,7 @@ export function StickyCartBar({ product, effectiveInStock, onAdd, pairLabel = nu
                   {price.original}
                 </span>
               )}
-            </div>}
+            </div>
           </div>
 
           {/* CTA */}

@@ -16,23 +16,23 @@ import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/comp
 // (measured: BG and RO both wrap), so phones (< 640px) show the short pair "Първо бижу" / "Второ бижу – БЕЗПЛАТНО" (the green word
 // moves into the title and the right-hand one is hidden there).
 export type TwoBoxText = {
-  yours: string; yoursShort: string; joinTitle: string; second: string; secondShort: string; free: string;
+  yours: string; yoursShort: string; second: string; secondShort: string; free: string;
   withSet: (type: "necklace" | "bracelet") => string; again: string;
   remove: string; total: string;
 };
 
 export const TWO_BOX_BG: TwoBoxText = {
-  yours: "Изберете първо бижу", yoursShort: "Първо бижу", joinTitle: "Вашето бижу", second: "Изберете второ бижу", secondShort: "Второ бижу –", free: "Безплатно",
+  yours: "Изберете първо бижу", yoursShort: "Първо бижу", second: "Изберете второ бижу", secondShort: "Второ бижу –", free: "Безплатно",
   withSet: (t) => `✓ Комплект с ${t === "necklace" ? "вашето колие" : "вашата гривна"}`, again: "✓ Още едно такова",
   remove: "Махни", total: "Общо:",
 };
 export const TWO_BOX_RO: TwoBoxText = {
-  yours: "Alegeți prima bijuterie", yoursShort: "Prima bijuterie", joinTitle: "Bijuteria dvs.", second: "Alegeți a doua bijuterie", secondShort: "A doua bijuterie –", free: "Gratuit",
+  yours: "Alegeți prima bijuterie", yoursShort: "Prima bijuterie", second: "Alegeți a doua bijuterie", secondShort: "A doua bijuterie –", free: "Gratuit",
   withSet: (t) => `✓ Set cu ${t === "necklace" ? "colierul dumneavoastră" : "brățara dumneavoastră"}`, again: "✓ Încă unul la fel",
   remove: "Eliminați", total: "Total:",
 };
 
-export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, matchSlug, pickerText, picked, onSelect, totalText, struckText, cta, join = null }: {
+export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, matchSlug, pickerText, picked, onSelect, totalText, struckText, cta }: {
   t: TwoBoxText;
   current: { name: string; image: { src: string; alt: string }; priceText: string; type: "necklace" | "bracelet" };
   selectors: ReactNode;
@@ -45,15 +45,12 @@ export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, mat
   totalText: string;          // what the customer pays ("€109")
   struckText: string | null;  // the two pieces' own prices together ("€218"), null with one piece
   cta: ReactNode;
-  /** The cart already holds an odd number of collection pieces (owner, 08.11.2026): this piece completes that 1+1. Box 2 and the
-   *  summary are hidden; box 1 shows what the total really goes up by and a green line names the cart piece it pairs with. */
-  join?: { line: string; price: ReactNode } | null;
 }) {
   return (
     <div className="flex flex-col gap-4">
       {/* ── Box 1: your piece ── */}
       <section data-testid="box-yours" className="border border-border bg-white">
-        <BoxHeader n={1} title={join ? t.joinTitle : t.yours} short={join ? t.joinTitle : t.yoursShort} right={join ? join.price : <span className="font-serif text-xl text-navy leading-none">{current.priceText}</span>} />
+        <BoxHeader n={1} title={t.yours} short={t.yoursShort} right={<span className="font-serif text-xl text-navy leading-none">{current.priceText}</span>} />
         <div className="px-4 sm:px-5 py-4 flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <span className="relative flex-shrink-0 w-14 h-14 bg-white border border-border">
@@ -62,21 +59,20 @@ export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, mat
             <p className="font-sans text-sm text-charcoal leading-snug">{current.name}</p>
           </div>
           {selectors}
-          {join && <p data-testid="join-line" className="font-sans text-[13px] font-medium leading-snug text-[#2F6B3B]">{join.line}</p>}
         </div>
       </section>
 
-      {/* ── Box 2: the free second piece (not while this piece completes the cart's 1+1) ── */}
-      {!join && <section data-testid="box-second" className="border border-border bg-white scroll-mt-28">
+      {/* ── Box 2: the free second piece ── */}
+      <section data-testid="box-second" className="border border-border bg-white scroll-mt-28">
         <BoxHeader n={2} title={<>{t.second} – <span className="font-semibold text-[#2F6B3B]">{t.free}</span></>} short={<>{t.secondShort} <span className="font-semibold text-[#2F6B3B]">{t.free}</span></>} right={null} />
         <div className="px-4 sm:px-5 py-4">
           <CollectionFreePicker embedded items={items} currentName={current.name} selfSlug={selfSlug} matchSlug={matchSlug}
             selected={picked?.slug ?? null} onSelect={onSelect} onRemove={() => onSelect(null)} text={pickerText} />
         </div>
-      </section>}
+      </section>
 
       {/* ── Summary + the main button ── */}
-      {picked && !join && <div data-testid="two-box-summary" className="flex items-center gap-2.5 pt-1">
+      {picked && <div data-testid="two-box-summary" className="flex items-center gap-2.5 pt-1">
         <Thumb src={current.image.src} alt={current.image.alt} />
         <span aria-hidden className="font-sans text-ink-muted">+</span><Thumb src={picked.image.src} alt={picked.image.alt} />
         <p className="ml-auto font-sans text-sm text-charcoal">
