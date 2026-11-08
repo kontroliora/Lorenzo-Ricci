@@ -4,6 +4,7 @@ import { insertOrderResilient } from "@/lib/order-insert";
 import { langOf, mayEmail } from "@/lib/mail-policy";
 import { supabase } from "@/lib/supabase";
 import { buildAdminEmail, buildCustomerEmail, sendAdminEmail, sendCustomerEmail, sendCapiPurchase, type CapiContext } from "@/lib/order-notify";
+import { sendPartnerEmail } from "@/lib/partner-email";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { CARD_PAYMENTS_ENABLED, PENDING_PAYMENT } from "@/lib/payments";
 import { refreshStockPages } from "@/lib/stock-pages";
@@ -359,6 +360,17 @@ export async function POST(req: NextRequest) {
 
     await Promise.allSettled([
       sendAdminEmail(subject, buildAdminEmail(savedOrder)),
+      // Partner e-mail (lib/partner-email.ts): its own template, no customer e-mail address.
+      sendPartnerEmail({
+        orderRef: String(order.orderRef ?? ""), date: new Date(), market: "bg",
+        name: String(customer.name ?? ""), phone: String(customer.phone ?? ""),
+        delivery: {
+          method: String(customer.shippingMethod ?? ""), office: String(customer.courier ?? "") !== "home",
+          address: String(customer.officeAddress ?? ""), city: String(customer.city ?? ""), postCode: String(customer.postCode ?? ""),
+        },
+        items: ((savedOrder.items ?? []) as Array<Record<string, unknown>>).map((i) => ({ name: i.name as string, sku: i.sku as string, quantity: Number(i.quantity ?? i.qty ?? 1), price: Number(i.price ?? 0), gift: i.gift === true })),
+        total: pricing.total, payment: "cod", status: "Нова - чака потвърждение по телефона",
+      }).catch((e) => { console.error("[partner] e-mail failed:", e); throw e; }),
       // The customer's confirmation is the BULGARIAN template: it only goes to a Bulgarian recipient (a Romanian order has its own
       // route, /api/order-ro, with a Romanian e-mail). Never a Bulgarian text to a Romanian.
       ...(customerAddress && mayEmail("order_confirmation", langOf({ order_ref: String(order.orderRef ?? "") }), "bg")

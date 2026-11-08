@@ -5,6 +5,7 @@ import type { OrderRow } from "./payment-orders";
 import { langOf } from "./mail-policy";
 import { buildAdminEmail, buildCustomerEmail, sendAdminEmail, sendCustomerEmail, sendCapiPurchase } from "./order-notify";
 import { onePlusOneOfOrder } from "./one-plus-one";
+import { sendPartnerEmail, type PartnerOrder } from "./partner-email";
 import { buildRoAdminEmail, buildRoCustomerEmail, roPaidSubject, type RoOrderEmailData } from "./ro/emails";
 import { RO_ADMIN_RECIPIENTS, sendMail, sendCapiPurchase as sendRoCapiPurchase } from "./ro/order-notify";
 import { RO_SHIPPING_HOME, RO_SHIPPING_OFFICE, isRoOfficeMethod } from "./ro/config";
@@ -16,6 +17,24 @@ import { RO_SHIPPING_HOME, RO_SHIPPING_OFFICE, isRoOfficeMethod } from "./ro/con
 // in the database (so a repeated webhook, the sweep and the cancel route can never send twice) and marks it done.
 
 type Line = { name?: string; sku?: string; slug?: string; quantity?: number; qty?: number; price?: number; currency?: string; gift?: boolean };
+
+/** The partner e-mail's data from the saved row (no customer e-mail address: lib/partner-email.ts). */
+const partnerOf = (order: OrderRow, items: Line[], market: PartnerOrder["market"]): PartnerOrder => ({
+  orderRef: order.order_ref,
+  date: String(order.created_at ?? order.paid_at ?? new Date().toISOString()),
+  market,
+  name: String(order.name ?? ""),
+  phone: String(order.phone ?? ""),
+  delivery: {
+    method: String(order.shipping_method ?? ""),
+    office: market === "ro" ? isRoOfficeMethod(order.shipping_method) : String(order.courier ?? "") !== "home",
+    address: String(order.address ?? ""), city: String(order.city ?? ""), postCode: String(order.post_code ?? ""),
+  },
+  items: items.map((i) => ({ name: i.name, sku: i.sku, quantity: Number(i.quantity ?? i.qty ?? 1), price: Number(i.price ?? 0), gift: i.gift === true })),
+  total: Number(order.total ?? 0),
+  payment: "card",
+  status: "Платена (потвърдена)",
+});
 
 const STEP_TIMEOUT_MS = 10_000;
 const within = <T,>(p: Promise<T>, name: string): Promise<T> =>
@@ -58,11 +77,12 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
       total: Number(order.total ?? 0),
       officeDelivery: isRoOfficeMethod(order.shipping_method),
     };
-    const names = ["team e-mail", ...(email ? ["customer e-mail"] : []), "Meta Purchase"];
+    const names = ["team e-mail", ...(email ? ["customer e-mail"] : []), "Meta Purchase", "partner e-mail"];
     const r = await Promise.allSettled([
       within(sendMail({ from: "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>", to: RO_ADMIN_RECIPIENTS, subject: `💳🇷🇴 Платена поръчка (Румъния) - ${name} - ${order.order_ref}`, html: buildRoAdminEmail(data, undefined, { paidByCard: true }) }), "team e-mail"),
       ...(email ? [within(sendMail({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [email], subject: roPaidSubject, html: buildRoCustomerEmail(data) }, "card_paid"), "customer e-mail")] : []),
       within(sendRoCapiPurchase({ ...data, skus: paidLines.map((i) => String(i.sku ?? "")).filter(Boolean) }, ctx), "Meta Purchase"),
+      within(sendPartnerEmail(partnerOf(order, items, "ro")), "partner e-mail"),
     ]);
     const failed: string[] = [];
     r.forEach((x, i) => { if (x.status === "rejected") { console.error("[payment-notify] RO step failed:", x.reason); failed.push(names[i]); } });
@@ -81,11 +101,12 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
     cardDiscount: Number(order.card_discount ?? 0) || 0,
     promoDiscount: Number(order.promo_discount ?? 0) || 0,   // so the e-mails can tell the 1+1 apart from a promo code
   };
-  const names = ["team e-mail", ...(email ? ["customer e-mail"] : []), "Meta Purchase"];
+  const names = ["team e-mail", ...(email ? ["customer e-mail"] : []), "Meta Purchase", "partner e-mail"];
   const r = await Promise.allSettled([
     within(sendAdminEmail(`💳 Платена поръчка - ${name}`, buildAdminEmail(orderObj, null, { paidByCard: true })), "team e-mail"),
     ...(email ? [within(sendCustomerEmail(email, buildCustomerEmail(orderObj, { paidByCard: true }), "Плащането е получено - Lorenzo Ricci", { kind: "card_paid", lang: langOf(order) }), "customer e-mail")] : []),
     within(sendCapiPurchase({ ...orderObj, items: paidLines }, order.order_ref, Number(order.total ?? 0), ctx), "Meta Purchase"),
+    within(sendPartnerEmail(partnerOf(order, items, "bg")), "partner e-mail"),
   ]);
   const failed: string[] = [];
   r.forEach((x, i) => { if (x.status === "rejected") { console.error("[payment-notify] BG step failed:", x.reason); failed.push(names[i]); } });
