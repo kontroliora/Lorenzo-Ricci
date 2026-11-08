@@ -6,7 +6,7 @@ import cover from "@/public/covers/damska-kolekcia-cover.webp";
 import model from "@/public/covers/damska-kolekcia-model.webp";
 
 // Home page (BG): the 2026 women's collection, right under the hero. Title, the 1+1 line, two images (public/covers/damska-kolekcia-cover.webp + -model.webp)
-// and the button to its section on /jewellery, then one row of 4 pieces (in the shop, in stock, white photo no. 1 - app/page.tsx
+// both linking to its section on /jewellery, then one row of 4 pieces (in the shop, in stock, white photo no. 1 - app/page.tsx
 // picks them with homeCollectionPicks) and "Виж цялата колекция". Renders nothing when no piece is on sale.
 export function NewCollectionSection({ pieces }: { pieces: Product[] }) {
   if (pieces.length === 0) return null;
@@ -41,11 +41,8 @@ export function NewCollectionSection({ pieces }: { pieces: Product[] }) {
             </Link>
           ))}
         </div>
-        <div className="mt-6 sm:mt-8 mb-10 sm:mb-12 flex justify-center">
-          <Link href="/jewellery#damska-kolekcia" className="btn-primary w-full sm:w-auto text-center" data-testid="home-collection-cover-cta">
-            Разгледай колекцията
-          </Link>
-        </div>
+        {/* No button under the images: both images link to the collection; "Виж цялата колекция" closes the section. */}
+        <div className="mb-10 sm:mb-12" />
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-8">
           {pieces.map((p) => (
