@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { homeOgImage } from "@/lib/og";
 import { RoProviders } from "@/components/ro/RoProviders";
 import { RoAnnouncementBar } from "@/components/ro/chrome/RoAnnouncementBar";
 import { RoHeader } from "@/components/ro/chrome/RoHeader";
@@ -11,7 +12,7 @@ import { getProductBySlug } from "@/lib/products";
 // The Bulgarian chrome is hidden on these paths (components/layout/HideOnAdmin.tsx); this layout brings the Romanian one.
 // noindex while it is a test: remove `robots` below when the market is opened to search engines.
 export const metadata: Metadata = {
-  openGraph: { type: "website", locale: "ro_RO", siteName: "Lorenzo Ricci" },
+  openGraph: { type: "website", locale: "ro_RO", siteName: "Lorenzo Ricci", images: [homeOgImage("Lorenzo Ricci - ceas de lux, colier placat cu aur de 18K și geantă din piele de crocodil")] },
   robots: { index: false, follow: true },
   other: { "content-language": "ro" },
 };

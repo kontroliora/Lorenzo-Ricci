@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { homeOgImage } from "@/lib/og";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -68,6 +69,7 @@ export const metadata: Metadata = {
     title: "Lorenzo Ricci - Луксозни Часовници и Бижута",
     description:
       "Прецизност във всеки детайл. Луксозни хронографи и бижута с 18K позлата.",
+    images: [homeOgImage("Lorenzo Ricci - луксозен часовник, колие с 18K позлата и сак от крокодилска кожа")],
   },
   robots: {
     index: true,

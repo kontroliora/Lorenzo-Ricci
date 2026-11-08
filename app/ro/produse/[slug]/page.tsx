@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { productOgImage } from "@/lib/og";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Product } from "@/lib/types";
@@ -140,7 +141,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url,
       title: `${product.name} | Lorenzo Ricci`,
       description: product.description.trim() ? clip(product.description, 160) : description,
-      images: [{ url: encodeURI(product.coverImage.src), alt: product.coverImage.alt }],
+      images: [productOgImage(product)],
     },
   };
 }

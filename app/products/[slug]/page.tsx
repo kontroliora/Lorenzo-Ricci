@@ -1,4 +1,5 @@
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
+import { productOgImage } from "@/lib/og";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -64,10 +65,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: product.name,
     ...(keywords && { keywords }),
     description: `${product.name} - ${product.shortDescription}. ${product.currency}${product.price}. ${product.warranty ? `${product.warranty}. ` : ""}Безплатна доставка над €60. ${paymentNote}`,
+    // openGraph replaces (not merges with) the one in app/layout.tsx, so type/locale/site name are repeated.
     openGraph: {
+      type: "website",
+      locale: "bg_BG",
+      siteName: "Lorenzo Ricci",
+      url: `https://lorenzo-ricci.com/products/${product.slug}`,
       title: `${product.name} | Lorenzo Ricci`,
       description: product.description.slice(0, 160),
-      images: [{ url: product.coverImage.src, alt: product.coverImage.alt }],
+      images: [productOgImage(product)],
     },
   };
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { homeOgImage } from "@/lib/og";
 import { RoHero } from "@/components/ro/home/RoHero";
 import { RoFeaturedWatches } from "@/components/ro/home/RoFeaturedWatches";
 import { RoLeatherSection } from "@/components/ro/home/RoLeatherSection";
@@ -41,6 +42,7 @@ export const metadata: Metadata = {
     url: "https://lorenzo-ricci.com/ro",
     title: TITLE,
     description: DESCRIPTION,
+    images: [homeOgImage("Lorenzo Ricci - ceas de lux, colier placat cu aur de 18K și geantă din piele de crocodil")],
   },
 };
 
