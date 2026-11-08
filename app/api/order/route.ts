@@ -360,7 +360,7 @@ export async function POST(req: NextRequest) {
 
     await Promise.allSettled([
       sendAdminEmail(subject, buildAdminEmail(savedOrder)),
-      // Partner e-mail (lib/partner-email.ts): its own template, no customer e-mail address.
+      // Partner e-mail (lib/partner-email.ts): only when the order holds a women's-collection piece, only those pieces; no customer e-mail address.
       sendPartnerEmail({
         orderRef: String(order.orderRef ?? ""), date: new Date(), market: "bg",
         name: String(customer.name ?? ""), phone: String(customer.phone ?? ""),
@@ -368,8 +368,9 @@ export async function POST(req: NextRequest) {
           method: String(customer.shippingMethod ?? ""), office: String(customer.courier ?? "") !== "home",
           address: String(customer.officeAddress ?? ""), city: String(customer.city ?? ""), postCode: String(customer.postCode ?? ""),
         },
-        items: ((savedOrder.items ?? []) as Array<Record<string, unknown>>).map((i) => ({ name: i.name as string, sku: i.sku as string, quantity: Number(i.quantity ?? i.qty ?? 1), price: Number(i.price ?? 0), gift: i.gift === true })),
-        total: pricing.total, payment: "cod", status: "Нова - чака потвърждение по телефона",
+        items: ((savedOrder.items ?? []) as Array<Record<string, unknown>>).map((i) => ({ slug: typeof i.slug === "string" ? i.slug : undefined, name: i.name as string, sku: i.sku as string, quantity: Number(i.quantity ?? i.qty ?? 1), price: Number(i.price ?? 0), gift: i.gift === true })),
+        orderDiscount: Math.max(0, ((savedOrder.items ?? []) as Array<Record<string, unknown>>).filter((i) => !i.gift).reduce((s, i) => s + Number(i.price ?? 0) * Number(i.quantity ?? i.qty ?? 1), 0) - Number(order.subtotal ?? 0) - Number(order.promoDiscount ?? 0)),
+        payment: "cod", status: "Нова - чака потвърждение по телефона",
       }).catch((e) => { console.error("[partner] e-mail failed:", e); throw e; }),
       // The customer's confirmation is the BULGARIAN template: it only goes to a Bulgarian recipient (a Romanian order has its own
       // route, /api/order-ro, with a Romanian e-mail). Never a Bulgarian text to a Romanian.
