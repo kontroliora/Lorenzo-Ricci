@@ -535,9 +535,10 @@ const catalog: Product[] = [
     name: "Колие Aurelius Cross",
     category: "jewellery",
     subcategory: "necklace",
-    // 07.11.2026 (owner): €33.60 -> €34.00, NO struck price and no sale badge. EU Omnibus: a "was" price must be the lowest
-    // price of the previous 30 days, and that is €33.60 (on sale since 27.09.2026) - below €34, so €42 can no longer be shown.
-    price: 34,
+    // 08.11.2026 (owner, explicit decision after being told of the EU Omnibus 30-day rule): back to €33.60 with €42 struck,
+    // like the other discounted jewellery (sale badge, "Спестявате", cart, cross-sell).
+    price: 33.6,
+    originalPrice: 42,
     currency: "€",
     inStock: true,
     warranty: "Доживотна гаранция",
