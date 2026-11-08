@@ -3127,15 +3127,6 @@ export const reviews: Review[] = [
     date: "2025-11-14",
   },
   {
-    id: "r-833",
-    productSlug: "yachting-black",
-    author: "Мартин Г.",
-    rating: 5,
-    body: "Снимах го в колата под LED осветлението и кадърът стана добре. Светещите цифри се виждат и при слаба светлина.",
-    imageUrl: "/reviews/yachting-black-МартинГ.jpeg",
-    date: "2025-11-21",
-  },
-  {
     id: "r-834",
     productSlug: "yachting-black",
     author: "Димитър К.",
@@ -4134,7 +4125,7 @@ export const reviewSummary: Record<string, { count: number; avg: number }> = {
   "cardholder-valentina":      { count: 28,  avg: 4.7 },
   "cardholder-zaffiro":        { count: 35,  avg: 4.8 },
   "yachting-white":            { count: 74,  avg: 4.9 },
-  "yachting-black":            { count: 53,  avg: 4.7 },
+  "yachting-black":            { count: 52,  avg: 4.7 },
   "yachting-blue":             { count: 38,  avg: 4.6 },
 };
 
