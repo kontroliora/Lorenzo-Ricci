@@ -3,8 +3,9 @@ import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { ProductCard } from "@/components/product/ProductCard";
 import cover from "@/public/covers/damska-kolekcia-cover.webp";
+import model from "@/public/covers/damska-kolekcia-model.webp";
 
-// Home page (BG): the 2026 women's collection, right under the hero. Title, the 1+1 line, one cover image (public/covers/damska-kolekcia-cover.webp)
+// Home page (BG): the 2026 women's collection, right under the hero. Title, the 1+1 line, two images (public/covers/damska-kolekcia-cover.webp + -model.webp)
 // and the button to its section on /jewellery, then one row of 4 pieces (in the shop, in stock, white photo no. 1 - app/page.tsx
 // picks them with homeCollectionPicks) and "Виж цялата колекция". Renders nothing when no piece is on sale.
 export function NewCollectionSection({ pieces }: { pieces: Product[] }) {
@@ -22,17 +23,24 @@ export function NewCollectionSection({ pieces }: { pieces: Product[] }) {
           </p>
         </div>
 
-        {/* One cover image at its own 4:3 ratio, never cropped (the boxes fill 92% of its height, so cropping would cut them).
-            Phones: full width (~250px tall). Larger screens: capped at 560px tall, centred (~750px wide). Static import = hashed URL. */}
-        <Link href="/jewellery#damska-kolekcia" className="group block w-fit max-w-full mx-auto overflow-hidden" aria-label="Разгледай дамската колекция">
-          <Image
-            src={cover}
-            alt="Дамска колекция Lorenzo Ricci – колиета и гривни в кутии LORENZO RICCI"
-            quality={85}
-            sizes="(max-width: 640px) 100vw, 750px"
-            className="block w-auto max-w-full h-auto max-h-[560px] transition-transform duration-700 ease-out group-hover:scale-[1.02]"
-          />
-        </Link>
+        {/* Two images, both 4:3 and never cropped: the boxes (cover) and the model wearing the pieces. Side by side from tablet width
+            up (equal widths = equal heights, ~600 x 448 on desktop), stacked on phones with the cover first. Static imports = hashed URLs. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4" data-testid="home-collection-images">
+          {([
+            [cover, "Дамска колекция Lorenzo Ricci – колиета и гривни в кутии LORENZO RICCI"],
+            [model, "Колие и гривни от дамската колекция Lorenzo Ricci на модел"],
+          ] as const).map(([img, alt]) => (
+            <Link key={img.src} href="/jewellery#damska-kolekcia" className="group block overflow-hidden" aria-label="Разгледай дамската колекция">
+              <Image
+                src={img}
+                alt={alt}
+                quality={97}
+                sizes="(max-width: 767px) 100vw, (max-width: 1280px) 50vw, 608px"
+                className="block w-full h-auto transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+              />
+            </Link>
+          ))}
+        </div>
         <div className="mt-6 sm:mt-8 mb-10 sm:mb-12 flex justify-center">
           <Link href="/jewellery#damska-kolekcia" className="btn-primary w-full sm:w-auto text-center" data-testid="home-collection-cover-cta">
             Разгледай колекцията
