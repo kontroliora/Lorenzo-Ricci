@@ -33,7 +33,7 @@ import { campaignLabelRo } from "@/lib/sale-campaign";
 import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
-import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
+import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, collectionFreeRanking, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
 import { previewProductPhoto, warmProductPhoto } from "@/lib/warm-product";
@@ -145,8 +145,10 @@ const FREE_PICKER_RO: FreePickerText = {
   title: "Alegeți a doua bijuterie – gratuit:", setLabel: "Set", free: "Gratuit cu 1+1",
   groups: { clover: COLLECTION_GROUP_LABEL.clover.ro, nail: COLLECTION_GROUP_LABEL.nail.ro, snake: COLLECTION_GROUP_LABEL.snake.ro },
   chooseSecond: "Alegeți ca a doua bijuterie", details: "Vedeți toate detaliile", soldOut: "Stoc epuizat", second: "A doua bijuterie:", freeShort: "Gratuit",
-  change: "Schimbați", close: "Închideți",
+  change: "Schimbați", close: "Închideți", again: "Încă unul la fel", remove: "Eliminați",
 };
+// Women's collection, the free piece removed ("Eliminați"): the main and the sticky button (smaller, grey).
+const SOLO_LABEL_RO = "ADAUGĂ DOAR 1 – pierdeți bijuteria gratuită";
 
 // Prepayment threshold in lei, for the wording of the delivery tab (the rule itself is roNeedsPrepayment).
 const PREPAYMENT_THRESHOLD_RON = Math.round(PREPAYMENT_THRESHOLD_EUR * EUR_RON);
@@ -306,8 +308,18 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         return [{ slug, name, image: { src: p.coverImage.src, alt: safeText(p.coverImage.alt) ?? name }, available: freeLeft(slug) >= (slug === product.slug ? 2 : 1) && freeLeft(product.slug) >= 1 }];
       })
     : [];
-  const picked = opo && pick ? pickOptions.find((o) => o.slug === pick && o.available) ?? null : null;
-  useEffect(() => { setPick(null); }, [product.slug]);
+  // Women's collection (owner, 08.11.2026): the 1+1 is the default (see ProductInfo.tsx): the partner piece is pre-selected unless
+  // the customer removed it ("Eliminați").
+  const [declined, setDeclined] = useState(false);
+  const optAvail = (slug: string) => pickOptions.some((o) => o.slug === slug && o.available);
+  const defaultPick = opo && isCollectionSlug(product.slug) && !declined
+    ? (collectionFreeRanking([product.slug], optAvail, new Set([product.slug]))[0] ?? (optAvail(product.slug) ? product.slug : null))
+    : null;
+  const pickNow = pick ?? defaultPick;
+  const picked = opo && pickNow ? pickOptions.find((o) => o.slug === pickNow && o.available) ?? null : null;
+  useEffect(() => { setPick(null); setDeclined(false); }, [product.slug]);
+  const choosePick = (slug: string | null) => { setPick(slug); if (slug) setDeclined(false); };
+  const removePick = () => { setPick(null); setDeclined(true); };
   // Women's collection: the redesigned picker (set card, groups, quick view), localized names / texts / lei prices.
   const freeItems: FreeItem[] = opo && isCollectionSlug(product.slug)
     ? pickOptions.flatMap((o) => {
@@ -325,6 +337,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   const pickedRaw = picked ? getProductBySlug(picked.slug) : undefined;
   const pickedRon = picked && picked.slug !== product.slug && pickedRaw ? ronOf(localizeProduct(pickedRaw)) : ron;
   const pairLabel = picked && opo ? opo.text.ro.addPair({ one: fmtRON(opoPairPrice(ron, pickedRon)) }) : null;
+  const soloLabel = !picked && declined && opo && isCollectionSlug(product.slug) ? SOLO_LABEL_RO : null;
 
   const handleAdd = () => {
     addItem(roCartLine(product, effectiveStock));
@@ -333,6 +346,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
     if (second) addItem(roCartLine(second, second.slug === product.slug ? effectiveStock : (opoStock?.[second.slug] ?? second.stock)));
     setAdded(true);
     setPick(null);
+    setDeclined(false);
     setTimeout(() => setAdded(false), 2000);
     trackWithCapi("AddToCart", {
       content_ids:      second ? [product.sku, second.sku] : [product.sku],
@@ -369,7 +383,9 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
       onClick={effectiveInStock ? handleAdd : undefined}
       disabled={!effectiveInStock}
       className={`w-full justify-center text-center ${
-        effectiveInStock
+        effectiveInStock && soloLabel && !added
+          ? "font-sans text-[11px] tracking-[0.06em] px-4 py-3 bg-ink-faint/15 text-ink-soft border border-border hover:bg-ink-faint/25 transition-colors"
+          : effectiveInStock
           ? "btn-primary"
           : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-muted border border-border cursor-not-allowed"
       }`}
@@ -378,7 +394,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         ? "STOC EPUIZAT"
         : added
         ? "✓ ADĂUGAT ÎN COȘ"
-        : pairLabel ?? "ADAUGĂ ÎN COȘ"}
+        : pairLabel ?? soloLabel ?? "ADAUGĂ ÎN COȘ"}
     </button>
   
     {effectiveInStock && !prepay && <CodLine text="Plata cu cardul, online · Livrare cu Speedy" />}
@@ -482,7 +498,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         {opo && <OnePlusOneLine badge={opo.text.ro.badge} line={opoPriceLineRo(product.slug)} size="page" />}
         {opo && (
           isCollectionSlug(product.slug)
-            ? <CollectionFreePicker items={freeItems} currentName={product.name} matchSlug={collectionMatchOf(product.slug)} selected={picked?.slug ?? null} onSelect={setPick} text={FREE_PICKER_RO} />
+            ? <CollectionFreePicker items={freeItems} currentName={product.name} selfSlug={product.slug} matchSlug={collectionMatchOf(product.slug)} selected={picked?.slug ?? null} onSelect={choosePick} onRemove={removePick} text={FREE_PICKER_RO} />
             : <OnePlusOnePicker title={opo.text.ro.pickTitle} options={pickOptions} selected={picked?.slug ?? null} onSelect={setPick} soldOutLabel="Stoc epuizat" />
         )}
       </div>
@@ -567,7 +583,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         </p>
       )}
 
-      <RoStickyCartBar product={product} effectiveInStock={effectiveInStock} onAdd={handleAdd} pairLabel={pairLabel} />
+      <RoStickyCartBar product={product} effectiveInStock={effectiveInStock} onAdd={handleAdd} pairLabel={pairLabel} soloLabel={soloLabel} />
 
       {/* Trust strip */}
       <div className="grid grid-cols-2 gap-0 border border-border">

@@ -253,3 +253,32 @@ export function collectionMatchOf(slug: string): string | null {
   const other = collectionSlug(p.type === "necklace" ? "bracelet" : "necklace", p.design.key, p.metal);
   return NEW_COLLECTION_SLUGS.has(other) ? other : null;
 }
+
+// ─── 1+1 default (owner, 08.11.2026: the free second piece is pre-selected) ──────────────────────────────────────────────────
+
+/** The piece the 1+1 offers first with `slug`: a clover piece's other half of the set (same model + metal, necklace <-> bracelet);
+ *  a bangle (Linea / Solaris / Spira): the same model in the other metal. null = none in the collection. */
+export function collectionPartnerOf(slug: string): string | null {
+  const p = COLLECTION_PIECES.find((x) => x.slug === slug);
+  if (!p) return null;
+  if (p.design.kind === "clover") return collectionMatchOf(slug);
+  const other = collectionSlug(p.type, p.design.key, p.metal === "gold" ? "silver" : "gold");
+  return NEW_COLLECTION_SLUGS.has(other) ? other : null;
+}
+
+/** Collection pieces ranked as a free second piece for the pieces in `held` (the page's piece, or the cart's): each one's partner
+ *  first, then the closest (most shared slug parts: same model, same type, same metal), then collection order. `available` = the
+ *  caller's live check (in the shop, in stock). `exclude` is left out (e.g. what the cart already holds). */
+export function collectionFreeRanking(held: string[], available: (slug: string) => boolean, exclude: ReadonlySet<string> = new Set()): string[] {
+  const own = held.filter((s) => NEW_COLLECTION_SLUGS.has(s));
+  const partners = new Set(own.map(collectionPartnerOf).filter((s): s is string => !!s));
+  const parts = own.map((s) => new Set(s.split("-")));
+  const score = (slug: string) => Math.max(0, ...parts.map((ps) => slug.split("-").filter((x) => ps.has(x)).length));
+  return COLLECTION_PIECES.map((p) => p.slug)
+    .filter((s) => !exclude.has(s) && available(s))
+    .sort((a, b) => Number(partners.has(b)) - Number(partners.has(a)) || score(b) - score(a) || collectionRank(a) - collectionRank(b));
+}
+
+/** Units of collection pieces in a list of cart / order lines (gift lines left out). */
+export const collectionUnits = (lines: { slug?: unknown; quantity?: unknown; qty?: unknown; gift?: unknown }[]): number =>
+  lines.reduce((n, l) => n + (!l.gift && typeof l.slug === "string" && NEW_COLLECTION_SLUGS.has(l.slug) ? Math.max(0, Math.floor(Number(l.quantity ?? l.qty ?? 1)) || 0) : 0), 0);

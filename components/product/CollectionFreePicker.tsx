@@ -11,8 +11,11 @@ import { CollectionQuickView } from "@/components/product/CollectionQuickView";
 //      bracelet) is the first thumbnail of Детелини with a small gold "Комплект" above it. Sold out = greyed, not clickable.
 //   3. A tap on a piece opens a quick view (modal on desktop, bottom sheet on phones); the piece is picked only by its
 //      "Избери за второ бижу" button.
-//   4. Picked: a check mark on it and the "Второ бижу: ... · Смени" line under the picker. Nothing goes into the cart here: the
-//      page's main button (then "Добави 2 в количката – €X") adds both.
+//   4. Picked: a check mark on it and the "Второ бижу: ... · Смени · Махни" line under the picker. Nothing goes into the cart here:
+//      the page's main button (then "Добави 2 в количката – €X") adds both.
+//   5. (owner, 08.11.2026) The 1+1 is the default: the page pre-selects the partner piece (lib/new-collection.ts collectionPartnerOf);
+//      "Махни" drops it (the button then reads "Добави само 1 – губите безплатното бижу"). The page's own piece is the first
+//      thumbnail of its group, named "Още едно такова": picking it adds the same piece twice (quantity 2, one of them free).
 // The page builds the items (its own language, prices, stock) and owns the pick, as with OnePlusOnePicker.
 
 export type FreeItem = {
@@ -30,13 +33,15 @@ export type FreeItem = {
 export type FreePickerText = {
   title: string; setLabel: string; free: string; groups: Record<CollectionGroup, string>;
   chooseSecond: string; details: string; soldOut: string; second: string; freeShort: string; change: string; close: string;
+  again: string; remove: string;
 };
 
-export function CollectionFreePicker({ items, currentName, matchSlug, selected, onSelect, text }: {
+export function CollectionFreePicker({ items, currentName, selfSlug, matchSlug, selected, onSelect, onRemove, text }: {
   items: FreeItem[];
   currentName: string;     // the page's own piece: item no. 1
-
+  selfSlug: string;        // ... and its slug: its thumbnail reads "Още едно такова" (the same piece again)
   matchSlug: string | null;
+  onRemove: () => void;    // "Махни": no second piece
   selected: string | null;
   onSelect: (slug: string | null) => void;
   text: FreePickerText;
@@ -46,7 +51,6 @@ export function CollectionFreePicker({ items, currentName, matchSlug, selected, 
   const viewed = viewing ? items.find((i) => i.slug === viewing) : undefined;
 
   const change = () => {
-    onSelect(null);
     document.querySelector("[data-testid='opo-picker']")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -61,7 +65,8 @@ export function CollectionFreePicker({ items, currentName, matchSlug, selected, 
       {COLLECTION_GROUP_ORDER.map((g) => {
         // The other half of the set (same clover model and metal) leads its group, with a small gold "Комплект" above it;
         // the label sits above the first row only (padding on the group), so later rows keep their normal spacing.
-        const list = items.filter((i) => i.group === g).sort((a, b) => Number(b.slug === matchSlug) - Number(a.slug === matchSlug));
+        const lead = (slug: string) => (slug === selfSlug ? 2 : slug === matchSlug ? 1 : 0); // the same piece again, then the set's other half
+        const list = items.filter((i) => i.group === g).sort((a, b) => lead(b.slug) - lead(a.slug));
         if (list.length === 0) return null;
         const hasSet = list.some((i) => i.slug === matchSlug);
         return (
@@ -78,7 +83,7 @@ export function CollectionFreePicker({ items, currentName, matchSlug, selected, 
                     aria-checked={on}
                     aria-disabled={!o.available}
                     disabled={!o.available}
-                    title={o.available ? o.name : `${o.name} – ${text.soldOut}`}
+                    title={o.slug === selfSlug ? `${text.again} – ${o.name}` : o.available ? o.name : `${o.name} – ${text.soldOut}`}
                     onClick={() => setViewing(o.slug)}
                     data-testid={`opo-pick-${o.slug}`}
                     className={`group relative min-w-0 w-full sm:flex-shrink-0 sm:w-[90px] text-center ${o.available ? "cursor-pointer" : "cursor-not-allowed"}`}
@@ -102,7 +107,7 @@ export function CollectionFreePicker({ items, currentName, matchSlug, selected, 
                     <span className={`block mt-1 font-sans text-[10px] sm:text-[11px] leading-tight min-h-[2.5em] break-words ${
                       on ? "text-navy font-medium" : o.available ? "text-ink-soft" : "text-ink-faint line-through"
                     }`}>
-                      {o.name}
+                      {o.slug === selfSlug ? text.again : o.name}
                     </span>
                     {!o.available && <span className="block font-sans text-[10px] text-ink-faint">{text.soldOut}</span>}
                   </button>
@@ -120,10 +125,13 @@ export function CollectionFreePicker({ items, currentName, matchSlug, selected, 
           </span>
           <p className="flex-1 min-w-0 font-sans text-xs text-charcoal leading-snug">
             <span className="text-ink-muted">{text.second} </span>
-            {picked.name} – <span className="text-[#2F6B3B] font-medium">{text.freeShort}</span>
+            {picked.slug === selfSlug ? `${text.again} (${picked.name})` : picked.name} – <span className="text-[#2F6B3B] font-medium">{text.freeShort}</span>
           </p>
           <button type="button" onClick={change} className="font-sans text-xs text-navy underline underline-offset-2 py-2 -my-2 flex-shrink-0">
             {text.change}
+          </button>
+          <button type="button" data-testid="opo-remove" onClick={onRemove} className="font-sans text-xs text-ink-muted underline underline-offset-2 py-2 -my-2 flex-shrink-0">
+            {text.remove}
           </button>
         </div>
       )}

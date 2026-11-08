@@ -14,9 +14,11 @@ interface Props {
   onAdd?: () => void;
   /** "Добави 2 в количката – €65" while a 1+1 second item is picked. */
   pairLabel?: string | null;
+  /** Women's collection with the free piece removed: "ДОБАВИ САМО 1 – губите безплатното бижу" (grey, smaller), as on the page. */
+  soloLabel?: string | null;
 }
 
-export function StickyCartBar({ product, effectiveInStock, onAdd, pairLabel = null }: Props) {
+export function StickyCartBar({ product, effectiveInStock, onAdd, pairLabel = null, soloLabel = null }: Props) {
   const [visible, setVisible] = useState(false);
   const [added, setAdded]     = useState(false);
   const { addItem } = useCartStore();
@@ -116,8 +118,11 @@ export function StickyCartBar({ product, effectiveInStock, onAdd, pairLabel = nu
           <button
             onClick={effectiveInStock ? handleAdd : undefined}
             disabled={!effectiveInStock}
+            data-testid="sticky-cta"
             className={`flex-shrink-0 min-h-[44px] ${
-              effectiveInStock
+              effectiveInStock && soloLabel && !added
+                ? "max-w-[210px] sm:max-w-none font-sans text-[10px] sm:text-[11px] leading-tight tracking-[0.04em] px-3 sm:px-6 py-2 bg-ink-faint/15 text-ink-soft border border-border"
+                : effectiveInStock
                 ? "btn-primary text-[10px] sm:text-[11px] px-5 sm:px-8 py-3"
                 : "font-sans text-[10px] sm:text-[11px] tracking-[0.22em] uppercase px-5 sm:px-8 py-3 bg-ink-faint/20 text-ink-faint border border-border cursor-not-allowed"
             }`}
@@ -126,6 +131,8 @@ export function StickyCartBar({ product, effectiveInStock, onAdd, pairLabel = nu
               "ИЗЧЕРПАН"
             ) : added ? (
               "✓ ДОБАВЕНО"
+            ) : soloLabel ? (
+              soloLabel
             ) : pairLabel ? (
               <>
                 <span className="hidden sm:inline">{pairLabel}</span>

@@ -165,6 +165,9 @@ export function RoasBoard({ initial, metaAds }: { initial: RoasData; metaAds?: R
         </div>
       </section>
 
+      {/* ── Women's collection 1+1: orders with 1 piece (missed the free one) vs 2+ ───── */}
+      <CollectionShare c={data.collection} />
+
       {/* ── Automatic Meta data per campaign / ad (own period + market switch) ─────── */}
       {metaAds}
 
@@ -277,6 +280,31 @@ function SpendManager({ entries, onChange }: { entries: RoasData["spendEntries"]
               ))}
             </div>}
       </div>
+    </section>
+  );
+}
+
+// Women's collection 1+1 (lib/roas.ts collection): the share of collection orders that took the free second piece.
+function CollectionShare({ c }: { c: RoasData["collection"] }) {
+  const pct = (n: number) => (c.orders ? Math.round((n / c.orders) * 100) : 0);
+  return (
+    <section data-testid="collection-share" className="rounded-xl border border-white/10 bg-white/[0.03] p-5 space-y-3">
+      <h3 className="text-[11px] tracking-[0.2em] uppercase text-white/40">Дамска колекция · 1+1 · поръчки с 1 срещу 2+ бижута</h3>
+      {c.orders === 0 ? (
+        <p className="text-[13px] text-white/45">Няма поръчки с бижута от колекцията в периода.</p>
+      ) : (
+        <>
+          <div className="flex h-3 w-full overflow-hidden rounded-full bg-white/10">
+            <div className="h-full bg-emerald-400" style={{ width: `${pct(c.twoPlus)}%` }} />
+            <div className="h-full bg-rose-300/80" style={{ width: `${pct(c.one)}%` }} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[13px]">
+            <p><b className="text-emerald-400 text-xl tabular-nums">{pct(c.twoPlus)}%</b> <span className="text-white/55">2+ бижута · {c.twoPlus} {c.twoPlus === 1 ? "поръчка" : "поръчки"}</span></p>
+            <p><b className="text-rose-300 text-xl tabular-nums">{pct(c.one)}%</b> <span className="text-white/55">само 1 бижу · {c.one} {c.one === 1 ? "поръчка" : "поръчки"} (пропуснато безплатното)</span></p>
+            <p className="text-white/45">{c.orders} поръчки · {c.units} бижута · средно {(c.units / c.orders).toFixed(1)} на поръчка</p>
+          </div>
+        </>
+      )}
     </section>
   );
 }

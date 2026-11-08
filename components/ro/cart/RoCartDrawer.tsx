@@ -10,6 +10,14 @@ import { RoCheckoutForm } from "./RoCheckoutForm";
 import { bundleLineLabel } from "./shared";
 import { opoLineId } from "@/lib/one-plus-one";
 import { RoCartCrossSell } from "./RoCartCrossSell";
+import { CollectionOddModal, ODD_MODAL_RO } from "@/components/cart/CollectionOddModal";
+import { collectionFreeRanking, collectionUnits, pieceLive } from "@/lib/new-collection";
+import { opoGroupOf } from "@/lib/one-plus-one";
+import { getProductBySlug } from "@/lib/products";
+import { localizeProduct, RO_SLUGS } from "@/lib/ro/catalog";
+import { ronOf } from "@/lib/ro/config";
+import { useLeatherStock } from "@/lib/use-gifts";
+import { roCartLine } from "@/components/ro/product/cart-line";
 
 // Romania cart drawer (port of components/cart/CartDrawer.tsx): lei, card payment only (no ramburs), sets with their discount,
 // crossed-out sale prices, free delivery from RO_FREE_SHIPPING_RON (judged on the amount after set discounts). A cart holding a
@@ -22,6 +30,10 @@ export function RoCartDrawer() {
   const setQuantity = useRoCart((s) => s.setQuantity);
   const removeItem = useRoCart((s) => s.removeItem);
   const [showCheckout, setShowCheckout] = useState(false);
+  // Women's collection 1+1: an odd number of collection pieces = one more is free; "Comandă" first offers it (CollectionOddModal).
+  const addItem = useRoCart((s) => s.addItem);
+  const [oddOpen, setOddOpen] = useState(false);
+  const liveStock = useLeatherStock(isOpen);
   const drawerRef = useRef<HTMLDivElement>(null);
 
   // All money through lib/ro/pricing.ts roAmounts (the server uses the same function). `goods` is after set discounts and is
@@ -36,7 +48,7 @@ export function RoCartDrawer() {
   const reached = remaining === 0 && items.length > 0;
 
   useEffect(() => {
-    if (!isOpen) setShowCheckout(false);
+    if (!isOpen) { setShowCheckout(false); setOddOpen(false); }
   }, [isOpen]);
 
   useEffect(() => {
@@ -58,12 +70,34 @@ export function RoCartDrawer() {
     if (isOpen) drawerRef.current?.focus({ preventScroll: true });
   }, [isOpen]);
 
-  const startCheckout = () => {
+  const collectionLines = items.map((i) => ({ slug: i.slug, quantity: i.quantity }));
+  const oddCollection = collectionUnits(collectionLines) % 2 === 1 && !!opoGroupOf(collectionLines.find((l) => collectionUnits([l]) > 0)?.slug);
+  const oddSuggestions = oddCollection
+    ? collectionFreeRanking(
+        items.map((i) => i.slug),
+        (slug) => { const p = getProductBySlug(slug); return !!p && p.inStock && pieceLive(slug) && RO_SLUGS.includes(slug) && (liveStock?.[slug] ?? p.stock ?? 1) > 0; },
+        new Set(items.map((i) => i.slug)),
+      ).slice(0, 4).flatMap((slug) => {
+        const raw = getProductBySlug(slug);
+        if (!raw) return [];
+        const p = localizeProduct(raw);
+        return [{ slug, name: p.name, image: p.coverImage, priceText: fmtRON(ronOf(p)) }];
+      })
+    : [];
+  const addFree = (slug: string) => {
+    const raw = getProductBySlug(slug);
+    if (raw) addItem(roCartLine(localizeProduct(raw), liveStock?.[slug]));
+    goCheckout();
+  };
+  const startCheckout = () => (oddSuggestions.length > 0 ? setOddOpen(true) : goCheckout());
+  const goCheckout = () => {
+    setOddOpen(false);
     setShowCheckout(true);
+    const now = useRoCart.getState().items; // includes a free piece just added from the modal
     trackWithCapi("InitiateCheckout", {
-      content_ids:      items.map((i) => i.sku),
+      content_ids:      now.map((i) => i.sku),
       content_category: "RO",
-      num_items:        count,
+      num_items:        now.reduce((s, i) => s + i.quantity, 0),
       // InitiateCheckout = the value of the goods in the cart (like AddToCart and the Bulgarian InitiateCheckout): delivery is not in it.
       // Purchase keeps the full amount (goods + delivery) on the success page.
       value:            goods,
@@ -273,7 +307,7 @@ export function RoCartDrawer() {
                 </div>
               </div>
 
-              <button onClick={startCheckout} className="btn-primary w-full text-center justify-center">
+              <button data-testid="drawer-checkout" onClick={startCheckout} className="btn-primary w-full text-center justify-center">
                 {needsPrepayment ? "Continuă comanda - plată în avans" : "Comandă acum"}
               </button>
 
@@ -284,6 +318,9 @@ export function RoCartDrawer() {
           </>
         )}
       </div>
+      {oddOpen && oddSuggestions.length > 0 && (
+        <CollectionOddModal suggestions={oddSuggestions} text={ODD_MODAL_RO} onAdd={addFree} onContinue={goCheckout} onClose={() => setOddOpen(false)} />
+      )}
     </>
   );
 }

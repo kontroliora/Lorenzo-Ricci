@@ -19,7 +19,7 @@ import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
 import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
-import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
+import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, collectionFreeRanking, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
 import { previewProductPhoto, warmProductPhoto } from "@/lib/warm-product";
@@ -128,8 +128,10 @@ const FREE_PICKER_BG: FreePickerText = {
   title: "Изберете второто бижу – безплатно:", setLabel: "Комплект", free: "Безплатно с 1+1",
   groups: { clover: COLLECTION_GROUP_LABEL.clover.bg, nail: COLLECTION_GROUP_LABEL.nail.bg, snake: COLLECTION_GROUP_LABEL.snake.bg },
   chooseSecond: "Избери за второ бижу", details: "Виж всички детайли", soldOut: "Изчерпан", second: "Второ бижу:", freeShort: "Безплатно",
-  change: "Смени", close: "Затвори",
+  change: "Смени", close: "Затвори", again: "Още едно такова", remove: "Махни",
 };
+// Women's collection, the free piece removed ("Махни"): the main and the sticky button (smaller, grey).
+const SOLO_LABEL_BG = "ДОБАВИ САМО 1 – губите безплатното бижу";
 
 // Show the low-stock line only when AVAILABLE units are at or below PAGE_LOW_STOCK_MAX (lib/home-card-hints.ts).
 
@@ -288,8 +290,18 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
         return [{ slug, name: opo.text.bg.shortName(p.name), image: p.coverImage, available: freeLeft(slug) >= (slug === product.slug ? 2 : 1) && freeLeft(product.slug) >= 1 }];
       })
     : [];
-  const picked = opo && pick ? pickOptions.find((o) => o.slug === pick && o.available) ?? null : null;
-  useEffect(() => { setPick(null); }, [product.slug]);
+  // Women's collection (owner, 08.11.2026): the 1+1 is the default. Unless the customer removed it ("Махни"), the free piece is
+  // pre-selected: the partner (set's other half / the bangle in the other metal), else the closest available piece, else the same one again.
+  const [declined, setDeclined] = useState(false);
+  const optAvail = (slug: string) => pickOptions.some((o) => o.slug === slug && o.available);
+  const defaultPick = opo && isCollectionSlug(product.slug) && !declined
+    ? (collectionFreeRanking([product.slug], optAvail, new Set([product.slug]))[0] ?? (optAvail(product.slug) ? product.slug : null))
+    : null;
+  const pickNow = pick ?? defaultPick;
+  const picked = opo && pickNow ? pickOptions.find((o) => o.slug === pickNow && o.available) ?? null : null;
+  useEffect(() => { setPick(null); setDeclined(false); }, [product.slug]);
+  const choosePick = (slug: string | null) => { setPick(slug); if (slug) setDeclined(false); };
+  const removePick = () => { setPick(null); setDeclined(true); };
   // Women's collection: the redesigned picker (set card, groups, quick view) gets the same options with more to show.
   const country = useCountry();
   const freeItems: FreeItem[] = opo && isCollectionSlug(product.slug)
@@ -304,6 +316,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   // The pair costs the dearer of the two (the cheaper one is free): €65 for two cardholders, €109 / €115 for jewellery.
   const pickedPrice = picked ? (getProductBySlug(picked.slug)?.price ?? product.price) : product.price;
   const pairLabel = picked && opo ? opo.text.bg.addPair({ one: opoPairPriceBg(product.price, pickedPrice) }) : null;
+  const soloLabel = !picked && declined && opo && isCollectionSlug(product.slug) ? SOLO_LABEL_BG : null;
 
   const handleAdd = () => {
     addItem({ ...product, stock: effectiveStock });
@@ -311,6 +324,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
     if (second) addItem(second.slug === product.slug ? { ...product, stock: effectiveStock } : { ...second, stock: opoStock?.[second.slug] ?? second.stock });
     setAdded(true);
     setPick(null);
+    setDeclined(false);
     setTimeout(() => setAdded(false), 2000);
     trackWithCapi("AddToCart", {
       content_ids:  second ? [product.sku, second.sku] : [product.sku],
@@ -339,7 +353,9 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
       onClick={effectiveInStock ? handleAdd : undefined}
       disabled={!effectiveInStock}
       className={`w-full justify-center text-center ${
-        effectiveInStock
+        effectiveInStock && soloLabel && !added
+          ? "font-sans text-[11px] tracking-[0.06em] px-4 py-3 bg-ink-faint/15 text-ink-soft border border-border hover:bg-ink-faint/25 transition-colors"
+          : effectiveInStock
           ? "btn-primary"
           : "font-sans text-[11px] tracking-[0.22em] uppercase px-8 py-4 bg-ink-faint/20 text-ink-muted border border-border cursor-not-allowed"
       }`}
@@ -348,7 +364,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
         ? "ИЗЧЕРПАНА НАЛИЧНОСТ"
         : added
         ? "✓ ДОБАВЕНО В КОЛИЧКАТА"
-        : pairLabel ?? "ДОБАВИ В КОЛИЧКАТА"}
+        : pairLabel ?? soloLabel ?? "ДОБАВИ В КОЛИЧКАТА"}
     </button>
   
     {effectiveInStock && !requiresPrepayment(product) && <CodLine text={CARD_PAYMENTS_ENABLED ? "Карта или наложен платеж · Доставка с Еконт" : "Без предплащане · Доставка с Еконт · Плащате при получаване"} />}
@@ -460,7 +476,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
         {opo && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(product.slug)} size="page" />}
         {opo && (
           isCollectionSlug(product.slug)
-            ? <CollectionFreePicker items={freeItems} currentName={product.name} matchSlug={collectionMatchOf(product.slug)} selected={picked?.slug ?? null} onSelect={setPick} text={FREE_PICKER_BG} />
+            ? <CollectionFreePicker items={freeItems} currentName={product.name} selfSlug={product.slug} matchSlug={collectionMatchOf(product.slug)} selected={picked?.slug ?? null} onSelect={choosePick} onRemove={removePick} text={FREE_PICKER_BG} />
             : <OnePlusOnePicker title={opo.text.bg.pickTitle} options={pickOptions} selected={picked?.slug ?? null} onSelect={setPick} soldOutLabel="Изчерпан" />
         )}
       </div>
@@ -579,7 +595,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
       </div>
       )}
 
-      <StickyCartBar product={product} effectiveInStock={effectiveInStock} onAdd={handleAdd} pairLabel={pairLabel} />
+      <StickyCartBar product={product} effectiveInStock={effectiveInStock} onAdd={handleAdd} pairLabel={pairLabel} soloLabel={soloLabel} />
 
       {/* Trust strip */}
       <div className="grid grid-cols-2 gap-0 border border-border">

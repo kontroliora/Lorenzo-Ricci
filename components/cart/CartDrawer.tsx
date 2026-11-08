@@ -12,6 +12,13 @@ import { promoBase, bundleLineText } from "@/lib/bundles";
 import { opoExcludedFromPromo, opoLineId } from "@/lib/one-plus-one";
 import { isOnSale } from "@/lib/price";
 import { cardDiscountEur } from "@/lib/card-discount";
+import { CollectionOddModal, ODD_MODAL_BG } from "./CollectionOddModal";
+import { collectionFreeRanking, collectionUnits, pieceLive } from "@/lib/new-collection";
+import { opoGroupOf } from "@/lib/one-plus-one";
+import { getProductBySlug } from "@/lib/products";
+import { useLeatherStock } from "@/lib/use-gifts";
+import { useCountry } from "@/lib/country";
+import { displayPrice } from "@/lib/price";
 
 // Same text as lib/promo.ts PROMO_NOT_ON_SALE (not imported: that module pulls the Supabase client into the browser bundle).
 const PROMO_NOT_ON_SALE = "Кодът не важи за продукти на намаление";
@@ -20,9 +27,13 @@ const CART_TIMEOUT = 15 * 60; // 900 seconds
 
 export function CartDrawer() {
   const { isOpen, closeCart, items, removeItem, updateQuantity, totalPrice, totalItems, bundleDiscount,
-    pendingCheckout, clearPendingCheckout } =
+    pendingCheckout, clearPendingCheckout, addItem } =
     useCartStore();
   const [showCheckout, setShowCheckout] = useState(false);
+  // Women's collection 1+1: an odd number of collection pieces = one more is free; "Поръчай сега" first offers it (CollectionOddModal).
+  const [oddOpen, setOddOpen] = useState(false);
+  const liveStock = useLeatherStock(isOpen);
+  const country = useCountry();
   const [promoInput, setPromoInput] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoRate, setPromoRate] = useState(0.10); // fraction from the validated code - 10% newsletter, 5% waitlist apology
@@ -111,8 +122,37 @@ export function CartDrawer() {
   // ───────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!isOpen) setShowCheckout(false);
+    if (!isOpen) { setShowCheckout(false); setOddOpen(false); }
   }, [isOpen]);
+
+  const goCheckout = () => {
+    setOddOpen(false);
+    setShowCheckout(true);
+    const now = useCartStore.getState().items; // includes a free piece just added from the modal
+    trackWithCapi("InitiateCheckout", {
+      content_ids: now.map((i) => i.product.sku),
+      num_items:   now.reduce((s, i) => s + i.quantity, 0),
+      value:       total,
+      currency:    "EUR",
+    }, genEventId("IC"));
+  };
+  const collectionLines = items.map((i) => ({ slug: i.product.slug, quantity: i.quantity }));
+  const oddCollection = collectionUnits(collectionLines) % 2 === 1 && !!opoGroupOf(collectionLines.find((l) => collectionUnits([l]) > 0)?.slug);
+  const oddSuggestions = oddCollection
+    ? collectionFreeRanking(
+        items.map((i) => i.product.slug),
+        (slug) => { const p = getProductBySlug(slug); return !!p && p.inStock && pieceLive(slug) && (liveStock?.[slug] ?? p.stock ?? 1) > 0; },
+        new Set(items.map((i) => i.product.slug)),
+      ).slice(0, 4).flatMap((slug) => {
+        const p = getProductBySlug(slug);
+        return p ? [{ slug, name: p.name, image: p.coverImage, priceText: displayPrice(p, country).text }] : [];
+      })
+    : [];
+  const addFree = (slug: string) => {
+    const p = getProductBySlug(slug);
+    if (p) addItem({ ...p, stock: liveStock?.[slug] ?? p.stock });
+    goCheckout();
+  };
 
   // Recovery link landed → jump straight to the checkout step.
   useEffect(() => {
@@ -455,15 +495,8 @@ export function CartDrawer() {
               )}
 
               <button
-                onClick={() => {
-                  setShowCheckout(true);
-                  trackWithCapi("InitiateCheckout", {
-                    content_ids: items.map((i) => i.product.sku),
-                    num_items:   items.reduce((s, i) => s + i.quantity, 0),
-                    value:       total,
-                    currency:    "EUR",
-                  }, genEventId("IC"));
-                }}
+                data-testid="drawer-checkout"
+                onClick={() => (oddSuggestions.length > 0 ? setOddOpen(true) : goCheckout())}
                 className="btn-primary w-full text-center justify-center"
               >
                 {CARD_PAYMENTS_ENABLED ? "Поръчай сега" : "Поръчай сега - Наложен платеж"}
@@ -476,6 +509,9 @@ export function CartDrawer() {
           </>
         )}
       </div>
+      {oddOpen && oddSuggestions.length > 0 && (
+        <CollectionOddModal suggestions={oddSuggestions} text={ODD_MODAL_BG} onAdd={addFree} onContinue={goCheckout} onClose={() => setOddOpen(false)} />
+      )}
     </>
   );
 }

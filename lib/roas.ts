@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { isOwner } from "@/lib/admin-auth";
 import { EUR_RON } from "@/lib/ro/config";
 import { isUnpaidCardAttempt } from "@/lib/order-status";
+import { collectionUnits } from "@/lib/new-collection";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // What the shop eats when a parcel is never collected: it pays BOTH delivery
@@ -44,6 +45,9 @@ export type RoasData = {
   exaggerationPct: number | null;// how much Meta overstates vs real (gross→real)
   cancelRate: number;            // cancelled count / total, %
   ro: RoRoas | null;             // Romanian orders in the window, in lei (null when there are none) - separate row, also counted in the euro totals
+  /** Women's collection 1+1 (owner, 08.11.2026): real orders (both markets) holding collection pieces, by how many - 1 piece
+   *  (missed the free one) vs 2+. Read from each order's own lines, so it covers every order since the collection went live. */
+  collection: { orders: number; one: number; twoPlus: number; units: number };
   bg: { all: StatusBucket; delivered: StatusBucket; inMotion: StatusBucket; pending: StatusBucket; lost: StatusBucket }; // Bulgarian orders only, euro: the other half of the split
 };
 
@@ -56,6 +60,7 @@ type OrderRow = {
   ship_country?: string | null;
   payment_status?: string | null;   // undefined until supabase/stripe_payments.sql has run
   created_at: string;
+  items?: { slug?: unknown; quantity?: unknown; qty?: unknown; gift?: unknown }[] | null;
 };
 
 const DAY = 86_400_000;
@@ -100,7 +105,7 @@ async function computeRoasCore(startISO: string, endISO: string): Promise<RoasDa
 
   // Orders in window - resilient to columns that are not migrated yet (return_kind, payment_status, ship_country): the first
   // column list the database accepts is used. classified = the return_kind column exists (drives the "непотърсени" loss line).
-  const base = "status, total, excluded_from_stock, cancel_category, created_at";
+  const base = "status, total, excluded_from_stock, cancel_category, created_at, items";
   const sets: string[][] = [
     ["return_kind", "payment_status", "ship_country"], ["return_kind", "ship_country"], ["payment_status", "ship_country"], ["ship_country"],
     ["return_kind", "payment_status"], ["return_kind"], ["payment_status"], [],
@@ -192,8 +197,17 @@ async function computeRoasCore(startISO: string, endISO: string): Promise<RoasDa
     returned: roSum((s) => s === "returning" || s === "restocked" || s === "returned"),
   };
 
+  const collection = { orders: 0, one: 0, twoPlus: 0, units: 0 };
+  for (const r of orders) {
+    const n = collectionUnits(Array.isArray(r.items) ? r.items : []);
+    if (n === 0) continue;
+    collection.orders++; collection.units += n;
+    if (n === 1) collection.one++; else collection.twoPlus++;
+  }
+
   return {
     range: { start: startISO, end: endISO },
+    collection,
     spend,
     spendEntries,
     totalOrders: orders.length,
