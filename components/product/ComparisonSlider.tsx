@@ -41,7 +41,14 @@ export function ComparisonSlider() {
     return () => el.removeEventListener("touchmove", onTouchMove);
   }, [updatePos]);
 
+  // The two labels sit in a bar ABOVE the photo (owner, 08.11.2026): the photos carry their own text in every corner, so a label on
+  // the photo was always covering some of it.
   return (
+    <>
+    <div data-testid="comparison-labels" className="flex items-center justify-between gap-3 border-b border-border bg-white px-3 sm:px-4 py-2.5">
+      <span className="font-sans text-[11px] sm:text-[12px] font-semibold tracking-[0.16em] uppercase text-[#2F6B3B]">✓ LORENZO RICCI</span>
+      <span className="font-sans text-[11px] sm:text-[12px] font-semibold tracking-[0.16em] uppercase text-[#9B3B32]">✗ ЕВТИНИ БИЖУТА</span>
+    </div>
     <div
       ref={containerRef}
       className="relative select-none overflow-hidden cursor-col-resize"
@@ -93,19 +100,7 @@ export function ComparisonSlider() {
         </svg>
       </div>
 
-      {/* Labels */}
-      <div className="absolute top-4 left-4 pointer-events-none"
-        style={{ opacity: pos > 15 ? 1 : 0, transition: "opacity 0.2s" }}>
-        <span className="font-sans text-[9px] font-medium tracking-[0.22em] uppercase text-white bg-black/40 px-2.5 py-1.5">
-          Lorenzo Ricci
-        </span>
-      </div>
-      <div className="absolute top-4 right-4 pointer-events-none"
-        style={{ opacity: pos < 85 ? 1 : 0, transition: "opacity 0.2s" }}>
-        <span className="font-sans text-[9px] font-medium tracking-[0.22em] uppercase text-white bg-black/40 px-2.5 py-1.5">
-          Други Марки
-        </span>
-      </div>
     </div>
+    </>
   );
 }

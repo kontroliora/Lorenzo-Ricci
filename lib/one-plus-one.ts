@@ -196,6 +196,19 @@ export function onePlusOne(lines: OpoLine[], opts: { now?: Date; ignoreSchedule?
 }
 
 /**
+ * What adding `add` to a cart holding `lines` really changes (women's collection page, owner 08.11.2026): `delta` = how much the
+ * goods total goes up after every running 1+1, `saving` = how much more the 1+1 takes off. Display only; totals stay server-side.
+ */
+export function opoJoinDelta(lines: OpoLine[], add: OpoLine, now?: Date): { delta: number; saving: number } {
+  const gross = (ls: OpoLine[]) => ls.reduce((s, l) => s + l.unit * Math.max(0, Math.floor(l.quantity)), 0);
+  const before = gross(lines) - onePlusOne(lines, { now }).total;
+  const withIt = [...lines, add];
+  const after = gross(withIt) - onePlusOne(withIt, { now }).total;
+  const delta = round2(after - before);
+  return { delta, saving: round2(add.unit * add.quantity - delta) };
+}
+
+/**
  * Display only (the cart drawer's "Безплатно" row): how many units of each line the 1+1 makes free - the same n cheapest units as
  * freeOf, ties going to the later line (the piece added last is "the free one"). Index-aligned with `lines`; totals never use this.
  */

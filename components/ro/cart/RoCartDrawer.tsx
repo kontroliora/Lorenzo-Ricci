@@ -43,7 +43,7 @@ export function RoCartDrawer() {
   // "Economisiți": every crossed-out price minus the current one, over the whole cart.
   const savings = items.reduce((s, i) => s + (i.originalRon != null && i.originalRon > i.ron ? (i.originalRon - i.ron) * i.quantity : 0), 0);
   const count = items.reduce((s, i) => s + i.quantity, 0);
-  // The redesigned cart step (owner, 08.11.2026): one red "Reducere" = every saving together (sale prices + sets incl. 1+1).
+  // The redesigned cart step (owner, 08.11.2026): one red "Economisiți" = every saving together (sale prices + sets incl. 1+1).
   const allSavings = savings + (subtotal - goods);
   const freeUnits = opoFreeUnits(items.map((i) => ({ slug: i.slug, unit: i.ron, quantity: i.quantity, onSale: i.onSale })));
   const remaining = Math.max(0, RO_FREE_SHIPPING_RON - goods);
@@ -204,7 +204,7 @@ export function RoCartDrawer() {
             {/* Footer: summary, button, 3 icons */}
             <div className="px-5 sm:px-6 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] border-t border-border bg-white">
               <div className="flex flex-col gap-1.5">
-                {allSavings > 0 && <SumRow label="Reducere" value={`−${fmtRON(allSavings)}`} tone="discount" testId="drawer-discount" />}
+                {allSavings > 0 && <SumRow label="Economisiți" value={`−${fmtRON(allSavings)}`} tone="discount" testId="drawer-discount" />}
                 <SumRow label="Livrare" value={shippingCost === 0 ? "Gratuită" : fmtRON(shippingCost)} tone={shippingCost === 0 ? "free" : undefined} testId="drawer-shipping" />
                 <TotalRow label="Total" value={fmtRON(total)} />
               </div>

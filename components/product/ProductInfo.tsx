@@ -6,11 +6,11 @@ import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
-import { displayPrice, requiresPrepayment } from "@/lib/price";
+import { displayPrice, isOnSale, requiresPrepayment } from "@/lib/price";
+import { opoLines } from "@/lib/bundles";
 import { PayLine } from "@/components/product/CodNote";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
-import { cardDiscountEur } from "@/lib/card-discount";
 import { GiftOffer } from "@/components/product/GiftOffer";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { getProductBySlug } from "@/lib/products";
@@ -20,12 +20,12 @@ import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
 import { SavingsLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
-import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
+import { collectionSwatches, collectionUnits, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
 import { CollectionTwoBoxes, TWO_BOX_BG } from "@/components/product/CollectionTwoBoxes";
 import { previewProductPhoto, warmProductPhoto } from "@/lib/warm-product";
-import { opoGroupOf, opoPriceLineBg, opoPairPrice, opoPairPriceBg } from "@/lib/one-plus-one";
+import { opoGroupOf, opoJoinDelta, opoPriceLineBg, opoPairPrice, opoPairPriceBg } from "@/lib/one-plus-one";
 import { useLeatherStock } from "@/lib/use-gifts";
 
 // A colour swatch reads as sold out when its product is switched off in
@@ -135,6 +135,12 @@ const FREE_PICKER_BG: FreePickerText = {
 // Women's collection, no free piece picked yet: the main and the sticky button send the customer to box 2; a small link adds 1 only.
 const CHOOSE_LABEL_BG = "↑ ИЗБЕРЕТЕ БЕЗПЛАТНОТО БИЖУ";
 const ADD_ONE_BG = "или добави само 1";
+// The cart already holds an odd number of collection pieces: this piece completes that 1+1 (owner, 08.11.2026).
+const JOIN_BG = {
+  line: (name: string, saving: string) => `🎁 1+1 с ${name} – спестявате ${saving}`,
+  button: "ДОБАВИ (1+1)",
+  newPair: "или започнете нова двойка 1+1",
+};
 
 // Show the low-stock line only when AVAILABLE units are at or below PAGE_LOW_STOCK_MAX (lib/home-card-hints.ts).
 
@@ -150,6 +156,8 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   const [added, setAdded] = useState(false);
   // 1+1 group: the free second item picked on the page (null = none; may be this same model)
   const [pick, setPick] = useState<string | null>(null);
+  // "или започнете нова двойка 1+1": back to the two boxes even though the cart holds an unpaired collection piece.
+  const [newPair, setNewPair] = useState(false);
   // Colour swatch tapped: shown as selected at once while the (prefetched) sibling page loads.
   const [pendingVariant, setPendingVariant] = useState<string | null>(null);
   useEffect(() => { setPendingVariant(null); }, [product.slug]);
@@ -296,7 +304,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   // Women's collection (owner, 08.11.2026): NO default pick. Box 2 shows the picker open; the customer taps the free piece. Until
   // then the buttons read "↑ Изберете безплатното бижу" (they scroll to box 2) and "или добави само 1" adds the piece alone.
   const picked = opo && pick ? pickOptions.find((o) => o.slug === pick && o.available) ?? null : null;
-  useEffect(() => { setPick(null); }, [product.slug]);
+  useEffect(() => { setPick(null); setNewPair(false); }, [product.slug]);
   const choosePick = (slug: string | null) => setPick(slug);
   const removePick = () => setPick(null);
   // Women's collection: the redesigned picker (set card, groups, quick view) gets the same options with more to show.
@@ -319,7 +327,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
 
   const handleAdd = () => {
     addItem({ ...product, stock: effectiveStock });
-    const second = picked ? getProductBySlug(picked.slug) : undefined;
+    const second = picked && !joinWith ? getProductBySlug(picked.slug) : undefined;
     if (second) addItem(second.slug === product.slug ? { ...product, stock: effectiveStock } : { ...second, stock: opoStock?.[second.slug] ?? second.stock });
     setAdded(true);
     setPick(null);
@@ -345,8 +353,21 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
   const inCollection = isCollectionSlug(product.slug);
   const twoBoxes = inCollection && !!opo; // women's collection with its 1+1 running and in stock
+  // The cart holds an ODD number of collection pieces (one waits for its pair) and this one can still be added: it completes that
+  // 1+1 - box 2 hides, the button adds this piece alone. Follows the cart live; "или започнете нова двойка 1+1" turns it off.
+  const cartCollection = cartItems.filter((i) => isCollectionSlug(i.product.slug));
+  const oddInCart = collectionUnits(cartItems.map((i) => ({ slug: i.product.slug, quantity: i.quantity }))) % 2 === 1;
+  const joinWith = twoBoxes && oddInCart && !newPair && freeLeft(product.slug) >= 1 ? cartCollection[cartCollection.length - 1]?.product ?? null : null;
+  const joinCalc = joinWith ? opoJoinDelta(opoLines(cartItems), { slug: product.slug, unit: product.price, quantity: 1, onSale: isOnSale(product) }) : null;
+  const eurShort = (n: number) => `€${Number.isInteger(Math.round(n * 100) / 100) ? Math.round(n) : n.toFixed(2).replace(".", ",")}`;
+  const joinPrice = joinCalc ? (
+    <span data-testid="join-price" className="flex items-baseline gap-2">
+      {joinCalc.delta < product.price && <span className="font-sans text-sm text-ink-muted line-through">{eurShort(product.price)}</span>}
+      <span className="font-serif text-xl text-navy leading-none">{joinCalc.delta > 0 ? `+${eurShort(joinCalc.delta)}` : "+€0"}</span>
+    </span>
+  ) : null;
   // Nothing picked yet (and something is pickable): the buttons point to box 2 instead of adding.
-  const mustChoose = twoBoxes && !picked && freeItems.some((i) => i.available);
+  const mustChoose = twoBoxes && !joinWith && !picked && freeItems.some((i) => i.available);
   const chooseLabel = mustChoose ? CHOOSE_LABEL_BG : null;
   const goToBox2 = () => document.querySelector("[data-testid=box-second]")?.scrollIntoView({ behavior: "smooth", block: "start" });
   const cta = (
@@ -365,8 +386,15 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
         ? "ИЗЧЕРПАНА НАЛИЧНОСТ"
         : added
         ? "✓ ДОБАВЕНО В КОЛИЧКАТА"
+        : joinWith ? JOIN_BG.button
         : chooseLabel ?? pairLabel ?? "ДОБАВИ В КОЛИЧКАТА"}
     </button>
+    {joinWith && !added && (
+      <button type="button" data-testid="new-pair" onClick={() => setNewPair(true)}
+        className="block mx-auto -mt-1 py-2 px-3 font-sans text-xs text-ink-muted underline underline-offset-2 hover:text-charcoal">
+        {JOIN_BG.newPair}
+      </button>
+    )}
     {chooseLabel && !added && (
       <button type="button" data-testid="add-one" onClick={handleAdd}
         className="block mx-auto -mt-1 py-2 px-3 font-sans text-xs text-ink-muted underline underline-offset-2 hover:text-charcoal">
@@ -517,13 +545,14 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
           totalText={opoPairPriceBg(product.price, picked ? pickedPrice : 0)}
           struckText={picked ? opoPairPriceBg(product.price + pickedPrice, 0) : null /* the two prices together, same € format */}
           cta={cta}
+          join={joinWith && joinCalc && joinPrice ? { line: JOIN_BG.line(joinWith.name, eurShort(joinCalc.saving)), price: joinPrice } : null}
         />
       ) : inCollection && cta}
 
       {/* How to pay, one line under the price (not for a prepayment product) */}
       {effectiveInStock && !requiresPrepayment(product) && (
         CARD_PAYMENTS_ENABLED
-          ? <PayLine text={`С карта плащате ${eurComma(cardGoods - cardDiscountEur(cardGoods))} (спестявате ${eurComma(cardDiscountEur(cardGoods))}) · или наложен платеж`} marks={true} />
+          ? <PayLine text="Наложен платеж или карта (−5% допълнително)" marks={true} />
           : <PayLine text="Наложен платеж" marks={false} />
       )}
 
@@ -623,7 +652,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
       </div>
       )}
 
-      <StickyCartBar product={product} effectiveInStock={effectiveInStock} onAdd={handleAdd} pairLabel={pairLabel} chooseLabel={chooseLabel} onChoose={goToBox2} />
+      <StickyCartBar product={product} effectiveInStock={effectiveInStock} onAdd={handleAdd} pairLabel={joinWith ? JOIN_BG.button : pairLabel} chooseLabel={chooseLabel} onChoose={goToBox2} priceNode={joinPrice} />
 
       {/* Trust strip */}
       <div className="grid grid-cols-2 gap-0 border border-border">

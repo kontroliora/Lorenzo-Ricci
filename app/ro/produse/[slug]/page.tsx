@@ -268,7 +268,7 @@ export default async function RoProductPage({ params }: Props) {
 
         {/* Jewellery description - two product images + quality comparison */}
         {/* 18K PVD gold block: not on a silver piece of the 2026 collection */}
-        {isJewellery && product.metal !== "silver" && <RoJewelleryDescription stamp={!isCollectionSlug(product.slug)} />}
+        {isJewellery && product.metal !== "silver" && <RoJewelleryDescription stamp={!isCollectionSlug(product.slug)} comparison={!isCollectionSlug(product.slug)} />}
 
         {/* Leather description - material & craft */}
         {!isWatch && !isJewellery && !product.hideLeatherDescription && (

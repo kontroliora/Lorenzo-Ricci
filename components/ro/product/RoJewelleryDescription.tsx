@@ -145,7 +145,7 @@ function ComparisonBlock() {
 
 // ── Main export ───────────────────────────────────────────────────────────
 /** `stamp` = false: leave out the ITALY / 750 stamp block (pieces without the stamp). */
-export function RoJewelleryDescription({ stamp = true }: { stamp?: boolean } = {}) {
+export function RoJewelleryDescription({ stamp = true , comparison = true }: { stamp?: boolean; comparison?: boolean } = {}) {
   return (
     <div className="w-full mt-16">
 
@@ -171,10 +171,12 @@ export function RoJewelleryDescription({ stamp = true }: { stamp?: boolean } = {
         )}
       </div>
 
-      {/* Image comparison slider */}
+      {/* Image comparison slider - not on the women's collection (owner, 08.11.2026) */}
+      {comparison && (
       <div className="mt-10 overflow-hidden border border-border">
         <RoComparisonSlider />
       </div>
+      )}
 
       {/* Comparison block */}
       <div className="mt-4">

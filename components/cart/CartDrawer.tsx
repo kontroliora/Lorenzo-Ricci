@@ -1,5 +1,4 @@
 "use client";
-import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { Fragment, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useCartStore } from "@/lib/store";
@@ -12,7 +11,6 @@ import { opoLines } from "@/lib/bundles";
 import { opoFreeUnits } from "@/lib/one-plus-one";
 import { DrawerTop, ReserveLine, ShipProgress, LineItem, SumRow, TotalRow, TrustRow } from "./drawer-ui";
 import { isOnSale } from "@/lib/price";
-import { cardDiscountEur } from "@/lib/card-discount";
 import { CollectionOddModal, ODD_MODAL_BG } from "./CollectionOddModal";
 import { collectionFreeRanking, collectionUnits, pieceLive } from "@/lib/new-collection";
 import { opoGroupOf } from "@/lib/one-plus-one";
@@ -47,10 +45,9 @@ export function CartDrawer() {
     items.reduce((s, { product, quantity }) => s + (isOnSale(product) ? ((product.originalPrice as number) - product.price) * quantity : 0), 0) * 100,
   ) / 100;
   const total = afterBundles - promoDiscount;
-  // "С карта": the same 5% (max €25) the checkout takes off for a card payment (lib/card-discount.ts); none with a promo code.
-  const cardSaving = CARD_PAYMENTS_ENABLED ? cardDiscountEur(total, promoDiscount) : 0;
+  // The card saving is shown only in the checkout, on the card payment option (owner, 08.11.2026).
   const count = totalItems();
-  // The redesigned cart step (owner, 08.11.2026): one red "Отстъпка" = every saving together (sale prices, sets incl. 1+1, promo).
+  // The redesigned cart step (owner, 08.11.2026): one red "Спестявате" = every saving together (sale prices, sets incl. 1+1, promo).
   const allSavings = Math.round((savings + totalDiscount + promoDiscount) * 100) / 100;
   const freeUnits = opoFreeUnits(opoLines(items));
   const eur = (n: number) => `€${Number.isInteger(Math.round(n * 100) / 100) ? Math.round(n) : n.toFixed(2).replace(".", ",")}`;
@@ -253,14 +250,9 @@ export function CartDrawer() {
             {/* Footer: summary, button, 3 icons */}
             <div className="px-5 sm:px-6 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] border-t border-border bg-white">
               <div className="flex flex-col gap-1.5">
-                {allSavings > 0 && <SumRow label="Отстъпка" value={`−${eur(allSavings)}`} tone="discount" testId="drawer-discount" />}
+                {allSavings > 0 && <SumRow label="Спестявате" value={`−${eur(allSavings)}`} tone="discount" testId="drawer-discount" />}
                 <SumRow label="Доставка" value={reached ? "Безплатна" : "Изчислява се"} tone={reached ? "free" : undefined} testId="drawer-shipping" />
                 <TotalRow label="Общо" value={eur(total)} />
-                {cardSaving > 0 && (
-                  <p data-testid="drawer-card-total" className="text-right font-sans text-[12px] text-ink-muted">
-                    С карта: {eur(total - cardSaving)} (спестявате {eur(cardSaving)})
-                  </p>
-                )}
               </div>
 
               <button

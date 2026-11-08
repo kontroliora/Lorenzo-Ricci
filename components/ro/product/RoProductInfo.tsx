@@ -33,14 +33,14 @@ import { campaignLabelRo } from "@/lib/sale-campaign";
 import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
-import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
+import { collectionSwatches, collectionUnits, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
 import { CollectionTwoBoxes, TWO_BOX_RO } from "@/components/product/CollectionTwoBoxes";
 import { previewProductPhoto, warmProductPhoto } from "@/lib/warm-product";
 import { opoGroupOf } from "@/lib/one-plus-one";
 import { opoPriceLineRo } from "@/lib/ro/config";
-import { opoPairPrice } from "@/lib/one-plus-one";
+import { opoJoinDelta, opoPairPrice } from "@/lib/one-plus-one";
 import { localizeProduct } from "@/lib/ro/catalog";
 import { safeText } from "@/components/ro/home/ro-home-utils";
 import { useLeatherStock } from "@/lib/use-gifts";
@@ -151,6 +151,12 @@ const FREE_PICKER_RO: FreePickerText = {
 // Women's collection, no free piece picked yet: the main and the sticky button send the customer to box 2; a small link adds 1 only.
 const CHOOSE_LABEL_RO = "↑ ALEGEȚI BIJUTERIA GRATUITĂ";
 const ADD_ONE_RO = "sau adăugați doar 1";
+// The cart already holds an odd number of collection pieces: this piece completes that 1+1 (owner, 08.11.2026).
+const JOIN_RO = {
+  line: (name: string, saving: string) => `🎁 1+1 cu ${name} – economisiți ${saving}`,
+  button: "ADAUGĂ (1+1)",
+  newPair: "sau începeți o nouă pereche 1+1",
+};
 
 // Prepayment threshold in lei, for the wording of the delivery tab (the rule itself is roNeedsPrepayment).
 const PREPAYMENT_THRESHOLD_RON = Math.round(PREPAYMENT_THRESHOLD_EUR * EUR_RON);
@@ -170,6 +176,8 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   const [added, setAdded] = useState(false);
   // 1+1 group: the free second item picked on the page (null = none; may be this same model)
   const [pick, setPick] = useState<string | null>(null);
+  // "sau începeți o nouă pereche 1+1": back to the two boxes even though the cart holds an unpaired collection piece.
+  const [newPair, setNewPair] = useState(false);
   // Colour swatch tapped: shown as selected at once while the (prefetched) sibling page loads.
   const [pendingVariant, setPendingVariant] = useState<string | null>(null);
   useEffect(() => { setPendingVariant(null); }, [product.slug]);
@@ -313,7 +321,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   // Women's collection (owner, 08.11.2026): NO default pick. Box 2 shows the picker open; the customer taps the free piece. Until
   // then the buttons read "↑ Изберете безплатното бижу" (they scroll to box 2) and "или добави само 1" adds the piece alone.
   const picked = opo && pick ? pickOptions.find((o) => o.slug === pick && o.available) ?? null : null;
-  useEffect(() => { setPick(null); }, [product.slug]);
+  useEffect(() => { setPick(null); setNewPair(false); }, [product.slug]);
   const choosePick = (slug: string | null) => setPick(slug);
   const removePick = () => setPick(null);
   // Women's collection: the redesigned picker (set card, groups, quick view), localized names / texts / lei prices.
@@ -336,8 +344,8 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
 
   const handleAdd = () => {
     addItem(roCartLine(product, effectiveStock));
-    const raw = picked && picked.slug !== product.slug ? getProductBySlug(picked.slug) : undefined;
-    const second = picked ? (picked.slug === product.slug ? product : raw ? localizeProduct(raw) : undefined) : undefined;
+    const raw = picked && !joinWith && picked.slug !== product.slug ? getProductBySlug(picked.slug) : undefined;
+    const second = picked && !joinWith ? (picked.slug === product.slug ? product : raw ? localizeProduct(raw) : undefined) : undefined;
     if (second) addItem(roCartLine(second, second.slug === product.slug ? effectiveStock : (opoStock?.[second.slug] ?? second.stock)));
     setAdded(true);
     setPick(null);
@@ -371,8 +379,22 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
   const inCollection = isCollectionSlug(product.slug);
   const twoBoxes = inCollection && !!opo; // women's collection with its 1+1 running and in stock
+  // The cart holds an ODD number of collection pieces and this one can still be added: it completes that 1+1 (box 2 hides, the
+  // button adds this piece alone). Follows the cart live; "sau începeți o nouă pereche 1+1" turns it off. Lei, like the cart.
+  const cartCollection = cartItems.filter((i) => isCollectionSlug(i.slug));
+  const oddInCart = collectionUnits(cartItems.map((i) => ({ slug: i.slug, quantity: i.quantity }))) % 2 === 1;
+  const joinWith = twoBoxes && oddInCart && !newPair && freeLeft(product.slug) >= 1 ? cartCollection[cartCollection.length - 1] ?? null : null;
+  const joinCalc = joinWith
+    ? opoJoinDelta(cartItems.map((i) => ({ slug: i.slug, unit: i.ron, quantity: i.quantity, onSale: i.onSale })), { slug: product.slug, unit: ron, quantity: 1, onSale: ronOriginalOf(product) !== undefined })
+    : null;
+  const joinPrice = joinCalc ? (
+    <span data-testid="join-price" className="flex items-baseline gap-2">
+      {joinCalc.delta < ron && <span className="font-sans text-sm text-ink-muted line-through">{fmtRON(ron)}</span>}
+      <span className="font-serif text-xl text-navy leading-none">+{fmtRON(Math.max(0, joinCalc.delta))}</span>
+    </span>
+  ) : null;
   // Nothing picked yet (and something is pickable): the buttons point to box 2 instead of adding.
-  const mustChoose = twoBoxes && !picked && freeItems.some((i) => i.available);
+  const mustChoose = twoBoxes && !joinWith && !picked && freeItems.some((i) => i.available);
   const chooseLabel = mustChoose ? CHOOSE_LABEL_RO : null;
   const goToBox2 = () => document.querySelector("[data-testid=box-second]")?.scrollIntoView({ behavior: "smooth", block: "start" });
   const cta = (
@@ -391,8 +413,15 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         ? "STOC EPUIZAT"
         : added
         ? "✓ ADĂUGAT ÎN COȘ"
+        : joinWith ? JOIN_RO.button
         : chooseLabel ?? pairLabel ?? "ADAUGĂ ÎN COȘ"}
     </button>
+    {joinWith && !added && (
+      <button type="button" data-testid="new-pair" onClick={() => setNewPair(true)}
+        className="block mx-auto -mt-1 py-2 px-3 font-sans text-xs text-ink-muted underline underline-offset-2 hover:text-charcoal">
+        {JOIN_RO.newPair}
+      </button>
+    )}
     {chooseLabel && !added && (
       <button type="button" data-testid="add-one" onClick={handleAdd}
         className="block mx-auto -mt-1 py-2 px-3 font-sans text-xs text-ink-muted underline underline-offset-2 hover:text-charcoal">
@@ -530,6 +559,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           totalText={picked ? fmtRON(opoPairPrice(ron, pickedRon)) : fmtRON(ron)}
           struckText={picked ? fmtRON(ron + pickedRon) : null}
           cta={cta}
+          join={joinWith && joinCalc && joinPrice ? { line: JOIN_RO.line(joinWith.name, fmtRON(joinCalc.saving)), price: joinPrice } : null}
         />
       ) : inCollection && cta}
 
@@ -610,7 +640,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         </p>
       )}
 
-      <RoStickyCartBar product={product} effectiveInStock={effectiveInStock} onAdd={handleAdd} pairLabel={pairLabel} chooseLabel={chooseLabel} onChoose={goToBox2} />
+      <RoStickyCartBar product={product} effectiveInStock={effectiveInStock} onAdd={handleAdd} pairLabel={joinWith ? JOIN_RO.button : pairLabel} chooseLabel={chooseLabel} onChoose={goToBox2} priceNode={joinPrice} />
 
       {/* Trust strip */}
       <div className="grid grid-cols-2 gap-0 border border-border">

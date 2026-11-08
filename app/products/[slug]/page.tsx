@@ -183,7 +183,7 @@ export default async function ProductPage({ params }: Props) {
         )}
 
         {/* Jewellery description - two product images + quality comparison (18K PVD gold: not on a silver piece) */}
-        {product.category === "jewellery" && product.metal !== "silver" && <JewelleryDescription stamp={!isCollectionSlug(product.slug)} />}
+        {product.category === "jewellery" && product.metal !== "silver" && <JewelleryDescription stamp={!isCollectionSlug(product.slug)} comparison={!isCollectionSlug(product.slug)} />}
 
         {/* Leather description - material & craft Q&A */}
         {(product.category === "wallets" || product.category === "cardholders" || product.category === "bags") && !product.hideLeatherDescription && (
