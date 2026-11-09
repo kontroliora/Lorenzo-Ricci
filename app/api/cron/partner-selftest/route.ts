@@ -1,5 +1,6 @@
 // mail-policy: internal
 import { NextRequest, NextResponse } from "next/server";
+import { COLLECTION_PIECES } from "@/lib/new-collection";
 import { kv } from "@vercel/kv";
 import { cronAuthorized } from "@/lib/cron-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -21,7 +22,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const RUN_ID = "2026-11-09-c";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind.
+const RUN_ID = "2026-11-09-d";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18.
 const TEST_PARTNER = "dserbezov7@gmail.com";
 const REAL_PARTNER = { email: "dejvidvisev99@gmail.com", name: "Партньор бижута" };   // invited only when every check passed
 const TEST_CUSTOMER_EMAIL = "partner-selftest-customer@example.com";   // must never appear in anything the partner gets
@@ -119,7 +120,7 @@ export async function GET(req: NextRequest) {
 
     const pieces = await call("/api/partner/jewellery");
     const pcs = (pieces.json as { pieces?: unknown[] })?.pieces ?? [];
-    check("Бижута: 200 with 24 pieces", pieces.status === 200 && pcs.length === 24, { status: pieces.status, n: pcs.length });
+    check(`Бижута: 200 with all ${COLLECTION_PIECES.length} pieces`, pieces.status === 200 && pcs.length === COLLECTION_PIECES.length, { status: pieces.status, n: pcs.length });
 
     const set = await call(`/api/partner/orders/${T("COD1")}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "called", note: "тест бележка" }) });
     check("status Обадено + note: 200", set.status === 200 && (set.json as { order?: PartnerOrderView })?.order?.state.status === "called", set.status);
