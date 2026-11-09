@@ -1,5 +1,6 @@
 // mail-policy: internal
 import { Resend } from "resend";
+import { EMAIL_IVORY, EMAIL_NAVY, emailHead, emailHeaderRow } from "./email-layout";
 import { NEW_COLLECTION_SLUGS } from "./new-collection";
 import { onePlusOneOfOrder } from "./one-plus-one";
 import { isRoOfficeMethod } from "./ro/config";
@@ -56,7 +57,7 @@ export function buildPartnerEmail(o: PartnerOrder): string | null {
   const where = [o.delivery.address, o.delivery.city, o.delivery.postCode].map((s) => String(s ?? "").trim()).filter(Boolean)
     .filter((s, i, a) => a.findIndex((x) => x.toLowerCase() === s.toLowerCase()) === i).join(", ");
   const row = (k: string, v: string, shade: boolean) =>
-    `<tr${shade ? ' style="background:#f3f4f6"' : ""}><td style="padding:9px 12px;font-weight:600;width:160px;vertical-align:top">${k}</td><td style="padding:9px 12px">${v}</td></tr>`;
+    `<tr${shade ? ' style="background:#faf7f1"' : ""}><td style="padding:9px 12px;font-weight:600;width:160px;vertical-align:top">${k}</td><td style="padding:9px 12px">${v}</td></tr>`;
   const lines = part.items.map((i) => `<tr>
       <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb">${esc(i.name ?? "-")}</td>
       <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;font-family:monospace;font-size:12px;color:#555">${esc(i.sku ?? "-")}</td>
@@ -65,11 +66,11 @@ export function buildPartnerEmail(o: PartnerOrder): string | null {
     </tr>`).join("");
   const payment = o.payment === "card" ? "Карта (платена онлайн)" : "Наложен платеж";
 
-  return `<!DOCTYPE html><html lang="bg"><head><meta charset="UTF-8"><title>${esc(partnerSubject(o))}</title></head>
-<body style="margin:0;padding:24px;font-family:Arial,sans-serif;background:#f9fafb;color:#111">
- <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)">
-  <div style="background:#0a0e1f;padding:20px 28px;color:#fff"><strong style="letter-spacing:.2em">LORENZO RICCI</strong>
-   <span style="opacity:.65;margin-left:10px">${o.market === "ro" ? "🇷🇴 Румъния" : "🇧🇬 България"} · Поръчка ${esc(o.orderRef)}</span></div>
+  return `<!DOCTYPE html><html lang="bg">${emailHead(esc(partnerSubject(o)))}
+<body style="margin:0;padding:24px;font-family:Arial,sans-serif;background:${EMAIL_IVORY};color:${EMAIL_NAVY}">
+ <div style="max-width:640px;margin:0 auto;background:#ffffff;overflow:hidden">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${emailHeaderRow(640)}</table>
+  <div style="padding:0 28px 14px;text-align:center;font-size:13px;color:#6b6456;border-bottom:1px solid #e8dfc8;margin:0 28px">${o.market === "ro" ? "🇷🇴 Румъния" : "🇧🇬 България"} · Поръчка ${esc(o.orderRef)}</div>
   <div style="padding:28px">
    <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px">
     ${row("Номер", `<strong>${esc(o.orderRef)}</strong>`, true)}
@@ -83,10 +84,10 @@ export function buildPartnerEmail(o: PartnerOrder): string | null {
    </table>
    <p style="margin:0 0 10px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#6b7280">Дамска колекция</p>
    <table style="width:100%;border-collapse:collapse;font-size:14px">
-    <thead><tr style="background:#0a0e1f;color:#fff"><th style="padding:9px 12px;text-align:left">Продукт</th><th style="padding:9px 12px;text-align:left">SKU</th><th style="padding:9px 12px">Бр.</th><th style="padding:9px 12px;text-align:right">Цена</th></tr></thead>
+    <thead><tr style="background:${EMAIL_IVORY};color:${EMAIL_NAVY};border-bottom:1px solid #e8dfc8"><th style="padding:9px 12px;text-align:left">Продукт</th><th style="padding:9px 12px;text-align:left">SKU</th><th style="padding:9px 12px">Бр.</th><th style="padding:9px 12px;text-align:right">Цена</th></tr></thead>
     <tbody>${lines}</tbody>
     <tfoot>${part.opo > 0 ? `<tr><td colspan="3" style="padding:9px 12px;color:#047857">1+1 (второто бижу безплатно)</td><td style="padding:9px 12px;text-align:right;color:#047857">-${esc(money(part.opo, o.market))}</td></tr>` : ""}
-     <tr style="background:#f3f4f6;font-weight:700"><td colspan="3" style="padding:10px 12px">ОБЩО (след 1+1)</td><td style="padding:10px 12px;text-align:right">${esc(money(part.total, o.market))}</td></tr></tfoot>
+     <tr style="background:#faf7f1;font-weight:700"><td colspan="3" style="padding:10px 12px">ОБЩО (след 1+1)</td><td style="padding:10px 12px;text-align:right">${esc(money(part.total, o.market))}</td></tr></tfoot>
    </table>
   </div>
  </div>

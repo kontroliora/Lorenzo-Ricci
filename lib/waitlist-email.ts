@@ -5,6 +5,7 @@
 // (navy header, cream ground, Georgia serif, #e8dfc8 dividers). English copy.
 //
 // DRAFT copy - pending owner polish of the luxury tone.
+import { emailHead, emailHeaderRow } from "@/lib/email-layout";
 
 export const waitlistSubject = "A note on your Lorenzo Ricci order";
 
@@ -21,11 +22,7 @@ export function buildWaitlistEmail(opts: {
 
   return `<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>A note on your Lorenzo Ricci order</title>
-</head>
+${emailHead("A note on your Lorenzo Ricci order")}
 <body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:40px 16px">
     <tr>
@@ -33,11 +30,8 @@ export function buildWaitlistEmail(opts: {
         <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;max-width:560px;width:100%">
 
           <!-- Header -->
-          <tr>
-            <td style="background:#0a0e1f;padding:36px 40px;text-align:center">
-              <img src="https://lorenzo-ricci.com/email-logo.png" alt="Lorenzo Ricci" width="200" style="max-width:200px;height:auto;display:block;margin:0 auto">
-            </td>
-          </tr>
+          ${emailHeaderRow(560)}
+          <tr><td style="padding:0 40px;line-height:0;font-size:0"><div style="border-top:1px solid #e8dfc8"></div></td></tr>
 
           <!-- Body -->
           <tr>

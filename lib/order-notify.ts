@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { buildUserData, eventSourceUrl, mayPostPurchase, sendCapiEvents, type CapiContext } from "@/lib/meta-capi";
 import { mayEmail, type MailKind, type MailLang } from "./mail-policy";
 import { onePlusOneOfOrder } from "./one-plus-one";
+import { emailHead, emailHeaderRow } from "@/lib/email-layout";
 
 // The 1+1 part of the order's discounts (lib/one-plus-one.ts), read back from its own lines: lines - goods after discounts - promo.
 const onePlusOneOf = (order: Record<string, unknown>): number => {
@@ -162,11 +163,7 @@ export function buildCustomerEmail(order: Record<string, unknown>, opts: { paidB
 
   return `<!DOCTYPE html>
 <html lang="bg">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Вашата поръчка от Lorenzo Ricci</title>
-</head>
+${emailHead("Вашата поръчка от Lorenzo Ricci")}
 <body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,sans-serif">
 
   <!-- Wrapper -->
@@ -176,11 +173,8 @@ export function buildCustomerEmail(order: Record<string, unknown>, opts: { paidB
         <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;max-width:560px;width:100%">
 
           <!-- Header -->
-          <tr>
-            <td style="background:#0a0e1f;padding:36px 40px;text-align:center">
-              <img src="https://lorenzo-ricci.com/email-logo.png" alt="Lorenzo Ricci" width="200" style="max-width:200px;height:auto;display:block;margin:0 auto">
-            </td>
-          </tr>
+          ${emailHeaderRow(560)}
+          <tr><td style="padding:0 40px;line-height:0;font-size:0"><div style="border-top:1px solid #e8dfc8"></div></td></tr>
 
           <!-- Body -->
           <tr>

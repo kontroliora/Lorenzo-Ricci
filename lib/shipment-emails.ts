@@ -1,6 +1,7 @@
 // Transactional shipment / uncollected-parcel emails (Resend). Plain, personal,
 // premium - designed to land in the inbox, not read as marketing. No caps for
 // emphasis, no exclamation, no "buy". One CTA (own /track page), one logo.
+import { emailHead, emailHeaderRow } from "@/lib/email-layout";
 
 export interface ShipmentItem {
   name: string;
@@ -37,15 +38,13 @@ const NAVY = "#0a0e1f";
 
 function shell(d: ShipmentEmailData, preheader: string, bodyHtml: string): string {
   return `<!DOCTYPE html>
-<html lang="bg"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark"><title>Lorenzo Ricci</title><style>@media (prefers-color-scheme: dark){.lr-header{background-color:${NAVY}!important}}[data-ogsc] .lr-header,[data-ogsb] .lr-header{background-color:${NAVY}!important}</style></head>
+<html lang="bg">${emailHead("Lorenzo Ricci")}
 <body style="margin:0;padding:0;background:#f5f0e8;font-family:Arial,Helvetica,sans-serif">
 <span style="display:none;max-height:0;overflow:hidden;opacity:0">${preheader}</span>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:40px 16px">
   <tr><td align="center">
     <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#fff;max-width:560px;width:100%">
-      <tr><td class="lr-header" bgcolor="${NAVY}" style="background:${NAVY};background-color:${NAVY};padding:34px 40px;text-align:center">
-        <img src="https://lorenzo-ricci.com/email-logo-dark.png" alt="Lorenzo Ricci" width="205" style="max-width:205px;height:auto;display:block;margin:0 auto;border:0">
-      </td></tr>
+      ${emailHeaderRow(560)}
       <tr><td style="padding:0;line-height:0;font-size:0"><div style="height:2px;background:linear-gradient(to right,#b8944a,#d4af6a,#e8c878,#d4af6a,#b8944a)"></div></td></tr>
       <tr><td style="padding:40px 40px 8px">${bodyHtml}</td></tr>
       <tr><td style="padding:24px 40px 40px;text-align:center">
@@ -66,8 +65,8 @@ const DIV = `<div style="border-top:1px solid #e8dfc8;margin:26px 0"></div>`;
 
 function trackButton(d: ShipmentEmailData): string {
   return `
-  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 4px"><tr><td align="center" style="background:${NAVY}">
-    <a href="${d.trackUrl}" style="display:inline-block;color:#fff;font-size:11px;letter-spacing:.22em;text-transform:uppercase;text-decoration:none;padding:14px 40px">Проследете пратката</a>
+  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 4px"><tr><td align="center" class="lr-dark" bgcolor="${NAVY}" style="background:${NAVY};background-color:${NAVY};background-image:linear-gradient(${NAVY},${NAVY})">
+    <a href="${d.trackUrl}" class="lr-light" style="display:inline-block;color:#ffffff;font-size:11px;letter-spacing:.22em;text-transform:uppercase;text-decoration:none;padding:14px 40px">Проследете пратката</a>
   </td></tr></table>`;
 }
 

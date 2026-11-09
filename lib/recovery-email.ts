@@ -1,4 +1,5 @@
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
+import { emailHead, emailHeaderRow } from "@/lib/email-layout";
 export interface RecoveryCartItem {
   name:        string;
   sku?:        string;
@@ -51,12 +52,7 @@ export function buildRecoveryEmail(session: RecoverySession): string {
 
   return `<!DOCTYPE html>
 <html lang="bg" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="color-scheme" content="light">
-  <title>Вашата количка ви очаква. Lorenzo Ricci</title>
-</head>
+${emailHead("Вашата количка ви очаква. Lorenzo Ricci")}
 <body style="margin:0;padding:0;background:#ede9e0;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
 
   <!--[if mso]><table width="100%" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
@@ -69,14 +65,8 @@ export function buildRecoveryEmail(session: RecoverySession): string {
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0"
                style="max-width:560px;width:100%;background:#ffffff;box-shadow:0 2px 24px rgba(15,12,8,.09)">
 
-          <!-- HEADER: dark navy -->
-          <tr>
-            <td style="background:#0a0e1f;padding:36px 48px 30px;text-align:center">
-              <img src="https://lorenzo-ricci.com/email-logo.png" alt="Lorenzo Ricci"
-                   width="180" height="auto"
-                   style="display:block;margin:0 auto;max-width:180px;height:auto;border:0">
-            </td>
-          </tr>
+          <!-- HEADER: white block, navy logo (lib/email-layout.ts) -->
+          ${emailHeaderRow(560)}
 
           <!-- Gold accent line -->
           <tr>
@@ -130,8 +120,8 @@ export function buildRecoveryEmail(session: RecoverySession): string {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center" style="padding:0 0 40px">
-                    <a href="${recoverUrl}"
-                       style="display:inline-block;background:#0a0e1f;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:400;letter-spacing:.3em;text-transform:uppercase;text-decoration:none;padding:16px 52px;border:none;mso-padding-alt:0">
+                    <a href="${recoverUrl}" class="lr-dark lr-light"
+                       style="display:inline-block;background:#0a0e1f;background-color:#0a0e1f;background-image:linear-gradient(#0a0e1f,#0a0e1f);color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:400;letter-spacing:.3em;text-transform:uppercase;text-decoration:none;padding:16px 52px;border:none;mso-padding-alt:0">
                       <!--[if mso]><i style="letter-spacing:.3em;mso-font-width:-100%">&nbsp;</i><![endif]-->
                       Завърши поръчката
                       <!--[if mso]><i style="letter-spacing:.3em;mso-font-width:-100%">&nbsp;</i><![endif]-->

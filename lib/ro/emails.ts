@@ -34,6 +34,7 @@ function shell(title: string, bodyHtml: string, ref: string): string {
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:40px 16px"><tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;max-width:560px;width:100%">
   ${emailHeaderRow(560)}
+  <tr><td style="padding:0 40px;line-height:0;font-size:0"><div style="border-top:1px solid #e8dfc8"></div></td></tr>
   <tr><td style="padding:40px 40px 0">${bodyHtml}</td></tr>
   <tr><td style="padding:32px 40px 40px;text-align:center"><div style="border-top:1px solid #e8dfc8;padding-top:28px">
     <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:13px;color:${NAVY};letter-spacing:.08em">LORENZO RICCI</p>
@@ -95,7 +96,7 @@ const paymentRow = (total: number, payment: RoPayment, labelWidth: number) =>
 export function buildRoShippedEmail(d: { orderRef: string; firstName: string; items: RoOrderLine[]; total: number; payment: RoPayment; awb: string; courierLabel?: string; trackUrl?: string }): string {
   const courier = d.courierLabel || RO_COURIER_LABEL;
   const track = d.trackUrl
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 4px"><tr><td align="center" style="background:${NAVY}"><a href="${esc(d.trackUrl)}" style="display:inline-block;color:#fff;font-size:11px;letter-spacing:.22em;text-transform:uppercase;text-decoration:none;padding:14px 40px">Urmăriți coletul</a></td></tr></table>`
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 4px"><tr><td align="center" class="lr-dark" bgcolor="${NAVY}" style="background:${NAVY};background-color:${NAVY};background-image:linear-gradient(${NAVY},${NAVY})"><a href="${esc(d.trackUrl)}" class="lr-light" style="display:inline-block;color:#fff;font-size:11px;letter-spacing:.22em;text-transform:uppercase;text-decoration:none;padding:14px 40px">Urmăriți coletul</a></td></tr></table>`
     : "";
   return shell("Comanda a fost expediată", `
     <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Bună ziua, ${esc(d.firstName || "client")},</p>
