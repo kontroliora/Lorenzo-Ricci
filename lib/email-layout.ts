@@ -13,8 +13,10 @@
 export const EMAIL_SITE = "https://lorenzo-ricci.com";
 export const EMAIL_NAVY = "#0a0e1f";
 export const EMAIL_IVORY = "#f5f0e8";
-export const EMAIL_LOGO_NAVY = `${EMAIL_SITE}/email-logo-navy.png`;
-export const EMAIL_LOGO_WHITE = `${EMAIL_SITE}/email-logo-white.png`;
+// Images load straight from www: the bare domain answers 308 -> www, and some mail image proxies do not follow redirects.
+const EMAIL_ASSETS = "https://www.lorenzo-ricci.com";
+export const EMAIL_LOGO_NAVY = `${EMAIL_ASSETS}/email-logo-navy.png`;
+export const EMAIL_LOGO_WHITE = `${EMAIL_ASSETS}/email-logo-white.png`;
 
 /** Background for a dark block (a button): the colour plus a gradient of the same colour. */
 export const darkBg = (hex = EMAIL_NAVY): string => `background:${hex};background-color:${hex};background-image:linear-gradient(${hex},${hex})`;
