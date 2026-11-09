@@ -92,7 +92,18 @@ export async function sendWithRetry(msg: { to: string[]; subject: string; html: 
   throw last instanceof Error ? last : new Error(String(last));
 }
 
-export type PartnerNotifyResult = "sent" | "not-jewellery" | "not-paid" | "already-sent" | "no-recipient" | "not-found" | "failed";
+export type PartnerNotifyResult = "sent" | "not-jewellery" | "not-paid" | "already-sent" | "paused" | "no-recipient" | "not-found" | "failed";
+
+/** orders.partner_email_error of an order whose e-mail was held back because the owner had switched the partner OFF. The Партньор
+ *  tab lists these when he is back on: the owner chooses "send the missed orders" or not (never sent automatically). */
+export const PARTNER_PAUSED = "paused: partner switched off";
+export const PARTNER_SKIPPED = "skipped by the owner";
+
+/** A partner who would get the e-mails but is switched off (enabled = false, notify on). */
+async function partnerSwitchedOff(): Promise<boolean> {
+  const { data } = await supabaseAdmin().from("partners").select("email").eq("enabled", false).eq("notify", true).limit(1);
+  return !!data?.length;
+}
 
 /**
  * The partner e-mail of one order, at most once. Reads the SAVED row (so card orders are checked for PAID here as well).
@@ -109,10 +120,17 @@ export async function notifyPartnerOnce(ref: string, opts: { to?: string[] } = {
     if (!partnerVisible(r)) return "not-jewellery";
     if (r.partner_email_sent_at) return "already-sent";
     const to = opts.to ?? await recipients();   // opts.to: the self-test only (its test address, never the real partner)
-    if (!to.length) return "no-recipient";
+    if (!to.length) {
+      // switched off by the owner: not sent, but logged on the order, for the owner's "send missed orders" choice
+      if (!opts.to && (await partnerSwitchedOff())) {
+        await sb.from("orders").update({ partner_email_error: PARTNER_PAUSED }).eq("order_ref", ref).is("partner_email_sent_at", null);
+        return "paused";
+      }
+      return "no-recipient";
+    }
 
     // claim: only the call that moves partner_email_sent_at from NULL sends
-    const claim = await sb.from("orders").update({ partner_email_sent_at: new Date().toISOString() })
+    const claim = await sb.from("orders").update({ partner_email_sent_at: new Date().toISOString(), partner_email_error: null })
       .eq("order_ref", ref).is("partner_email_sent_at", null).select("order_ref");
     if (claim.error) throw new Error(`claim: ${claim.error.message}`);
     if (!claim.data?.length) return "already-sent";

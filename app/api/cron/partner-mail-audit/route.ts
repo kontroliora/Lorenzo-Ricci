@@ -6,56 +6,46 @@ import { isCollectionLine } from "@/lib/partner/orders";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
 
-// ONE-OFF (owner, 09.11.2026): every e-mail Resend sent to the partner since 08.11.2026 00:00 Sofia, with the order it was about
-// and whether that order holds a women's-collection piece (by product id). Logged once as [partner-mail-audit], then removed.
-const RUN = "partner-mail-audit:2026-11-09-a";
-const PARTNER = "dejvidvisev99@gmail.com";
-const SINCE = "2026-11-07T22:00:00.000Z";
+// ONE-OFF (owner, 09.11.2026): which partner e-mails went out for orders WITHOUT a women's-collection piece. The Resend key is
+// send-only (no log access), so from our own data:
+//   A. the only unfiltered sender: 88c291f, live 08.11 ~17:01-17:17 UTC (deploys 17:00 -> 17:16). Every order placed then, and
+//      every card order paid then, got a partner e-mail.
+//   B. every order the new path sent (orders.partner_email_sent_at).
+// The old filtered sender (7b6c2e6, until the rebuild) and the backfill skipped orders without a collection piece (by slug).
+const RUN = "partner-mail-audit:2026-11-09-b";
+const A_FROM = "2026-11-08T16:59:00.000Z", A_TO = "2026-11-08T17:20:00.000Z";
 
-type Mail = { id: string; to: string[] | string; subject: string; created_at: string; last_event?: string; scheduled_at?: string | null };
+type O = Record<string, unknown>;
+const view = (o: O, path: string) => {
+  const lines = Array.isArray(o.items) ? (o.items as O[]) : [];
+  const coll = lines.some(isCollectionLine);
+  return {
+    path, ref: o.order_ref, created: o.created_at, paid: o.paid_at ?? null, pay: `${o.payment_method}/${o.payment_status}`, status: o.status,
+    hasCollection: coll, mixed: coll && lines.some((l) => !l.gift && !isCollectionLine(l)),
+    lines: lines.map((l) => `${l.slug}${l.gift ? "(gift)" : ""}`),
+  };
+};
 
 export async function GET(req: NextRequest) {
   if (!cronAuthorized(req.headers.get("authorization"))) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (await kv.get(RUN)) return NextResponse.json({ ok: true, skipped: "done" });
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return NextResponse.json({ ok: false, error: "RESEND_API_KEY not set" });
-
-  const mails: Mail[] = [];
-  let after: string | undefined;
-  let pages = 0, error: string | undefined;
-  while (pages < 60) {
-    const r = await fetch(`https://api.resend.com/emails?limit=100${after ? `&after=${after}` : ""}`, { headers: { Authorization: `Bearer ${key}` }, cache: "no-store" });
-    if (!r.ok) { error = `Resend list HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`; break; }
-    const j = (await r.json()) as { data?: Mail[]; has_more?: boolean };
-    const data = j.data ?? [];
-    pages++;
-    mails.push(...data);
-    if (!j.has_more || !data.length || data[data.length - 1].created_at < SINCE) break;
-    after = data[data.length - 1].id;
-  }
-  const mine = mails.filter((m) => m.created_at >= SINCE && (Array.isArray(m.to) ? m.to : [m.to]).some((t) => String(t).toLowerCase().includes(PARTNER)));
-
-  const refs = [...new Set(mine.map((m) => m.subject.match(/LR(?:RO)?-[A-Z0-9]+/)?.[0]).filter(Boolean) as string[])];
-  const orders = new Map<string, Record<string, unknown>>();
-  if (refs.length) {
-    const q = await supabaseAdmin().from("orders").select("order_ref, created_at, items, payment_method, payment_status, status").in("order_ref", refs);
-    for (const o of q.data ?? []) orders.set(String(o.order_ref), o);
-  }
-  const rows = mine.sort((a, b) => a.created_at.localeCompare(b.created_at)).map((m) => {
-    const ref = m.subject.match(/LR(?:RO)?-[A-Z0-9]+/)?.[0] ?? null;
-    const o = ref ? orders.get(ref) : undefined;
-    const lines = Array.isArray(o?.items) ? (o!.items as Record<string, unknown>[]) : [];
-    return {
-      sent: m.created_at, scheduled: m.scheduled_at ?? null, status: m.last_event ?? null, subject: m.subject, ref,
-      orderAt: o?.created_at ?? null, pay: o ? `${o.payment_method}/${o.payment_status}` : null,
-      slugs: lines.map((l) => `${l.slug}${l.gift ? "(gift)" : ""}`),
-      hasCollection: o ? lines.some(isCollectionLine) : null,
-    };
-  });
-  const out = { scanned: mails.length, pages, error, toPartner: rows.length, wrong: rows.filter((r) => r.hasCollection === false).map((r) => r.ref), rows };
+  const sb = supabaseAdmin();
+  const cols = "order_ref, created_at, paid_at, items, payment_method, payment_status, status, partner_email_sent_at";
+  const [placed, paid, sent] = await Promise.all([
+    sb.from("orders").select(cols).gte("created_at", A_FROM).lt("created_at", A_TO).order("created_at"),
+    sb.from("orders").select(cols).gte("paid_at", A_FROM).lt("paid_at", A_TO).order("paid_at"),
+    sb.from("orders").select(cols).not("partner_email_sent_at", "is", null).order("partner_email_sent_at"),
+  ]);
+  const err = placed.error?.message ?? paid.error?.message ?? sent.error?.message;
+  // A: COD orders placed in the window (sent at once); card orders only when PAID in the window (the e-mail went out on payment)
+  const a = [
+    ...((placed.data ?? []) as O[]).filter((o) => o.payment_method !== "card").map((o) => view(o, "A: unfiltered 08.11 (new order)")),
+    ...((paid.data ?? []) as O[]).filter((o) => o.payment_method === "card").map((o) => view(o, "A: unfiltered 08.11 (card paid)")),
+  ];
+  const b = ((sent.data ?? []) as O[]).map((o) => ({ ...view(o, "B: new path"), sentAt: o.partner_email_sent_at }));
+  const out = { error: err, windowA: [A_FROM, A_TO], a, b, wrong: [...a, ...b].filter((r) => !r.hasCollection).map((r) => `${r.ref} (${r.path})`) };
   console.log("[partner-mail-audit]", JSON.stringify(out));
-  if (!error) await kv.set(RUN, 1, { ex: 60 * 60 * 24 * 7 });
+  if (!err) await kv.set(RUN, 1, { ex: 60 * 60 * 24 * 7 });
   return NextResponse.json(out);
 }

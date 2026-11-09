@@ -5,8 +5,10 @@ import { kv } from "@vercel/kv";
 import { cronAuthorized } from "@/lib/cron-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { PARTNER_COOKIE, signSession } from "@/lib/partner/access";
-import { notifyPartnerOnce, sendPartnerLoginEmail } from "@/lib/partner/email";
-import { issueLoginToken } from "@/lib/partner/access";
+import { randomBytes } from "node:crypto";
+import bcrypt from "bcryptjs";
+import { notifyPartnerOnce } from "@/lib/partner/email";
+import { clearPasswordLocks } from "@/lib/partner/password";
 import { PARTNER_VIEW_KEYS, type PartnerOrderView } from "@/lib/partner/orders";
 
 // ONE-OFF self-test of the partner role (owner, 09.11.2026). Runs once per RUN_ID (KV flag), from Vercel Cron:
@@ -22,9 +24,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const RUN_ID = "2026-11-09-f";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden.
+const RUN_ID = "2026-11-09-g";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation.
 const TEST_PARTNER = "dserbezov7@gmail.com";
-const REAL_PARTNER = { email: "dejvidvisev99@gmail.com", name: "Партньор бижута" };   // invited only when every check passed
 const TEST_CUSTOMER_EMAIL = "partner-selftest-customer@example.com";   // must never appear in anything the partner gets
 const T = (s: string) => `LR-TST${s}`;
 
@@ -76,7 +77,11 @@ export async function GET(req: NextRequest) {
   if (!cronAuthorized(req.headers.get("authorization"))) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const DONE = `partner-selftest:${RUN_ID}`;
   if (await kv.get(DONE)) return NextResponse.json({ ok: true, skipped: "done" });
+  // run -g needs partners.password_hash (supabase/partner_password.sql): wait for it, without using up the run
+  const col = await supabaseAdmin().from("partners").select("password_hash").limit(1);
+  if (col.error) return NextResponse.json({ ok: true, waiting: `partners.password_hash: ${col.error.message}` });
   if (!(await kv.set(`${DONE}:lock`, 1, { nx: true, ex: 300 }))) return NextResponse.json({ ok: true, skipped: "running" });
+  const TEST_PW = randomBytes(12).toString("base64url");   // this run's test password (hashed below, never logged)
 
   const origin = "https://www.lorenzo-ricci.com";
   const sb = supabaseAdmin();
@@ -86,7 +91,7 @@ export async function GET(req: NextRequest) {
   try {
     await cleanup();
     // notify false: a real order during the test must not reach the test address; the test's own e-mails go to it explicitly
-    const p = await sb.from("partners").insert({ email: TEST_PARTNER, name: "ТЕСТ партньор", enabled: true, notify: false, invited_at: new Date().toISOString() });
+    const p = await sb.from("partners").insert({ email: TEST_PARTNER, name: "ТЕСТ партньор", enabled: true, notify: false, invited_at: new Date().toISOString(), password_hash: bcrypt.hashSync(TEST_PW, 10) });
     if (p.error) throw new Error(`partners: ${p.error.message}`);
     const ins = await sb.from("orders").insert(testOrders(), { defaultToNull: false });   // a key missing in one row = column default, not NULL
     if (ins.error) throw new Error(`orders: ${ins.error.message}`);
@@ -115,7 +120,7 @@ export async function GET(req: NextRequest) {
       const r = await fetch(origin + path, { ...init, headers, redirect: "manual", cache: "no-store" });
       const text = await r.text();
       let json: unknown = null; try { json = JSON.parse(text); } catch { /* html */ }
-      return { status: r.status, json, text, location: r.headers.get("location") };
+      return { status: r.status, json, text, location: r.headers.get("location"), setCookie: r.headers.get("set-cookie") ?? "" };
     };
 
     const list = await call("/api/partner/orders?filter=all");
@@ -191,6 +196,44 @@ export async function GET(req: NextRequest) {
     await s403("old session after switching back on (revoked)", "/api/partner/orders?filter=all");
     const fresh = await call("/api/partner/orders?filter=new", { cookieValue: `${PARTNER_COOKIE}=${signSession(TEST_PARTNER, Date.now() + 1000)}` });
     check("new session after switching back on: 200", fresh.status === 200, fresh.status);
+
+    // ── password sign-in ──
+    await clearPasswordLocks(TEST_PARTNER);
+    const pw = (password: unknown, extra: Record<string, unknown> = {}) =>
+      call("/api/partner/password", { method: "POST", headers: j, body: JSON.stringify({ email: TEST_PARTNER, password, ...extra }), asPartner: false });
+    const good = await pw(TEST_PW);
+    const pwCookie = good.setCookie.match(new RegExp(`${PARTNER_COOKIE}=[^;]+`))?.[0] ?? "";
+    check("password: right one -> 200 + 30-day session cookie", good.status === 200 && !!pwCookie && /max-age=2592000/i.test(good.setCookie), { status: good.status, cookie: !!pwCookie });
+    const withPw = await call("/api/partner/orders?filter=all", { cookieValue: pwCookie });
+    check("password session: his orders 200", withPw.status === 200, withPw.status);
+    const pwAdmin = await call("/api/admin/inventory", { cookieValue: pwCookie });
+    check("password session: admin API still 403", pwAdmin.status === 403, pwAdmin.status);
+    const extraKey = await pw(TEST_PW, { role: "owner" });
+    check("password: extra field refused (400)", extraKey.status === 400, extraKey.status);
+    await sb.from("partners").update({ enabled: false, revoked_before: new Date().toISOString() }).eq("email", TEST_PARTNER);
+    const offSession = await call("/api/partner/orders?filter=all", { cookieValue: pwCookie });
+    check("switched off: password session 403", offSession.status === 403, offSession.status);
+    const offLogin = await pw(TEST_PW);
+    check("switched off: right password refused (401)", offLogin.status === 401, offLogin.status);
+    await sb.from("partners").update({ enabled: true }).eq("email", TEST_PARTNER);
+    const revoked = await call("/api/partner/orders?filter=all", { cookieValue: pwCookie });
+    check("back on: the old password session stays dead (403)", revoked.status === 403, revoked.status);
+    await new Promise((r) => setTimeout(r, 1100));
+    await clearPasswordLocks(TEST_PARTNER);
+    const again = await pw(TEST_PW);
+    check("back on: password sign-in works again (200)", again.status === 200, again.status);
+    // lockout: 5 wrong -> locked 15 min, even the right password (Telegram alert to the owner, naming the test address)
+    await clearPasswordLocks(TEST_PARTNER);
+    const firstWrong = await pw("wrong-password-1");
+    check("wrong password: 401, no reason given", firstWrong.status === 401 && !/locked|заключ/i.test(firstWrong.text), firstWrong.status);
+    for (let i = 2; i <= 5; i++) await pw(`wrong-password-${i}`);
+    const afterLock = await pw(TEST_PW);
+    check("after 5 wrong: locked, even the right password (429)", afterLock.status === 429, afterLock.status);
+    const lockKeyThere = await kv.get(`partner-pw-lock:email:${TEST_PARTNER}`);
+    check("lock lasts 15 min (KV key with TTL)", !!lockKeyThere && (await kv.ttl(`partner-pw-lock:email:${TEST_PARTNER}`)) > 800, lockKeyThere);
+    await clearPasswordLocks(TEST_PARTNER);
+    const pwInLogs = JSON.stringify(checks).includes(TEST_PW);
+    check("the test password appears in no check output", !pwInLogs);
   } catch (e) {
     check("run", false, e instanceof Error ? e.message : String(e));
   } finally {
@@ -198,18 +241,8 @@ export async function GET(req: NextRequest) {
     await kv.del(`${DONE}:lock`).catch(() => {});
   }
   const failed = checks.filter((c) => !c.ok);
-  // 5. every check passed: the real partner is added and gets his invitation (owner: "then deploy and send him the invite")
-  let invite = "not sent (a check failed)";
-  const already = await sb.from("partners").select("invited_at").eq("email", REAL_PARTNER.email).maybeSingle();
-  if (already.data?.invited_at) invite = `not resent: ${REAL_PARTNER.email} was invited at ${already.data.invited_at}`;
-  else if (!failed.length) {
-    try {
-      const up = await sb.from("partners").upsert({ email: REAL_PARTNER.email, name: REAL_PARTNER.name, enabled: true, notify: true, invited_at: new Date().toISOString() }, { onConflict: "email" });
-      if (up.error) throw new Error(up.error.message);
-      await sendPartnerLoginEmail(REAL_PARTNER.email, await issueLoginToken(REAL_PARTNER.email, "invite"), true);
-      invite = `sent to ${REAL_PARTNER.email}`;
-    } catch (e) { invite = `FAILED: ${e instanceof Error ? e.message : String(e)}`; }
-  }
+  // No invitation from the self-test any more (owner, 09.11.2026): access only through the owner's toggle.
+  const invite = "none (the self-test never sends invitations)";
   const result = { run: RUN_ID, passed: checks.length - failed.length, failed: failed.length, invite, checks, views: seen };
   console.log("[partner-selftest]", JSON.stringify(result));
   await kv.set(DONE, { at: new Date().toISOString(), passed: result.passed, failed: result.failed }, { ex: 60 * 60 * 24 * 7 });

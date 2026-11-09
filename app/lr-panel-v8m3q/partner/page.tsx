@@ -4,18 +4,22 @@ import { isOwner } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { PARTNER_STATUS_LABEL, isPartnerStatus } from "@/lib/partner/orders";
 import { logout } from "../actions";
-import { InviteForm, PartnerToggle } from "./PartnerControls";
+import { AddPartnerForm, MissedOrders, PartnerToggle } from "./PartnerControls";
+import { PARTNER_PAUSED } from "@/lib/partner/email";
 
 export const dynamic = "force-dynamic";
 
-// Owner-only: the partner (women's jewellery) - the on/off toggle, the invitation and every status change he made.
+// Owner-only: the partner (women's jewellery) - the on/off toggle (no invitation e-mails), the order e-mails held back while he
+// was off (send or not), and every status change he made.
 export default async function PartnerAdminPage() {
   if (!(await isOwner())) redirect("/lr-panel-v8m3q/orders");
   const sb = supabaseAdmin();
-  const [partners, log] = await Promise.all([
+  const [partners, log, missed] = await Promise.all([
     sb.from("partners").select("email, name, enabled, notify, invited_at, last_login_at").order("created_at"),
     sb.from("partner_status_log").select("order_ref, old_status, new_status, old_note, new_note, email, changed_at").order("changed_at", { ascending: false }).limit(100),
+    sb.from("orders").select("order_ref").is("partner_email_sent_at", null).eq("partner_email_error", PARTNER_PAUSED).order("created_at"),
   ]);
+  const anyOn = (partners.data ?? []).some((p) => p.enabled && p.notify);
   const fmt = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—");
   const lbl = (s?: string | null) => (isPartnerStatus(s) ? PARTNER_STATUS_LABEL[s] : s ?? "—");
 
@@ -40,14 +44,16 @@ export default async function PartnerAdminPage() {
               <div key={p.email} className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
                 <div>
                   <p className="text-sm font-semibold">{p.name ? `${p.name} · ` : ""}{p.email}</p>
-                  <p className="text-xs text-white/40 mt-1">Поканен {fmt(p.invited_at)} · последен вход {fmt(p.last_login_at)}</p>
+                  <p className="text-xs text-white/40 mt-1">Последен вход {fmt(p.last_login_at)}</p>
                 </div>
                 <PartnerToggle email={p.email} enabled={p.enabled} />
               </div>
             ))}
             {!partners.data?.length && <p className="p-4 text-sm text-white/40">Няма партньори.</p>}
           </div>
-          <div className="mt-4"><InviteForm /></div>
+          <div className="mt-4"><MissedOrders refs={(missed.data ?? []).map((m) => String(m.order_ref))} partnerOn={anyOn} /></div>
+          <div className="mt-4"><AddPartnerForm /></div>
+          <p className="mt-2 text-xs text-white/40">Никой не получава покана или линк по имейл от тук. Партньорът влиза с паролата си (или си иска линк сам от /partner/login), само докато е включен. Докато е спрян, имейлите за поръчки не се изпращат, а се записват тук.</p>
         </section>
         <section>
           <h2 className="text-xs tracking-[0.2em] uppercase text-white/40 mb-3">Промени от партньора (последни 100)</h2>

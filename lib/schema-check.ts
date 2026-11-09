@@ -7,7 +7,7 @@ import { PARTNER_ORDER_COLUMNS } from "./partner/orders";
 const cols = (s: string) => s.split(",").map((c) => c.trim()).filter(Boolean);
 export const EXPECTED_SCHEMA: Record<string, string[]> = {
   orders: [...cols(PARTNER_ORDER_COLUMNS), "email", "total", "partner_email_sent_at", "partner_email_error"],
-  partners: cols("email, name, enabled, notify, revoked_before, invited_at, last_login_at, created_at"),
+  partners: cols("email, name, enabled, notify, revoked_before, invited_at, last_login_at, created_at, password_hash"),
   partner_order_state: cols("order_ref, status, note, updated_at, updated_by"),
   partner_status_log: cols("id, order_ref, old_status, new_status, old_note, new_note, email, ip, changed_at"),
   wallet_inventory: cols("slug, stock"),
