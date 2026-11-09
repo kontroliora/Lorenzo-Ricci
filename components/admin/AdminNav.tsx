@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const TABS = [
@@ -38,9 +38,23 @@ export function AdminNav() {
 
   const tabs = owner ? [...TABS, ...OWNER_TABS] : TABS;
 
+  // Narrow screens: the row scrolls (scrollbar hidden); a fade on the right while more tabs are out of view.
+  const row = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    const el = row.current;
+    if (!el) return;
+    const update = () => setMore(el.scrollWidth - el.scrollLeft - el.clientWidth > 4);
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => { el.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+  }, [tabs.length]);
+
   return (
     <nav className="border-b border-white/10 bg-[#0a0e1f] sticky top-0 z-30">
-      <div className="max-w-5xl mx-auto px-2 sm:px-6 flex items-stretch overflow-x-auto">
+      <div className="relative max-w-5xl mx-auto">
+      <div ref={row} className="px-2 sm:px-6 flex items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map((t) => {
           const active = pathname.startsWith(t.href);
           return (
@@ -48,7 +62,7 @@ export function AdminNav() {
               key={t.href}
               href={t.href}
               aria-current={active ? "page" : undefined}
-              className={`flex-1 sm:flex-none text-center whitespace-nowrap px-6 py-4 font-sans text-sm sm:text-[13px] font-medium tracking-[0.14em] uppercase transition-colors border-b-2 ${
+              className={`flex-1 sm:flex-none text-center whitespace-nowrap px-6 xl:px-4 py-4 font-sans text-sm sm:text-[13px] font-medium tracking-[0.14em] xl:tracking-[0.1em] uppercase transition-colors border-b-2 ${
                 active
                   ? "text-white border-white bg-white/[0.04]"
                   : "text-white/40 border-transparent hover:text-white/80 hover:bg-white/[0.02]"
@@ -69,6 +83,8 @@ export function AdminNav() {
         >
           Клиенти
         </Link>
+      </div>
+      <div aria-hidden className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[#0a0e1f] to-transparent transition-opacity ${more ? "opacity-100" : "opacity-0"}`} />
       </div>
     </nav>
   );

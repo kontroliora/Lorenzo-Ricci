@@ -42,9 +42,20 @@ const qty = (l: Line) => Math.max(1, Math.floor(Number(l.quantity ?? l.qty ?? 1)
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const linesOf = (row: Row): Line[] => (Array.isArray(row.items) ? (row.items as Line[]) : []);
 
-/** The jewellery lines of an order (paid lines only): an order is his when it has at least one. */
-export const jewelleryLines = (row: Row): Line[] =>
-  linesOf(row).filter((l) => !l.gift && typeof l.slug === "string" && NEW_COLLECTION_SLUGS.has(l.slug));
+/**
+ * Is this order line a women's-collection piece? STRICT, by product id only: the line's slug must be one of the 18 collection
+ * product ids (COLLECTION_PIECES: Verdis, Noctis, Lumen, Linea, Solaris, Spira x type x metal), exactly. Never by name, category,
+ * price or prefix (men's jewellery shares "bracelet-" / "necklace-": bracelet-milano-forte, necklace-aurelius). A free gift line
+ * does not count. The ONLY test that decides whether the partner sees / is e-mailed an order.
+ */
+export const isCollectionLine = (l: unknown): boolean => {
+  if (!l || typeof l !== "object") return false;
+  const x = l as Line;
+  return !x.gift && typeof x.slug === "string" && NEW_COLLECTION_SLUGS.has(x.slug) && qty(x) > 0;
+};
+
+/** The collection lines of an order: an order is his when it has at least one. */
+export const jewelleryLines = (row: Row): Line[] => linesOf(row).filter(isCollectionLine);
 
 export const isRoRow = (row: Row): boolean => row.ship_country === "RO" || String(row.order_ref ?? "").startsWith("LRRO-");
 export const isCardRow = (row: Row): boolean => row.payment_method === "card";
@@ -133,7 +144,7 @@ export function partnerView(row: Row, state?: PartnerState): PartnerOrderView {
       place: where,
     },
     items: lines.map((l) => {
-      const p = typeof l.slug === "string" && NEW_COLLECTION_SLUGS.has(l.slug) ? pieceInfo(l.slug) : undefined;
+      const p = isCollectionLine(l) || (l.gift && typeof l.slug === "string" && NEW_COLLECTION_SLUGS.has(l.slug)) ? pieceInfo(String(l.slug)) : undefined;
       const gift = !!l.gift;
       return {
         model: p?.model ?? String(l.name ?? ""), color: p?.color ?? "", stone: p?.stone ?? "", qty: qty(l),

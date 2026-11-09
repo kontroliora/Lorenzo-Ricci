@@ -22,7 +22,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const RUN_ID = "2026-11-09-e";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite.
+const RUN_ID = "2026-11-09-f";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden.
 const TEST_PARTNER = "dserbezov7@gmail.com";
 const REAL_PARTNER = { email: "dejvidvisev99@gmail.com", name: "Партньор бижута" };   // invited only when every check passed
 const TEST_CUSTOMER_EMAIL = "partner-selftest-customer@example.com";   // must never appear in anything the partner gets
@@ -34,6 +34,9 @@ const VERDIS = line("necklace-verdis-gold", "Колие Verdis – Злато", 
 const LUMEN = line("bracelet-lumen-silver", "Гривна Lumen – Сребро", "LR-B-LUMEN-S", 109);
 const SPIRA = line("bracelet-spira-gold", "Гривна Spira – Злато", "LR-B-SPIRA-G", 115);
 const WATCH = line("chrono-black", "Chrono Black", "LR-CHRONO-BLK", 119);
+const CARDHOLDER = line("cardholder-ambra", "Картодържател Ambra", "LR-CH-AMBRA", 39);
+const MEN_BRACELET = line("bracelet-milano-forte", "Гривна Milano Forte", "LR-B-MILANO-F", 69);      // men's: same "bracelet-" prefix
+const MEN_NECKLACE = line("necklace-aurelius", "Колие Aurelius", "LR-N-AURELIUS", 79);           // men's: same "necklace-" prefix
 
 function testOrders(): Row[] {
   const base = {
@@ -51,6 +54,12 @@ function testOrders(): Row[] {
     { ...base, order_ref: T("CARD2"), name: "Тест Неплатена", phone: "0888 444 444", items: [LUMEN], subtotal: 109, total: 109, status: "pending_payment", payment_method: "card", payment_status: "pending" },
     // E: watch only -> nothing for him
     { ...base, order_ref: T("WATCH1"), name: "Тест Часовник", phone: "0888 555 555", items: [WATCH], subtotal: 119, total: 119, status: "new", payment_method: "cod", payment_status: "unpaid" },
+    // F: cardholder only -> nothing for him
+    { ...base, order_ref: T("CH1"), name: "Тест Картодържател", phone: "0888 666 666", items: [CARDHOLDER], subtotal: 39, total: 39, status: "new", payment_method: "cod", payment_status: "unpaid" },
+    // G: men's jewellery only (bracelet + necklace, the collection's prefixes) -> nothing for him
+    { ...base, order_ref: T("MEN1"), name: "Тест Мъжки бижута", phone: "0888 777 777", items: [MEN_BRACELET, MEN_NECKLACE], subtotal: 148, total: 148, status: "new", payment_method: "cod", payment_status: "unpaid" },
+    // H: watch + a women's piece as a free GIFT line only -> nothing for him (a gift is not a sale of the collection)
+    { ...base, order_ref: T("GIFT1"), name: "Тест Подарък", phone: "0888 888 888", items: [WATCH, { ...line("bracelet-lumen-gold", "Гривна Lumen – Злато", "LR-B-LUMEN-G", 0), gift: true }], subtotal: 119, total: 119, status: "new", payment_method: "cod", payment_status: "unpaid" },
   ];
 }
 const REFS = testOrders().map((o) => String(o.order_ref));
@@ -92,6 +101,9 @@ export async function GET(req: NextRequest) {
     check("e-mail mixed sent", mail[T("MIX1")] === "sent", mail[T("MIX1")]);
     check("e-mail card UNPAID not sent", mail[T("CARD2")] === "not-paid", mail[T("CARD2")]);
     check("e-mail watch-only not sent", mail[T("WATCH1")] === "not-jewellery", mail[T("WATCH1")]);
+    check("e-mail cardholder-only not sent", mail[T("CH1")] === "not-jewellery", mail[T("CH1")]);
+    check("e-mail men's-jewellery-only not sent", mail[T("MEN1")] === "not-jewellery", mail[T("MEN1")]);
+    check("e-mail watch + women's piece only as a gift: not sent", mail[T("GIFT1")] === "not-jewellery", mail[T("GIFT1")]);
     check("e-mail never twice", mail[`${T("COD1")} (2nd call)`] === "already-sent", mail[`${T("COD1")} (2nd call)`]);
 
     // ── the partner API, as the partner ──
@@ -113,6 +125,7 @@ export async function GET(req: NextRequest) {
     check("list: COD, card PAID, mixed shown", !!seen[T("COD1")] && !!seen[T("CARD1")] && !!seen[T("MIX1")]);
     check("list: card UNPAID hidden", !seen[T("CARD2")]);
     check("list: watch-only hidden", !seen[T("WATCH1")]);
+    check("list: cardholder-only, men's-only, gift-only hidden", !seen[T("CH1")] && !seen[T("MEN1")] && !seen[T("GIFT1")]);
     check("list: only allowed keys", orders.every((o) => Object.keys(o).every((k) => PARTNER_VIEW_KEYS.includes(k))));
     check("list: no customer e-mail anywhere", !list.text.includes("@") && !/\"email\"/.test(list.text));
     const mix = seen[T("MIX1")];
