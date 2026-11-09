@@ -72,14 +72,14 @@ export const COLLECTION_PHOTOS: Readonly<Record<string, string>> = {
   "necklace-lumen-silver": "pmbc",
   "necklace-noctis-silver": "pmbc",
   "necklace-noctis-gold": "pmbc",
-  // Clover bracelets have 5 clovers (owner, 10.11.2026: new photo no. 1 with 5 clovers + LR tag; the open-box and detail photos
-  // showing 4 clovers were removed - never add a photo showing 4 clovers on a bracelet).
-  "bracelet-verdis-gold": "pmc",
-  "bracelet-verdis-silver": "pmc",
-  "bracelet-lumen-gold": "pmc",
-  "bracelet-lumen-silver": "pmc",
-  "bracelet-noctis-gold": "pmc",
-  "bracelet-noctis-silver": "pmc",
+  // Clover bracelets have 5 clovers (owner, 10.11.2026): photo no. 1 is the new 5-clover photo with the LR tag; the two detail
+  // photos (Verdis / Lumen gold) showing 4 clovers were removed; the open-box photos stay (owner's choice).
+  "bracelet-verdis-gold": "pmbc",
+  "bracelet-verdis-silver": "pmbc",
+  "bracelet-lumen-gold": "pmbc",
+  "bracelet-lumen-silver": "pmbc",
+  "bracelet-noctis-gold": "pmbc",
+  "bracelet-noctis-silver": "pmbc",
   "bracelet-linea-gold": "pmbdc",
   "bracelet-linea-silver": "pdmbc",
   "bracelet-solaris-gold": "pmcbd",
