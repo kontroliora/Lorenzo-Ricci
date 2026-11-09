@@ -42,6 +42,10 @@
     {
       "path": "/api/cron/partner-catchup",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/admin-users-list",
+      "schedule": "* * * * *"
     }
   ]
 }
