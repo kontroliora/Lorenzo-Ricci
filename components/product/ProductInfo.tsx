@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Award, RefreshCw, Truck, Eye, Check } from "lucide-react";
+import { Award, RefreshCw, Truck, Eye } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
@@ -473,7 +473,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
 
       {/* Price */}
       <div className="py-5 border-y border-border">
-        <div className={`flex flex-wrap ${opo ? "items-center gap-x-3 gap-y-2" : "items-baseline gap-x-4 gap-y-2"}`}>
+        <div className={`flex ${opo ? "flex-wrap items-center gap-x-3 gap-y-2" : "items-baseline gap-4"}`}>
           <span className={`font-serif text-4xl text-navy ${opo ? "mr-1" : ""}`}>
             {price.text}
           </span>
@@ -486,11 +486,6 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
           {/* 1+1 group: the red badge right after the price, then the green free-delivery one */}
           {opo && <OnePlusOneBadge text={opo.text.bg.badge} />}
           {opo && shipsFree && <FreeShippingBadge text="Безплатна доставка" size="page" />}
-          {/* Original product (owner, 09.11.2026): thin navy outline next to the price; wraps under it when the line is full */}
-          <span data-testid="original-badge" className="self-center inline-flex items-center gap-1.5 border border-navy rounded-[2px] px-[10px] py-1 font-sans text-[10px] font-light tracking-[0.18em] uppercase text-navy leading-none whitespace-nowrap">
-            <Check className="w-3 h-3 flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />
-            Оригинален продукт Lorenzo Ricci
-          </span>
         </div>
         <SavingsLine text={saved !== null ? `Спестявате ${eurText(saved)}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Безплатна доставка" : null} />
         {/* Under €60 (owner, 08.11.2026): how much more for free delivery, counted on what the button adds */}
