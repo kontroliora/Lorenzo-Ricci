@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { darkBg, emailHead, emailHeaderRow } from "@/lib/email-layout";
 import { langOf, mayEmail } from "@/lib/mail-policy";
 import { getSuppressedEmails } from "@/lib/marketing-suppression";
 
@@ -63,23 +64,15 @@ function buildRecoveryEmail(opts: {
 
   const html = `<!DOCTYPE html>
 <html lang="bg">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Продуктът ви чака. Lorenzo Ricci</title>
-</head>
-<body style="margin:0;padding:0;background:#f8f6f2;-webkit-font-smoothing:antialiased;">
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f8f6f2;">
+${emailHead("Продуктът ви чака. Lorenzo Ricci")}
+<body style="margin:0;padding:0;background:#f5f0e8;-webkit-font-smoothing:antialiased;">
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f5f0e8;">
   <tr>
     <td align="center" style="padding:40px 20px;">
       <table width="560" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;max-width:560px;width:100%;">
 
         <!-- Header -->
-        <tr>
-          <td style="background:#0a1628;padding:30px 40px;text-align:center;">
-            <span style="font-family:Georgia,'Times New Roman',serif;font-size:15px;letter-spacing:0.3em;color:#ffffff;text-transform:uppercase;font-weight:normal;">LORENZO RICCI</span>
-          </td>
-        </tr>
+        ${emailHeaderRow(560)}
         <!-- Gold accent line -->
         <tr><td style="height:2px;background:#c9a84c;"></td></tr>
 
@@ -116,8 +109,8 @@ function buildRecoveryEmail(opts: {
             <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
               <tr>
                 <td align="center" style="padding-bottom:40px;">
-                  <a href="https://www.lorenzo-ricci.com"
-                     style="display:inline-block;background:#0a1628;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;text-decoration:none;padding:16px 44px;border:1px solid #0a1628;">
+                  <a href="https://www.lorenzo-ricci.com" class="lr-dark lr-light"
+                     style="display:inline-block;${darkBg()};color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;text-decoration:none;padding:16px 44px;border:1px solid #0a1628;">
                     Завърши поръчката &nbsp;&rarr;
                   </a>
                 </td>
