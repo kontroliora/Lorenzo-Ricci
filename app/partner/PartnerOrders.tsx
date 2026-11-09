@@ -1,9 +1,9 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { PartnerFilter, PartnerOrderView, PartnerStatus } from "@/lib/partner/orders";
+import type { PartnerFilter, PartnerOrderView, PartnerStatus, RealStatusKey } from "@/lib/partner/orders";
 
 const FILTERS: { key: PartnerFilter; label: string }[] = [
-  { key: "new", label: "Нови" }, { key: "called", label: "Обадени" }, { key: "confirmed", label: "Потвърдени" }, { key: "all", label: "Всички" },
+  { key: "new", label: "Нови" }, { key: "confirmed", label: "Потвърдени" }, { key: "shipped", label: "Изпратени" }, { key: "cancelled", label: "Отказани" }, { key: "all", label: "Всички" },
 ];
 const ACTIONS: { key: PartnerStatus; label: string; cls: string }[] = [
   { key: "called", label: "Обадено", cls: "bg-sky-600" },
@@ -11,9 +11,14 @@ const ACTIONS: { key: PartnerStatus; label: string; cls: string }[] = [
   { key: "no_answer", label: "Не вдига", cls: "bg-amber-600" },
   { key: "cancelled", label: "Отказано", cls: "bg-red-700" },
 ];
-const STATUS_CLS: Record<PartnerStatus, string> = {
-  new: "bg-[#0a0e1f] text-white", called: "bg-sky-100 text-sky-900", confirmed: "bg-green-100 text-green-900",
-  no_answer: "bg-amber-100 text-amber-900", cancelled: "bg-red-100 text-red-900",
+// the REAL status chip (the shop's status from the admin panel)
+const REAL_CLS: Record<RealStatusKey, string> = {
+  new: "bg-[#0a0e1f] text-white", called: "bg-sky-100 text-sky-900", confirmed: "bg-green-100 text-green-900", no_answer: "bg-amber-100 text-amber-900",
+  cancelled: "bg-red-100 text-red-900", to_fulfil: "bg-green-100 text-green-900", shipped: "bg-teal-100 text-teal-900",
+  completed: "bg-blue-100 text-blue-900", returned: "bg-orange-100 text-orange-900",
+};
+const MARK_CLS: Record<PartnerStatus, string> = {
+  new: "", called: "text-sky-800", confirmed: "text-green-800", no_answer: "text-amber-800", cancelled: "text-red-800",
 };
 const REFRESH_MS = 20_000;
 const money = (n: number, cur: string) => (cur === "lei" ? `${Math.round(n)} lei` : `€${n.toFixed(2)}`);
@@ -54,6 +59,8 @@ export function PartnerOrders({ preview }: { preview?: { orders: PartnerOrderVie
   }, [focus, data]);
 
   const onSaved = (o: PartnerOrderView) => setData((d) => d && ({ ...d, orders: d.orders.map((x) => (x.ref === o.ref ? o : x)) }));
+  const [toast, setToast] = useState("");
+  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(""), 2600); return () => clearTimeout(t); }, [toast]);
 
   return (
     <main className="max-w-2xl mx-auto px-3 pb-16">
@@ -69,14 +76,15 @@ export function PartnerOrders({ preview }: { preview?: { orders: PartnerOrderVie
       {!data && !error && <p className="text-center text-[#6b6456] py-12">Зареждане…</p>}
       {data && data.orders.length === 0 && <p className="text-center text-[#6b6456] py-12">Няма поръчки тук.</p>}
       <div className="flex flex-col gap-3 mt-1">
-        {data?.orders.map((o) => <OrderCard key={o.ref} o={o} highlight={o.ref === focus} onSaved={onSaved} preview={!!preview} />)}
+        {data?.orders.map((o) => <OrderCard key={o.ref} o={o} highlight={o.ref === focus} onSaved={onSaved} onToast={setToast} preview={!!preview} />)}
       </div>
-      {!preview && <p className="text-center text-[11px] text-[#6b6456] mt-6">Обновява се автоматично на всеки 20 секунди.</p>}
+      {!preview && <p className="text-center text-[11px] text-[#6b6456] mt-6">Обновява се автоматично на всеки 20 секунди. Статусът горе вдясно е на магазина; твоите бутони са само отметка за нас.</p>}
+      {toast && <div role="status" className="fixed left-1/2 -translate-x-1/2 bottom-6 z-50 whitespace-nowrap bg-[#0a0e1f] text-white text-[14px] font-semibold px-5 py-3 rounded-full shadow-lg">{toast}</div>}
     </main>
   );
 }
 
-function OrderCard({ o, highlight, onSaved, preview }: { o: PartnerOrderView; highlight: boolean; onSaved: (o: PartnerOrderView) => void; preview: boolean }) {
+function OrderCard({ o, highlight, onSaved, onToast, preview }: { o: PartnerOrderView; highlight: boolean; onSaved: (o: PartnerOrderView) => void; onToast: (t: string) => void; preview: boolean }) {
   const [note, setNote] = useState(o.state.note);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
@@ -84,14 +92,16 @@ function OrderCard({ o, highlight, onSaved, preview }: { o: PartnerOrderView; hi
   const card = o.payment.kind === "card";
 
   const save = async (patch: { status?: PartnerStatus; note?: string }) => {
-    if (preview) return;
+    if (patch.status === "cancelled" && !window.confirm(`Отбележи поръчка #${o.ref} като „Отказано“?\n\nТова е само твоя отметка за нас: статусът на поръчката не се променя.`)) return;
+    if (preview) { if (patch.status) onToast(`Отбелязано: ${ACTIONS.find((a) => a.key === patch.status)?.label}`); return; }
     setSaving(true); setMsg("");
     try {
       const r = await fetch(`/api/partner/orders/${encodeURIComponent(o.ref)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
       if (r.status === 403) { window.location.href = "/partner/login"; return; }
       const j = await r.json();
       if (!r.ok) throw new Error(j.error);
-      onSaved(j.order); setMsg("Записано");
+      onSaved(j.order); setMsg("");
+      onToast(patch.status ? `Отбелязано: ${ACTIONS.find((a) => a.key === patch.status)?.label}` : "Бележката е записана");
     } catch (e) { setMsg(e instanceof Error && e.message ? e.message : "Грешка"); } finally { setSaving(false); }
   };
 
@@ -106,9 +116,15 @@ function OrderCard({ o, highlight, onSaved, preview }: { o: PartnerOrderView; hi
             <p className="text-[12px] text-[#6b6456]">#{o.ref} · {when(o.createdAt)}{o.market === "ro" ? " · 🇷🇴" : ""}</p>
             <p className="text-[17px] font-semibold mt-0.5">{o.name || "-"}</p>
           </div>
-          <span className={`shrink-0 text-[11px] font-bold uppercase tracking-wide px-2 py-1 rounded ${STATUS_CLS[o.state.status]}`}>{o.state.label}</span>
+          <span title="Статус на поръчката (магазин)" className={`shrink-0 text-[11px] font-bold uppercase tracking-wide px-2 py-1 rounded ${REAL_CLS[o.real.key]}`}>{o.real.label}</span>
         </div>
-        {o.storeCancelled && <p className="mt-2 text-[12px] font-semibold text-red-700">Магазинът е отказал тази поръчка.</p>}
+        {o.state.status !== "new" && (
+          <p className="mt-2 text-[13px]">
+            <span className="text-[#6b6456]">Твоята отметка: </span><b className={MARK_CLS[o.state.status]}>{o.state.label}</b>
+            {o.state.updatedAt ? <span className="text-[#6b6456]"> · {when(o.state.updatedAt)}</span> : null}
+            <span className="text-[#6b6456]"> · статус на поръчката: {o.real.label}</span>
+          </p>
+        )}
         {o.phone && (
           <a href={`tel:${o.phone.replace(/\s+/g, "")}`} className="mt-3 flex items-center justify-center gap-2 bg-[#0a0e1f] text-white rounded-lg py-3 text-[16px] font-semibold">
             📞 {o.phone}

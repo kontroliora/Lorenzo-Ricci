@@ -5,7 +5,7 @@ import { NEW_COLLECTION_PRODUCTS } from "../new-collection-products";
 import { applyOverride, getPriceOverrides } from "../price-overrides";
 import { PARTNER_COOKIE, partnerFromCookie, type Partner } from "./access";
 import {
-  PARTNER_ORDER_COLUMNS, PARTNER_SINCE, matchesFilter, partnerView, partnerVisible, pieceInfo,
+  PARTNER_FILTERS, PARTNER_ORDER_COLUMNS, PARTNER_SINCE, matchesFilter, partnerView, partnerVisible, pieceInfo,
   type PartnerFilter, type PartnerOrderView,
 } from "./orders";
 
@@ -48,9 +48,8 @@ export async function listPartnerOrders(filter: PartnerFilter): Promise<{ orders
     for (const s of (data ?? []) as Row[]) states.set(String(s.order_ref), s);
   }
   const all = mine.map((r) => partnerView(r, states.get(String(r.order_ref)) as never));
-  const counts = { new: 0, called: 0, confirmed: 0, all: all.length } as Record<PartnerFilter, number>;
-  for (const o of all) for (const f of ["new", "called", "confirmed"] as const) if (matchesFilter(o.state.status, f)) counts[f]++;
-  return { orders: all.filter((o) => matchesFilter(o.state.status, filter)), counts };
+  const counts = Object.fromEntries(PARTNER_FILTERS.map((f) => [f, all.filter((o) => matchesFilter(o.real.key, f)).length])) as Record<PartnerFilter, number>;
+  return { orders: all.filter((o) => matchesFilter(o.real.key, filter)), counts };
 }
 
 export type PartnerPiece = { slug: string; model: string; color: string; stone: string; sku: string; image: string; price: number; stock: number | null; onSale: boolean };

@@ -141,6 +141,7 @@ export function OrdersBoard({
   const [showDead, setShowDead] = useState(false);
   const [payMethod, setPayMethod] = useState<PayMethodFilter>("all");
   const [payState, setPayState] = useState<PayStateFilter>("all");
+  const [partnerOnly, setPartnerOnly] = useState(false);   // "С отметка от партньора": only orders the partner marked on /partner
   const [notice, setNotice] = useState(""); // an action's warning (e.g. the Romanian e-mail did not go out) must outlive the card that raised it
   const [showFake, setShowFake] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -172,7 +173,8 @@ export function OrdersBoard({
   const deadAttempts = live.filter((o) => isUnpaidCardAttempt(o) && !isPendingPayment(o));
   const salesOrders = live.filter((o) => !isUnpaidCardAttempt(o));
   // The payment filters combine with the tabs, the summary counters and the search.
-  const real = salesOrders.filter((o) => matchesPayment(o, payMethod, payState));
+  const real = salesOrders.filter((o) => matchesPayment(o, payMethod, payState) && (!partnerOnly || !!o.partner_mark));
+  const markedCount = salesOrders.filter((o) => !!o.partner_mark).length;
   const fake = orders.filter((o) => o.excluded_from_stock && inMarket(o));
   const marketCount = (m: MarketFilter) => orders.filter((o) => !o.excluded_from_stock && notLead(o) && !isUnpaidCardAttempt(o) && (m === "all" || marketOf(o) === m)).length;
   const openTab = (t: Tab) => { setTab(t); setShowPending(false); setShowCarts(false); };
@@ -297,6 +299,12 @@ export function OrdersBoard({
 
         <div className="mt-3">
           <PaymentFilters method={payMethod} state={payState} onMethod={setPayMethod} onState={setPayState} />
+        </div>
+        <div className="mt-2">
+          <button type="button" onClick={() => setPartnerOnly((v) => !v)} aria-pressed={partnerOnly}
+            style={{ fontSize: 12, padding: "5px 12px", borderRadius: 999, border: `1px solid ${partnerOnly ? "#97C459" : "rgba(255,255,255,0.2)"}`, color: partnerOnly ? "#97C459" : "rgba(255,255,255,0.65)", background: partnerOnly ? "rgba(151,196,89,0.12)" : "transparent" }}>
+            С отметка от партньора · {markedCount}
+          </button>
         </div>
 
         {!searching && (

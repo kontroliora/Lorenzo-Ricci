@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { adminDb } from "@/lib/supabase/admin-db";
+import { applyOfMark } from "@/lib/partner/marks";
 import { reconcileShippedOrders, matchTrackingNumbers, classifyExistingReturns, markRestocked as markRestockedTx, econtCodAmount, type MatchResult } from "@/lib/econt";
 import { sendShipConfirmations } from "@/lib/shipment-notify";
 import { RESERVING_STATUSES, isReturn, type OrderItem } from "@/lib/orders";
@@ -505,4 +506,21 @@ export async function createManualOrder(input: ManualOrderInput): Promise<{ ok: 
   }
   revalidatePath(ORDERS_PATH);
   return { ok: true, message: `Създадена ${ref}`, ref };
+}
+
+/**
+ * "Приложи" on the partner's badge: turns his latest mark into the real status with the panel's own action (stock, refunds and
+ * e-mails exactly as when you press the button yourself), logged as you. Обадено has no panel equivalent.
+ */
+export async function applyPartnerMark(id: number): Promise<string | null> {
+  const supabase = await adminDb();
+  const { data: o, error } = await supabase.from("orders").select("order_ref, status").eq("id", id).single();
+  if (error || !o) return error?.message ?? "Поръчката липсва";
+  const { data: m } = await supabase.from("partner_order_state").select("status, note").eq("order_ref", o.order_ref).maybeSingle();
+  if (!m) return "Няма отметка от партньора";
+  const what = applyOfMark(String(o.status), String(m.status));
+  if (what === "confirm") return confirmOrder(id);
+  if (what === "no_answer") return markNoAnswer(id);
+  if (what === "cancel") return cancelOrder(id, "refused", `Отказано (отметка на партньора)${m.note ? ` · ${String(m.note).slice(0, 200)}` : ""}`);
+  return "Няма какво да се приложи за този статус";
 }

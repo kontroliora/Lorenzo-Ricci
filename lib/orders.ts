@@ -62,6 +62,7 @@ export type AdminOrder = {
   stripe_payment_intent?: string | null;
   stripe_session_id?: string | null;   // cs_test_... / cs_live_...: tells a test payment from a live one (lib/stripe-mode.ts)
   created_at: string;
+  partner_mark?: import("./partner/marks").PartnerMark | null;   // the partner's latest mark (partner_order_state), read-only here
 };
 
 // Three-metric customer profile (our data only).
@@ -119,7 +120,20 @@ export async function getOrders(limit = 1000): Promise<AdminOrder[]> {
     console.error("[orders] read error:", lastError.message);
     return [];
   }
-  return (data ?? []) as AdminOrder[];
+  const orders = (data ?? []) as AdminOrder[];
+  // the partner's marks (his buttons on /partner): a badge on the card, never the order's status
+  const refs = orders.map((o) => o.order_ref).filter((r): r is string => !!r);
+  const marks = new Map<string, { status: string; note: string | null; updated_at: string }>();
+  for (let i = 0; i < refs.length; i += 300) {
+    const m = await supabase.from("partner_order_state").select("order_ref, status, note, updated_at").in("order_ref", refs.slice(i, i + 300));
+    if (m.error) { console.error("[orders] partner marks unavailable:", m.error.message); break; }
+    for (const r of m.data ?? []) marks.set(String(r.order_ref), r as { status: string; note: string | null; updated_at: string });
+  }
+  for (const o of orders) {
+    const m = o.order_ref ? marks.get(o.order_ref) : undefined;
+    o.partner_mark = m && (m.status !== "new" || (m.note ?? "").trim()) ? { status: m.status, note: (m.note ?? "").trim(), at: m.updated_at } : null;
+  }
+  return orders;
 }
 
 // Computed reservation (Variant A). Inventory follows the status automatically:

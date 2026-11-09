@@ -3,6 +3,7 @@ import { useState, useTransition } from "react";
 import { isRoOfficeMethod } from "@/lib/ro/config";
 import type { AdminOrder, CustomerHistory } from "@/lib/orders";
 import { confirmOrders, cancelOrders, markNoAnswerOrders } from "./actions";
+import { PartnerMarkBadge } from "./PartnerMarkBadge";
 import { OrderItemsList } from "./OrderItemsList";
 import { isRoOrder, fmtLei, fmtLeiWithEuro } from "@/lib/market";
 import { PaymentBadge } from "./PaymentUi";
@@ -132,6 +133,12 @@ export function GroupedOrderCard({
         <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 4, fontFamily: "monospace" }}>
           Поръчано на {n} пъти: {sorted.map((o) => fmtDT(o.created_at)).join(" · ")} · {sorted.map((o) => o.order_ref).filter(Boolean).join(" · ")}
         </div>
+        {sorted.filter((o) => o.partner_mark).map((o) => (
+          <div key={`pm-${o.id}`} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "monospace", marginTop: 6 }}>{o.order_ref}</span>
+            <PartnerMarkBadge id={o.id} status={o.status} mark={o.partner_mark!} onNotice={onNotice} />
+          </div>
+        ))}
       </div>
 
       {/* Controls — apply to all orders in the group */}

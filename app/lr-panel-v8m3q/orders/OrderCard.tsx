@@ -18,6 +18,7 @@ import {
 } from "./actions";
 import { callTimer, sofiaHHMM, formatAttemptList, formatAttemptAudit } from "@/lib/callSchedule";
 import { OrderItemsList } from "./OrderItemsList";
+import { PartnerMarkBadge } from "./PartnerMarkBadge";
 import { isRoOrder, fmtLei, fmtLeiWithEuro } from "@/lib/market";
 import { PaymentBadge, PaidCardCollectLine, CardMoneyMissingLine, RoPaymentLine } from "./PaymentUi";
 import { refundPlan } from "@/lib/stripe-mode";
@@ -254,6 +255,7 @@ export function OrderCard({
             {order.promo_discount ? <span style={{ color: "rgba(255,255,255,0.5)" }}> · отстъпка −{money(Number(order.promo_discount))}</span> : null}
           </div>
         )}
+        {order.partner_mark && <PartnerMarkBadge id={order.id} status={order.status} mark={order.partner_mark} onNotice={onNotice} />}
         {order.status === "new" && !excluded && hoursOpen !== null && (
           <div style={{ color: hoursOpen > 24 ? "#F09595" : "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 4 }}>
             ⏱ отворена преди {Math.floor(hoursOpen)}ч{hoursOpen > 24 ? " · заседнала" : ""}

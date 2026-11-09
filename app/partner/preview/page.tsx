@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { PartnerHeader } from "../PartnerHeader";
 import { PartnerOrders } from "../PartnerOrders";
 import { PiecesList } from "../bijuta/PiecesList";
-import { partnerView, matchesFilter, pieceInfo, type PartnerFilter } from "@/lib/partner/orders";
+import { PARTNER_FILTERS, partnerView, matchesFilter, pieceInfo, type PartnerFilter } from "@/lib/partner/orders";
 import { buildPartnerOrderEmail } from "@/lib/partner/email";
 import { COLLECTION_PIECES } from "@/lib/new-collection";
 import { NEW_COLLECTION_PRODUCTS } from "@/lib/new-collection-products";
@@ -28,7 +28,6 @@ export default async function PartnerPreview({ searchParams }: { searchParams: P
     });
     return (<><PartnerHeader active="pieces" /><PiecesList pieces={pieces} /></>);
   }
-  const counts = { new: 0, called: 0, confirmed: 0, all: views.length } as Record<PartnerFilter, number>;
-  for (const v of views) for (const f of ["new", "called", "confirmed"] as const) if (matchesFilter(v.state.status, f)) counts[f]++;
+  const counts = Object.fromEntries(PARTNER_FILTERS.map((f) => [f, views.filter((v) => matchesFilter(v.real.key, f)).length])) as Record<PartnerFilter, number>;
   return (<><PartnerHeader active="orders" /><PartnerOrders preview={{ orders: views, counts }} /></>);
 }

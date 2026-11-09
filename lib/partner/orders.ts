@@ -15,7 +15,7 @@ export const PARTNER_SINCE = "2026-11-01T00:00:00.000Z";
 
 /** The columns the server reads for him. NOT email, NOT notes, NOT attribution. */
 export const PARTNER_ORDER_COLUMNS =
-  "order_ref, created_at, name, phone, city, post_code, address, shipping_method, courier, ship_country, items, subtotal, shipping_cost, total, payment_method, payment_status, status, is_international";
+  "order_ref, created_at, name, phone, city, post_code, address, shipping_method, courier, ship_country, items, subtotal, shipping_cost, total, payment_method, payment_status, status, call_state, call_attempts, is_international";
 
 export const PARTNER_STATUSES = ["new", "called", "confirmed", "cancelled", "no_answer"] as const;
 export type PartnerStatus = (typeof PARTNER_STATUSES)[number];
@@ -26,13 +26,38 @@ export const PARTNER_STATUS_LABEL: Record<PartnerStatus, string> = {
 export const PARTNER_SETTABLE: PartnerStatus[] = ["called", "confirmed", "cancelled", "no_answer"];
 export const isPartnerStatus = (s: unknown): s is PartnerStatus => typeof s === "string" && (PARTNER_STATUSES as readonly string[]).includes(s);
 
-export type PartnerFilter = "new" | "called" | "confirmed" | "all";
-/** Нови = not handled yet (incl. "не вдига": call again); Обадени = he reached them; Потвърдени; Всички. */
-export function matchesFilter(status: PartnerStatus, f: PartnerFilter): boolean {
+// ── the REAL order status (owner, 09.11.2026): what the shop set in the admin panel, read-only for him ──────────────────────
+// orders.status + orders.call_state (the panel's call result) -> one of the panel's words. His own marks (PartnerStatus above)
+// live in partner_order_state and NEVER change these.
+export type RealStatusKey = "new" | "called" | "confirmed" | "no_answer" | "cancelled" | "to_fulfil" | "shipped" | "completed" | "returned";
+export const REAL_STATUS_LABEL: Record<RealStatusKey, string> = {
+  new: "Нова", called: "Обадено", confirmed: "Потвърдено", no_answer: "Не вдига", cancelled: "Отказано",
+  to_fulfil: "За изпълнение", shipped: "Изпратена", completed: "Завършена", returned: "Върната",
+};
+export function realStatusOf(row: Row): RealStatusKey {
+  const st = String(row.status ?? "");
+  if (st === "returning" || st === "restocked" || st === "returned") return "returned";
+  if (st === "cancelled") return "cancelled";
+  if (st === "completed") return "completed";
+  if (st === "shipped") return "shipped";
+  if (st === "confirmed") return "to_fulfil";
+  if (row.payment_method === "card" && row.payment_status === "paid") return "to_fulfil";   // paid card: no call needed (panel: За изпълнение)
+  const call = String(row.call_state ?? "pending");
+  if (call === "confirmed") return "confirmed";
+  if (call === "refused") return "cancelled";
+  if (call === "no_answer" || Number(row.call_attempts ?? 0) > 0) return "no_answer";
+  return "new";   // "Обадено" has no field in the panel's data (it records only confirmed / не вдига / refused), so it never shows
+}
+
+/** /partner filters on the REAL status: Нови (Нова + Не вдига) · Потвърдени (+ За изпълнение) · Изпратени (+ Завършена) · Отказани (+ Върната) · Всички. */
+export type PartnerFilter = "new" | "confirmed" | "shipped" | "cancelled" | "all";
+export const PARTNER_FILTERS: PartnerFilter[] = ["new", "confirmed", "shipped", "cancelled", "all"];
+export function matchesFilter(real: RealStatusKey, f: PartnerFilter): boolean {
   if (f === "all") return true;
-  if (f === "new") return status === "new" || status === "no_answer";
-  if (f === "called") return status === "called";
-  return status === "confirmed";
+  if (f === "new") return real === "new" || real === "no_answer" || real === "called";
+  if (f === "confirmed") return real === "confirmed" || real === "to_fulfil";
+  if (f === "shipped") return real === "shipped" || real === "completed";
+  return real === "cancelled" || real === "returned";
 }
 
 type Row = Record<string, unknown>;
@@ -109,8 +134,8 @@ export type PartnerOrderView = {
   shipping: number;
   total: number;            // the full order total the customer pays
   payment: { kind: "card" | "cod"; label: string; collect: number };   // collect = total (cash on delivery) or 0 (paid by card)
-  storeCancelled: boolean;  // the shop cancelled the whole order
-  state: { status: PartnerStatus; label: string; note: string; updatedAt: string | null };
+  real: { key: RealStatusKey; label: string };   // the shop's status (admin panel), read-only for him
+  state: { status: PartnerStatus; label: string; note: string; updatedAt: string | null };   // HIS mark ("new" = none yet)
 };
 
 export type PartnerState = { status?: string | null; note?: string | null; updated_at?: string | null } | null | undefined;
@@ -158,10 +183,10 @@ export function partnerView(row: Row, state?: PartnerState): PartnerOrderView {
     payment: card
       ? { kind: "card", label: "ПЛАТЕНО С КАРТА", collect: 0 }
       : { kind: "cod", label: `НАЛОЖЕН ПЛАТЕЖ — ${money(total, market)}`, collect: total },
-    storeCancelled: String(row.status ?? "") === "cancelled",
+    real: { key: realStatusOf(row), label: REAL_STATUS_LABEL[realStatusOf(row)] },
     state: { status, label: PARTNER_STATUS_LABEL[status], note: String(state?.note ?? ""), updatedAt: state?.updated_at ?? null },
   };
 }
 
 /** Keys a view may hold: the self-test checks every record against this list (and that no e-mail address appears anywhere). */
-export const PARTNER_VIEW_KEYS = ["ref", "createdAt", "market", "currency", "name", "phone", "delivery", "items", "goods", "discount", "shipping", "total", "payment", "storeCancelled", "state"];
+export const PARTNER_VIEW_KEYS = ["ref", "createdAt", "market", "currency", "name", "phone", "delivery", "items", "goods", "discount", "shipping", "total", "payment", "real", "state"];

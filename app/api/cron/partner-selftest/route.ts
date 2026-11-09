@@ -9,7 +9,8 @@ import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { notifyPartnerOnce } from "@/lib/partner/email";
 import { clearPasswordLocks } from "@/lib/partner/password";
-import { PARTNER_VIEW_KEYS, type PartnerOrderView } from "@/lib/partner/orders";
+import { PARTNER_FILTERS, PARTNER_VIEW_KEYS, type PartnerOrderView } from "@/lib/partner/orders";
+import { applyOfMark } from "@/lib/partner/marks";
 
 // ONE-OFF self-test of the partner role (owner, 09.11.2026). Runs once per RUN_ID (KV flag), from Vercel Cron:
 //   1. a TEST partner (the owner's own address) + 5 test orders (COD jewellery, card PAID jewellery, mixed COD jewellery + watch,
@@ -24,7 +25,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const RUN_ID = "2026-11-09-g";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation.
+const RUN_ID = "2026-11-09-h";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark.
 const TEST_PARTNER = "dserbezov7@gmail.com";
 const TEST_CUSTOMER_EMAIL = "partner-selftest-customer@example.com";   // must never appear in anything the partner gets
 const T = (s: string) => `LR-TST${s}`;
@@ -150,6 +151,35 @@ export async function GET(req: NextRequest) {
     check("status change logged", logRows.data?.length === 1 && logRows.data[0].new_status === "called" && logRows.data[0].email === TEST_PARTNER, logRows.data);
     const ordStatus = await sb.from("orders").select("status").eq("order_ref", T("COD1")).single();
     check("store order status untouched", ordStatus.data?.status === "new", ordStatus.data);
+    const setView = (set.json as { order?: PartnerOrderView })?.order;
+    check("his mark Обадено, the card still shows the real status Нова", setView?.real.label === "Нова" && setView?.state.label === "Обадено", { real: setView?.real, mark: setView?.state.label });
+
+    // ── real status vs his mark ──
+    const cancelMark = await call(`/api/partner/orders/${T("COD1")}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "cancelled" }) });
+    const afterCancel = await sb.from("orders").select("status, call_state").eq("order_ref", T("COD1")).single();
+    check("his Отказано: the order is NOT cancelled (status new, call_state pending)", cancelMark.status === 200 && afterCancel.data?.status === "new" && afterCancel.data?.call_state === "pending", afterCancel.data);
+    const logCount = await sb.from("partner_status_log").select("id").eq("order_ref", T("COD1"));
+    check("his marks logged (2 rows)", logCount.data?.length === 2, logCount.data?.length);
+    // the shop confirms the order in the panel -> /partner shows За изпълнение under Потвърдени; his mark stays Отказано
+    await sb.from("orders").update({ status: "confirmed", call_state: "confirmed" }).eq("order_ref", T("COD1"));
+    const fConfirmed = await call("/api/partner/orders?filter=confirmed");
+    const fNew = await call("/api/partner/orders?filter=new");
+    const inConfirmed = ((fConfirmed.json as { orders?: PartnerOrderView[] })?.orders ?? []).find((o) => o.ref === T("COD1"));
+    const inNew = ((fNew.json as { orders?: PartnerOrderView[] })?.orders ?? []).some((o) => o.ref === T("COD1"));
+    check("real status За изпълнение -> filter Потвърдени, not Нови", inConfirmed?.real.label === "За изпълнение" && !inNew, { real: inConfirmed?.real, inNew });
+    check("his mark kept next to it (Отказано)", inConfirmed?.state.label === "Отказано", inConfirmed?.state);
+    const cts = (fConfirmed.json as { counts?: Record<string, number> })?.counts ?? {};
+    check("counts per real-status filter (Нови / Потвърдени / Изпратени / Отказани / Всички)", PARTNER_FILTERS.every((f) => typeof cts[f] === "number") && cts.confirmed >= 1, cts);
+    const shipUp = await sb.from("orders").update({ status: "shipped", tracking_number: "TEST-PARTNER-0000" }).eq("order_ref", T("COD1"));
+    if (shipUp.error) check("test setup: mark shipped", false, shipUp.error.message);
+    const fShipped = await call("/api/partner/orders?filter=shipped");
+    check("real status Изпратена -> filter Изпратени", ((fShipped.json as { orders?: PartnerOrderView[] })?.orders ?? []).find((o) => o.ref === T("COD1"))?.real.label === "Изпратена");
+    await sb.from("orders").update({ status: "new", call_state: "pending", tracking_number: null }).eq("order_ref", T("COD1"));
+    // "Приложи" in the owner's panel (the mapping; the action itself is the panel's confirm / не вдига / cancel)
+    check("Приложи: Потвърдено on a new order -> confirm", applyOfMark("new", "confirmed") === "confirm");
+    check("Приложи: Не вдига on a new order -> не вдига", applyOfMark("new", "no_answer") === "no_answer");
+    check("Приложи: Отказано on a new / confirmed order -> cancel", applyOfMark("new", "cancelled") === "cancel" && applyOfMark("confirmed", "cancelled") === "cancel");
+    check("Приложи: nothing for Обадено or a shipped order", applyOfMark("new", "called") === null && applyOfMark("shipped", "cancelled") === null && applyOfMark("confirmed", "confirmed") === null);
 
     // ── 403 checks ──
     const j = { "Content-Type": "application/json" };
