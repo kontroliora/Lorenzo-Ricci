@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { RO_STORE_ENABLED } from "@/lib/ro-store";
+import { isValidFullName, FULL_NAME_ERROR_RO } from "@/lib/full-name";
 import { refreshStockPages } from "@/lib/stock-pages";
 import { ATTR_COOKIE, attributionFromCookie } from "@/lib/attribution";
 import { insertOrderResilient } from "@/lib/order-insert";
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
     const address = str(cu.address, 240);
     const officeAddress = str(cu.officeAddress, 240);
     const postCode = office ? "" : str(cu.postCode, 12).replace(/\s+/g, "");
-    if (name.length < 2) return fail(400, "bad_customer", "Vă rugăm să introduceți numele complet.");
+    if (!isValidFullName(name)) return fail(400, "bad_customer", FULL_NAME_ERROR_RO);
     if (!phone) return fail(400, "bad_customer", "Vă rugăm să introduceți un număr de telefon mobil valid (ex. 07xx xxx xxx).");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(400, "bad_customer", "Vă rugăm să introduceți o adresă de e-mail validă.");
     // Delivery to an address needs județ, localitate and address; a Speedy locker / office needs only its typed address (it names the city).

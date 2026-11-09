@@ -6,6 +6,7 @@ import { BG_FREE_SHIPPING_EUR, BG_SHIPPING_HOME_EUR, BG_SHIPPING_OFFICE_EUR } fr
 import { cardDiscountEur, cardDiscountIsCapped, CARD_DISCOUNT_CAP_EUR } from "@/lib/card-discount";
 import { calcBundleDiscount, bundleLineText } from "@/lib/bundles";
 import { giftDisplayName } from "@/lib/gifts";
+import { isValidFullName, FULL_NAME_ERROR_BG } from "@/lib/full-name";
 import { useGiftLines } from "@/lib/use-gifts";
 import { trackFbEvent, rememberMatchKeys } from "@/lib/fbq";
 import { logCheckoutFailure } from "@/lib/checkout-log";
@@ -213,7 +214,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   // ── Validation ─────────────────────────────────────────────────────────────
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!form.name.trim() || form.name.trim().length < 2) errs.name = "Въведете две имена";
+    if (!isValidFullName(form.name))                      errs.name = FULL_NAME_ERROR_BG;
     if (form.phone.replace(/\D/g, "").length < 10)        errs.phone = "Моля, въведете валиден телефонен номер.";
     if (!form.email.trim())                                errs.email = "Въведете имейл";
     else if (!form.email.includes("@"))                    errs.email = "Невалиден имейл";
@@ -498,6 +499,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         <CoField id="field-name" htmlFor="bg-name" label="Две имена" error={errors.name} errorId="bg-name-err">
           <input type="text" placeholder="Иван Иванов" value={form.name}
             onChange={(e) => { setForm((f) => ({ ...f, name: e.target.value })); clearError("name"); }}
+            onBlur={(e) => { if (e.target.value.trim() && !isValidFullName(e.target.value)) setErrors((prev) => ({ ...prev, name: FULL_NAME_ERROR_BG })); }}
             className={coInput(!!errors.name)} autoComplete="name" {...inputProps("name")} />
         </CoField>
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ATTR_COOKIE, attributionFromCookie } from "@/lib/attribution";
+import { isValidFullName, FULL_NAME_ERROR_BG } from "@/lib/full-name";
 import { insertOrderResilient } from "@/lib/order-insert";
 import { langOf, mayEmail } from "@/lib/mail-policy";
 import { supabase } from "@/lib/supabase";
@@ -73,6 +74,9 @@ export async function POST(req: NextRequest) {
     const customer = (order.customer ?? {}) as Record<string, unknown>;
     const customerAddress = String(customer.email ?? "").trim();
     const customerName    = String(customer.name  ?? "");
+    if (!isValidFullName(customerName)) {
+      return NextResponse.json({ success: false, error: FULL_NAME_ERROR_BG, code: "bad_name" }, { status: 400 });
+    }
 
     // The reference is minted by the browser: check its shape, and treat the same reference twice (double click, retry after a
     // timeout) as the same order - never a second reservation or a second row.

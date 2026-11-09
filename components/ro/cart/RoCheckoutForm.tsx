@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { isValidFullName, FULL_NAME_ERROR_RO } from "@/lib/full-name";
 import { normalizeRoPhone } from "@/lib/ro/phone";
 import type { RoCartLine } from "@/lib/ro/store";
 import { roAmounts } from "@/lib/ro/pricing";
@@ -163,8 +164,7 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
   // Keys are inserted in on-screen order, so the first key is the first field to scroll to.
   const validate = () => {
     const errs: Record<string, string> = {};
-    const name = form.name.trim().replace(/\s+/g, " ");
-    if (name.length < 3 || !name.includes(" ")) errs.name = "Introduceți numele complet (nume și prenume).";
+    if (!isValidFullName(form.name)) errs.name = FULL_NAME_ERROR_RO;
     if (!normalizeRoPhone(form.phone)) errs.phone = "Introduceți un număr de mobil valid, de exemplu 0712 345 678.";
     const email = form.email.trim();
     if (!email) errs.email = "Introduceți adresa de e-mail.";
@@ -341,6 +341,7 @@ export function RoCheckoutForm({ items }: RoCheckoutFormProps) {
         <CoField id="field-name" htmlFor="ro-name" label="Nume complet" error={errors.name} errorId="ro-name-err">
           <input type="text" placeholder="Ion Popescu" value={form.name} maxLength={100}
             onChange={(e) => { set("name", e.target.value); clearError("name"); }}
+            onBlur={(e) => { if (e.target.value.trim() && !isValidFullName(e.target.value)) setErrors((prev) => ({ ...prev, name: FULL_NAME_ERROR_RO })); }}
             className={coInput(!!errors.name)} autoComplete="name" {...fieldProps("name")} />
         </CoField>
 
