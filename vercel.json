@@ -38,14 +38,6 @@
     {
       "path": "/api/cron/partner-selftest",
       "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/partner-mail-audit",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/post-rls-check",
-      "schedule": "* * * * *"
     }
   ]
 }
