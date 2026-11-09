@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { adminDb } from "@/lib/supabase/admin-db";
 import { reconcileShippedOrders, matchTrackingNumbers, classifyExistingReturns, markRestocked as markRestockedTx, econtCodAmount, type MatchResult } from "@/lib/econt";
 import { sendShipConfirmations } from "@/lib/shipment-notify";
 import { RESERVING_STATUSES, isReturn, type OrderItem } from "@/lib/orders";
@@ -16,7 +17,7 @@ import { refreshStockPages } from "@/lib/stock-pages";
 const ORDERS_PATH = "/lr-panel-v8m3q/orders";
 
 async function patchOrder(id: number, patch: Record<string, unknown>): Promise<string | null> {
-  const supabase = await createClient();
+  const supabase = await adminDb();
   const { error } = await supabase.from("orders").update(patch).eq("id", id);
   if (error) {
     console.error("[orders] update error:", error.message);
@@ -32,7 +33,7 @@ async function patchOrder(id: number, patch: Record<string, unknown>): Promise<s
 // prevents a double-restock on re-cancel). restock_wallet_stock skips any slug
 // not present in wallet_inventory.
 async function restockOrderItems(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: SupabaseClient,
   items: OrderItem[] | null | undefined,
 ): Promise<void> {
   const restock = (items ?? [])
@@ -55,7 +56,7 @@ type Snap = {
   created_at?: string | null;
 };
 
-async function snapshot(supabase: Awaited<ReturnType<typeof createClient>>, ids: number[]): Promise<Snap[]> {
+async function snapshot(supabase: SupabaseClient, ids: number[]): Promise<Snap[]> {
   if (!ids.length) return [];
   const { data } = await supabase.from("orders").select("*").in("id", ids); // * : the payment columns exist only after stripe_payments.sql
   return (data ?? []) as Snap[];
@@ -76,7 +77,7 @@ function roUnpaidBlock(snaps: Snap[]): string | null {
 }
 
 async function notifyRo(
-  supabase: Awaited<ReturnType<typeof createClient>>, before: Snap[], alreadyThere: (status: string) => boolean, mail: RoPanelMail,
+  supabase: SupabaseClient, before: Snap[], alreadyThere: (status: string) => boolean, mail: RoPanelMail,
 ): Promise<string | null> {
   const warnings: string[] = [];
   for (const o of before) {
@@ -89,7 +90,7 @@ async function notifyRo(
 
 // Потвърждава / big ПОТВЪРДИ button → confirmed (stock stays reserved).
 export async function confirmOrder(id: number): Promise<string | null> {
-  const supabase = await createClient();
+  const supabase = await adminDb();
   const before = await snapshot(supabase, [id]);
   const blocked = refundedBlock(before) ?? roUnpaidBlock(before);
   if (blocked) return blocked;
@@ -109,7 +110,7 @@ export async function cancelOrder(id: number, category: string, reason: string):
   // pending/confirmed/no_answer/refused, so writing the raw category throws.
   const patch: Record<string, unknown> = { status: "cancelled", cancel_category: category, cancel_reason: reason || null };
   if (category === "refused") patch.call_state = "refused";
-  const supabase = await createClient();
+  const supabase = await adminDb();
   const [b] = await snapshot(supabase, [id]);
   if (b && isPaidCard(b)) return cancelPaidCardOrder(supabase, b, patch, category);
   const { error } = await supabase.from("orders").update(patch).eq("id", id);
@@ -127,7 +128,7 @@ export async function cancelOrder(id: number, category: string, reason: string):
 //      so a webhook that got there first can never cause a second restock.
 // A Romanian customer then gets the Romanian cancellation e-mail that says the card payment is being refunded.
 async function cancelPaidCardOrder(
-  supabase: Awaited<ReturnType<typeof createClient>>, b: Snap, patchIn: Record<string, unknown>, category: string,
+  supabase: SupabaseClient, b: Snap, patchIn: Record<string, unknown>, category: string,
 ): Promise<string | null> {
   let patch = patchIn;
   // A TEST payment (Stripe test mode: session id cs_test_..., or no Stripe key on this site, or a live key that cannot see a test payment)
@@ -169,7 +170,7 @@ async function cancelPaidCardOrder(
 // presses); the audit trigger logs each attempt with the exact time + who.
 export async function markNoAnswer(id: number): Promise<string | null> {
   try {
-    const supabase = await createClient();
+    const supabase = await adminDb();
     const { error } = await supabase.rpc("mark_no_answer", { p_id: id });
     if (error) {
       console.error("[orders] no-answer error:", error.message);
@@ -188,7 +189,7 @@ export async function markNoAnswer(id: number): Promise<string | null> {
 // logs) once per order — a group action leaves one audit entry per order. ──────
 export async function confirmOrders(ids: number[]): Promise<string | null> {
   if (!ids.length) return null;
-  const supabase = await createClient();
+  const supabase = await adminDb();
   const before = await snapshot(supabase, ids);
   const blocked = refundedBlock(before) ?? roUnpaidBlock(before);
   if (blocked) return blocked;
@@ -204,7 +205,7 @@ export async function cancelOrders(ids: number[], category: string, reason: stri
   if (!ids.length) return null;
   const patch: Record<string, unknown> = { status: "cancelled", cancel_category: category, cancel_reason: reason || null };
   if (category === "refused") patch.call_state = "refused";
-  const supabase = await createClient();
+  const supabase = await adminDb();
   const before = await snapshot(supabase, ids);
   if (before.some(isPaidCard)) return "В групата има поръчка, платена с карта: откажи я отделно (връща се и сумата през Stripe).";
   const { error } = await supabase.from("orders").update(patch).in("id", ids);
@@ -219,7 +220,7 @@ export async function cancelOrders(ids: number[], category: string, reason: stri
 export async function markNoAnswerOrders(ids: number[]): Promise<string | null> {
   if (!ids.length) return null;
   try {
-    const supabase = await createClient();
+    const supabase = await adminDb();
     for (const id of ids) {
       const { error } = await supabase.rpc("mark_no_answer", { p_id: id });
       if (error) { console.error("[orders] bulk no-answer error:", error.message); return error.message; }
@@ -249,7 +250,7 @@ async function codGuard(snap: Snap | undefined, awb: string): Promise<string | n
 // Ship → tracking required. The DB trigger also blocks 'shipped' without it.
 export async function shipOrder(id: number, tracking: string): Promise<string | null> {
   const t = (tracking ?? "").trim();
-  const [snap] = await snapshot(await createClient(), [id]);
+  const [snap] = await snapshot(await adminDb(), [id]);
   if (snap && isRoOrder(snap)) return shipRoOrder(id, t, ""); // a Romanian order has an AWB of its own courier, never an Econt waybill
   if (!t) return "Въведи тракинг номер от Еконт първо";
   const blocked = refundedBlock(snap ? [snap] : []);
@@ -269,7 +270,7 @@ export async function shipRoOrder(id: number, awb: string, trackUrl: string): Pr
   if (typed && !/^https:\/\//i.test(typed)) return "Линкът за проследяване трябва да започва с https://";
   const url = typed || roTrackUrl(tracking);                                   // empty field: Speedy's tracking page for this AWB
 
-  const supabase = await createClient();
+  const supabase = await adminDb();
   const { data: order, error: readErr } = await supabase.from("orders").select("*").eq("id", id).single();
   if (readErr || !order) return readErr?.message ?? "Поръчката не е намерена";
   if (!isRoOrder(order)) return "Това не е румънска поръчка.";
@@ -300,7 +301,7 @@ export async function shipRoOrder(id: number, awb: string, trackUrl: string): Pr
 export async function addOrderNote(id: number, text: string): Promise<string | null> {
   const t = (text ?? "").trim();
   if (!t) return null;
-  const supabase = await createClient();
+  const supabase = await adminDb();
   const { data, error: readErr } = await supabase
     .from("orders").select("call_notes").eq("id", id).single();
   if (readErr) {
@@ -319,7 +320,7 @@ export async function addOrderNote(id: number, text: string): Promise<string | n
 // Tagged 'manual' so completions closed by hand stay distinguishable from the
 // ones Econt confirmed (those set completed_source='econt').
 export async function markCompleted(id: number): Promise<string | null> {
-  const supabase = await createClient();
+  const supabase = await adminDb();
   const before = await snapshot(supabase, [id]);
   const err = await patchOrder(id, {
     status: "completed",
@@ -335,7 +336,7 @@ export async function markCompleted(id: number): Promise<string | null> {
 // (the cron's Econt receipt, or the "Взех пратката" button), never in transit.
 // Sets returning_at so the cron may auto-restock it once Econt confirms receipt.
 export async function markReturned(id: number): Promise<string | null> {
-  const supabase = await createClient();
+  const supabase = await adminDb();
   const before = await snapshot(supabase, [id]);
   const nowIso = new Date().toISOString();
   let { error } = await supabase.from("orders").update({ status: "returning", returning_at: nowIso }).eq("id", id);
@@ -357,7 +358,7 @@ export async function markReturned(id: number): Promise<string | null> {
 // a later cron pass can't double-count). Uses the admin's own session so the
 // audit trigger records WHO pressed it (restocked_source also records 'button').
 export async function markRestocked(id: number): Promise<string | null> {
-  const supabase = await createClient();
+  const supabase = await adminDb();
   const res = await markRestockedTx(supabase, id, "button", new Date().toISOString());
   if (res === "already") return "Вече е получена — наличността не се вдига втори път.";
   revalidatePath(ORDERS_PATH);
@@ -374,7 +375,7 @@ export async function markReturnReviewed(id: number): Promise<string | null> {
 // orders. Sure matches (unique phone + amount + date) are auto-filled; uncertain
 // ones are returned for one-click confirmation. Uses the admin's own session.
 export async function matchTracking(): Promise<{ ok: boolean; message: string; result?: MatchResult }> {
-  const supabase = await createClient();
+  const supabase = await adminDb();
   try {
     const r = await matchTrackingNumbers(supabase);
     // Instant Email 1 for parcels Econt has just physically accepted (sendTime
@@ -400,7 +401,7 @@ export async function matchTracking(): Promise<{ ok: boolean; message: string; r
 
 // Confirm a suggested (uncertain) match → fill the tracking number + mark shipped.
 export async function confirmMatch(orderId: number, awb: string): Promise<string | null> {
-  const supabase = await createClient();
+  const supabase = await adminDb();
   const [snap] = await snapshot(supabase, [orderId]);
   const blocked = refundedBlock(snap ? [snap] : []) ?? roUnpaidBlock(snap ? [snap] : []) ?? (await codGuard(snap, awb));
   if (blocked) return blocked;
@@ -419,7 +420,7 @@ export async function confirmMatch(orderId: number, awb: string): Promise<string
 // admin's own session (works without the service-role key). Only completes
 // orders Econt actually reports delivered, so it's still tamper-proof.
 export async function checkEcontStatuses(): Promise<{ ok: boolean; message: string }> {
-  const supabase = await createClient();
+  const supabase = await adminDb();
   try {
     const r = await reconcileShippedOrders(supabase);
     const backfilled = await classifyExistingReturns(supabase);
@@ -458,7 +459,7 @@ export async function createManualOrder(input: ManualOrderInput): Promise<{ ok: 
   if (!input.address.trim())                return { ok: false, message: input.courier === "home" ? "Въведи адрес" : "Въведи офис на Еконт" };
   if (!input.items.length)                  return { ok: false, message: "Добави поне един продукт" };
 
-  const supabase = await createClient();
+  const supabase = await adminDb();
   const ref = `LR-${Date.now().toString(36).slice(-6).toUpperCase()}`;
   const goods = input.items.reduce((s, i) => s + i.price * i.quantity, 0);
   const shippingMethod = input.courier === "home" ? "Доставка чрез Еконт до адрес" : "Доставка чрез Еконт до офис";

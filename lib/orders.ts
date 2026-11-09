@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { adminDb, getAdminSession } from "@/lib/supabase/admin-db";
 import { RESERVING_STATUSES, RESERVING_STATUSES_LEGACY, RETURN_STATUSES, isReturn, isUnpaidCardAttempt } from "./order-status";
 
 export type OrderItem = {
@@ -89,7 +89,7 @@ const ORDER_COLUMNS = `${BASE_COLUMNS}, last_attempt_at, call_attempt_times, ret
 const PAYMENT_COLUMNS = "payment_method, payment_status, paid_at, stripe_payment_intent, stripe_session_id";
 
 export async function getOrders(limit = 1000): Promise<AdminOrder[]> {
-  const supabase = await createClient();
+  const supabase = await adminDb();
   // "*" FIRST: it returns whatever columns this database has, so a column the code knows but a migration never added can
   // never hide the others. (24.10.2026: return_reviewed was never migrated, every named tier below failed on it and the board
   // fell back to BASE_COLUMNS - no payment_method / payment_status - so paid card orders showed as "Наложен платеж · неплатено".)
@@ -127,7 +127,7 @@ export async function getOrders(limit = 1000): Promise<AdminOrder[]> {
 //  - …EXCEPT orders flagged excluded_from_stock (test / fake).
 //  cancelled / returned never count (goods came back / never left).
 export async function getReservedMap(): Promise<Record<string, number>> {
-  const supabase = await createClient();
+  const supabase = await adminDb();
   const query = (statuses: readonly string[]) =>
     supabase.from("orders").select("items, status, excluded_from_stock").in("status", statuses as string[]);
   // pending_payment (open card payments) also holds stock. Before supabase/stripe_payments.sql has added that enum value,
@@ -157,7 +157,7 @@ export async function getCustomerHistories(
 ): Promise<Record<string, CustomerHistory>> {
   const uniq = Array.from(new Set(phones.filter(Boolean)));
   if (!uniq.length) return {};
-  const supabase = await createClient();
+  const supabase = await adminDb();
   // Include return_kind so "невзел" (notTaken) counts ONLY uncollected returns —
   // the real no-shows (seller pays both legs), not refused-after-inspection.
   // Falls back to counting any return if the column isn't migrated yet.
@@ -192,10 +192,11 @@ export async function getCustomerHistories(
   return map;
 }
 
-// Audit log — RLS returns rows only to the owner; employees get an empty array.
+// Audit log — the owner only; employees get an empty object (was the RLS policy; read with the service role since rls_lockdown.sql).
 export async function getStatusLog(orderIds: number[]): Promise<Record<number, StatusLogRow[]>> {
   if (!orderIds.length) return {};
-  const supabase = await createClient();
+  if ((await getAdminSession())?.role !== "owner") return {};
+  const supabase = await adminDb();
   const { data, error } = await supabase
     .from("order_status_log")
     .select("order_id, old_status, new_status, changed_by_email, changed_at, change_number")

@@ -34,5 +34,12 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return { supabaseResponse, user };
+  // Only accounts in admin_users are panel admins (self-read policy: the user sees only their own row).
+  let isAdmin = false;
+  if (user) {
+    const { data } = await supabase.from("admin_users").select("role").eq("user_id", user.id).maybeSingle();
+    isAdmin = !!data;
+  }
+
+  return { supabaseResponse, user, isAdmin };
 }

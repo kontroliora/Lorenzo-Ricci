@@ -64,11 +64,11 @@ async function route(request: NextRequest): Promise<NextResponse> {
   }
 
   // Refresh the Supabase session (also rotates auth cookies) and read the user.
-  const { supabaseResponse, user } = await updateSession(request);
+  const { supabaseResponse, user, isAdmin } = await updateSession(request);
 
   // Login screen: always reachable. If already authenticated, skip straight in.
   if (pathname === "/lr-panel-v8m3q/login") {
-    if (user) {
+    if (user && isAdmin) {
       return redirectWithCookies(new URL("/lr-panel-v8m3q/inventory", request.url), supabaseResponse);
     }
     return supabaseResponse;
@@ -83,6 +83,9 @@ async function route(request: NextRequest): Promise<NextResponse> {
     }
     return redirectWithCookies(new URL("/lr-panel-v8m3q/login", request.url), supabaseResponse);
   }
+
+  // Signed in but not in admin_users: no panel, no admin API.
+  if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   return supabaseResponse;
 }

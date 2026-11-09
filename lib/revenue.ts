@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { adminDb, getAdminSession } from "@/lib/supabase/admin-db";
 
 export type RevenuePeriod = { revenue: number; collected: number; shipping: number; count: number };
 export type TopProduct = { name: string; qty: number; revenue: number };
@@ -16,7 +16,8 @@ export type RevenueData = {
 // anyone who isn't the owner (is_owner() guard), so the employee gets nothing
 // even on a direct RPC call. Returns null when unavailable / not owner.
 export async function getRevenue(): Promise<RevenueData | null> {
-  const supabase = await createClient();
+  if ((await getAdminSession())?.role !== "owner") return null;   // app-level gate; owner_revenue() checks is_owner() itself too
+  const supabase = await adminDb();
   const { data, error } = await supabase.rpc("owner_revenue");
   if (error || !data) return null;
   return data as RevenueData;
