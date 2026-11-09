@@ -76,6 +76,8 @@ async function route(request: NextRequest): Promise<NextResponse> {
 
   // Everything else under /lr-panel-v8m3q and /api/admin requires an authenticated user.
   if (!user) {
+    // The partner (/partner, own cookie, no Supabase account) is never let in here: a plain 403.
+    if (request.cookies.has("lr_partner")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

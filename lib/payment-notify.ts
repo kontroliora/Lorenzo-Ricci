@@ -5,7 +5,7 @@ import type { OrderRow } from "./payment-orders";
 import { langOf } from "./mail-policy";
 import { buildAdminEmail, buildCustomerEmail, sendAdminEmail, sendCustomerEmail, sendCapiPurchase } from "./order-notify";
 import { onePlusOneOfOrder } from "./one-plus-one";
-import { partnerFromRow, sendPartnerEmail } from "./partner-email";
+import { notifyPartnerOnce } from "./partner/email";
 import { buildRoAdminEmail, buildRoCustomerEmail, roPaidSubject, type RoOrderEmailData } from "./ro/emails";
 import { RO_ADMIN_RECIPIENTS, sendMail, sendCapiPurchase as sendRoCapiPurchase } from "./ro/order-notify";
 import { RO_SHIPPING_HOME, RO_SHIPPING_OFFICE, isRoOfficeMethod } from "./ro/config";
@@ -64,7 +64,7 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
       within(sendMail({ from: "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>", to: RO_ADMIN_RECIPIENTS, subject: `💳🇷🇴 Платена поръчка (Румъния) - ${name} - ${order.order_ref}`, html: buildRoAdminEmail(data, undefined, { paidByCard: true }) }), "team e-mail"),
       ...(email ? [within(sendMail({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [email], subject: roPaidSubject, html: buildRoCustomerEmail(data) }, "card_paid"), "customer e-mail")] : []),
       within(sendRoCapiPurchase({ ...data, skus: paidLines.map((i) => String(i.sku ?? "")).filter(Boolean) }, ctx), "Meta Purchase"),
-      within(sendPartnerEmail(partnerFromRow(order)), "partner e-mail"),
+      within(notifyPartnerOnce(order.order_ref).then((r) => { if (r === "failed") throw new Error("partner e-mail failed (Telegram alert sent)"); }), "partner e-mail"),
     ]);
     const failed: string[] = [];
     r.forEach((x, i) => { if (x.status === "rejected") { console.error("[payment-notify] RO step failed:", x.reason); failed.push(names[i]); } });
@@ -88,7 +88,7 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
     within(sendAdminEmail(`💳 Платена поръчка - ${name}`, buildAdminEmail(orderObj, null, { paidByCard: true })), "team e-mail"),
     ...(email ? [within(sendCustomerEmail(email, buildCustomerEmail(orderObj, { paidByCard: true }), "Плащането е получено - Lorenzo Ricci", { kind: "card_paid", lang: langOf(order) }), "customer e-mail")] : []),
     within(sendCapiPurchase({ ...orderObj, items: paidLines }, order.order_ref, Number(order.total ?? 0), ctx), "Meta Purchase"),
-    within(sendPartnerEmail(partnerFromRow(order)), "partner e-mail"),
+    within(notifyPartnerOnce(order.order_ref).then((r) => { if (r === "failed") throw new Error("partner e-mail failed (Telegram alert sent)"); }), "partner e-mail"),
   ]);
   const failed: string[] = [];
   r.forEach((x, i) => { if (x.status === "rejected") { console.error("[payment-notify] BG step failed:", x.reason); failed.push(names[i]); } });

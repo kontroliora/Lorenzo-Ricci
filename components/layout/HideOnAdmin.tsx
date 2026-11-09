@@ -8,6 +8,6 @@ import { usePathname } from "next/navigation";
  */
 export function HideOnAdmin({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  if (pathname && (pathname.startsWith("/lr-panel") || pathname === "/ro" || pathname.startsWith("/ro/"))) return null;
+  if (pathname && (pathname.startsWith("/lr-panel") || pathname.startsWith("/partner") || pathname === "/ro" || pathname.startsWith("/ro/"))) return null;
   return <>{children}</>;
 }

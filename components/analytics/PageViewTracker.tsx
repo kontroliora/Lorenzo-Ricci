@@ -22,7 +22,7 @@ export function PageViewTracker() {
   const first = useRef(true);
 
   useEffect(() => {
-    if (!pathname || pathname.startsWith("/lr-panel") || pathname.startsWith("/api/")) return;
+    if (!pathname || pathname.startsWith("/lr-panel") || pathname.startsWith("/partner") || pathname.startsWith("/api/")) return;
     if (!/(^|\.)lorenzo-ricci\.com$/.test(location.hostname)) return;
     const isLanding = first.current;
     first.current = false;
