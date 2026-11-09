@@ -21,7 +21,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const RUN_ID = "2026-11-09-b";   // -a ran before partner_role.sql existed (stopped at step 1, nothing left behind)
+const RUN_ID = "2026-11-09-c";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind.
 const TEST_PARTNER = "dserbezov7@gmail.com";
 const REAL_PARTNER = { email: "dejvidvisev99@gmail.com", name: "Партньор бижута" };   // invited only when every check passed
 const TEST_CUSTOMER_EMAIL = "partner-selftest-customer@example.com";   // must never appear in anything the partner gets
@@ -41,15 +41,15 @@ function testOrders(): Row[] {
   };
   return [
     // A: COD, two pieces -> the 1+1 makes one free: €109 to collect
-    { ...base, order_ref: T("COD1"), name: "Тест Наложен", phone: "0888 111 111", address: "Еконт офис София Център", items: [VERDIS, LUMEN], subtotal: 109, total: 109, status: "new", payment_method: "cod" },
+    { ...base, order_ref: T("COD1"), name: "Тест Наложен", phone: "0888 111 111", address: "Еконт офис София Център", items: [VERDIS, LUMEN], subtotal: 109, total: 109, status: "new", payment_method: "cod", payment_status: "unpaid" },
     // B: card, PAID
     { ...base, order_ref: T("CARD1"), name: "Тест Карта", phone: "0888 222 222", address: "Еконт офис Пловдив", items: [SPIRA], subtotal: 115, total: 115, status: "confirmed", payment_method: "card", payment_status: "paid" },
     // C: mixed COD: jewellery + watch -> he sees only Verdis, €109 to collect (not the €228 order total)
-    { ...base, order_ref: T("MIX1"), name: "Тест Смесена", phone: "0888 333 333", courier: "home", address: "ул. Тестова 1", items: [VERDIS, WATCH], subtotal: 228, total: 228, status: "new", payment_method: "cod" },
+    { ...base, order_ref: T("MIX1"), name: "Тест Смесена", phone: "0888 333 333", courier: "home", address: "ул. Тестова 1", items: [VERDIS, WATCH], subtotal: 228, total: 228, status: "new", payment_method: "cod", payment_status: "unpaid" },
     // D: card NOT paid -> nothing for him, no e-mail
     { ...base, order_ref: T("CARD2"), name: "Тест Неплатена", phone: "0888 444 444", items: [LUMEN], subtotal: 109, total: 109, status: "pending_payment", payment_method: "card", payment_status: "pending" },
     // E: watch only -> nothing for him
-    { ...base, order_ref: T("WATCH1"), name: "Тест Часовник", phone: "0888 555 555", items: [WATCH], subtotal: 119, total: 119, status: "new", payment_method: "cod" },
+    { ...base, order_ref: T("WATCH1"), name: "Тест Часовник", phone: "0888 555 555", items: [WATCH], subtotal: 119, total: 119, status: "new", payment_method: "cod", payment_status: "unpaid" },
   ];
 }
 const REFS = testOrders().map((o) => String(o.order_ref));
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
     await cleanup();
     const p = await sb.from("partners").insert({ email: TEST_PARTNER, name: "ТЕСТ партньор", enabled: true, notify: true, invited_at: new Date().toISOString() });
     if (p.error) throw new Error(`partners: ${p.error.message}`);
-    const ins = await sb.from("orders").insert(testOrders());
+    const ins = await sb.from("orders").insert(testOrders(), { defaultToNull: false });   // a key missing in one row = column default, not NULL
     if (ins.error) throw new Error(`orders: ${ins.error.message}`);
 
     // ── e-mails ──
