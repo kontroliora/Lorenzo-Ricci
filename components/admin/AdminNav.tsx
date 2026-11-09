@@ -72,17 +72,6 @@ export function AdminNav() {
             </Link>
           );
         })}
-        <Link
-          href="/lr-panel-v8m3q/customers"
-          aria-current={pathname.startsWith("/lr-panel-v8m3q/customers") ? "page" : undefined}
-          className={`px-4 py-4 self-center whitespace-nowrap font-sans text-[11px] tracking-[0.14em] uppercase transition-colors ml-auto ${
-            pathname.startsWith("/lr-panel-v8m3q/customers")
-              ? "text-white"
-              : "text-white/30 hover:text-white/70"
-          }`}
-        >
-          Клиенти
-        </Link>
       </div>
       <div aria-hidden className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[#0a0e1f] to-transparent transition-opacity ${more ? "opacity-100" : "opacity-0"}`} />
       </div>

@@ -165,7 +165,7 @@ export async function GET(req: NextRequest) {
     await s403("admin API: price change", "/api/admin/products/discount", { method: "POST", headers: j, body: "{}" });
     await s403("admin panel: orders", "/lr-panel-v8m3q/orders");
     await s403("admin panel: revenue", "/lr-panel-v8m3q/revenue");
-    await s403("admin panel: customers", "/lr-panel-v8m3q/customers");
+    await s403("admin panel: inventory", "/lr-panel-v8m3q/inventory");
     const bad = await call(`/api/partner/orders/${T("COD1")}`, { method: "POST", headers: j, body: JSON.stringify({ status: "shipped" }) });
     check("status outside his four: refused", bad.status === 400, bad.status);
 
