@@ -12,11 +12,11 @@ export default async function PartnerPreview({ searchParams }: { searchParams: P
   if (process.env.NODE_ENV !== "development") notFound();
   const q = await searchParams;
   const l = (slug: string, price: number, quantity = 1) => ({ slug, price, quantity, name: slug, sku: "" });
-  const base = { city: "София", post_code: "1000", courier: "econt", created_at: new Date().toISOString(), email: "customer@example.com", total: 999 };
+  const base = { city: "София", post_code: "1000", courier: "econt", created_at: new Date().toISOString(), email: "customer@example.com", shipping_cost: 0 };
   const rows = [
-    { ...base, order_ref: "LR-TSTCOD1", name: "Мария Иванова", phone: "0888 111 111", address: "Еконт офис София Център", items: [l("necklace-verdis-gold", 109), l("bracelet-lumen-silver", 109)], subtotal: 109, status: "new", payment_method: "cod" },
-    { ...base, order_ref: "LR-TSTCARD1", name: "Елена Петрова", phone: "0888 222 222", address: "Еконт офис Пловдив Тракия", items: [l("bracelet-spira-gold", 115)], subtotal: 115, status: "confirmed", payment_method: "card", payment_status: "paid" },
-    { ...base, order_ref: "LR-TSTMIX1", name: "Ива Георгиева", phone: "0888 333 333", courier: "home", address: "ул. Тестова 1, ет. 2", items: [l("necklace-verdis-gold", 109), l("chrono-black", 119)], subtotal: 228, status: "new", payment_method: "cod" },
+    { ...base, order_ref: "LR-TSTCOD1", name: "Мария Иванова", phone: "0888 111 111", address: "Еконт офис София Център", items: [l("necklace-verdis-gold", 109), l("bracelet-lumen-silver", 109)], subtotal: 109, total: 109, status: "new", payment_method: "cod" },
+    { ...base, order_ref: "LR-TSTCARD1", name: "Елена Петрова", phone: "0888 222 222", address: "Еконт офис Пловдив Тракия", items: [l("bracelet-spira-gold", 115)], subtotal: 115, total: 115, status: "confirmed", payment_method: "card", payment_status: "paid" },
+    { ...base, order_ref: "LR-TSTMIX1", name: "Ива Георгиева", phone: "0888 333 333", courier: "home", address: "ул. Тестова 1, ет. 2", items: [l("necklace-verdis-gold", 109), { ...l("chrono-black", 119), name: "Chrono Black" }], subtotal: 228, total: 228, status: "new", payment_method: "cod" },
   ];
   const views = rows.map((r, i) => partnerView(r, i === 1 ? { status: "confirmed", note: "Ще вземе в петък", updated_at: null } : null));
   const email = q.email ? views[{ cod: 0, card: 1, mix: 2 }[q.email as "cod" | "card" | "mix"] ?? 0] : null;

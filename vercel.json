@@ -38,14 +38,6 @@
     {
       "path": "/api/cron/partner-selftest",
       "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/partner-catchup",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/admin-users-list",
-      "schedule": "* * * * *"
     }
   ]
 }

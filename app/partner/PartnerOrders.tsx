@@ -117,13 +117,19 @@ function OrderCard({ o, highlight, onSaved, preview }: { o: PartnerOrderView; hi
         <p className="mt-3 text-[14px]"><span className="text-[#6b6456]">{o.delivery.courier} · {o.delivery.office ? "офис / автомат" : "до адрес"}:</span> {o.delivery.place || "-"}</p>
         <ul className="mt-3 divide-y divide-[#efe7d6] border-y border-[#efe7d6]">
           {o.items.map((i, k) => (
-            <li key={k} className="py-2 flex justify-between gap-3 text-[14px]">
-              <span><b>{i.model}</b>{i.qty > 1 ? ` × ${i.qty}` : ""}<br /><span className="text-[#6b6456] text-[13px]">{[i.color, i.stone].filter(Boolean).join(" · ")}</span></span>
-              <span className="whitespace-nowrap">{money(i.price * i.qty, o.currency)}</span>
+            <li key={k} className={`py-2 flex justify-between gap-3 text-[14px] ${i.collection ? "bg-[#fbf3e2] -mx-4 px-4" : ""}`}>
+              <span>
+                {i.collection && <span className="inline-block mb-0.5 mr-1 align-middle text-[10px] font-bold uppercase tracking-wide bg-[#b08a3e] text-white rounded px-1.5 py-0.5">Дамска колекция</span>}
+                <b>{i.model}</b>{i.qty > 1 ? ` × ${i.qty}` : ""}{i.gift ? <span className="text-green-800 text-[12px]"> · подарък</span> : null}
+                {(i.color || i.stone) && <><br /><span className="text-[#6b6456] text-[13px]">{[i.color, i.stone].filter(Boolean).join(" · ")}</span></>}
+              </span>
+              <span className="whitespace-nowrap">{i.gift ? "0" : money(i.price * i.qty, o.currency)}</span>
             </li>
           ))}
-          {o.onePlusOne > 0 && <li className="py-2 flex justify-between text-[13px] text-green-800"><span>1+1</span><span>-{money(o.onePlusOne, o.currency)}</span></li>}
-          <li className="py-2 flex justify-between text-[14px] font-bold"><span>{card ? "Платено" : "За събиране"}</span><span>{card ? money(0, o.currency) : money(o.jewelleryTotal, o.currency)}</span></li>
+          {o.discount > 0 && <li className="py-2 flex justify-between text-[13px] text-green-800"><span>Отстъпки (1+1, код ...)</span><span>-{money(o.discount, o.currency)}</span></li>}
+          {o.shipping > 0 && <li className="py-2 flex justify-between text-[13px]"><span>Доставка</span><span>{money(o.shipping, o.currency)}</span></li>}
+          <li className="py-2 flex justify-between text-[14px]"><span>Общо поръчка</span><span>{money(o.total, o.currency)}</span></li>
+          <li className="py-2 flex justify-between text-[15px] font-bold"><span>{card ? "Платено с карта - за събиране" : "За събиране"}</span><span>{money(o.payment.collect, o.currency)}</span></li>
         </ul>
         <div className="mt-3 grid grid-cols-2 gap-2">
           {ACTIONS.map((a) => (

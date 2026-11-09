@@ -1,20 +1,21 @@
-// What the PARTNER may see of an order (owner, 09.11.2026): ONLY the women's-collection jewellery (Verdis, Noctis, Lumen, Linea,
-// Solaris, Spira). Pure (no server imports): the partner API, the partner e-mail and the self-test use the same projection.
+// What the PARTNER may see of an order (owner, 09.11.2026). He sees ONLY orders that contain women's-collection jewellery
+// (Verdis, Noctis, Lumen, Linea, Solaris, Spira); of those he sees the WHOLE order (owner, 09.11.2026, later the same day: he
+// calls the customer to confirm, so he needs every line - watches, cardholders, gifts - and the full amount to pay), with the
+// collection lines flagged. Pure (no server imports): the partner API, the partner e-mail and the self-test use the same projection.
 //
 // partnerView() is the ONE place that turns an `orders` row into what he gets. It copies field by field, so a column added to
-// `orders` later can never leak: never the customer's e-mail, never other lines (watches, cardholders ...), never the order total.
+// `orders` later can never leak: never the customer's e-mail, notes, attribution or anything not listed here.
 
 import { NEW_COLLECTION_SLUGS, COLLECTION_PIECES } from "../new-collection";
 import { NEW_COLLECTION_PRODUCTS } from "../new-collection-products";
-import { onePlusOneOfOrder } from "../one-plus-one";
 import { isRoOfficeMethod } from "../ro/config";
 
 /** Orders of the collection start here (it went on sale in November 2026). */
 export const PARTNER_SINCE = "2026-11-01T00:00:00.000Z";
 
-/** The columns the server reads for him. NOT email, NOT total, NOT notes, NOT attribution. */
+/** The columns the server reads for him. NOT email, NOT notes, NOT attribution. */
 export const PARTNER_ORDER_COLUMNS =
-  "order_ref, created_at, name, phone, city, post_code, address, shipping_method, courier, ship_country, items, subtotal, promo_discount, payment_method, payment_status, status, is_international";
+  "order_ref, created_at, name, phone, city, post_code, address, shipping_method, courier, ship_country, items, subtotal, shipping_cost, total, payment_method, payment_status, status, is_international";
 
 export const PARTNER_STATUSES = ["new", "called", "confirmed", "cancelled", "no_answer"] as const;
 export type PartnerStatus = (typeof PARTNER_STATUSES)[number];
@@ -41,7 +42,7 @@ const qty = (l: Line) => Math.max(1, Math.floor(Number(l.quantity ?? l.qty ?? 1)
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const linesOf = (row: Row): Line[] => (Array.isArray(row.items) ? (row.items as Line[]) : []);
 
-/** The jewellery lines of an order (paid lines only: a free gift is not part of the collection's sale). */
+/** The jewellery lines of an order (paid lines only): an order is his when it has at least one. */
 export const jewelleryLines = (row: Row): Line[] =>
   linesOf(row).filter((l) => !l.gift && typeof l.slug === "string" && NEW_COLLECTION_SLUGS.has(l.slug));
 
@@ -81,7 +82,8 @@ const PIECES: Map<string, PieceInfo> = new Map(COLLECTION_PIECES.map((p) => {
 export const pieceInfo = (slug: string): PieceInfo | undefined => PIECES.get(slug);
 
 // ── the view ─────────────────────────────────────────────────────────────────
-export type PartnerItem = { model: string; color: string; stone: string; qty: number; price: number; sku: string };
+/** One line of the order. collection = a women's-collection piece (his); gift = a free line (price 0). */
+export type PartnerItem = { model: string; color: string; stone: string; qty: number; price: number; sku: string; collection: boolean; gift: boolean };
 export type PartnerOrderView = {
   ref: string;
   createdAt: string;
@@ -91,10 +93,11 @@ export type PartnerOrderView = {
   phone: string;
   delivery: { courier: string; office: boolean; place: string };
   items: PartnerItem[];
-  jewelleryGross: number;   // the jewellery lines before the 1+1
-  onePlusOne: number;       // the 1+1 discount on them
-  jewelleryTotal: number;   // after the 1+1
-  payment: { kind: "card" | "cod"; label: string; collect: number };
+  goods: number;            // every paid line, before discounts
+  discount: number;         // all discounts of the order (1+1, promo code, card discount ...): goods + shipping - total
+  shipping: number;
+  total: number;            // the full order total the customer pays
+  payment: { kind: "card" | "cod"; label: string; collect: number };   // collect = total (cash on delivery) or 0 (paid by card)
   storeCancelled: boolean;  // the shop cancelled the whole order
   state: { status: PartnerStatus; label: string; note: string; updatedAt: string | null };
 };
@@ -107,14 +110,12 @@ export function money(n: number, market: "bg" | "ro"): string {
 
 export function partnerView(row: Row, state?: PartnerState): PartnerOrderView {
   const market: "bg" | "ro" = isRoRow(row) ? "ro" : "bg";
-  const lines = jewelleryLines(row);
-  const all = linesOf(row).filter((l) => !l.gift);
-  // the order's discount on goods (lines - goods after discounts - promo code): the 1+1 is checked against it
-  const grossAll = all.reduce((s, l) => s + Number(l.price ?? 0) * qty(l), 0);
-  const orderDiscount = Math.max(0, grossAll - Number(row.subtotal ?? grossAll) - Number(row.promo_discount ?? 0));
-  const gross = round2(lines.reduce((s, l) => s + Number(l.price ?? 0) * qty(l), 0));
-  const opo = round2(onePlusOneOfOrder(lines.map((l) => ({ ...l, quantity: qty(l) })), orderDiscount));
-  const total = round2(gross - opo);
+  const lines = linesOf(row);
+  const goods = round2(lines.filter((l) => !l.gift).reduce((s, l) => s + Number(l.price ?? 0) * qty(l), 0));
+  const shipping = round2(Number(row.shipping_cost ?? 0) || 0);
+  const totalNum = Number(row.total);
+  const total = round2(Number.isFinite(totalNum) && row.total !== null && row.total !== undefined ? totalNum : goods + shipping);
+  const discount = round2(Math.max(0, goods + shipping - total));
   const card = isCardRow(row);
   const where = [row.address, row.city, row.post_code].map((s) => String(s ?? "").trim()).filter(Boolean)
     .filter((s, i, a) => a.findIndex((x) => x.toLowerCase() === s.toLowerCase()) === i).join(", ");
@@ -132,12 +133,17 @@ export function partnerView(row: Row, state?: PartnerState): PartnerOrderView {
       place: where,
     },
     items: lines.map((l) => {
-      const p = pieceInfo(String(l.slug));
-      return { model: p?.model ?? String(l.name ?? ""), color: p?.color ?? "", stone: p?.stone ?? "", qty: qty(l), price: Number(l.price ?? 0), sku: p?.sku ?? String(l.sku ?? "") };
+      const p = typeof l.slug === "string" && NEW_COLLECTION_SLUGS.has(l.slug) ? pieceInfo(l.slug) : undefined;
+      const gift = !!l.gift;
+      return {
+        model: p?.model ?? String(l.name ?? ""), color: p?.color ?? "", stone: p?.stone ?? "", qty: qty(l),
+        price: gift ? 0 : Number(l.price ?? 0), sku: p?.sku ?? String(l.sku ?? ""), collection: !!p, gift,
+      };
     }),
-    jewelleryGross: gross,
-    onePlusOne: opo,
-    jewelleryTotal: total,
+    goods,
+    discount,
+    shipping,
+    total,
     payment: card
       ? { kind: "card", label: "ПЛАТЕНО С КАРТА", collect: 0 }
       : { kind: "cod", label: `НАЛОЖЕН ПЛАТЕЖ — ${money(total, market)}`, collect: total },
@@ -147,4 +153,4 @@ export function partnerView(row: Row, state?: PartnerState): PartnerOrderView {
 }
 
 /** Keys a view may hold: the self-test checks every record against this list (and that no e-mail address appears anywhere). */
-export const PARTNER_VIEW_KEYS = ["ref", "createdAt", "market", "currency", "name", "phone", "delivery", "items", "jewelleryGross", "onePlusOne", "jewelleryTotal", "payment", "storeCancelled", "state"];
+export const PARTNER_VIEW_KEYS = ["ref", "createdAt", "market", "currency", "name", "phone", "delivery", "items", "goods", "discount", "shipping", "total", "payment", "storeCancelled", "state"];

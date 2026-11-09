@@ -22,7 +22,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const RUN_ID = "2026-11-09-d";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18.
+const RUN_ID = "2026-11-09-e";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite.
 const TEST_PARTNER = "dserbezov7@gmail.com";
 const REAL_PARTNER = { email: "dejvidvisev99@gmail.com", name: "Партньор бижута" };   // invited only when every check passed
 const TEST_CUSTOMER_EMAIL = "partner-selftest-customer@example.com";   // must never appear in anything the partner gets
@@ -76,15 +76,17 @@ export async function GET(req: NextRequest) {
   const seen: Record<string, PartnerOrderView | null> = {};
   try {
     await cleanup();
-    const p = await sb.from("partners").insert({ email: TEST_PARTNER, name: "ТЕСТ партньор", enabled: true, notify: true, invited_at: new Date().toISOString() });
+    // notify false: a real order during the test must not reach the test address; the test's own e-mails go to it explicitly
+    const p = await sb.from("partners").insert({ email: TEST_PARTNER, name: "ТЕСТ партньор", enabled: true, notify: false, invited_at: new Date().toISOString() });
     if (p.error) throw new Error(`partners: ${p.error.message}`);
     const ins = await sb.from("orders").insert(testOrders(), { defaultToNull: false });   // a key missing in one row = column default, not NULL
     if (ins.error) throw new Error(`orders: ${ins.error.message}`);
 
     // ── e-mails ──
     const mail: Record<string, string> = {};
-    for (const ref of REFS) mail[ref] = await notifyPartnerOnce(ref);
-    mail[`${T("COD1")} (2nd call)`] = await notifyPartnerOnce(T("COD1"));
+    const onlyTest = { to: [TEST_PARTNER] };   // never the real partner (he is a recipient since run -d)
+    for (const ref of REFS) mail[ref] = await notifyPartnerOnce(ref, onlyTest);
+    mail[`${T("COD1")} (2nd call)`] = await notifyPartnerOnce(T("COD1"), onlyTest);
     check("e-mail COD sent", mail[T("COD1")] === "sent", mail[T("COD1")]);
     check("e-mail card PAID sent", mail[T("CARD1")] === "sent", mail[T("CARD1")]);
     check("e-mail mixed sent", mail[T("MIX1")] === "sent", mail[T("MIX1")]);
@@ -112,11 +114,13 @@ export async function GET(req: NextRequest) {
     check("list: card UNPAID hidden", !seen[T("CARD2")]);
     check("list: watch-only hidden", !seen[T("WATCH1")]);
     check("list: only allowed keys", orders.every((o) => Object.keys(o).every((k) => PARTNER_VIEW_KEYS.includes(k))));
-    check("list: no customer e-mail anywhere", !list.text.includes("@") && !/\"email\"|\"total\"/.test(list.text));
-    check("mixed: only the jewellery line", seen[T("MIX1")]?.items.length === 1 && seen[T("MIX1")]?.items[0].model === "Колие Verdis", seen[T("MIX1")]?.items);
-    check("mixed: collect €109, not the €228 total", seen[T("MIX1")]?.payment.collect === 109 && !JSON.stringify(seen[T("MIX1")]).includes("228") && !JSON.stringify(seen[T("MIX1")]).includes("Chrono"), seen[T("MIX1")]?.payment);
-    check("COD: 1+1 applied, collect €109", seen[T("COD1")]?.onePlusOne === 109 && seen[T("COD1")]?.payment.collect === 109, seen[T("COD1")]?.payment);
-    check("card: ПЛАТЕНО С КАРТА, collect 0", seen[T("CARD1")]?.payment.label === "ПЛАТЕНО С КАРТА" && seen[T("CARD1")]?.payment.collect === 0, seen[T("CARD1")]?.payment);
+    check("list: no customer e-mail anywhere", !list.text.includes("@") && !/\"email\"/.test(list.text));
+    const mix = seen[T("MIX1")];
+    check("mixed: BOTH lines (Verdis + the watch)", mix?.items.length === 2 && mix.items[0].model === "Колие Verdis" && mix.items[1].model === "Chrono Black", mix?.items);
+    check("mixed: Verdis tagged Дамска колекция, the watch not", mix?.items[0]?.collection === true && mix?.items[1]?.collection === false, mix?.items);
+    check("mixed: full total €228, collect €228", mix?.total === 228 && mix?.payment.collect === 228 && mix?.payment.label === "НАЛОЖЕН ПЛАТЕЖ — €228.00", { total: mix?.total, payment: mix?.payment });
+    check("COD: 1+1 discount €109, total + collect €109", seen[T("COD1")]?.discount === 109 && seen[T("COD1")]?.total === 109 && seen[T("COD1")]?.payment.collect === 109, seen[T("COD1")]);
+    check("card: ПЛАТЕНО С КАРТА, total €115, collect 0", seen[T("CARD1")]?.payment.label === "ПЛАТЕНО С КАРТА" && seen[T("CARD1")]?.total === 115 && seen[T("CARD1")]?.payment.collect === 0, seen[T("CARD1")]?.payment);
 
     const pieces = await call("/api/partner/jewellery");
     const pcs = (pieces.json as { pieces?: unknown[] })?.pieces ?? [];
@@ -183,7 +187,9 @@ export async function GET(req: NextRequest) {
   const failed = checks.filter((c) => !c.ok);
   // 5. every check passed: the real partner is added and gets his invitation (owner: "then deploy and send him the invite")
   let invite = "not sent (a check failed)";
-  if (!failed.length) {
+  const already = await sb.from("partners").select("invited_at").eq("email", REAL_PARTNER.email).maybeSingle();
+  if (already.data?.invited_at) invite = `not resent: ${REAL_PARTNER.email} was invited at ${already.data.invited_at}`;
+  else if (!failed.length) {
     try {
       const up = await sb.from("partners").upsert({ email: REAL_PARTNER.email, name: REAL_PARTNER.name, enabled: true, notify: true, invited_at: new Date().toISOString() }, { onConflict: "email" });
       if (up.error) throw new Error(up.error.message);

@@ -7,8 +7,9 @@ import { supabaseAdmin } from "../supabase-admin";
 import { PARTNER_ORDER_COLUMNS, money, partnerView, partnerVisible, type PartnerOrderView } from "./orders";
 
 // The partner's order e-mail (owner, 09.11.2026). Not a customer e-mail: Bulgarian text, to the ENABLED partners with notify on
-// (table `partners`). Same restrictions as the /partner panel: built from partnerView() only (jewellery lines, name, phone,
-// address; never the customer's e-mail, never the other lines or the order total).
+// (table `partners`). Same as the /partner panel: built from partnerView() only - only orders that contain women's-collection
+// jewellery, but then the whole order (every line, the collection lines tagged "Дамска колекция", the full total / amount to
+// collect), name, phone, address; never the customer's e-mail.
 //   - cash on delivery: right after the order is saved (/api/order);
 //   - card: only once the payment is confirmed (lib/payment-notify.ts, reached only for a PAID order); never for an open / failed one.
 // notifyPartnerOnce() claims orders.partner_email_sent_at first (one conditional UPDATE), so it can never go out twice. 3 tries;
@@ -23,21 +24,23 @@ export const partnerOrderUrl = (ref: string) => `${SITE_ORIGIN}/partner?order=${
 export function partnerSubject(v: PartnerOrderView): string {
   return v.payment.kind === "card"
     ? `Нова поръчка #${v.ref} — ПЛАТЕНА С КАРТА`
-    : `Нова поръчка #${v.ref} — НАЛОЖЕН ПЛАТЕЖ ${money(v.jewelleryTotal, v.market)}`;
+    : `Нова поръчка #${v.ref} — НАЛОЖЕН ПЛАТЕЖ ${money(v.total, v.market)}`;
 }
 
 export function buildPartnerOrderEmail(v: PartnerOrderView): string {
   const card = v.payment.kind === "card";
   const badge = card
     ? `<div style="background:#e7f6ec;border:2px solid #16a34a;color:#14532d;padding:16px 18px;font-size:18px;font-weight:700;text-align:center">✅ ПЛАТЕНО С КАРТА — не се събира нищо</div>`
-    : `<div style="background:#fff3e0;border:2px solid #ea7a0c;color:#7c2d12;padding:16px 18px;font-size:18px;font-weight:700;text-align:center">💵 НАЛОЖЕН ПЛАТЕЖ — ${esc(money(v.jewelleryTotal, v.market))} за събиране</div>`;
+    : `<div style="background:#fff3e0;border:2px solid #ea7a0c;color:#7c2d12;padding:16px 18px;font-size:18px;font-weight:700;text-align:center">💵 НАЛОЖЕН ПЛАТЕЖ — ${esc(money(v.total, v.market))} за събиране</div>`;
   const row = (k: string, val: string, shade: boolean) =>
     `<tr${shade ? ' style="background:#faf7f1"' : ""}><td style="padding:9px 12px;font-weight:600;width:130px;vertical-align:top">${k}</td><td style="padding:9px 12px">${val}</td></tr>`;
-  const lines = v.items.map((i) => `<tr>
-      <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb"><strong>${esc(i.model)}</strong><br><span style="color:#6b6456;font-size:13px">${esc([i.color, i.stone].filter(Boolean).join(" · "))}</span></td>
+  const tag = `<span style="display:inline-block;background:#b08a3e;color:#ffffff;font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 6px;margin-bottom:3px">ДАМСКА КОЛЕКЦИЯ</span><br>`;
+  const lines = v.items.map((i) => `<tr${i.collection ? ' style="background:#fbf3e2"' : ""}>
+      <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb">${i.collection ? tag : ""}<strong>${esc(i.model)}</strong>${i.gift ? ' <span style="color:#047857;font-size:13px">· подарък</span>' : ""}${i.color || i.stone ? `<br><span style="color:#6b6456;font-size:13px">${esc([i.color, i.stone].filter(Boolean).join(" · "))}</span>` : ""}</td>
       <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;text-align:center">${i.qty}</td>
-      <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap">${esc(money(i.price, v.market))}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap">${i.gift ? "0" : esc(money(i.price * i.qty, v.market))}</td>
     </tr>`).join("");
+  const sum = (label: string, val: string, style = "") => `<tr${style ? ` style="${style}"` : ""}><td colspan="2" style="padding:9px 12px">${label}</td><td style="padding:9px 12px;text-align:right;white-space:nowrap">${val}</td></tr>`;
   const url = partnerOrderUrl(v.ref);
 
   return `<!DOCTYPE html><html lang="bg">${emailHead(esc(partnerSubject(v)))}
@@ -54,10 +57,9 @@ export function buildPartnerOrderEmail(v: PartnerOrderView): string {
     ${row(v.delivery.office ? "Офис" : "Адрес", esc(v.delivery.place || "-"), false)}
    </table>
    <table style="width:100%;border-collapse:collapse;font-size:14px">
-    <thead><tr style="background:${EMAIL_IVORY}"><th style="padding:9px 12px;text-align:left">Бижу</th><th style="padding:9px 12px">Бр.</th><th style="padding:9px 12px;text-align:right">Цена</th></tr></thead>
+    <thead><tr style="background:${EMAIL_IVORY}"><th style="padding:9px 12px;text-align:left">Продукт</th><th style="padding:9px 12px">Бр.</th><th style="padding:9px 12px;text-align:right">Цена</th></tr></thead>
     <tbody>${lines}</tbody>
-    <tfoot>${v.onePlusOne > 0 ? `<tr><td colspan="2" style="padding:9px 12px;color:#047857">1+1 (второто бижу безплатно)</td><td style="padding:9px 12px;text-align:right;color:#047857;white-space:nowrap">-${esc(money(v.onePlusOne, v.market))}</td></tr>` : ""}
-     <tr style="background:#faf7f1;font-weight:700"><td colspan="2" style="padding:10px 12px">${card ? "Платено с карта" : "За събиране"}</td><td style="padding:10px 12px;text-align:right;white-space:nowrap">${card ? "€0.00" : esc(money(v.jewelleryTotal, v.market))}</td></tr></tfoot>
+    <tfoot>${v.discount > 0 ? sum("Отстъпки (1+1, код ...)", `-${esc(money(v.discount, v.market))}`, "color:#047857") : ""}${v.shipping > 0 ? sum("Доставка", esc(money(v.shipping, v.market))) : ""}${sum("Общо поръчка", esc(money(v.total, v.market)))}${sum(card ? "Платено с карта - за събиране" : "За събиране", esc(money(v.payment.collect, v.market)), "background:#faf7f1;font-weight:700")}</tfoot>
    </table>
    <p style="margin:24px 0 0;text-align:center"><a href="${esc(url)}" style="display:inline-block;background:${EMAIL_NAVY};color:#ffffff;text-decoration:none;padding:14px 26px;font-weight:700;letter-spacing:.06em">ОТВОРИ ПОРЪЧКАТА</a></p>
   </div>
@@ -96,7 +98,7 @@ export type PartnerNotifyResult = "sent" | "not-jewellery" | "not-paid" | "alrea
  * The partner e-mail of one order, at most once. Reads the SAVED row (so card orders are checked for PAID here as well).
  * Never throws: the order is saved either way; a failure is alerted on Telegram.
  */
-export async function notifyPartnerOnce(ref: string): Promise<PartnerNotifyResult> {
+export async function notifyPartnerOnce(ref: string, opts: { to?: string[] } = {}): Promise<PartnerNotifyResult> {
   try {
     const sb = supabaseAdmin();
     const { data: row, error } = await sb.from("orders").select(`${PARTNER_ORDER_COLUMNS}, partner_email_sent_at`).eq("order_ref", ref).maybeSingle();
@@ -106,7 +108,7 @@ export async function notifyPartnerOnce(ref: string): Promise<PartnerNotifyResul
     if (r.payment_method === "card" && r.payment_status !== "paid") return "not-paid";
     if (!partnerVisible(r)) return "not-jewellery";
     if (r.partner_email_sent_at) return "already-sent";
-    const to = await recipients();
+    const to = opts.to ?? await recipients();   // opts.to: the self-test only (its test address, never the real partner)
     if (!to.length) return "no-recipient";
 
     // claim: only the call that moves partner_email_sent_at from NULL sends
