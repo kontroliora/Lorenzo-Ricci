@@ -21,7 +21,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const RUN_ID = "2026-11-09-a";
+const RUN_ID = "2026-11-09-b";   // -a ran before partner_role.sql existed (stopped at step 1, nothing left behind)
 const TEST_PARTNER = "dserbezov7@gmail.com";
 const REAL_PARTNER = { email: "dejvidvisev99@gmail.com", name: "Партньор бижута" };   // invited only when every check passed
 const TEST_CUSTOMER_EMAIL = "partner-selftest-customer@example.com";   // must never appear in anything the partner gets

@@ -9,6 +9,7 @@ import { computeAdPerformance, fetchAdMeta, fetchOrders, RULE_DAYS } from "@/lib
 import { periodRange, sofiaHour, sofiaDay } from "@/lib/sofia-time";
 import { imageUrl } from "@/lib/image-loader";
 import IMAGE_WIDTHS from "@/lib/image-widths.json";
+import { findSchemaProblems } from "@/lib/schema-check";
 
 const SITE = "https://www.lorenzo-ricci.com";
 export const ALERT_EVERY_MS = 60 * 60_000;      // one Telegram message per problem per hour at most
@@ -308,6 +309,15 @@ async function checkEmail(sb: SupabaseClient): Promise<Out[]> {
   return out;
 }
 
+// ── Database schema: every column / table the code expects (lib/schema-check.ts) ─
+async function checkSchema(sb: SupabaseClient): Promise<Check> {
+  const probs = await findSchemaProblems(sb);
+  return {
+    key: "db_schema", ok: probs.length === 0, title: "В базата липсва колона/таблица, която кодът очаква (пусни SQL миграцията)",
+    detail: probs.map((p) => p.missing === "table" ? `таблица ${p.table}` : `${p.table}: ${p.missing.join(", ") || p.error}`).join("; ").slice(0, 300) || undefined,
+  };
+}
+
 const safe = async (name: string, fn: () => Promise<Out | Out[]>): Promise<Out[]> => {
   try { const r = await fn(); return Array.isArray(r) ? r : [r]; }
   catch (e) { return [{ key: `check:${name}`, ok: true, unknown: true, title: name, detail: e instanceof Error ? e.message.slice(0, 160) : "грешка" }]; }
@@ -316,7 +326,7 @@ const safe = async (name: string, fn: () => Promise<Out | Out[]>): Promise<Out[]
 export async function runChecks(sb: SupabaseClient): Promise<{ checks: Check[]; keep: Set<string> }> {
   const groups = await Promise.all([
     safe("site", checkSite), safe("checkout_errors", () => checkCheckoutErrors(sb)), safe("stripe", checkStripe), safe("econt", checkEcont), safe("ads", () => checkAds(sb)),
-    safe("client_errors", () => checkClientErrors(sb)), safe("images", () => checkImages(sb)), safe("synthetic", checkSynthetic), safe("email", () => checkEmail(sb)),
+    safe("client_errors", () => checkClientErrors(sb)), safe("images", () => checkImages(sb)), safe("synthetic", checkSynthetic), safe("email", () => checkEmail(sb)), safe("schema", () => checkSchema(sb)),
   ]);
   const all = groups.flat();
   return { checks: all.filter((x): x is Check => !isSkip(x)), keep: new Set(all.filter(isSkip).map((x) => x.skip)) };
@@ -325,20 +335,8 @@ export async function runChecks(sb: SupabaseClient): Promise<{ checks: Check[]; 
 // ── Telegram ─────────────────────────────────────────────────────────────────
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-export async function sendTelegram(html: string): Promise<{ ok: boolean; error?: string }> {
-  const token = (process.env.TELEGRAM_BOT_TOKEN ?? "").trim();
-  const chat = (process.env.TELEGRAM_CHAT_ID ?? "").trim();
-  if (!token || !chat) return { ok: false, error: "TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set" };
-  try {
-    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chat, text: html.slice(0, 4000), parse_mode: "HTML", disable_web_page_preview: true }),
-      signal: AbortSignal.timeout(10_000),
-    });
-    const j = (await r.json().catch(() => ({}))) as { ok?: boolean; description?: string };
-    return j.ok ? { ok: true } : { ok: false, error: j.description ?? `HTTP ${r.status}` };
-  } catch (e) { return { ok: false, error: e instanceof Error ? e.message : "error" }; }
-}
+import { sendTelegram } from "@/lib/telegram";
+export { sendTelegram };
 
 type Row = { key: string; ok: boolean; title: string; detail: string | null; since: string | null; checked_at: string; last_alerted_at: string | null };
 

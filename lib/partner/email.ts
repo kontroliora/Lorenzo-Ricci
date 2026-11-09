@@ -2,7 +2,7 @@
 import { Resend } from "resend";
 import { EMAIL_IVORY, EMAIL_NAVY, emailHead, emailHeaderRow } from "../email-layout";
 import { SITE_ORIGIN } from "../meta-capi";
-import { sendTelegram } from "../health";
+import { sendTelegram } from "../telegram";
 import { supabaseAdmin } from "../supabase-admin";
 import { PARTNER_ORDER_COLUMNS, money, partnerView, partnerVisible, type PartnerOrderView } from "./orders";
 

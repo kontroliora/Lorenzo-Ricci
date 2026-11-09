@@ -9,7 +9,7 @@ const req = createRequire(path.join(ROOT, "package.json"));
 const jiti = req("jiti")(path.join(ROOT, "x.js"), { alias: { "@": ROOT }, interopDefault: true });
 const L = async (p) => jiti(path.join(ROOT, p));
 const on = await L("lib/order-notify.ts"), sh = await L("lib/shipment-emails.ts"), rec = await L("lib/recovery-email.ts");
-const ro = await L("lib/ro/emails.ts"), rorec = await L("lib/ro/recovery-email.ts"), pe = await L("lib/partner-email.ts");
+const ro = await L("lib/ro/emails.ts"), rorec = await L("lib/ro/recovery-email.ts"), pe = await L("lib/partner/email.ts");
 const wl = await L("lib/waitlist-email.ts"), nc = await L("lib/new-collection.ts");
 const slug = [...nc.NEW_COLLECTION_SLUGS][0];
 const bgOrder = { customer: { name: "Иван Петров", email: "x", phone: "0888123456", officeAddress: "Еконт офис София - Младост 1, бул. Ал. Малинов 23", shippingMethod: "Еконт - до офис" },
@@ -32,7 +32,7 @@ const T = [
   ["ro-cancelled", ro.roCancelledSubject?.("LRRO-20412") ?? "Comanda a fost anulată", ro.buildRoCancelledEmail({ orderRef: "LRRO-20412", firstName: "Andrei" })],
   ["ro-returned", ro.roReturnedSubject?.("LRRO-20412") ?? "Coletul s-a întors la noi", ro.buildRoReturnedEmail({ orderRef: "LRRO-20412", firstName: "Andrei", payment: "card", total: 449 })],
   ["ro-cart-recovery", rorec.roRecoverySubject, rorec.buildRoRecoveryEmail({ session_id: "test", email: "x", name: "Andrei Popescu", items: [{ name: "Yachting Black", sku: "LR-YB", price: 449, quantity: 1 }], subtotal: 449 })],
-  ["partner", "Партньор: поръчка LR-104233", pe.buildPartnerEmail({ orderRef: "LR-104233", date: new Date(), name: "Мария Иванова", phone: "0888123456", market: "bg", delivery: { method: "Еконт", office: true, address: "Еконт София - Младост 1" }, items: [{ slug, name: "Дамско колие", sku: "LR-W1", quantity: 2, price: 39 }], orderDiscount: 39, payment: "cod", status: "Нова" })],
+  ["partner", "Партньор: поръчка LR-104233", pe.buildPartnerOrderEmail({ ref: "LR-104233", createdAt: new Date().toISOString(), market: "bg", currency: "EUR", name: "Мария Иванова", phone: "0888123456", delivery: { courier: "Еконт", office: true, place: "Еконт София - Младост 1" }, items: [{ model: "Колие Verdis", color: "Злато", stone: "Зелена вложка", sku: "LR-W1", qty: 2, price: 39 }], jewelleryGross: 78, onePlusOne: 39, jewelleryTotal: 39, payment: { kind: "cod", label: "НАЛОЖЕН ПЛАТЕЖ", collect: 39 }, storeCancelled: false, state: { status: "new", note: null, updatedAt: null } })],
   ["en-waitlist", "A note on your Lorenzo Ricci order", wl.buildWaitlistEmail({ firstName: "John", itemNames: ["Yachting Black"], promoCode: "WELCOME5", discountPct: 5 })],
 ];
 const idx = [];

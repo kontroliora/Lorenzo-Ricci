@@ -36,11 +36,11 @@
       "schedule": "*/15 * * * *"
     },
     {
-      "path": "/api/cron/partner-backfill",
-      "schedule": "*/5 * * * *"
+      "path": "/api/cron/partner-selftest",
+      "schedule": "* * * * *"
     },
     {
-      "path": "/api/cron/partner-selftest",
+      "path": "/api/cron/partner-catchup",
       "schedule": "* * * * *"
     }
   ]
