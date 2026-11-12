@@ -19,6 +19,8 @@ export default async function PartnerPreview({ searchParams }: { searchParams: P
     { ...base, order_ref: "LR-TSTMIX1", name: "Ива Георгиева", phone: "0888 333 333", courier: "home", address: "ул. Тестова 1, ет. 2", items: [l("necklace-verdis-gold", 109), { ...l("chrono-black", 119), name: "Chrono Black" }], subtotal: 228, total: 228, status: "new", payment_method: "cod" },
   ];
   const views = rows.map((r, i) => partnerView(r, i === 1 ? { status: "confirmed", note: "Ще вземе в петък", updated_at: null } : null));
+  // preview of an uncollected parcel (day 4 at the office)
+  views[2] = { ...views[2], real: { key: "shipped", label: "Изпратена" }, pickup: { day: 4, office: "Еконт София - Младост 1", since: new Date(Date.now() - 3.5 * 86_400_000).toISOString(), returnsInDays: 5 } };
   const email = q.email ? views[{ cod: 0, card: 1, mix: 2 }[q.email as "cod" | "card" | "mix"] ?? 0] : null;
   if (email) return <div dangerouslySetInnerHTML={{ __html: buildPartnerOrderEmail(email).replace(/^[\s\S]*<body[^>]*>/, "").replace(/<\/body>[\s\S]*$/, "") }} />;
   if (q.page === "bijuta") {
@@ -28,6 +30,6 @@ export default async function PartnerPreview({ searchParams }: { searchParams: P
     });
     return (<><PartnerHeader active="pieces" /><PiecesList pieces={pieces} /></>);
   }
-  const counts = Object.fromEntries(PARTNER_FILTERS.map((f) => [f, views.filter((v) => matchesFilter(v.real.key, f)).length])) as Record<PartnerFilter, number>;
+  const counts = Object.fromEntries(PARTNER_FILTERS.map((f) => [f, views.filter((v) => matchesFilter(v.real.key, f, v.pickup)).length])) as Record<PartnerFilter, number>;
   return (<><PartnerHeader active="orders" /><PartnerOrders preview={{ orders: views, counts }} /></>);
 }

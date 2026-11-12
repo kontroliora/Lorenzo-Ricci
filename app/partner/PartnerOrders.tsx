@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { PartnerFilter, PartnerOrderView, PartnerStatus, RealStatusKey } from "@/lib/partner/orders";
 
 const FILTERS: { key: PartnerFilter; label: string }[] = [
-  { key: "new", label: "Нови" }, { key: "confirmed", label: "Потвърдени" }, { key: "shipped", label: "Изпратени" }, { key: "cancelled", label: "Отказани" }, { key: "all", label: "Всички" },
+  { key: "new", label: "Нови" }, { key: "confirmed", label: "Потвърдени" }, { key: "shipped", label: "Изпратени" }, { key: "uncollected", label: "Непотърсени" }, { key: "cancelled", label: "Отказани" }, { key: "all", label: "Всички" },
 ];
 const ACTIONS: { key: PartnerStatus; label: string; cls: string }[] = [
   { key: "called", label: "Обадено", cls: "bg-sky-600" },
@@ -58,7 +58,8 @@ export function PartnerOrders({ preview }: { preview?: { orders: PartnerOrderVie
     if (focus && data) document.getElementById(`o-${focus}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [focus, data]);
 
-  const onSaved = (o: PartnerOrderView) => setData((d) => d && ({ ...d, orders: d.orders.map((x) => (x.ref === o.ref ? o : x)) }));
+  // a mark comes back without the Econt part (pickup): keep the one already on the card
+  const onSaved = (o: PartnerOrderView) => setData((d) => d && ({ ...d, orders: d.orders.map((x) => (x.ref === o.ref ? { ...o, pickup: o.pickup ?? x.pickup } : x)) }));
   const [toast, setToast] = useState("");
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(""), 2600); return () => clearTimeout(t); }, [toast]);
 
@@ -118,6 +119,13 @@ function OrderCard({ o, highlight, onSaved, onToast, preview }: { o: PartnerOrde
           </div>
           <span title="Статус на поръчката (магазин)" className={`shrink-0 text-[11px] font-bold uppercase tracking-wide px-2 py-1 rounded ${REAL_CLS[o.real.key]}`}>{o.real.label}</span>
         </div>
+        {o.pickup && (
+          <div className="mt-2 rounded-lg border-2 border-orange-400 bg-orange-50 px-3 py-2 text-[13px] text-orange-900">
+            <b>📦 НЕПОТЪРСЕНА · ден {o.pickup.day} в офиса</b>
+            <br />{o.pickup.office} · от {when(o.pickup.since)}
+            <br />{o.pickup.returnsInDays > 0 ? `Връща се след ~${o.pickup.returnsInDays} ${o.pickup.returnsInDays === 1 ? "ден" : "дни"}.` : "Всеки момент се връща."} Звънни да я вземе.
+          </div>
+        )}
         {o.state.status !== "new" && (
           <p className="mt-2 text-[13px]">
             <span className="text-[#6b6456]">Твоята отметка: </span><b className={MARK_CLS[o.state.status]}>{o.state.label}</b>

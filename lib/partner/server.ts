@@ -3,7 +3,10 @@ import { supabaseAdmin } from "../supabase-admin";
 import { COLLECTION_PIECES } from "../new-collection";
 import { NEW_COLLECTION_PRODUCTS } from "../new-collection-products";
 import { applyOverride, getPriceOverrides } from "../price-overrides";
+import { kv } from "@vercel/kv";
+import { analyzeShipment, getRawStatuses } from "../econt";
 import { PARTNER_COOKIE, partnerFromCookie, type Partner } from "./access";
+import { pickupInfoOf, type PickupFacts } from "./pickup";
 import {
   PARTNER_FILTERS, PARTNER_ORDER_COLUMNS, PARTNER_SINCE, matchesFilter, partnerView, partnerVisible, pieceInfo,
   type PartnerFilter, type PartnerOrderView,
@@ -47,9 +50,39 @@ export async function listPartnerOrders(filter: PartnerFilter): Promise<{ orders
     if (error) throw new Error(error.message);
     for (const s of (data ?? []) as Row[]) states.set(String(s.order_ref), s);
   }
-  const all = mine.map((r) => partnerView(r, states.get(String(r.order_ref)) as never));
-  const counts = Object.fromEntries(PARTNER_FILTERS.map((f) => [f, all.filter((o) => matchesFilter(o.real.key, f)).length])) as Record<PartnerFilter, number>;
-  return { orders: all.filter((o) => matchesFilter(o.real.key, filter)), counts };
+  const facts = await econtFacts(mine.filter((r) => r.status === "shipped" && r.tracking_number).map((r) => String(r.tracking_number)));
+  const all = mine.map((r) => {
+    const v = partnerView(r, states.get(String(r.order_ref)) as never);
+    if (r.status === "shipped" && r.tracking_number) v.pickup = pickupInfoOf(facts.get(awbOf(r.tracking_number)));
+    return v;
+  });
+  const counts = Object.fromEntries(PARTNER_FILTERS.map((f) => [f, all.filter((o) => matchesFilter(o.real.key, f, o.pickup)).length])) as Record<PartnerFilter, number>;
+  return { orders: all.filter((o) => matchesFilter(o.real.key, filter, o.pickup)), counts };
+}
+
+const awbOf = (t: unknown) => String(t ?? "").replace(/\s+/g, "");
+const FACTS_TTL_S = 60 * 60;   // Econt is asked at most once an hour per parcel (the page refreshes every 20 s)
+
+/** Econt facts (at the office? since when? collected? returning?) per tracking number, cached in KV for an hour. Never throws. */
+async function econtFacts(trackings: string[]): Promise<Map<string, PickupFacts>> {
+  const out = new Map<string, PickupFacts>();
+  const awbs = [...new Set(trackings.map(awbOf).filter(Boolean))];
+  if (!awbs.length) return out;
+  try {
+    const cached = await kv.mget<(PickupFacts | null)[]>(...awbs.map((a) => `partner-pickup:${a}`));
+    const missing: string[] = [];
+    awbs.forEach((a, i) => (cached[i] ? out.set(a, cached[i] as PickupFacts) : missing.push(a)));
+    for (let i = 0; i < missing.length; i += 50) {
+      const raw = await getRawStatuses(missing.slice(i, i + 50));
+      for (const [awb, st] of raw) {
+        const a = analyzeShipment(st);
+        const f: PickupFacts = { delivered: a.delivered, returning: a.returning, atFinalOffice: a.atFinalOffice, arrivedAtFinalOfficeMs: a.arrivedAtFinalOfficeMs, officeName: a.officeName };
+        out.set(awb, f);
+        await kv.set(`partner-pickup:${awb}`, f, { ex: FACTS_TTL_S });
+      }
+    }
+  } catch (e) { console.error("[partner] Econt status unavailable:", e instanceof Error ? e.message : e); }
+  return out;
 }
 
 export type PartnerPiece = { slug: string; model: string; color: string; stone: string; sku: string; image: string; price: number; stock: number | null; onSale: boolean };

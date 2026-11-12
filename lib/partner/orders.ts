@@ -9,13 +9,14 @@
 import { NEW_COLLECTION_SLUGS, COLLECTION_PIECES } from "../new-collection";
 import { NEW_COLLECTION_PRODUCTS } from "../new-collection-products";
 import { isRoOfficeMethod } from "../ro/config";
+import type { PickupInfo } from "./pickup";
 
 /** Orders of the collection start here (it went on sale in November 2026). */
 export const PARTNER_SINCE = "2026-11-01T00:00:00.000Z";
 
 /** The columns the server reads for him. NOT email, NOT notes, NOT attribution. */
 export const PARTNER_ORDER_COLUMNS =
-  "order_ref, created_at, name, phone, city, post_code, address, shipping_method, courier, ship_country, items, subtotal, shipping_cost, total, payment_method, payment_status, status, call_state, call_attempts, is_international";
+  "order_ref, created_at, name, phone, city, post_code, address, shipping_method, courier, ship_country, items, subtotal, shipping_cost, total, payment_method, payment_status, status, call_state, call_attempts, tracking_number, is_international";   // tracking_number: server only (Непотърсени), never in his view
 
 export const PARTNER_STATUSES = ["new", "called", "confirmed", "cancelled", "no_answer"] as const;
 export type PartnerStatus = (typeof PARTNER_STATUSES)[number];
@@ -49,11 +50,13 @@ export function realStatusOf(row: Row): RealStatusKey {
   return "new";   // "Обадено" has no field in the panel's data (it records only confirmed / не вдига / refused), so it never shows
 }
 
-/** /partner filters on the REAL status: Нови (Нова + Не вдига) · Потвърдени (+ За изпълнение) · Изпратени (+ Завършена) · Отказани (+ Върната) · Всички. */
-export type PartnerFilter = "new" | "confirmed" | "shipped" | "cancelled" | "all";
-export const PARTNER_FILTERS: PartnerFilter[] = ["new", "confirmed", "shipped", "cancelled", "all"];
-export function matchesFilter(real: RealStatusKey, f: PartnerFilter): boolean {
+/** /partner filters on the REAL status: Нови (Нова + Не вдига) · Потвърдени (+ За изпълнение) · Изпратени (+ Завършена) ·
+ *  Непотърсени (at the Econt office since day 3+, lib/partner/pickup.ts) · Отказани (+ Върната) · Всички. */
+export type PartnerFilter = "new" | "confirmed" | "shipped" | "uncollected" | "cancelled" | "all";
+export const PARTNER_FILTERS: PartnerFilter[] = ["new", "confirmed", "shipped", "uncollected", "cancelled", "all"];
+export function matchesFilter(real: RealStatusKey, f: PartnerFilter, pickup?: PickupInfo | null): boolean {
   if (f === "all") return true;
+  if (f === "uncollected") return !!pickup && real === "shipped";
   if (f === "new") return real === "new" || real === "no_answer" || real === "called";
   if (f === "confirmed") return real === "confirmed" || real === "to_fulfil";
   if (f === "shipped") return real === "shipped" || real === "completed";
@@ -135,6 +138,7 @@ export type PartnerOrderView = {
   total: number;            // the full order total the customer pays
   payment: { kind: "card" | "cod"; label: string; collect: number };   // collect = total (cash on delivery) or 0 (paid by card)
   real: { key: RealStatusKey; label: string };   // the shop's status (admin panel), read-only for him
+  pickup: PickupInfo | null;   // waiting at the Econt office since day 3+ (set by the server from Econt), else null
   state: { status: PartnerStatus; label: string; note: string; updatedAt: string | null };   // HIS mark ("new" = none yet)
 };
 
@@ -184,9 +188,10 @@ export function partnerView(row: Row, state?: PartnerState): PartnerOrderView {
       ? { kind: "card", label: "ПЛАТЕНО С КАРТА", collect: 0 }
       : { kind: "cod", label: `НАЛОЖЕН ПЛАТЕЖ — ${money(total, market)}`, collect: total },
     real: { key: realStatusOf(row), label: REAL_STATUS_LABEL[realStatusOf(row)] },
+    pickup: null,
     state: { status, label: PARTNER_STATUS_LABEL[status], note: String(state?.note ?? ""), updatedAt: state?.updated_at ?? null },
   };
 }
 
 /** Keys a view may hold: the self-test checks every record against this list (and that no e-mail address appears anywhere). */
-export const PARTNER_VIEW_KEYS = ["ref", "createdAt", "market", "currency", "name", "phone", "delivery", "items", "goods", "discount", "shipping", "total", "payment", "real", "state"];
+export const PARTNER_VIEW_KEYS = ["ref", "createdAt", "market", "currency", "name", "phone", "delivery", "items", "goods", "discount", "shipping", "total", "payment", "real", "pickup", "state"];
