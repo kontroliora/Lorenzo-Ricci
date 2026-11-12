@@ -13,6 +13,7 @@ import { PARTNER_FILTERS, PARTNER_VIEW_KEYS, type PartnerOrderView } from "@/lib
 import { applyOfMark } from "@/lib/partner/marks";
 import { pickupInfoOf } from "@/lib/partner/pickup";
 import { PARTNER_CART_KEYS, type PartnerCartView } from "@/lib/partner/carts";
+import { getAbandonedCarts } from "@/lib/abandoned-carts-server";
 
 // ONE-OFF self-test of the partner role (owner, 09.11.2026). Runs once per RUN_ID (KV flag), from Vercel Cron:
 //   1. a TEST partner (the owner's own address) + 5 test orders (COD jewellery, card PAID jewellery, mixed COD jewellery + watch,
@@ -27,7 +28,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const RUN_ID = "2026-11-12-l";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark. -i: Колички (abandoned carts with a women's piece): list, note, call buttons, 403s. -j: -i was 76/84, test bugs only: the carts calls used the session revoked earlier in the run; the lock may hit the IP first (check Retry-After). -k: Непотърсени (parcel at the Econt office from day 3). -l: -k 77/90, test bugs only: the previous run's lock on the server's IP (now counted under 'selftest', cleared); the test carts shared the test orders' e-mail, so the list rightly hid them as 'ordered since'.
+const RUN_ID = "2026-11-12-m";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark. -i: Колички (abandoned carts with a women's piece): list, note, call buttons, 403s. -j: -i was 76/84, test bugs only: the carts calls used the session revoked earlier in the run; the lock may hit the IP first (check Retry-After). -k: Непотърсени (parcel at the Econt office from day 3). -l: -k 77/90, test bugs only: the previous run's lock on the server's IP (now counted under 'selftest', cleared); the test carts shared the test orders' e-mail, so the list rightly hid them as 'ordered since'.
 const TEST_PARTNER = "dserbezov7@gmail.com";
 const TEST_CUSTOMER_EMAIL = "partner-selftest-customer@example.com";   // must never appear in anything the partner gets
 const T = (s: string) => `LR-TST${s}`;
@@ -303,7 +304,13 @@ export async function GET(req: NextRequest) {
     const cartsRes = await call("/api/partner/carts", { cookieValue: cartCookie });
     const carts = (cartsRes.json as { carts?: PartnerCartView[] })?.carts ?? [];
     check("Колички: 200", cartsRes.status === 200, cartsRes.status);
-    check("Колички: the cart with a women's piece is listed", carts.some((c) => c.id === cj), carts.length);
+    let why: unknown = null;
+    if (!carts.some((c) => c.id === cj)) {   // diagnostics: which rule hides the test cart
+      const rb = await sb.from("cart_sessions").select("phone, status, lang, subtotal, updated_at, created_at, call_state, call_attempts").eq("id", cj).single();
+      const all = await getAbandonedCarts();
+      why = { readback: rb.data ?? rb.error?.message, inPanelList: all.some((c) => c.id === cj), ageH: rb.data?.updated_at ? Math.round((Date.now() - Date.parse(rb.data.updated_at)) / 360_000) / 10 : null };
+    }
+    check("Колички: the cart with a women's piece is listed", carts.some((c) => c.id === cj), { n: carts.length, why });
     check("Колички: a watch-only cart is NOT listed", !carts.some((c) => c.id === cw));
     check("Колички: only allowed keys, no customer e-mail anywhere", carts.every((c) => Object.keys(c).every((k) => PARTNER_CART_KEYS.includes(k))) && !cartsRes.text.includes("@") && !/\"email\"/.test(cartsRes.text));
     const jc = carts.find((c) => c.id === cj);
