@@ -11,22 +11,15 @@ export const maxDuration = 120;   // the first run pulls 30 days of Meta history
 // Every 15 minutes (Vercel Cron, vercel.json): 1) Meta ads sync for yesterday + today (active ads only, ~2 s), so "spent > €15
 // today" is fresh; 2) the health checks -> health_status (the panel's top bar) + Telegram (lib/health.ts: at most one message per
 // problem per hour). The very first run also sends a short "data is in" summary to Telegram.
-// ?test=1 only sends a test message. ?ping=1 only answers 200 (the GitHub watchdog: .github/workflows/health.yml).
+// ?ping=1 only answers 200 (the GitHub watchdog: .github/workflows/health.yml).
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   // Operator calls (lib/cron-auth.ts opsAuthorized): run history + a fake problem to test the Telegram alert end to end.
-  if ((sp.has("status") || sp.has("simulate") || sp.has("sync")) && opsAuthorized(req.headers.get("authorization"))) {
+  if ((sp.has("status") || sp.has("sync")) && opsAuthorized(req.headers.get("authorization"))) {
     const sb = supabaseAdmin();
     if (sp.get("sync") === "1") {
       try { return NextResponse.json({ ok: true, meta: await syncMeta(sb, 30, true) }); }
       catch (e) { return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : String(e) }); }
-    }
-    if (sp.get("simulate") === "on" || sp.get("simulate") === "off") {
-      const extra = sp.get("simulate") === "on"
-        ? [{ key: "test:simulated", ok: false, title: "ТЕСТ: симулиран проблем (не е истински)", detail: "пуснат ръчно за проверка на известията; изчиства се със simulate=off" }]
-        : [];
-      const r = await runHealth(sb, { extra, source: `simulate-${sp.get("simulate")}` });
-      return NextResponse.json({ ok: true, ...r });
     }
     const q = await sb.from("health_status").select("key, ok, title, detail, since, checked_at, last_alerted_at").order("checked_at", { ascending: false });
     const rows = q.data ?? [];
@@ -39,10 +32,6 @@ export async function GET(req: NextRequest) {
   }
   if (!cronAuthorized(req.headers.get("authorization"))) return NextResponse.json({ ok: false, error: "unauthorized", build: "health-v5" }, { status: 401 });
   if (sp.get("ping") === "1") return NextResponse.json({ ok: true });
-  if (sp.get("test") === "1") {
-    const t = await sendTelegram("✅ <b>Lorenzo Ricci</b>: тестово известие. Проверките на системата са включени (на всеки 15 мин), проблемите идват тук най-много веднъж на час.");
-    return NextResponse.json({ ok: t.ok, telegram: t });
-  }
   const sb = supabaseAdmin();
   try {
     const first = !(await sb.from("health_status").select("key").eq("key", "_run").maybeSingle()).data;

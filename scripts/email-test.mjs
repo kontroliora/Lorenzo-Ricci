@@ -1,6 +1,5 @@
-// Renders every customer e-mail template with sample data and (optionally) sends each one to a test address.
+// Renders every customer e-mail template with sample data to .email-test/ (it never sends anything).
 //   node scripts/email-test.mjs                         -> writes .email-test/*.html (+ all.html to view them side by side)
-//   node scripts/email-test.mjs --send you@example.com  -> also sends them via Resend (RESEND_API_KEY from .env.local)
 // Subjects are prefixed "[ТЕСТ <template>]". Nothing touches orders or customers.
 import { createRequire } from "node:module";
 import fs from "node:fs"; import path from "node:path";
@@ -41,18 +40,5 @@ fs.writeFileSync(path.join(OUT, "index.json"), JSON.stringify(idx, null, 1));
 fs.writeFileSync(path.join(OUT, "all.html"), `<!doctype html><meta charset=utf-8><body style="margin:0;background:#888;font-family:sans-serif">` + idx.map(({ k, subj }) => `<h3 style="color:#fff;margin:16px">${k} — ${subj}</h3><iframe src="${k}.html" style="width:640px;height:520px;border:0;margin:0 16px;background:#fff"></iframe>`).join(""));
 console.log(idx.map((x) => x.k).join("\n"));
 
-const si = process.argv.indexOf("--send");
-if (si > 0) {
-  const TO = process.argv[si + 1];
-  if (!TO || !TO.includes("@")) throw new Error("--send needs an address");
-  const env = Object.fromEntries(fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").split("\n").filter((l) => /^[A-Z_]+=/.test(l)).map((l) => { const i = l.indexOf("="); return [l.slice(0, i), l.slice(i + 1).trim().replace(/^["']|["']$/g, "")]; }));
-  const key = process.env.RESEND_API_KEY || env.RESEND_API_KEY;
-  if (!key) throw new Error("RESEND_API_KEY is empty in .env.local (Vercel keeps it as a sensitive value): add it there or export it in the shell");
-  const { Resend } = req("resend");
-  const resend = new Resend(key);
-  for (const [k, subj, html] of T) {
-    const { data, error } = await resend.emails.send({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [TO], subject: `[ТЕСТ ${k}] ${subj}`, html });
-    console.log(k, error ? "ERROR " + JSON.stringify(error) : "sent " + data?.id);
-    await new Promise((r) => setTimeout(r, 700));
-  }
-}
+// No sending from here (owner, 12.11.2026: no test e-mails to the owner). Open .email-test/all.html to look at the templates.
+if (process.argv.includes("--send")) { console.error("--send was removed: this script only renders the templates to .email-test/"); process.exit(1); }

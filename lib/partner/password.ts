@@ -74,8 +74,3 @@ export async function passwordLogin(emailRaw: unknown, passwordRaw: unknown, ip:
   return { ok: true, partner };
 }
 
-/** The self-test only: clears the lock / counters of one e-mail (its test address). */
-export async function clearPasswordLocks(email: string): Promise<void> {
-  const e = normEmail(email);
-  await Promise.all([kv.del(failKey("email", e)), kv.del(lockKey("email", e)), kv.del(failKey("ip", "selftest")), kv.del(lockKey("ip", "selftest"))]);
-}

@@ -3,7 +3,6 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { PARTNER_COOKIE, cookieOptions, signSession } from "@/lib/partner/access";
 import { passwordLogin } from "@/lib/partner/password";
 import { noStore } from "@/lib/partner/server";
-import { cronAuthorized } from "@/lib/cron-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,10 +14,7 @@ export async function POST(req: NextRequest) {
   if (!body || typeof body !== "object" || Object.keys(body).some((k) => k !== "email" && k !== "password")) {
     return NextResponse.json({ error: "Грешен имейл или парола" }, { status: 400, headers: noStore });
   }
-  // The self-test (server -> its own site, carrying the cron secret) is counted under its own key, which it clears after the run;
-  // otherwise its lockout checks would lock the server's shared egress IP for 15 minutes and break the next run.
-  const selftest = cronAuthorized(req.headers.get("x-lr-selftest"));
-  const ip = selftest ? "selftest" : (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || req.headers.get("x-real-ip") || "";
+  const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || req.headers.get("x-real-ip") || "";
   try {
     const r = await passwordLogin(body.email, body.password, ip);
     if (!r.ok) {
