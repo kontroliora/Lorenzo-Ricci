@@ -3,6 +3,7 @@ import type { RevenueData, RevenuePeriod } from "@/lib/revenue";
 import { EUR_RON } from "@/lib/ro/config";
 import type { ProductRevenue } from "@/lib/revenue-products";
 import { ProductRevenueBlock } from "./ProductRevenueBlock";
+import type { SpendPeriods, SpendSource } from "@/lib/roas";
 
 const eur2 = (n: number) => "€" + Number(n ?? 0).toLocaleString("bg-BG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const eur0 = (n: number) => "€" + Math.round(Number(n ?? 0)).toLocaleString("bg-BG");
@@ -17,7 +18,7 @@ const sumPeriods = (bg: RevenuePeriod, ro?: RevenuePeriod): RevenuePeriod => ({
   count: bg.count + (ro?.count ?? 0),
 });
 
-export function RevenueBoard({ data, products }: { data: RevenueData; products?: ProductRevenue | null }) {
+export function RevenueBoard({ data, products, spend }: { data: RevenueData; products?: ProductRevenue | null; spend?: SpendPeriods | null }) {
   const cur = sumPeriods(data.current_month, data.ro?.current_month);
   const last = sumPeriods(data.last_month, data.ro?.last_month);
   const all = sumPeriods(data.all_time, data.ro?.all_time);
@@ -57,6 +58,25 @@ export function RevenueBoard({ data, products }: { data: RevenueData; products?:
         <PeriodCard label="Минал месец" p={last} roEur={data.ro ? data.ro.last_month.revenue / EUR_RON : undefined} />
         <PeriodCard label="От началото" p={all} roEur={data.ro ? data.ro.all_time.revenue / EUR_RON : undefined} />
       </div>
+
+      {/* Profit after ads (owner, 12.11.2026): goods revenue of delivered parcels minus the ad spend of the same period (Meta's daily
+          spend, manual entries only for days without Meta data - same source as the ROAS tab). No cost of goods in the data. */}
+      {spend && (
+        <div style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "13px 16px" }}>
+          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 10 }}>Печалба след реклама · оборот от стока − разход за реклама</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+            <ProfitCard label="Текущ месец" revenue={cur.revenue} spend={spend.current_month.spend} source={spend.current_month.source}
+              ifShipped={products ? products.totals.month.delivered.revenue + products.totals.month.inMotion.revenue : undefined} />
+            <ProfitCard label="Минал месец" revenue={last.revenue} spend={spend.last_month.spend} source={spend.last_month.source} />
+            <ProfitCard label="От началото" revenue={all.revenue} spend={spend.all_time.spend} source={spend.all_time.source}
+              since={spend.all_time.since} />
+          </div>
+          <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 8, lineHeight: 1.5 }}>
+            Оборотът е само от доставени пратки (по датата на доставяне), рекламата е по дните, в които е похарчена (Meta, синхронизира се всяка сутрин;
+            ръчните записи от ROAS се ползват само за дни без данни от Meta). <b style={{ color: "rgba(255,255,255,0.55)" }}>Цената на стоката не е извадена</b> — в системата няма доставни цени.
+          </div>
+        </div>
+      )}
 
       {/* Breakdown — current month */}
       <div style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "13px 16px" }}>
@@ -129,6 +149,29 @@ function PeriodCard({ label, p, roEur }: { label: string; p: RevenuePeriod; roEu
       <div style={{ color: "#FAC775", fontSize: 20, fontWeight: 500, marginTop: 3 }}>{eur0(p.revenue)}</div>
       <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 11 }}>{p.count} {p.count === 1 ? "пратка" : "пратки"} · {eur0(p.collected)} събрано</div>
       {roEur !== undefined && roEur > 0 && <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>в т.ч. 🇷🇴 Румъния ≈ {eur0(roEur)}</div>}
+    </div>
+  );
+}
+
+function ProfitCard({ label, revenue, spend, source, ifShipped, since }: { label: string; revenue: number; spend: number; source: SpendSource; ifShipped?: number; since?: string | null }) {
+  const profit = revenue - spend;
+  const roas = spend > 0 ? revenue / spend : null;
+  const dm = (d: string) => `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(0, 4)}`;
+  return (
+    <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "12px 14px" }}>
+      <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</div>
+      <div style={{ color: profit >= 0 ? "#7DD3A8" : "#F09595", fontSize: 22, fontWeight: 500, marginTop: 3 }}>{profit < 0 ? "−" : ""}{eur0(Math.abs(profit))}</div>
+      <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, lineHeight: 1.6 }}>
+        <span style={{ color: "#FAC775" }}>{eur0(revenue)}</span> оборот − <span style={{ color: "#F0B37E" }}>{eur0(spend)}</span> реклама
+        {roas !== null && <> · ROAS <b style={{ color: "#fff" }}>{roas.toFixed(2)}</b></>}
+      </div>
+      {ifShipped !== undefined && ifShipped > revenue && (
+        <div style={{ color: "rgba(133,183,235,0.9)", fontSize: 11 }}>ако се доставят и изпратените: {eur0(ifShipped - spend)}</div>
+      )}
+      <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>
+        {since && <>от {dm(since)} · </>}Meta {source.metaDays} дни{source.manualDays > 0 && <> · ръчно {source.manualDays} дни</>}
+        {source.noDataDays > 0 && <span style={{ color: "rgba(252,211,77,0.8)" }}> · {source.noDataDays} дни без данни</span>}
+      </div>
     </div>
   );
 }

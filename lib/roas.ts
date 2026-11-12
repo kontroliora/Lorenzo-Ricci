@@ -30,7 +30,7 @@ export type RoRoas = {
 export type RoasData = {
   range: { start: string; end: string };
   spend: number;                 // ad spend in the window: Meta's synced daily spend; manual entries only for days without Meta data
-  spendSource: { metaDays: number; manualDays: number; noDataDays: number; metaSpend: number; manualSpend: number; lastMetaDay: string | null };
+  spendSource: SpendSource;
   spendEntries: SpendEntry[];    // full history (not window-filtered)
   totalOrders: number;           // real (non-test) orders in window
   gross: number;                 // Meta's view: every placed order's total
@@ -91,6 +91,65 @@ async function fetchSpend(): Promise<SpendEntry[]> {
     amount: Number(r.amount) || 0,
     note: r.note ?? null,
   }));
+}
+
+export type SpendSource = { metaDays: number; manualDays: number; noDataDays: number; metaSpend: number; manualSpend: number; lastMetaDay: string | null };
+
+/** Ad spend over Sofia days firstDay..lastDay (inclusive, YYYY-MM-DD): Meta's synced daily spend (meta_ad_insights) for every day that
+ *  has it, a manual ad_spend entry (pro-rated by its days) only for days without Meta data. Server-only, no owner gate - callers gate. */
+async function spendForDays(firstDay: string, lastDay: string, spendEntries: SpendEntry[]): Promise<{ spend: number; source: SpendSource }> {
+  const sb = supabaseAdmin();
+  const metaByDay = new Map<string, number>();
+  for (let from = 0; from < 50_000; from += 1000) {
+    const q = await sb.from("meta_ad_insights").select("date, spend").gte("date", firstDay).lte("date", lastDay).range(from, from + 999);
+    if (q.error) break;
+    for (const row of (q.data ?? []) as { date: string; spend: number | null }[]) {
+      const d = String(row.date).slice(0, 10);
+      metaByDay.set(d, (metaByDay.get(d) ?? 0) + (Number(row.spend) || 0));
+    }
+    if ((q.data ?? []).length < 1000) break;
+  }
+  const lm = await sb.from("meta_ad_insights").select("date").order("date", { ascending: false }).limit(1);
+  const lastMetaDay = (lm.data?.[0]?.date as string | undefined)?.slice(0, 10) ?? null;
+  let metaSpend = 0, manualSpend = 0, metaDays = 0, manualDays = 0, noDataDays = 0;
+  for (let d = firstDay, guard = 0; d <= lastDay && guard < 4000; d = shiftDay(d, -1), guard++) {
+    if (metaByDay.has(d)) { metaSpend += metaByDay.get(d)!; metaDays++; continue; }
+    let m = 0, hit = false;
+    for (const e of spendEntries) {
+      const entryDays = inclusiveDays(e.period_start, e.period_end);
+      if (entryDays <= 0 || d < e.period_start || d > e.period_end) continue;
+      m += e.amount / entryDays; hit = true;
+    }
+    if (hit) { manualSpend += m; manualDays++; } else noDataDays++;
+  }
+  return { spend: round2(metaSpend + manualSpend), source: { metaDays, manualDays, noDataDays, metaSpend: round2(metaSpend), manualSpend: round2(manualSpend), lastMetaDay } };
+}
+
+export type SpendPeriods = {
+  current_month: { spend: number; source: SpendSource };
+  last_month: { spend: number; source: SpendSource };
+  all_time: { spend: number; source: SpendSource; since: string | null };
+};
+
+/** Ad spend for the Оборот tab's three periods (Sofia calendar months; all time = from the first day with any spend data). Owner only. */
+export async function getSpendPeriods(): Promise<SpendPeriods | null> {
+  if (!(await isOwner())) return null;
+  const sb = supabaseAdmin();
+  const entries = await fetchSpend();
+  const today = sofiaDay();
+  const curStart = `${today.slice(0, 7)}-01`;
+  const lastEnd = shiftDay(curStart, 1);
+  const lastStart = `${lastEnd.slice(0, 7)}-01`;
+  const fm = await sb.from("meta_ad_insights").select("date").order("date", { ascending: true }).limit(1);
+  const firstMeta = (fm.data?.[0]?.date as string | undefined)?.slice(0, 10) ?? null;
+  const firstManual = entries.length ? entries.map((e) => e.period_start).sort()[0] : null;
+  const since = [firstMeta, firstManual].filter((d): d is string => !!d).sort()[0] ?? null;
+  const [cur, last, all] = await Promise.all([
+    spendForDays(curStart, today, entries),
+    spendForDays(lastStart, lastEnd, entries),
+    since ? spendForDays(since, today, entries) : Promise.resolve({ spend: 0, source: { metaDays: 0, manualDays: 0, noDataDays: 0, metaSpend: 0, manualSpend: 0, lastMetaDay: null } }),
+  ]);
+  return { current_month: cur, last_month: last, all_time: { ...all, since } };
 }
 
 // Owner-gated. Returns null for non-owners (defence in depth on top of the
@@ -160,36 +219,7 @@ async function computeRoasCore(startISO: string, endISO: string): Promise<RoasDa
   // that has it; a manual entry (ad_spend) is used only for days with no Meta data, pro-rated by its days. Before, only the manual
   // entries counted, so ROAS went stale (too high) whenever no entry had been typed in for the latest days.
   const spendEntries = await fetchSpend();
-  const firstDay = sofiaDay(new Date(startISO));
-  const lastDay = sofiaDay(new Date(endISO));
-  const metaByDay = new Map<string, number>();
-  let lastMetaDay: string | null = null;
-  {
-    for (let from = 0; from < 50_000; from += 1000) {
-      const q = await sb.from("meta_ad_insights").select("date, spend").gte("date", firstDay).lte("date", lastDay).range(from, from + 999);
-      if (q.error) break;
-      for (const row of (q.data ?? []) as { date: string; spend: number | null }[]) {
-        const d = String(row.date).slice(0, 10);
-        metaByDay.set(d, (metaByDay.get(d) ?? 0) + (Number(row.spend) || 0));
-      }
-      if ((q.data ?? []).length < 1000) break;
-    }
-    const lm = await sb.from("meta_ad_insights").select("date").order("date", { ascending: false }).limit(1);
-    lastMetaDay = (lm.data?.[0]?.date as string | undefined)?.slice(0, 10) ?? null;
-  }
-  let spend = 0, metaSpend = 0, manualSpend = 0, metaDays = 0, manualDays = 0, noDataDays = 0;
-  for (let d = firstDay, guard = 0; d <= lastDay && guard < 4000; d = shiftDay(d, -1), guard++) {
-    if (metaByDay.has(d)) { metaSpend += metaByDay.get(d)!; metaDays++; continue; }
-    let m = 0, hit = false;
-    for (const e of spendEntries) {
-      const entryDays = inclusiveDays(e.period_start, e.period_end);
-      if (entryDays <= 0 || d < e.period_start || d > e.period_end) continue;
-      m += e.amount / entryDays; hit = true;
-    }
-    if (hit) { manualSpend += m; manualDays++; } else noDataDays++;
-  }
-  spend = round2(metaSpend + manualSpend);
-  const spendSource = { metaDays, manualDays, noDataDays, metaSpend: round2(metaSpend), manualSpend: round2(manualSpend), lastMetaDay };
+  const { spend, source: spendSource } = await spendForDays(sofiaDay(new Date(startISO)), sofiaDay(new Date(endISO)), spendEntries);
 
   const metaRoas = spend > 0 ? round2(gross / spend) : null;
   const realRoas = spend > 0 ? round2(real / spend) : null;
