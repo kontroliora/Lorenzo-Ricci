@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Award, RefreshCw, Truck, Eye } from "lucide-react";
+import { Award, Truck, Eye } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
@@ -16,7 +16,7 @@ import { getProductBySlug } from "@/lib/products";
 import { PAGE_LOW_STOCK_MAX, savingsEur } from "@/lib/home-card-hints";
 import { campaignLabel } from "@/lib/sale-campaign";
 import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
-import { SavingsLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
+import { SavingsLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine, ExchangeLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
@@ -496,6 +496,8 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
         )}
         {inCollection && <BoxLine text="Луксозна велурена кутия LORENZO RICCI" />}
         {inCollection && <WarrantyLine text="Доживотна гаранция" href={"/warranty/jewelry"} />}
+        {/* Order (owner, 12.11.2026): box -> lifetime warranty -> 30-day exchange (all products) */}
+        <ExchangeLine text="30 дни лесна замяна" href="/policies/returns" first={!inCollection} />
         {/* 1+1 group (lib/one-plus-one.ts): "2 картодържателя за €65 ..." and the free second one, picked here */}
         {opo && !twoBoxes && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(product.slug)} size="page" />}
         {opo && !twoBoxes && (
@@ -636,7 +638,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
       <StickyCartBar product={product} effectiveInStock={effectiveInStock} onAdd={handleAdd} pairLabel={pairLabel} chooseLabel={chooseLabel} onChoose={goToBox2} />
 
       {/* Trust strip */}
-      <div className="grid grid-cols-2 gap-0 border border-border">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-0 border border-border">
         {[
           {
             // Watches: 5-year commercial guarantee. Jewellery: lifetime. Leather: no
@@ -649,7 +651,6 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
             Icon: Award,
             href: product.category === "watches" ? "/warranty/jewelry#chasovnici" : product.category === "jewellery" ? "/warranty/jewelry" : undefined,
           },
-          { label: "30 дни замяна",              Icon: RefreshCw, href: undefined },
           { label: "Доставка за 1–2 работни дни с Еконт", Icon: Truck,  href: undefined },
           { label: "Преглед и тест",              Icon: Eye,       href: undefined },
         ].map(({ label, Icon, href }, i, all) => {
@@ -663,11 +664,10 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
               </p>
             </>
           );
-          // An odd count: the last cell spans both columns (no empty half-cell); every row but the last has a bottom border.
-          const odd = all.length % 2 === 1;
-          const isLoneLast = odd && i === all.length - 1;
-          const lastRowStart = odd ? all.length - 1 : all.length - 2;
-          const cls = `py-4 px-5 flex items-center gap-3 ${i < lastRowStart ? "border-b border-border" : ""} ${i % 2 === 0 && !isLoneLast ? "border-r border-border" : ""} ${isLoneLast ? "col-span-2" : ""}`;
+          // Three cells (the 30-day exchange moved up by the price, owner 12.11.2026): one even row of three on desktop;
+          // on a phone two cells, then the third across the full width (no empty half-cell).
+          const last = i === all.length - 1;
+          const cls = `py-4 px-5 flex items-center gap-3 ${last ? "col-span-2 lg:col-span-1" : "border-b border-border lg:border-b-0"} ${i === 0 ? "border-r border-border" : ""} ${i === 1 ? "lg:border-r lg:border-border" : ""}`;
           return href ? (
             <Link key={label} href={href} className={`${cls} group hover:bg-ivory-warm transition-colors duration-200`}>
               {inner}

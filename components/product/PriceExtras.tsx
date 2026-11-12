@@ -2,7 +2,7 @@
 // and the free-delivery badge, and one delivery line. The pages decide the text and when to show them (savings: on sale and not sold out).
 // Colours pass WCAG AA on the page's ivory: green 6.1, white on the badge red 6.6, white on the free-delivery green 5.4, ink-soft 9.3.
 import Link from "next/link";
-import { Package, ShieldCheck, Truck } from "lucide-react";
+import { Package, ShieldCheck, Truck, RefreshCw } from "lucide-react";
 
 const PAGE_BADGE = "inline-flex items-center whitespace-nowrap text-white font-sans text-[11px] font-medium tracking-[0.14em] uppercase leading-none px-2.5 py-1.5";
 
@@ -58,6 +58,16 @@ export function WarrantyLine({ text, href }: { text: string; href: string }) {
     <p data-testid="page-warranty-line" className="mt-1.5 flex items-center gap-1.5 font-sans text-[13px] leading-snug text-ink-soft">
       <ShieldCheck aria-hidden className="h-3.5 w-3.5 shrink-0 text-[#B8963E]" strokeWidth={1.75} />
       <Link href={href} className="underline decoration-ink-soft/30 underline-offset-2 hover:text-navy hover:decoration-navy transition-colors">{text}</Link>
+    </p>
+  );
+}
+
+/** All product pages (owner, 12.11.2026): the 30-day exchange, last of the lines under the price, linking to the returns policy. */
+export function ExchangeLine({ text, href, first = false }: { text: string; href: string; first?: boolean }) {
+  return (
+    <p data-testid="page-exchange-line" className={`${first ? "mt-2.5" : "mt-1.5"} flex items-center gap-1.5 font-sans text-[13px] leading-snug text-ink-soft`}>
+      <RefreshCw aria-hidden className="h-3.5 w-3.5 shrink-0 text-[#B8963E]" strokeWidth={1.75} />
+      <Link href={href} className="underline decoration-dotted decoration-ink-soft/50 underline-offset-2 hover:text-navy hover:decoration-navy transition-colors">{text}</Link>
     </p>
   );
 }
