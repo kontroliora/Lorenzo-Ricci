@@ -18,11 +18,12 @@ const DUMMY_HASH = "$2b$12$N/qWYSabvgtdOUlCJSuRN.NvTjaX42Da1LJGuAWoZqtaVBtP9RhNm
 const failKey = (kind: "email" | "ip", v: string) => `partner-pw-fail:${kind}:${v}`;
 const lockKey = (kind: "email" | "ip", v: string) => `partner-pw-lock:${kind}:${v}`;
 
-export type PasswordResult = { ok: true; partner: Partner } | { ok: false; locked: boolean };
+export type PasswordResult = { ok: true; partner: Partner } | { ok: false; locked: boolean; retryAfter?: number };
 
-async function isLocked(email: string, ip: string): Promise<boolean> {
-  const [a, b] = await Promise.all([kv.get(lockKey("email", email)), ip ? kv.get(lockKey("ip", ip)) : null]);
-  return !!a || !!b;
+/** Seconds left on the e-mail / IP lock (the longer one), 0 when not locked. */
+export async function lockSecondsLeft(email: string, ip: string): Promise<number> {
+  const [a, b] = await Promise.all([kv.ttl(lockKey("email", email)), ip ? kv.ttl(lockKey("ip", ip)) : -2]);
+  return Math.max(0, a, b);
 }
 
 async function fail(email: string, ip: string): Promise<boolean> {
@@ -49,7 +50,8 @@ async function fail(email: string, ip: string): Promise<boolean> {
 export async function passwordLogin(emailRaw: unknown, passwordRaw: unknown, ip: string): Promise<PasswordResult> {
   const email = normEmail(emailRaw);
   const password = typeof passwordRaw === "string" ? passwordRaw : "";
-  if (await isLocked(email, ip)) return { ok: false, locked: true };
+  const left = await lockSecondsLeft(email, ip);
+  if (left > 0) return { ok: false, locked: true, retryAfter: left };
 
   type Row = Partner & { password_hash?: string | null };
   let row = null as Row | null;
@@ -61,7 +63,10 @@ export async function passwordLogin(emailRaw: unknown, passwordRaw: unknown, ip:
   }
   const hash = row?.password_hash && row.enabled ? row.password_hash : DUMMY_HASH;
   const match = password.length > 0 && password.length <= 200 && (await bcrypt.compare(password, hash));
-  if (!match || hash === DUMMY_HASH || !row) return { ok: false, locked: await fail(email, ip) };
+  if (!match || hash === DUMMY_HASH || !row) {
+    const locked = await fail(email, ip);
+    return { ok: false, locked, ...(locked ? { retryAfter: await lockSecondsLeft(email, ip) } : {}) };
+  }
 
   await kv.del(failKey("email", email));
   const { password_hash: _drop, ...partner } = row;

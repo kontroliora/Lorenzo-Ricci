@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const r = await passwordLogin(body.email, body.password, ip);
     if (!r.ok) {
       return r.locked
-        ? NextResponse.json({ error: "Твърде много грешни опити. Опитайте отново след 15 минути." }, { status: 429, headers: noStore })
+        ? NextResponse.json({ error: "Твърде много грешни опити. Опитайте отново след 15 минути." }, { status: 429, headers: { ...noStore, "Retry-After": String(r.retryAfter ?? 900) } })
         : NextResponse.json({ error: "Грешен имейл или парола" }, { status: 401, headers: noStore });
     }
     await supabaseAdmin().from("partners").update({ last_login_at: new Date().toISOString() }).eq("email", r.partner.email);

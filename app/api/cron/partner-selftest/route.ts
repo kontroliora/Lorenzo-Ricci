@@ -26,7 +26,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const RUN_ID = "2026-11-12-i";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark. -i: Колички (abandoned carts with a women's piece): list, note, call buttons, 403s.
+const RUN_ID = "2026-11-12-j";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark. -i: Колички (abandoned carts with a women's piece): list, note, call buttons, 403s. -j: -i was 76/84, test bugs only: the carts calls used the session revoked earlier in the run; the lock may hit the IP first (check Retry-After).
 const TEST_PARTNER = "dserbezov7@gmail.com";
 const TEST_CUSTOMER_EMAIL = "partner-selftest-customer@example.com";   // must never appear in anything the partner gets
 const T = (s: string) => `LR-TST${s}`;
@@ -136,7 +136,7 @@ export async function GET(req: NextRequest) {
       const r = await fetch(origin + path, { ...init, headers, redirect: "manual", cache: "no-store" });
       const text = await r.text();
       let json: unknown = null; try { json = JSON.parse(text); } catch { /* html */ }
-      return { status: r.status, json, text, location: r.headers.get("location"), setCookie: r.headers.get("set-cookie") ?? "" };
+      return { status: r.status, json, text, location: r.headers.get("location"), setCookie: r.headers.get("set-cookie") ?? "", retryAfter: Number(r.headers.get("retry-after") ?? 0) };
     };
 
     const list = await call("/api/partner/orders?filter=all");
@@ -274,15 +274,16 @@ export async function GET(req: NextRequest) {
     for (let i = 2; i <= 5; i++) await pw(`wrong-password-${i}`);
     const afterLock = await pw(TEST_PW);
     check("after 5 wrong: locked, even the right password (429)", afterLock.status === 429, afterLock.status);
-    const lockKeyThere = await kv.get(`partner-pw-lock:email:${TEST_PARTNER}`);
-    check("lock lasts 15 min (KV key with TTL)", !!lockKeyThere && (await kv.ttl(`partner-pw-lock:email:${TEST_PARTNER}`)) > 800, lockKeyThere);
+    check("lock lasts 15 min (Retry-After, e-mail or IP lock)", afterLock.retryAfter > 800 && afterLock.retryAfter <= 900, afterLock.retryAfter);
     await clearPasswordLocks(TEST_PARTNER);
     // ── Колички (abandoned carts) ──
     const insCarts = await sb.from("cart_sessions").insert(testCarts(), { defaultToNull: false }).select("id, session_id");
     if (insCarts.error) throw new Error(`cart_sessions: ${insCarts.error.message}`);
     const cartId = (sid: string) => String(insCarts.data?.find((r) => r.session_id === sid)?.id ?? "");
     const cj = cartId(CART_J), cw = cartId(CART_W);
-    const cartsRes = await call("/api/partner/carts");
+    // a fresh session: the one from the start of the run was revoked by the owner's-toggle checks above
+    const cartCookie = `${PARTNER_COOKIE}=${signSession(TEST_PARTNER, Date.now() + 1000)}`;
+    const cartsRes = await call("/api/partner/carts", { cookieValue: cartCookie });
     const carts = (cartsRes.json as { carts?: PartnerCartView[] })?.carts ?? [];
     check("Колички: 200", cartsRes.status === 200, cartsRes.status);
     check("Колички: the cart with a women's piece is listed", carts.some((c) => c.id === cj), carts.length);
@@ -292,7 +293,7 @@ export async function GET(req: NextRequest) {
     check("Колички: phone + the Verdis line tagged Дамска колекция", jc?.phone === "0888 990 001" && jc?.items[0]?.collection === true, jc);
     const cj403 = await call("/api/partner/carts", { asPartner: false });
     check("Колички: 403 without a session", cj403.status === 403, cj403.status);
-    const cpost = (id: string, body: unknown) => call(`/api/partner/carts/${id}`, { method: "POST", headers: j, body: JSON.stringify(body) });
+    const cpost = (id: string, body: unknown) => call(`/api/partner/carts/${id}`, { method: "POST", headers: j, body: JSON.stringify(body), cookieValue: cartCookie });
     const noteRes = await cpost(cj, { note: "тест: иска до офис, ще прати адрес" });
     const noteRow = await sb.from("cart_sessions").select("call_note, call_note_by").eq("id", cj).single();
     check("Колички: his note saved (shared with the panel, by партньор)", noteRes.status === 200 && noteRow.data?.call_note === "тест: иска до офис, ще прати адрес" && noteRow.data?.call_note_by === "партньор", { status: noteRes.status, row: noteRow.data });
@@ -302,7 +303,7 @@ export async function GET(req: NextRequest) {
     check("Колички: extra field refused (403)", (await cpost(cj, { outcome: "will_order", status: "converted" })).status === 403);
     check("Колички: bad outcome refused (400)", (await cpost(cj, { outcome: "ordered" })).status === 400);
     check("Колички: a watch-only cart cannot be touched (403)", (await cpost(cw, { note: "x" })).status === 403);
-    check("Колички: GET / DELETE on a cart -> 403", (await call(`/api/partner/carts/${cj}`)).status === 403 && (await call(`/api/partner/carts/${cj}`, { method: "DELETE" })).status === 403);
+    check("Колички: GET / DELETE on a cart -> 403", (await call(`/api/partner/carts/${cj}`, { cookieValue: cartCookie })).status === 403 && (await call(`/api/partner/carts/${cj}`, { method: "DELETE", cookieValue: cartCookie })).status === 403);
     const na2 = await cpost(cj, { outcome: "no_answer" });
     check("Колички: 2nd Не вдига -> the cart leaves his list", na2.status === 200 && (na2.json as { cart?: unknown })?.cart === null, na2.json);
     const cartState = await sb.from("cart_sessions").select("status").eq("id", cj).single();
