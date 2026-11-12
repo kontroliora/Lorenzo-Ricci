@@ -4,6 +4,7 @@ import { logout } from "../actions";
 import { isOwner } from "@/lib/admin-auth";
 import { getRevenue } from "@/lib/revenue";
 import { RevenueBoard } from "./RevenueBoard";
+import { getProductRevenue } from "@/lib/revenue-products";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export default async function RevenuePage() {
   // (the real boundary), and the tab is hidden in the nav — defence in depth.
   if (!(await isOwner())) redirect("/lr-panel-v8m3q/orders");
 
-  const data = await getRevenue();
+  const [data, products] = await Promise.all([getRevenue(), getProductRevenue().catch(() => null)]);
 
   return (
     <div className="min-h-screen bg-[#0a0e1f] text-white">
@@ -30,7 +31,7 @@ export default async function RevenuePage() {
 
       <AdminNav />
       {data
-        ? <RevenueBoard data={data} />
+        ? <RevenueBoard data={data} products={products} />
         : <p className="text-white/40 text-sm text-center py-20">Няма достъп или все още няма завършени поръчки.</p>}
     </div>
   );

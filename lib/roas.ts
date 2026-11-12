@@ -3,6 +3,7 @@ import { isOwner } from "@/lib/admin-auth";
 import { EUR_RON } from "@/lib/ro/config";
 import { isUnpaidCardAttempt } from "@/lib/order-status";
 import { collectionUnits } from "@/lib/new-collection";
+import { sofiaDay, shiftDay } from "@/lib/sofia-time";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // What the shop eats when a parcel is never collected: it pays BOTH delivery
@@ -28,7 +29,8 @@ export type RoRoas = {
 
 export type RoasData = {
   range: { start: string; end: string };
-  spend: number;                 // pro-rated ad spend in the window
+  spend: number;                 // ad spend in the window: Meta's synced daily spend; manual entries only for days without Meta data
+  spendSource: { metaDays: number; manualDays: number; noDataDays: number; metaSpend: number; manualSpend: number; lastMetaDay: string | null };
   spendEntries: SpendEntry[];    // full history (not window-filtered)
   totalOrders: number;           // real (non-test) orders in window
   gross: number;                 // Meta's view: every placed order's total
@@ -154,15 +156,40 @@ async function computeRoasCore(startISO: string, endISO: string): Promise<RoasDa
     ? bgOrders.filter((r) => isRet(r.status) && r.return_kind === "uncollected").length // Econt classification: Bulgarian orders only
     : 0;
 
-  // Pro-rate each spend entry by the fraction of its days that fall in the window.
+  // Ad spend (12.11.2026): Meta's own daily spend (meta_ad_insights, synced every morning by /api/cron/meta-ads) for every Sofia day
+  // that has it; a manual entry (ad_spend) is used only for days with no Meta data, pro-rated by its days. Before, only the manual
+  // entries counted, so ROAS went stale (too high) whenever no entry had been typed in for the latest days.
   const spendEntries = await fetchSpend();
-  let spend = 0;
-  for (const e of spendEntries) {
-    const entryDays = inclusiveDays(e.period_start, e.period_end);
-    if (entryDays <= 0) continue;
-    spend += e.amount * (overlapDays(startISO, endISO, e.period_start, e.period_end) / entryDays);
+  const firstDay = sofiaDay(new Date(startISO));
+  const lastDay = sofiaDay(new Date(endISO));
+  const metaByDay = new Map<string, number>();
+  let lastMetaDay: string | null = null;
+  {
+    for (let from = 0; from < 50_000; from += 1000) {
+      const q = await sb.from("meta_ad_insights").select("date, spend").gte("date", firstDay).lte("date", lastDay).range(from, from + 999);
+      if (q.error) break;
+      for (const row of (q.data ?? []) as { date: string; spend: number | null }[]) {
+        const d = String(row.date).slice(0, 10);
+        metaByDay.set(d, (metaByDay.get(d) ?? 0) + (Number(row.spend) || 0));
+      }
+      if ((q.data ?? []).length < 1000) break;
+    }
+    const lm = await sb.from("meta_ad_insights").select("date").order("date", { ascending: false }).limit(1);
+    lastMetaDay = (lm.data?.[0]?.date as string | undefined)?.slice(0, 10) ?? null;
   }
-  spend = round2(spend);
+  let spend = 0, metaSpend = 0, manualSpend = 0, metaDays = 0, manualDays = 0, noDataDays = 0;
+  for (let d = firstDay, guard = 0; d <= lastDay && guard < 4000; d = shiftDay(d, -1), guard++) {
+    if (metaByDay.has(d)) { metaSpend += metaByDay.get(d)!; metaDays++; continue; }
+    let m = 0, hit = false;
+    for (const e of spendEntries) {
+      const entryDays = inclusiveDays(e.period_start, e.period_end);
+      if (entryDays <= 0 || d < e.period_start || d > e.period_end) continue;
+      m += e.amount / entryDays; hit = true;
+    }
+    if (hit) { manualSpend += m; manualDays++; } else noDataDays++;
+  }
+  spend = round2(metaSpend + manualSpend);
+  const spendSource = { metaDays, manualDays, noDataDays, metaSpend: round2(metaSpend), manualSpend: round2(manualSpend), lastMetaDay };
 
   const metaRoas = spend > 0 ? round2(gross / spend) : null;
   const realRoas = spend > 0 ? round2(real / spend) : null;
@@ -209,6 +236,7 @@ async function computeRoasCore(startISO: string, endISO: string): Promise<RoasDa
     range: { start: startISO, end: endISO },
     collection,
     spend,
+    spendSource,
     spendEntries,
     totalOrders: orders.length,
     gross,

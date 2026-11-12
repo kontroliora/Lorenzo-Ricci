@@ -82,7 +82,9 @@ export function RoasBoard({ initial, metaAds }: { initial: RoasData; metaAds?: R
       )}
       {data.spend > 0 && (
         <div className="flex flex-wrap gap-x-8 gap-y-1 -mt-4 text-[12px] text-white/50">
-          <span>Разход за периода: <b className="text-white/80">{eur(data.spend)}</b></span>
+          <span>Разход за периода: <b className="text-white/80">{eur(data.spend)}</b>
+            {data.spendSource && <span className="text-white/30"> (Meta {eur(data.spendSource.metaSpend)} за {data.spendSource.metaDays} дни{data.spendSource.manualDays > 0 && <> · ръчно {eur(data.spendSource.manualSpend)} за {data.spendSource.manualDays} дни</>}{data.spendSource.noDataDays > 0 && <span className="text-amber-300/80"> · {data.spendSource.noDataDays} дни без данни</span>}{data.spendSource.lastMetaDay && <> · Meta синхр. до {data.spendSource.lastMetaDay.slice(8, 10)}.{data.spendSource.lastMetaDay.slice(5, 7)}</>})</span>}
+          </span>
           <span>ROAS с в-движение: <b className="text-sky-300/90">{roas(data.potentialRoas)}</b> <span className="text-white/30">(ако изпратените се доставят)</span></span>
         </div>
       )}

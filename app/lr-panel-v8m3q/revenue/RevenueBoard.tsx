@@ -1,6 +1,8 @@
 "use client";
 import type { RevenueData, RevenuePeriod } from "@/lib/revenue";
 import { EUR_RON } from "@/lib/ro/config";
+import type { ProductRevenue } from "@/lib/revenue-products";
+import { ProductRevenueBlock } from "./ProductRevenueBlock";
 
 const eur2 = (n: number) => "€" + Number(n ?? 0).toLocaleString("bg-BG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const eur0 = (n: number) => "€" + Math.round(Number(n ?? 0)).toLocaleString("bg-BG");
@@ -15,7 +17,7 @@ const sumPeriods = (bg: RevenuePeriod, ro?: RevenuePeriod): RevenuePeriod => ({
   count: bg.count + (ro?.count ?? 0),
 });
 
-export function RevenueBoard({ data }: { data: RevenueData }) {
+export function RevenueBoard({ data, products }: { data: RevenueData; products?: ProductRevenue | null }) {
   const cur = sumPeriods(data.current_month, data.ro?.current_month);
   const last = sumPeriods(data.last_month, data.ro?.last_month);
   const all = sumPeriods(data.all_time, data.ro?.all_time);
@@ -70,8 +72,10 @@ export function RevenueBoard({ data }: { data: RevenueData }) {
         </div>
       </div>
 
-      {/* Top products by revenue */}
-      {top.length > 0 && (
+      {/* Per category / every product - delivered, in motion, waiting; 1+1 and discounts taken off (lib/revenue-products.ts).
+          Falls back to the old top-8 list only if that read fails. */}
+      {products ? <ProductRevenueBlock data={products} /> : top.length > 0 && (
+
         <div style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "13px 16px" }}>
           <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 10 }}>Топ продукти по оборот · от началото · само България (евро)</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
