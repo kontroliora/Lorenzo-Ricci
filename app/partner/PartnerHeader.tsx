@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 
-export function PartnerHeader({ active }: { active: "orders" | "pieces" }) {
+export function PartnerHeader({ active }: { active: "orders" | "carts" | "pieces" }) {
   const logout = async () => { await fetch("/api/partner/logout", { method: "POST" }); window.location.href = "/partner/login"; };
   const tab = (on: boolean) => `flex-1 text-center py-3 text-[13px] font-semibold tracking-[0.12em] uppercase border-b-2 ${on ? "border-white text-white" : "border-transparent text-white/45"}`;
   return (
@@ -12,6 +12,7 @@ export function PartnerHeader({ active }: { active: "orders" | "pieces" }) {
       </div>
       <nav className="max-w-2xl mx-auto px-2 flex">
         <Link href="/partner" className={tab(active === "orders")}>Поръчки</Link>
+        <Link href="/partner/kolichki" className={tab(active === "carts")}>Колички</Link>
         <Link href="/partner/bijuta" className={tab(active === "pieces")}>Бижута</Link>
       </nav>
     </header>

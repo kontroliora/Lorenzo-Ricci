@@ -11,6 +11,7 @@ export const EXPECTED_SCHEMA: Record<string, string[]> = {
   partner_order_state: cols("order_ref, status, note, updated_at, updated_by"),
   partner_status_log: cols("id, order_ref, old_status, new_status, old_note, new_note, email, ip, changed_at"),
   wallet_inventory: cols("slug, stock"),
+  cart_sessions: cols("id, session_id, phone, name, items, subtotal, status, lang, call_state, call_attempts, last_call_at, call_by, call_note, call_note_at, call_note_by"),
   health_status: cols("key, ok, title, detail, since, checked_at, last_alerted_at"),
 };
 

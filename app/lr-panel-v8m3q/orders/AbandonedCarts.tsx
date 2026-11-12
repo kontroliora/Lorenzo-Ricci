@@ -1,6 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
-import { markCartCall } from "./cart-actions";
+import { markCartCall, setCartNote } from "./cart-actions";
 import { cartSection, fmtAgo, CART_MAX_NO_ANSWER, CART_MIN_EUR, type AbandonedCart, type CartCallState } from "@/lib/abandoned-carts";
 import type { StuckSummary } from "@/lib/checkout-events";
 
@@ -90,8 +90,10 @@ function CartCard({ cart, now, onNotice, onLocal }: {
         <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 20, background: cart.emailedAt ? "rgba(133,183,235,0.14)" : "rgba(255,255,255,0.06)", color: cart.emailedAt ? "#85B7EB" : "rgba(255,255,255,0.55)" }}>
           {cart.emailedAt ? `Имейл за напомняне: изпратен ${dateFmt(cart.emailedAt)}` : cart.email ? "Имейл за напомняне: още не е изпратен" : "Няма имейл · не е получавал напомняне"}
         </span>
-        {stateBadge && <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 20, background: stateBadge.bg, color: stateBadge.fg }}>{stateBadge.text}</span>}
+        {stateBadge && <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 20, background: stateBadge.bg, color: stateBadge.fg }}>{stateBadge.text}{cart.callBy ? ` · ${cart.callBy === "партньор" ? "партньорът" : cart.callBy}` : ""}</span>}
       </div>
+
+      <CartNote cart={cart} onNotice={onNotice} />
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button disabled={pending} onClick={() => log("will_order")} style={outline("#3B6D11", "#97C459")}>Звъннах — ще поръча</button>
@@ -137,5 +139,28 @@ export function AbandonedCartsView({ carts, now, onNotice, stuck }: { carts: Aba
         </div>
       )}
     </>
+  );
+}
+
+/** The note on a cart, shared with the partner (/partner -> Колички): who wrote it and when; editable here too. */
+function CartNote({ cart, onNotice }: { cart: AbandonedCart; onNotice?: (m: string) => void }) {
+  const [text, setText] = useState(cart.note);
+  const [saved, setSaved] = useState(cart.note);
+  const [pending, start] = useTransition();
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      {saved && cart.noteAt && (
+        <div style={{ fontSize: 11, color: cart.noteBy === "партньор" ? "#C9A96E" : "rgba(255,255,255,0.45)" }}>
+          Бележка от {cart.noteBy === "партньор" ? "партньора" : cart.noteBy ?? "панела"} · {dateFmt(cart.noteAt)}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 8 }}>
+        <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} maxLength={1000} placeholder="Бележка за количката…"
+          style={{ flex: 1, background: "rgba(255,255,255,0.05)", border: "0.5px solid rgba(255,255,255,0.15)", borderRadius: 10, color: "#fff", fontSize: 13, padding: "8px 10px", resize: "none" }} />
+        <button disabled={pending || text === saved}
+          onClick={() => start(async () => { const e = await setCartNote(cart.id, text); if (e) onNotice?.(e); else setSaved(text); })}
+          style={{ ...outline("rgba(255,255,255,0.3)", "#fff"), opacity: pending || text === saved ? 0.4 : 1 }}>Запази</button>
+      </div>
+    </div>
   );
 }

@@ -34,6 +34,10 @@ export type CartRow = {
   call_state?: string | null;
   call_attempts?: number | null;
   last_call_at?: string | null;
+  call_by?: string | null;        // cart_sessions_notes.sql: who pressed the last call button
+  call_note?: string | null;
+  call_note_at?: string | null;
+  call_note_by?: string | null;
 };
 
 export type OrderRef = { phone?: string | null; email?: string | null; created_at: string };
@@ -53,6 +57,10 @@ export type AbandonedCart = {
   callState: CartCallState | null;
   callAttempts: number;
   lastCallAt: string | null;
+  callBy: string | null;        // 'партньор' or the admin's e-mail
+  note: string;
+  noteAt: string | null;
+  noteBy: string | null;
 };
 
 /** Phone as comparable digits: no spaces/+/dashes, no country code (359 / 40), no leading zero. "0888 123 456" = "+359888123456". */
@@ -137,6 +145,10 @@ export function selectAbandoned(rows: CartRow[], orders: OrderRef[], nowMs: numb
       callState: state,
       callAttempts: attempts,
       lastCallAt: r.last_call_at ?? null,
+      callBy: r.call_by ?? null,
+      note: (r.call_note ?? "").trim(),
+      noteAt: r.call_note_at ?? null,
+      noteBy: r.call_note_by ?? null,
     });
   }
   return out.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));

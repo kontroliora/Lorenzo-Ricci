@@ -11,6 +11,7 @@ import { notifyPartnerOnce } from "@/lib/partner/email";
 import { clearPasswordLocks } from "@/lib/partner/password";
 import { PARTNER_FILTERS, PARTNER_VIEW_KEYS, type PartnerOrderView } from "@/lib/partner/orders";
 import { applyOfMark } from "@/lib/partner/marks";
+import { PARTNER_CART_KEYS, type PartnerCartView } from "@/lib/partner/carts";
 
 // ONE-OFF self-test of the partner role (owner, 09.11.2026). Runs once per RUN_ID (KV flag), from Vercel Cron:
 //   1. a TEST partner (the owner's own address) + 5 test orders (COD jewellery, card PAID jewellery, mixed COD jewellery + watch,
@@ -25,7 +26,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const RUN_ID = "2026-11-09-h";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark.
+const RUN_ID = "2026-11-12-i";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark. -i: Колички (abandoned carts with a women's piece): list, note, call buttons, 403s.
 const TEST_PARTNER = "dserbezov7@gmail.com";
 const TEST_CUSTOMER_EMAIL = "partner-selftest-customer@example.com";   // must never appear in anything the partner gets
 const T = (s: string) => `LR-TST${s}`;
@@ -66,8 +67,19 @@ function testOrders(): Row[] {
 }
 const REFS = testOrders().map((o) => String(o.order_ref));
 
+const CART_J = "partner-selftest-cart-jewellery", CART_W = "partner-selftest-cart-watch";
+function testCarts(): Record<string, unknown>[] {
+  const at = new Date(Date.now() - 2 * 3_600_000).toISOString();   // left 2 h ago: in the "last 24 h" list
+  const base = { email: TEST_CUSTOMER_EMAIL, status: "pending", lang: "bg", recovery_consent: true, created_at: at, updated_at: at };
+  return [
+    { ...base, session_id: CART_J, name: "Тест Количка", phone: "0888 990 001", items: [{ slug: "necklace-verdis-gold", name: "Колие Verdis – Злато", price: 109, quantity: 1 }], subtotal: 109 },
+    { ...base, session_id: CART_W, name: "Тест Часовник", phone: "0888 990 002", items: [{ slug: "chrono-black", name: "Chrono Black", price: 119, quantity: 1 }], subtotal: 119 },
+  ];
+}
+
 async function cleanup(): Promise<void> {
   const sb = supabaseAdmin();
+  await sb.from("cart_sessions").delete().in("session_id", [CART_J, CART_W]);
   await sb.from("partner_status_log").delete().in("order_ref", REFS);
   await sb.from("partner_order_state").delete().in("order_ref", REFS);
   await sb.from("orders").delete().in("order_ref", REFS);
@@ -81,6 +93,9 @@ export async function GET(req: NextRequest) {
   // run -g needs partners.password_hash (supabase/partner_password.sql): wait for it, without using up the run
   const col = await supabaseAdmin().from("partners").select("password_hash").limit(1);
   if (col.error) return NextResponse.json({ ok: true, waiting: `partners.password_hash: ${col.error.message}` });
+  // run -i needs cart_sessions.call_note (supabase/cart_sessions_notes.sql)
+  const cartCol = await supabaseAdmin().from("cart_sessions").select("call_note, call_by").limit(1);
+  if (cartCol.error) return NextResponse.json({ ok: true, waiting: `cart_sessions notes: ${cartCol.error.message}` });
   if (!(await kv.set(`${DONE}:lock`, 1, { nx: true, ex: 300 }))) return NextResponse.json({ ok: true, skipped: "running" });
   const TEST_PW = randomBytes(12).toString("base64url");   // this run's test password (hashed below, never logged)
 
@@ -262,6 +277,37 @@ export async function GET(req: NextRequest) {
     const lockKeyThere = await kv.get(`partner-pw-lock:email:${TEST_PARTNER}`);
     check("lock lasts 15 min (KV key with TTL)", !!lockKeyThere && (await kv.ttl(`partner-pw-lock:email:${TEST_PARTNER}`)) > 800, lockKeyThere);
     await clearPasswordLocks(TEST_PARTNER);
+    // ── Колички (abandoned carts) ──
+    const insCarts = await sb.from("cart_sessions").insert(testCarts(), { defaultToNull: false }).select("id, session_id");
+    if (insCarts.error) throw new Error(`cart_sessions: ${insCarts.error.message}`);
+    const cartId = (sid: string) => String(insCarts.data?.find((r) => r.session_id === sid)?.id ?? "");
+    const cj = cartId(CART_J), cw = cartId(CART_W);
+    const cartsRes = await call("/api/partner/carts");
+    const carts = (cartsRes.json as { carts?: PartnerCartView[] })?.carts ?? [];
+    check("Колички: 200", cartsRes.status === 200, cartsRes.status);
+    check("Колички: the cart with a women's piece is listed", carts.some((c) => c.id === cj), carts.length);
+    check("Колички: a watch-only cart is NOT listed", !carts.some((c) => c.id === cw));
+    check("Колички: only allowed keys, no customer e-mail anywhere", carts.every((c) => Object.keys(c).every((k) => PARTNER_CART_KEYS.includes(k))) && !cartsRes.text.includes("@") && !/\"email\"/.test(cartsRes.text));
+    const jc = carts.find((c) => c.id === cj);
+    check("Колички: phone + the Verdis line tagged Дамска колекция", jc?.phone === "0888 990 001" && jc?.items[0]?.collection === true, jc);
+    const cj403 = await call("/api/partner/carts", { asPartner: false });
+    check("Колички: 403 without a session", cj403.status === 403, cj403.status);
+    const cpost = (id: string, body: unknown) => call(`/api/partner/carts/${id}`, { method: "POST", headers: j, body: JSON.stringify(body) });
+    const noteRes = await cpost(cj, { note: "тест: иска до офис, ще прати адрес" });
+    const noteRow = await sb.from("cart_sessions").select("call_note, call_note_by").eq("id", cj).single();
+    check("Колички: his note saved (shared with the panel, by партньор)", noteRes.status === 200 && noteRow.data?.call_note === "тест: иска до офис, ще прати адрес" && noteRow.data?.call_note_by === "партньор", { status: noteRes.status, row: noteRow.data });
+    const na1 = await cpost(cj, { outcome: "no_answer" });
+    const naRow = await sb.from("cart_sessions").select("call_state, call_attempts, call_by").eq("id", cj).single();
+    check("Колички: Не вдига counted (1 of 2), by партньор", na1.status === 200 && naRow.data?.call_state === "no_answer" && naRow.data?.call_attempts === 1 && naRow.data?.call_by === "партньор", naRow.data);
+    check("Колички: extra field refused (403)", (await cpost(cj, { outcome: "will_order", status: "converted" })).status === 403);
+    check("Колички: bad outcome refused (400)", (await cpost(cj, { outcome: "ordered" })).status === 400);
+    check("Колички: a watch-only cart cannot be touched (403)", (await cpost(cw, { note: "x" })).status === 403);
+    check("Колички: GET / DELETE on a cart -> 403", (await call(`/api/partner/carts/${cj}`)).status === 403 && (await call(`/api/partner/carts/${cj}`, { method: "DELETE" })).status === 403);
+    const na2 = await cpost(cj, { outcome: "no_answer" });
+    check("Колички: 2nd Не вдига -> the cart leaves his list", na2.status === 200 && (na2.json as { cart?: unknown })?.cart === null, na2.json);
+    const cartState = await sb.from("cart_sessions").select("status").eq("id", cj).single();
+    check("Колички: the cart itself is not converted / deleted (only the call record)", cartState.data?.status === "pending", cartState.data);
+
     const pwInLogs = JSON.stringify(checks).includes(TEST_PW);
     check("the test password appears in no check output", !pwInLogs);
   } catch (e) {
