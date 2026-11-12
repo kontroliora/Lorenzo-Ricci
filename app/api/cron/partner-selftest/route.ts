@@ -14,6 +14,7 @@ import { applyOfMark } from "@/lib/partner/marks";
 import { pickupInfoOf } from "@/lib/partner/pickup";
 import { PARTNER_CART_KEYS, type PartnerCartView } from "@/lib/partner/carts";
 import { getAbandonedCarts } from "@/lib/abandoned-carts-server";
+import { phoneCore, selectAbandoned, type CartRow, type OrderRef } from "@/lib/abandoned-carts";
 
 // ONE-OFF self-test of the partner role (owner, 09.11.2026). Runs once per RUN_ID (KV flag), from Vercel Cron:
 //   1. a TEST partner (the owner's own address) + 5 test orders (COD jewellery, card PAID jewellery, mixed COD jewellery + watch,
@@ -28,7 +29,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const RUN_ID = "2026-11-12-o";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark. -i: Колички (abandoned carts with a women's piece): list, note, call buttons, 403s. -j: -i was 76/84, test bugs only: the carts calls used the session revoked earlier in the run; the lock may hit the IP first (check Retry-After). -k: Непотърсени (parcel at the Econt office from day 3). -l: -k 77/90, test bugs only: the previous run's lock on the server's IP (now counted under 'selftest', cleared); the test carts shared the test orders' e-mail, so the list rightly hid them as 'ordered since'.
+const RUN_ID = "2026-11-12-p";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark. -i: Колички (abandoned carts with a women's piece): list, note, call buttons, 403s. -j: -i was 76/84, test bugs only: the carts calls used the session revoked earlier in the run; the lock may hit the IP first (check Retry-After). -k: Непотърсени (parcel at the Econt office from day 3). -l: -k 77/90, test bugs only: the previous run's lock on the server's IP (now counted under 'selftest', cleared); the test carts shared the test orders' e-mail, so the list rightly hid them as 'ordered since'.
 const TEST_PARTNER = "dserbezov7@gmail.com";
 const TEST_CUSTOMER_EMAIL = "partner-selftest-customer@example.com";   // must never appear in anything the partner gets
 const T = (s: string) => `LR-TST${s}`;
@@ -313,7 +314,13 @@ export async function GET(req: NextRequest) {
       const core = String(rb.data?.phone ?? "").replace(/\D/g, "").replace(/^0+/, "");
       const same = await sb.from("orders").select("order_ref, created_at").ilike("phone", `%${core.slice(-6)}%`).limit(5);
       const newer = await sb.from("cart_sessions").select("id", { count: "exact", head: true }).gt("updated_at", String(rb.data?.updated_at ?? ""));
-      why = { newerRows: newer.count, readback: rb.data ?? rb.error?.message, inPanelList: all.some((c) => c.id === cj), ageH: rb.data?.updated_at ? Math.round((Date.now() - Date.parse(rb.data.updated_at)) / 360_000) / 10 : null, ordersWithThisPhone: same.data };
+      const full = await sb.from("cart_sessions").select("*").eq("id", cj).single();
+      const ords = await sb.from("orders").select("phone, email, created_at").order("created_at", { ascending: false }).limit(3000);
+      const row = full.data as CartRow;
+      const pc = phoneCore(row?.phone);
+      const matching = ((ords.data ?? []) as OrderRef[]).filter((o) => (pc.length >= 8 && phoneCore(o.phone) === pc) || String(o.email ?? "").trim().toLowerCase() === String(row?.email ?? "").trim().toLowerCase());
+      why = { aloneNoOrders: selectAbandoned([row], [], Date.now()).length, aloneWithOrders: selectAbandoned([row], (ords.data ?? []) as OrderRef[], Date.now()).length,
+        matching: matching.slice(0, 5).map((o) => ({ at: o.created_at, phoneTail: String(o.phone ?? "").slice(-4), emailDomain: String(o.email ?? "").split("@")[1] ?? null })), newerRows: newer.count, readback: rb.data ?? rb.error?.message, inPanelList: all.some((c) => c.id === cj), ageH: rb.data?.updated_at ? Math.round((Date.now() - Date.parse(rb.data.updated_at)) / 360_000) / 10 : null, ordersWithThisPhone: same.data };
     }
     check("Колички: the cart with a women's piece is listed", carts.some((c) => c.id === cj), { n: carts.length, why });
     check("Колички: a watch-only cart is NOT listed", !carts.some((c) => c.id === cw));
