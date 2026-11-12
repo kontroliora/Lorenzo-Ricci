@@ -11,6 +11,7 @@ import { notifyPartnerOnce } from "@/lib/partner/email";
 import { clearPasswordLocks } from "@/lib/partner/password";
 import { PARTNER_FILTERS, PARTNER_VIEW_KEYS, type PartnerOrderView } from "@/lib/partner/orders";
 import { applyOfMark } from "@/lib/partner/marks";
+import { pickupInfoOf } from "@/lib/partner/pickup";
 import { PARTNER_CART_KEYS, type PartnerCartView } from "@/lib/partner/carts";
 
 // ONE-OFF self-test of the partner role (owner, 09.11.2026). Runs once per RUN_ID (KV flag), from Vercel Cron:
@@ -26,7 +27,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const RUN_ID = "2026-11-12-j";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark. -i: Колички (abandoned carts with a women's piece): list, note, call buttons, 403s. -j: -i was 76/84, test bugs only: the carts calls used the session revoked earlier in the run; the lock may hit the IP first (check Retry-After).
+const RUN_ID = "2026-11-12-k";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark. -i: Колички (abandoned carts with a women's piece): list, note, call buttons, 403s. -j: -i was 76/84, test bugs only: the carts calls used the session revoked earlier in the run; the lock may hit the IP first (check Retry-After). -k: Непотърсени (parcel at the Econt office from day 3).
 const TEST_PARTNER = "dserbezov7@gmail.com";
 const TEST_CUSTOMER_EMAIL = "partner-selftest-customer@example.com";   // must never appear in anything the partner gets
 const T = (s: string) => `LR-TST${s}`;
@@ -190,6 +191,20 @@ export async function GET(req: NextRequest) {
     const fShipped = await call("/api/partner/orders?filter=shipped");
     check("real status Изпратена -> filter Изпратени", ((fShipped.json as { orders?: PartnerOrderView[] })?.orders ?? []).find((o) => o.ref === T("COD1"))?.real.label === "Изпратена");
     await sb.from("orders").update({ status: "new", call_state: "pending", tracking_number: null }).eq("order_ref", T("COD1"));
+    // Непотърсени: a parcel at the customer's Econt office, from day 3 (pure rule; live Econt data can't be faked here)
+    const D = 86_400_000, now0 = Date.now();
+    const atOffice = (days: number, extra: Record<string, unknown> = {}) => ({ delivered: false, returning: false, atFinalOffice: true, arrivedAtFinalOfficeMs: now0 - days * D, officeName: "Еконт Тест", ...extra });
+    check("Непотърсени: day 2 at the office -> not yet", pickupInfoOf(atOffice(1.5), now0) === null);
+    const p3 = pickupInfoOf(atOffice(2.2), now0);
+    check("Непотърсени: day 3 -> shown, office named, ~6 days left", p3?.day === 3 && p3.office === "Еконт Тест" && p3.returnsInDays === 6, p3);
+    check("Непотърсени: collected / returning / not at office -> not shown",
+      pickupInfoOf(atOffice(5, { delivered: true }), now0) === null && pickupInfoOf(atOffice(5, { returning: true }), now0) === null && pickupInfoOf(atOffice(5, { atFinalOffice: false }), now0) === null);
+    const ctsAll = (fConfirmed.json as { counts?: Record<string, number> })?.counts ?? {};
+    check("Непотърсени: filter + count exist", typeof ctsAll.uncollected === "number", ctsAll);
+    const fUnc = await call("/api/partner/orders?filter=uncollected");
+    check("Непотърсени: filter answers 200, only shipped orders with a pickup", fUnc.status === 200 && ((fUnc.json as { orders?: PartnerOrderView[] })?.orders ?? []).every((o) => o.real.key === "shipped" && !!o.pickup), fUnc.status);
+    check("Непотърсени: no tracking number in what he gets", !/tracking/i.test(fUnc.text) && !/tracking/i.test(fConfirmed.text));
+
     // "Приложи" in the owner's panel (the mapping; the action itself is the panel's confirm / не вдига / cancel)
     check("Приложи: Потвърдено on a new order -> confirm", applyOfMark("new", "confirmed") === "confirm");
     check("Приложи: Не вдига on a new order -> не вдига", applyOfMark("new", "no_answer") === "no_answer");
