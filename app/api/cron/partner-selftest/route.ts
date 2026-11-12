@@ -28,7 +28,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const RUN_ID = "2026-11-12-m";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark. -i: Колички (abandoned carts with a women's piece): list, note, call buttons, 403s. -j: -i was 76/84, test bugs only: the carts calls used the session revoked earlier in the run; the lock may hit the IP first (check Retry-After). -k: Непотърсени (parcel at the Econt office from day 3). -l: -k 77/90, test bugs only: the previous run's lock on the server's IP (now counted under 'selftest', cleared); the test carts shared the test orders' e-mail, so the list rightly hid them as 'ordered since'.
+const RUN_ID = "2026-11-12-n";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark. -i: Колички (abandoned carts with a women's piece): list, note, call buttons, 403s. -j: -i was 76/84, test bugs only: the carts calls used the session revoked earlier in the run; the lock may hit the IP first (check Retry-After). -k: Непотърсени (parcel at the Econt office from day 3). -l: -k 77/90, test bugs only: the previous run's lock on the server's IP (now counted under 'selftest', cleared); the test carts shared the test orders' e-mail, so the list rightly hid them as 'ordered since'.
 const TEST_PARTNER = "dserbezov7@gmail.com";
 const TEST_CUSTOMER_EMAIL = "partner-selftest-customer@example.com";   // must never appear in anything the partner gets
 const T = (s: string) => `LR-TST${s}`;
@@ -70,13 +70,15 @@ function testOrders(): Row[] {
 const REFS = testOrders().map((o) => String(o.order_ref));
 
 const CART_J = "partner-selftest-cart-jewellery", CART_W = "partner-selftest-cart-watch";
+// a phone no real customer has: a fixed made-up number may belong to someone who ordered (the list then rightly hides the cart)
+const CART_PHONE = `0877 ${String(100000 + Math.floor(Math.random() * 899999)).slice(0, 3)} ${String(Math.floor(Math.random() * 1000)).padStart(3, "0")}`;
 function testCarts(): Record<string, unknown>[] {
   const at = new Date(Date.now() - 2 * 3_600_000).toISOString();   // left 2 h ago: in the "last 24 h" list
   // the carts' e-mail is NOT the test orders' one: those orders would count as "ordered since" and hide the carts
   const base = { email: "partner-selftest-cart@example.com", status: "pending", lang: "bg", recovery_consent: true, created_at: at, updated_at: at };
   return [
-    { ...base, session_id: CART_J, name: "Тест Количка", phone: "0888 990 001", items: [{ slug: "necklace-verdis-gold", name: "Колие Verdis – Злато", price: 109, quantity: 1 }], subtotal: 109 },
-    { ...base, session_id: CART_W, name: "Тест Часовник", phone: "0888 990 002", items: [{ slug: "chrono-black", name: "Chrono Black", price: 119, quantity: 1 }], subtotal: 119 },
+    { ...base, session_id: CART_J, name: "Тест Количка", phone: CART_PHONE, items: [{ slug: "necklace-verdis-gold", name: "Колие Verdis – Злато", price: 109, quantity: 1 }], subtotal: 109 },
+    { ...base, session_id: CART_W, name: "Тест Часовник", phone: CART_PHONE.replace(/\d$/, (d) => String((Number(d) + 1) % 10)), items: [{ slug: "chrono-black", name: "Chrono Black", price: 119, quantity: 1 }], subtotal: 119 },
   ];
 }
 
@@ -308,13 +310,15 @@ export async function GET(req: NextRequest) {
     if (!carts.some((c) => c.id === cj)) {   // diagnostics: which rule hides the test cart
       const rb = await sb.from("cart_sessions").select("phone, status, lang, subtotal, updated_at, created_at, call_state, call_attempts").eq("id", cj).single();
       const all = await getAbandonedCarts();
-      why = { readback: rb.data ?? rb.error?.message, inPanelList: all.some((c) => c.id === cj), ageH: rb.data?.updated_at ? Math.round((Date.now() - Date.parse(rb.data.updated_at)) / 360_000) / 10 : null };
+      const core = String(rb.data?.phone ?? "").replace(/\D/g, "").replace(/^0+/, "");
+      const same = await sb.from("orders").select("order_ref, created_at").ilike("phone", `%${core.slice(-6)}%`).limit(5);
+      why = { readback: rb.data ?? rb.error?.message, inPanelList: all.some((c) => c.id === cj), ageH: rb.data?.updated_at ? Math.round((Date.now() - Date.parse(rb.data.updated_at)) / 360_000) / 10 : null, ordersWithThisPhone: same.data };
     }
     check("Колички: the cart with a women's piece is listed", carts.some((c) => c.id === cj), { n: carts.length, why });
     check("Колички: a watch-only cart is NOT listed", !carts.some((c) => c.id === cw));
     check("Колички: only allowed keys, no customer e-mail anywhere", carts.every((c) => Object.keys(c).every((k) => PARTNER_CART_KEYS.includes(k))) && !cartsRes.text.includes("@") && !/\"email\"/.test(cartsRes.text));
     const jc = carts.find((c) => c.id === cj);
-    check("Колички: phone + the Verdis line tagged Дамска колекция", jc?.phone === "0888 990 001" && jc?.items[0]?.collection === true, jc);
+    check("Колички: phone + the Verdis line tagged Дамска колекция", jc?.phone === CART_PHONE && jc?.items[0]?.collection === true, jc);
     const cj403 = await call("/api/partner/carts", { asPartner: false });
     check("Колички: 403 without a session", cj403.status === 403, cj403.status);
     const cpost = (id: string, body: unknown) => call(`/api/partner/carts/${id}`, { method: "POST", headers: j, body: JSON.stringify(body), cookieValue: cartCookie });
