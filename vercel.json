@@ -34,10 +34,6 @@
     {
       "path": "/api/cron/health",
       "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/partner-selftest",
-      "schedule": "* * * * *"
     }
   ]
 }
