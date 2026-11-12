@@ -27,7 +27,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const RUN_ID = "2026-11-12-k";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark. -i: Колички (abandoned carts with a women's piece): list, note, call buttons, 403s. -j: -i was 76/84, test bugs only: the carts calls used the session revoked earlier in the run; the lock may hit the IP first (check Retry-After). -k: Непотърсени (parcel at the Econt office from day 3).
+const RUN_ID = "2026-11-12-l";   // -a: before partner_role.sql; -b: COD test rows lacked payment_status (NOT NULL). Both stopped at step 1, nothing left behind. -c: 41/42, the test expected 24 pieces, the collection has 18. -d: 42/42, invite sent. -e: the partner sees the WHOLE order (all lines, full total), collection lines tagged; test e-mails only to the test address, no second invite. -f: cardholder-only, men's-jewellery-only and gift-only orders -> no e-mail, hidden. -g: password sign-in (right / wrong / switched off / revoked / 5 wrong -> locked); never sends an invitation. -h: /partner shows the REAL order status (filters + counts on it); his buttons are only his mark. -i: Колички (abandoned carts with a women's piece): list, note, call buttons, 403s. -j: -i was 76/84, test bugs only: the carts calls used the session revoked earlier in the run; the lock may hit the IP first (check Retry-After). -k: Непотърсени (parcel at the Econt office from day 3). -l: -k 77/90, test bugs only: the previous run's lock on the server's IP (now counted under 'selftest', cleared); the test carts shared the test orders' e-mail, so the list rightly hid them as 'ordered since'.
 const TEST_PARTNER = "dserbezov7@gmail.com";
 const TEST_CUSTOMER_EMAIL = "partner-selftest-customer@example.com";   // must never appear in anything the partner gets
 const T = (s: string) => `LR-TST${s}`;
@@ -71,7 +71,8 @@ const REFS = testOrders().map((o) => String(o.order_ref));
 const CART_J = "partner-selftest-cart-jewellery", CART_W = "partner-selftest-cart-watch";
 function testCarts(): Record<string, unknown>[] {
   const at = new Date(Date.now() - 2 * 3_600_000).toISOString();   // left 2 h ago: in the "last 24 h" list
-  const base = { email: TEST_CUSTOMER_EMAIL, status: "pending", lang: "bg", recovery_consent: true, created_at: at, updated_at: at };
+  // the carts' e-mail is NOT the test orders' one: those orders would count as "ordered since" and hide the carts
+  const base = { email: "partner-selftest-cart@example.com", status: "pending", lang: "bg", recovery_consent: true, created_at: at, updated_at: at };
   return [
     { ...base, session_id: CART_J, name: "Тест Количка", phone: "0888 990 001", items: [{ slug: "necklace-verdis-gold", name: "Колие Verdis – Злато", price: 109, quantity: 1 }], subtotal: 109 },
     { ...base, session_id: CART_W, name: "Тест Часовник", phone: "0888 990 002", items: [{ slug: "chrono-black", name: "Chrono Black", price: 119, quantity: 1 }], subtotal: 119 },
@@ -259,8 +260,9 @@ export async function GET(req: NextRequest) {
 
     // ── password sign-in ──
     await clearPasswordLocks(TEST_PARTNER);
+    const pwHeaders = { ...j, "x-lr-selftest": req.headers.get("authorization") ?? "" };   // counted under "selftest", see the password route
     const pw = (password: unknown, extra: Record<string, unknown> = {}) =>
-      call("/api/partner/password", { method: "POST", headers: j, body: JSON.stringify({ email: TEST_PARTNER, password, ...extra }), asPartner: false });
+      call("/api/partner/password", { method: "POST", headers: pwHeaders, body: JSON.stringify({ email: TEST_PARTNER, password, ...extra }), asPartner: false });
     const good = await pw(TEST_PW);
     const pwCookie = good.setCookie.match(new RegExp(`${PARTNER_COOKIE}=[^;]+`))?.[0] ?? "";
     check("password: right one -> 200 + 30-day session cookie", good.status === 200 && !!pwCookie && /max-age=2592000/i.test(good.setCookie), { status: good.status, cookie: !!pwCookie });
