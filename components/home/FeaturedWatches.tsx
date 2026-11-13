@@ -13,6 +13,7 @@ import { useLeatherStock } from "@/lib/use-gifts";
 import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
 import { bgShipsFree } from "@/lib/shipping-rules";
 import { FreeShippingBadge } from "@/components/product/PriceExtras";
+import { watchGiftActive, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
 import type { Product } from "@/lib/types";
 
 // Yachting is the new collection: its own block on top, the earlier models below -
@@ -232,6 +233,12 @@ function WatchCoverFlow({ watches, soldOut }: { watches: Product[]; soldOut: str
                     sizes="56vw"
                     className={`object-contain transition-[opacity,filter] duration-500${!isActive ? " blur-[2px]" : ""}${isNight ? " opacity-100" : " opacity-0"}`}
                   />
+                  {/* Watch + free cardholder (lib/watch-gift.ts): the cards' small red badge, top-left (the day/night switch is top-right) */}
+                  {isActive && watchGiftActive() && !soldOut.includes(watch.slug) && (
+                    <span data-testid="card-watch-gift-badge" className="absolute top-2.5 left-2.5 z-30 pointer-events-none bg-[#B3121F] text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
+                      {WATCH_GIFT_TEXT.badge}
+                    </span>
+                  )}
                   {/* Tap active card to navigate to product page (won't fire if user swiped) */}
                   {isActive && (
                     <Link

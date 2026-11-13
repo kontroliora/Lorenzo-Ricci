@@ -4,6 +4,7 @@ import { useCartStore, CART_RESERVATION_MS } from "@/lib/store";
 import { getProductBySlug } from "@/lib/products";
 import { opoFixesPrice } from "@/lib/one-plus-one";
 import type { CartItem } from "@/lib/types";
+import { isWatchGiftChoice, watchGiftActive } from "@/lib/watch-gift";
 
 // Restores the Bulgarian cart saved in the browser (lib/store.ts, "lr-cart") once after mount (owner, 08.11.2026):
 //   1. a saved cart whose reservation ran out (15 min from the first item, the drawer's countdown) is dropped;
@@ -24,7 +25,13 @@ async function revalidate(): Promise<void> {
   ]);
   // The cart may have changed while the checks ran (the customer added something): re-check what is there now.
   const now = useCartStore.getState().items;
-  const next: CartItem[] = now.flatMap(({ product: saved, quantity }) => {
+  // The watches' free cardholders (lib/watch-gift.ts): kept while the offer runs, one per unit at most; dropped after it ends.
+  const giftsOf = (g: unknown, q: number) => {
+    if (!watchGiftActive() || !Array.isArray(g)) return {};
+    const giftSlugs = g.filter(isWatchGiftChoice).slice(0, q);
+    return giftSlugs.length ? { giftSlugs } : {};
+  };
+  const next: CartItem[] = now.flatMap(({ product: saved, quantity, giftSlugs }) => {
     const base = getProductBySlug(saved.slug);
     if (!base || !base.inStock) return [];
     const ov = overrides?.[base.slug];
@@ -32,9 +39,9 @@ async function revalidate(): Promise<void> {
     const live = stock?.[base.slug];
     if (typeof live === "number") {
       if (live <= 0) return [];
-      return [{ product: { ...product, stock: live }, quantity: Math.min(quantity, live) }];
+      return [{ product: { ...product, stock: live }, quantity: Math.min(quantity, live), ...giftsOf(giftSlugs, Math.min(quantity, live)) }];
     }
-    return [{ product: { ...product, stock: saved.stock ?? product.stock }, quantity }];
+    return [{ product: { ...product, stock: saved.stock ?? product.stock }, quantity, ...giftsOf(giftSlugs, quantity) }];
   });
   useCartStore.getState().replaceItems(next);
 }

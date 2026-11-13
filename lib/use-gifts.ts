@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getProductBySlug } from "@/lib/products";
 import { deriveGiftLines, isGiftClutch, pickGift, type GiftLine } from "@/lib/gifts";
 import type { CartItem } from "@/lib/types";
+import { watchGiftSlots } from "@/lib/watch-gift";
 
 // Live stock of every product (the cards' "Изчерпан" and low-stock hints, the gift cardholders). /api/leather-stock is
 // one small call (all slugs), shared by every component on the page and cached ~20 s at the CDN, so the pages themselves
@@ -57,7 +58,12 @@ export function useGiftLines(items: CartItem[]): GiftLine[] {
   const hasClutch = items.some((i) => isGiftClutch(i.product.slug));
   const stock = useLeatherStock(hasClutch);
   return useMemo(
-    () => deriveGiftLines(items.map((i) => ({ slug: i.product.slug, qty: i.quantity })), (s) => stock?.[s], usable),
+    () => [
+      ...deriveGiftLines(items.map((i) => ({ slug: i.product.slug, qty: i.quantity })), (s) => stock?.[s], usable),
+      // The watches' chosen cardholders (lib/watch-gift.ts): shown as chosen; /api/order checks the stock and swaps if needed.
+      ...watchGiftSlots(items.map((i) => ({ slug: i.product.slug, qty: i.quantity, giftSlugs: i.giftSlugs, isWatch: i.product.category === "watches" })))
+        .map((g) => ({ clutchSlug: g.watchSlug, giftSlug: g.giftSlug, qty: g.qty, swapped: false })),
+    ],
     [items, stock],
   );
 }

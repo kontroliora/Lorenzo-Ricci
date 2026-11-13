@@ -16,6 +16,7 @@ import { bgShipsFree } from "@/lib/shipping-rules";
 import { FreeShippingBadge, OnePlusOneLine, CardWarrantyLine } from "@/components/product/PriceExtras";
 import { isCollectionSlug } from "@/lib/new-collection";
 import { opoGroupOf, opoPriceLineBg } from "@/lib/one-plus-one";
+import { watchGiftActive, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
 
 interface ProductCardProps {
   /** `sizes` of the card photos: the default fits 2-4 cards per row; one-per-row listings pass LISTING_CARD_SIZES. */
@@ -174,6 +175,12 @@ export function ProductCard({ product, priority = false, learnMore = false, size
           {hasGift && !isSoldOut && (
             <span className="bg-navy text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
               + Подарък кардхолдър
+            </span>
+          )}
+          {/* Watch + free cardholder (lib/watch-gift.ts): same red badge as the 1+1 */}
+          {isWatch && !isSoldOut && watchGiftActive() && (
+            <span data-testid="card-watch-gift-badge" className="bg-[#B3121F] text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
+              {WATCH_GIFT_TEXT.badge}
             </span>
           )}
           {opo && (

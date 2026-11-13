@@ -23,7 +23,8 @@ export const ODD_MODAL_RO: OddModalText = {
   add: "Adăugați gratuit", free: "Gratuit", decline: "Nu, mulțumesc, continuați", close: "Închideți",
 };
 
-export function CollectionOddModal({ suggestions, text, onAdd, onContinue, onClose }: {
+export function CollectionOddModal({ suggestions, text, onAdd, onContinue, onClose, kicker = "1+1" }: {
+  kicker?: string; // the small gold word above the title ("Подарък" for the watches' free cardholder reminder)
   suggestions: OddSuggestion[];
   text: OddModalText;
   onAdd: (slug: string) => void;
@@ -45,7 +46,7 @@ export function CollectionOddModal({ suggestions, text, onAdd, onContinue, onClo
         shown ? "translate-y-0 sm:opacity-100" : "translate-y-full sm:translate-y-0 sm:opacity-0"
       }`}>
         <button type="button" onClick={onClose} aria-label={text.close} className="absolute right-1.5 top-1.5 w-11 h-11 flex items-center justify-center text-ink-soft hover:text-navy text-xl leading-none">✕</button>
-        <p className="font-sans text-[10px] tracking-[0.2em] uppercase text-gold-dark font-medium">1+1</p>
+        <p className="font-sans text-[10px] tracking-[0.2em] uppercase text-gold-dark font-medium">{kicker}</p>
         <h2 className="mt-1 pr-8 font-serif text-[22px] sm:text-2xl leading-tight text-charcoal">{text.title}</h2>
         <p className="mt-2 font-sans text-[13px] text-ink-soft leading-snug">{text.sub}</p>
 

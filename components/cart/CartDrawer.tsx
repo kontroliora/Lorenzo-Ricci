@@ -18,17 +18,20 @@ import { getProductBySlug } from "@/lib/products";
 import { useLeatherStock } from "@/lib/use-gifts";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
+import { watchGiftActive, WATCH_GIFT_CHOICES, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
 
 
 const CART_TIMEOUT = 15 * 60; // 900 seconds
 
 export function CartDrawer() {
   const { isOpen, closeCart, items, removeItem, updateQuantity, totalPrice, totalItems, bundleDiscount,
-    pendingCheckout, clearPendingCheckout, addItem } =
+    pendingCheckout, clearPendingCheckout, addItem, addLineGift } =
     useCartStore();
   const [showCheckout, setShowCheckout] = useState(false);
   // Women's collection 1+1: an odd number of collection pieces = one more is free; "Поръчай сега" first offers it (CollectionOddModal).
   const [oddOpen, setOddOpen] = useState(false);
+  // Watch + free cardholder (lib/watch-gift.ts): a watch without its cardholder chosen -> "Забравихте подаръка си" before checkout.
+  const [giftOpen, setGiftOpen] = useState(false);
   const liveStock = useLeatherStock(isOpen);
   const country = useCountry();
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -48,7 +51,11 @@ export function CartDrawer() {
   // The card saving is shown only in the checkout, on the card payment option (owner, 08.11.2026).
   const count = totalItems();
   // The redesigned cart step (owner, 08.11.2026): one red "Спестявате" = every saving together (sale prices, sets incl. 1+1, promo).
-  const allSavings = Math.round((savings + totalDiscount + promoDiscount) * 100) / 100;
+  // ... plus the watches' free cardholders at their own price (€65 each, owner 14.11.2026).
+  const watchGiftValue = giftLines
+    .filter((g) => getProductBySlug(g.clutchSlug)?.category === "watches")
+    .reduce((s, g) => s + (getProductBySlug(g.giftSlug)?.price ?? 0) * g.qty, 0);
+  const allSavings = Math.round((savings + totalDiscount + promoDiscount + watchGiftValue) * 100) / 100;
   const freeUnits = opoFreeUnits(opoLines(items));
   const eur = (n: number) => `€${Number.isInteger(Math.round(n * 100) / 100) ? Math.round(n) : n.toFixed(2).replace(".", ",")}`;
   const freeShippingThreshold = 60;
@@ -78,11 +85,12 @@ export function CartDrawer() {
   // ───────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!isOpen) { setShowCheckout(false); setOddOpen(false); }
+    if (!isOpen) { setShowCheckout(false); setOddOpen(false); setGiftOpen(false); }
   }, [isOpen]);
 
   const goCheckout = () => {
     setOddOpen(false);
+    setGiftOpen(false);
     setShowCheckout(true);
     const now = useCartStore.getState().items; // includes a free piece just added from the modal
     trackWithCapi("InitiateCheckout", {
@@ -108,6 +116,32 @@ export function CartDrawer() {
     const p = getProductBySlug(slug);
     if (p) addItem({ ...p, stock: liveStock?.[slug] ?? p.stock });
     goCheckout();
+  };
+
+  // The first watch still owed a cardholder, and the cardholders that can be its gift (in stock, not already used up by the cart).
+  const giftlessWatch = watchGiftActive()
+    ? items.find((i) => i.product.category === "watches" && (i.giftSlugs?.length ?? 0) < i.quantity)
+    : undefined;
+  const giftSuggestions = giftlessWatch
+    ? WATCH_GIFT_CHOICES.flatMap((slug) => {
+        const p = getProductBySlug(slug);
+        if (!p || !p.inStock) return [];
+        const used = items.reduce((n, i) => n + (i.product.slug === slug ? i.quantity : 0) + (i.giftSlugs ?? []).filter((g) => g === slug).length, 0);
+        if ((liveStock?.[slug] ?? p.stock ?? 1) - used <= 0) return [];
+        return [{ slug, name: p.name, image: p.coverImage, priceText: displayPrice(p, country).text }];
+      })
+    : [];
+  const chooseGift = (slug: string) => {
+    if (!giftlessWatch) return;
+    addLineGift(giftlessWatch.product.id, slug);
+    // another watch (or unit) still without one: ask again; otherwise on to the checkout
+    const left = useCartStore.getState().items.some((i) => i.product.category === "watches" && (i.giftSlugs?.length ?? 0) < i.quantity);
+    if (!left) goCheckout();
+  };
+  const startCheckout = () => {
+    if (giftSuggestions.length > 0) setGiftOpen(true);
+    else if (oddSuggestions.length > 0) setOddOpen(true);
+    else goCheckout();
   };
 
   // Recovery link landed → jump straight to the checkout step.
@@ -213,7 +247,7 @@ export function CartDrawer() {
             {/* Items + the 1+1 upsell / cross-sell */}
             <div className="flex-1 overflow-y-auto px-5 sm:px-6 pb-4">
               {items.map(({ product, quantity }, idx) => {
-                const gift = giftLines.find((g) => g.clutchSlug === product.slug);
+                const gifts = giftLines.filter((g) => g.clutchSlug === product.slug);
                 const free = freeUnits[idx] ?? 0;   // units the 1+1 makes free: "€109" struck + "Безплатно" (display only)
                 const paid = quantity - free;
                 return (
@@ -232,7 +266,7 @@ export function CartDrawer() {
                       freeText="Безплатно"
                       labels={{ dec: "Намали количеството", inc: "Увеличи количеството", remove: "Премахни" }}
                     />
-                    {gift && <CartGiftRow gift={gift} />}
+                    {gifts.map((g) => <CartGiftRow key={g.giftSlug} gift={g} />)}
                   </Fragment>
                 );
               })}
@@ -249,7 +283,7 @@ export function CartDrawer() {
 
               <button
                 data-testid="drawer-checkout"
-                onClick={() => (oddSuggestions.length > 0 ? setOddOpen(true) : goCheckout())}
+                onClick={startCheckout}
                 className="btn-primary w-full mt-4 py-4 text-[12px] font-semibold"
               >
                 Продължи към плащане
@@ -263,6 +297,16 @@ export function CartDrawer() {
           </>
         )}
       </div>
+      {giftOpen && giftSuggestions.length > 0 && (
+        <CollectionOddModal
+          suggestions={giftSuggestions}
+          text={{ title: WATCH_GIFT_TEXT.reminderTitle, sub: WATCH_GIFT_TEXT.reminderSub, add: WATCH_GIFT_TEXT.reminderAdd, free: WATCH_GIFT_TEXT.free, decline: WATCH_GIFT_TEXT.reminderDecline, close: "Затвори" }}
+          kicker="Подарък"
+          onAdd={chooseGift}
+          onContinue={() => (oddSuggestions.length > 0 ? (setGiftOpen(false), setOddOpen(true)) : goCheckout())}
+          onClose={() => setGiftOpen(false)}
+        />
+      )}
       {oddOpen && oddSuggestions.length > 0 && (
         <CollectionOddModal suggestions={oddSuggestions} text={ODD_MODAL_BG} onAdd={addFree} onContinue={goCheckout} onClose={() => setOddOpen(false)} />
       )}

@@ -20,7 +20,10 @@ interface CartStore {
   /** Replace the lines after a reload's re-check (catalog, price overrides, live stock); never opens the drawer. */
   replaceItems: (items: CartItem[]) => void;
   isOpen: boolean;
-  addItem: (product: Product) => void;
+  /** `giftSlug`: the free cardholder chosen for this watch unit (lib/watch-gift.ts). */
+  addItem: (product: Product, giftSlug?: string) => void;
+  /** The cart reminder: give a watch line's next unit its free cardholder. */
+  addLineGift: (productId: string, giftSlug: string) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -47,7 +50,7 @@ export const useCartStore = create<CartStore>()(persist((set, get) => ({
   reservedAt: null,
   replaceItems: (items) => set({ items, reservedAt: items.length ? get().reservedAt ?? Date.now() : null }),
 
-  addItem: (product) => {
+  addItem: (product, giftSlug) => {
     set((state) => {
       const existing = state.items.find((i) => i.product.id === product.id);
       if (existing) {
@@ -55,13 +58,25 @@ export const useCartStore = create<CartStore>()(persist((set, get) => ({
         if (existing.quantity >= maxQty) return state;
         return {
           items: state.items.map((i) =>
-            i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
+            i.product.id === product.id
+              ? { ...i, quantity: i.quantity + 1, ...(giftSlug ? { giftSlugs: [...(i.giftSlugs ?? []), giftSlug] } : {}) }
+              : i
           ),
           isOpen: true,
         };
       }
-      return { items: [...state.items, { product, quantity: 1 }], isOpen: true, reservedAt: state.items.length ? state.reservedAt ?? Date.now() : Date.now() };
+      return { items: [...state.items, { product, quantity: 1, ...(giftSlug ? { giftSlugs: [giftSlug] } : {}) }], isOpen: true, reservedAt: state.items.length ? state.reservedAt ?? Date.now() : Date.now() };
     });
+  },
+
+  addLineGift: (productId, giftSlug) => {
+    set((state) => ({
+      items: state.items.map((i) =>
+        i.product.id === productId && (i.giftSlugs?.length ?? 0) < i.quantity
+          ? { ...i, giftSlugs: [...(i.giftSlugs ?? []), giftSlug] }
+          : i
+      ),
+    }));
   },
 
   removeItem: (productId) => {
@@ -77,8 +92,9 @@ export const useCartStore = create<CartStore>()(persist((set, get) => ({
       return;
     }
     set((state) => ({
+      // one free cardholder per watch: fewer watches = the extra gifts go (the last chosen first)
       items: state.items.map((i) =>
-        i.product.id === productId ? { ...i, quantity } : i
+        i.product.id === productId ? { ...i, quantity, ...(i.giftSlugs ? { giftSlugs: i.giftSlugs.slice(0, quantity) } : {}) } : i
       ),
     }));
   },

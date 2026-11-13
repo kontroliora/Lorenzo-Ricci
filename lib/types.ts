@@ -69,6 +69,8 @@ export interface Product {
 export interface CartItem {
   product: Product;
   quantity: number;
+  /** Watches while lib/watch-gift.ts runs: the free cardholder chosen for each unit (at most `quantity`). Display + /api/order only. */
+  giftSlugs?: string[];
 }
 
 export interface CheckoutData {

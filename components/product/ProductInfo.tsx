@@ -23,10 +23,11 @@ import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
-import { CollectionTwoBoxes, TWO_BOX_BG, TWO_BOX_CARD_BG } from "@/components/product/CollectionTwoBoxes";
+import { CollectionTwoBoxes, TWO_BOX_BG, TWO_BOX_CARD_BG, type TwoBoxText } from "@/components/product/CollectionTwoBoxes";
 import { previewProductPhoto, warmProductPhoto } from "@/lib/warm-product";
 import { opoGroupOf, opoPriceLineBg, opoPairPrice, opoPairPriceBg } from "@/lib/one-plus-one";
 import { useLeatherStock } from "@/lib/use-gifts";
+import { watchGiftActive, WATCH_GIFT_CHOICES, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
 
 // A colour swatch reads as sold out when its product is switched off in
 // lib/products.ts (inStock: false - the owner's single on/off switch); the
@@ -142,6 +143,17 @@ const ADD_ONE_BG = "или добави само 1";
 // Cardholders (owner, 09.11.2026): the same two boxes as the women's collection.
 const CHOOSE_LABEL_CARD_BG = "↑ ИЗБЕРЕТЕ БЕЗПЛАТНИЯ КАРТОДЪРЖАТЕЛ";
 const FREE_PICKER_CARD_BG: FreePickerText = { ...FREE_PICKER_BG, title: "Изберете втория – безплатно:", groups: {}, again: "Още един такъв", chooseSecond: "Избери за втори" };
+// Watch + free cardholder (lib/watch-gift.ts, owner 14.11.2026): the same two boxes - 1 the watch, 2 the cardholder gift. Nothing
+// pre-selected; until one is picked the buttons scroll to box 2 and a small link adds the watch alone (the cart reminds then).
+const TWO_BOX_WATCH_BG: TwoBoxText = {
+  ...TWO_BOX_BG, yours: "Изберете часовник", yoursShort: "Часовник", second: "Изберете кардхолдър", secondShort: "Кардхолдър –", free: "Подарък",
+};
+const FREE_PICKER_WATCH_BG: FreePickerText = {
+  ...FREE_PICKER_BG, title: "Изберете кардхолдър – подарък:", groups: {}, free: "Подарък към часовника", chooseSecond: "Избери за подарък",
+  second: "Подарък:", freeShort: "Подарък", again: "",
+};
+const CHOOSE_LABEL_WATCH_BG = "↑ ИЗБЕРЕТЕ ПОДАРЪКА";
+const ADD_WATCH_ONLY_BG = "или добави само часовника";
 
 // Show the low-stock line only when AVAILABLE units are at or below PAGE_LOW_STOCK_MAX (lib/home-card-hints.ts).
 
@@ -166,6 +178,8 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
     if (slug !== product.slug) { setPendingVariant(slug); previewProductPhoto(slug); }
   };
   const opoStock = useLeatherStock(!!opoGroupOf(product.slug)); // the group's live stock (one batched call)
+  const giftOn = product.category === "watches" && watchGiftActive(); // watch + free cardholder (lib/watch-gift.ts)
+  const giftStock = useLeatherStock(giftOn); // the cardholders' live stock (same batched call)
   // A product with no description content (e.g. the Yachting watches until they're
   // measured) gets no Описание tab and opens on the specs instead of an empty tab.
   const hasDescription = Boolean(
@@ -326,7 +340,33 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   const eurComma = (n: number) => `€${n.toFixed(2).replace(".", ",")}`;
   const pairLabel = picked && opo ? opo.text.bg.addPair({ one: opoPairPriceBg(product.price, pickedPrice) }) : null;
 
+  // ── Watch + free cardholder: every cardholder, available when its live stock less what the cart already holds (bought or chosen
+  //    as a gift) covers one more. Sold out = greyed in the grid. A pick that stops being available is dropped.
+  const watchGift = giftOn && effectiveInStock;
+  const giftUsed = (slug: string) => cartItems.reduce((n, i) => n + (i.product.slug === slug ? i.quantity : 0) + (i.giftSlugs ?? []).filter((g) => g === slug).length, 0);
+  const giftItems: FreeItem[] = watchGift
+    ? WATCH_GIFT_CHOICES.flatMap((slug) => {
+        const p = getProductBySlug(slug);
+        if (!p) return [];
+        const live = giftStock?.[slug] ?? p.stock;
+        return [{ slug, name: p.name, image: p.coverImage, images: p.images, available: p.inStock && (typeof live === "number" ? live : Infinity) - giftUsed(slug) >= 1,
+          group: "all" as const, priceText: displayPrice(p, country).text, description: p.description || p.shortDescription, href: `/products/${slug}` }];
+      })
+    : [];
+  const pickedGift = watchGift && pick ? giftItems.find((i) => i.slug === pick && i.available) ?? null : null;
+  const giftPrice = pickedGift ? getProductBySlug(pickedGift.slug)?.price ?? 0 : 0;
+
   const handleAdd = () => {
+    if (watchGift) {
+      addItem({ ...product, stock: effectiveStock }, pickedGift?.slug);
+      setAdded(true);
+      setPick(null);
+      setTimeout(() => setAdded(false), 2000);
+      trackWithCapi("AddToCart", {
+        content_ids: [product.sku], content_name: product.name, content_type: "product", value: product.price, currency: "EUR", num_items: 1,
+      }, genEventId("ATC"));
+      return;
+    }
     addItem({ ...product, stock: effectiveStock });
     const second = picked ? getProductBySlug(picked.slug) : undefined;
     if (second) addItem(second.slug === product.slug ? { ...product, stock: effectiveStock } : { ...second, stock: opoStock?.[second.slug] ?? second.stock });
@@ -354,10 +394,10 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
   const inCollection = isCollectionSlug(product.slug);
   const velvetBox = isVelvetBoxCardholder(product.slug); // new cardholders: the velvet-box line (lib/velvet-box.ts), no warranty line
-  const twoBoxes = (inCollection || cardOpo) && !!opo; // women's collection / cardholders with their 1+1 running and in stock
+  const twoBoxes = ((inCollection || cardOpo) && !!opo) || watchGift; // women's collection / cardholders with their 1+1, watches with the gift
   // Nothing picked yet (and something is pickable): the buttons point to box 2 instead of adding.
-  const mustChoose = twoBoxes && !picked && freeItems.some((i) => i.available);
-  const chooseLabel = mustChoose ? (cardOpo ? CHOOSE_LABEL_CARD_BG : CHOOSE_LABEL_BG) : null;
+  const mustChoose = watchGift ? !pickedGift && giftItems.some((i) => i.available) : twoBoxes && !picked && freeItems.some((i) => i.available);
+  const chooseLabel = mustChoose ? (watchGift ? CHOOSE_LABEL_WATCH_BG : cardOpo ? CHOOSE_LABEL_CARD_BG : CHOOSE_LABEL_BG) : null;
   const goToBox2 = () => document.querySelector("[data-testid=box-second]")?.scrollIntoView({ behavior: "smooth", block: "start" });
   const cta = (
     <>
@@ -380,7 +420,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
     {chooseLabel && !added && (
       <button type="button" data-testid="add-one" onClick={handleAdd}
         className="block mx-auto -mt-1 py-2 px-3 font-sans text-xs text-ink-muted underline underline-offset-2 hover:text-charcoal">
-        {ADD_ONE_BG}
+        {watchGift ? ADD_WATCH_ONLY_BG : ADD_ONE_BG}
       </button>
     )}
   
@@ -475,8 +515,8 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
 
       {/* Price */}
       <div className="py-5 border-y border-border">
-        <div className={`flex ${opo ? "flex-wrap items-center gap-x-3 gap-y-2" : "items-baseline gap-4"}`}>
-          <span className={`font-serif text-4xl text-navy ${opo ? "mr-1" : ""}`}>
+        <div className={`flex ${opo || watchGift ? "flex-wrap items-center gap-x-3 gap-y-2" : "items-baseline gap-4"}`}>
+          <span className={`font-serif text-4xl text-navy ${opo || watchGift ? "mr-1" : ""}`}>
             {price.text}
           </span>
           {/* Sale: the prior price (lowest of the last 30 days - lib/price.ts isOnSale) */}
@@ -487,6 +527,8 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
           )}
           {/* 1+1 group: the red badge right after the price, then the green free-delivery one */}
           {opo && <OnePlusOneBadge text={opo.text.bg.badge} />}
+          {/* Watches (lib/watch-gift.ts): the same red badge - "+ КАРДХОЛДЪР ПОДАРЪК" */}
+          {watchGift && <OnePlusOneBadge text={WATCH_GIFT_TEXT.badge} />}
           {opo && shipsFree && <FreeShippingBadge text="Безплатна доставка" size="page" />}
         </div>
         <SavingsLine text={saved !== null ? `Спестявате ${eurText(saved)}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Безплатна доставка" : null} />
@@ -511,7 +553,22 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
 
       {/* Women's collection: two numbered boxes (your piece + its selectors, the free second piece), the summary and the button
           (components/product/CollectionTwoBoxes.tsx). Sold out (no 1+1): the plain button. */}
-      {twoBoxes ? (
+      {watchGift ? (
+        <CollectionTwoBoxes
+          t={TWO_BOX_WATCH_BG}
+          current={{ name: product.name, image: product.coverImage, priceText: price.text, type: "bracelet" /* unused for watches */ }}
+          selectors={colourRow}
+          items={giftItems}
+          selfSlug={product.slug}
+          matchSlug={null}
+          pickerText={FREE_PICKER_WATCH_BG}
+          picked={pickedGift}
+          onSelect={choosePick}
+          totalText={price.text}
+          struckText={pickedGift ? eurText(product.price + giftPrice) : null /* the watch and the cardholder's own price together */}
+          cta={cta}
+        />
+      ) : twoBoxes ? (
         <CollectionTwoBoxes
           t={cardOpo ? TWO_BOX_CARD_BG : TWO_BOX_BG}
           current={{ name: product.name, image: product.coverImage, priceText: opoPairPriceBg(product.price, 0) /* "€109", like the totals */, type: product.slug.startsWith("necklace") ? "necklace" : "bracelet" }}

@@ -21,7 +21,8 @@ import { officeLabel } from "@/lib/econt-label";
 import { validateOrderPricing } from "@/lib/order-pricing";
 import { checkOrderable } from "@/lib/order-availability";
 import { checkPromoCode, PROMO_CODES_ENABLED, PROMO_DISABLED_ERROR, PROMO_NOT_ON_SALE } from "@/lib/promo";
-import { reserveWithGifts, giftNotes, giftDisplayName, shortModelName, type GiftLine, type GiftReservation, type MissedGift, type ReserveFn, type Shortfall } from "@/lib/gifts";
+import { reserveWithGifts, giftNotes, giftDisplayName, shortModelName, GIFT_FALLBACK, type GiftLine, type GiftReservation, type MissedGift, type ReserveFn, type Shortfall } from "@/lib/gifts";
+import { watchGiftSlots, WATCH_GIFT_CHOICES } from "@/lib/watch-gift";
 
 // Insert an order row. econt_office_code (supabase/orders_econt_office.sql) is optional: if the column is not there yet the order is saved
 // without it (the readable address in orders.address already carries the office code) rather than lost.
@@ -35,8 +36,14 @@ async function insertOrderRow(sb: OrderInsertClient, row: Record<string, unknown
 }
 
 // Order line item shape.
-type ItemPayload = { sku?: string; qty?: number; quantity?: number; slug?: string; name?: string; price?: number; currency?: string };
+type ItemPayload = { sku?: string; qty?: number; quantity?: number; slug?: string; name?: string; price?: number; currency?: string; giftSlugs?: unknown };
 
+
+// The paid line a gift belongs to, as the customer reads it: a clutch by its model ("Toscana"), a watch by its full name.
+const forNameOf = (slug: string): string => {
+  const p = getProductBySlug(slug);
+  return p?.category === "watches" ? p.name : shortModelName(slug);
+};
 
 const qtyOf = (i: ItemPayload) => Math.max(1, Number(i.quantity ?? i.qty ?? 1));
 
@@ -211,12 +218,18 @@ export async function POST(req: NextRequest) {
           }
           return { ok: true };
         };
+        // Watches (lib/watch-gift.ts, while it runs): the free cardholder the customer chose for each unit. If it is short, another
+        // one goes instead (Bianco first, then the others) - the success screen and the e-mail say so.
+        const watchGifts = watchGiftSlots(lines.filter((i) => i.slug).map((i) => ({
+          slug: String(i.slug), qty: qtyOf(i), giftSlugs: i.giftSlugs, isWatch: getProductBySlug(String(i.slug))?.category === "watches",
+        }))).map((g) => ({ forSlug: g.watchSlug, qty: g.qty, candidates: [g.giftSlug, GIFT_FALLBACK, ...WATCH_GIFT_CHOICES] }));
         let reservation: GiftReservation;
         try {
           reservation = await reserveWithGifts(
             reserveItems.map(({ slug, qty }) => ({ slug, qty })),
             reserveStock,
             (slug) => findProductWithOverride(slug)?.inStock === true,
+            watchGifts,
           );
         } catch (e) {
           console.error("[Order] reserve_wallet_stock error:", e instanceof Error ? e.message : e);
@@ -250,12 +263,14 @@ export async function POST(req: NextRequest) {
         giftFor: g.clutchSlug,
       };
     });
-    const notes = giftNotes({ gifts, missed: missedGifts });
-    // Only the server marks gifts: a client-sent gift / giftFor flag on a paid line is dropped.
+    const notes = giftNotes({ gifts, missed: missedGifts }, forNameOf);
+    // Only the server marks gifts: a client-sent gift / giftFor flag on a paid line is dropped (and the watches' chosen cardholders,
+    // now real gift lines above).
     const paidItems = ((order.items ?? []) as Record<string, unknown>[]).map((i) => {
       const line = { ...i };
       delete line.gift;
       delete line.giftFor;
+      delete line.giftSlugs;
       return line;
     });
     const savedOrder: Record<string, unknown> = {
@@ -461,7 +476,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        gifts: gifts.map((g) => ({ name: giftDisplayName(g.giftSlug), qty: g.qty, forName: shortModelName(g.clutchSlug) })),
+        gifts: gifts.map((g) => ({ name: giftDisplayName(g.giftSlug), qty: g.qty, forName: forNameOf(g.clutchSlug) })),
         giftNotes: notes,
       },
       { status: 200 },

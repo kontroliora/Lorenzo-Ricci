@@ -9,7 +9,8 @@ export function CartGiftRow({ gift }: { gift: GiftLine }) {
   const product = getProductBySlug(gift.giftSlug);
   if (!product) return null;
   return (
-    <div data-gift-row className="flex items-center gap-3 pl-[86px] -mt-2 pb-4 border-b border-border last:border-0">
+    // py-3, not -mt-2: pulled up, the row sat on its paid line's divider and the line ran through "ПОДАРЪК".
+    <div data-gift-row className="flex items-center gap-3 pl-[86px] py-3 border-b border-border last:border-0">
       <div className="relative w-10 h-10 flex-shrink-0 bg-white border border-border overflow-hidden">
         <Image
           src={product.coverImage.src}

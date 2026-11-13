@@ -44,7 +44,9 @@ export type StockOf = (slug: string) => number | undefined;
 // The catalog's hard on/off switch (inStock) - a switched-off cardholder is never gifted.
 export type Usable = (slug: string) => boolean;
 
-export type GiftLine = { clutchSlug: string; giftSlug: string; qty: number; swapped: boolean };
+// clutchSlug = the paid line the gift belongs to (a clutch, or a watch - lib/watch-gift.ts); wantedSlug = the cardholder that was
+// promised (set by reserveWithGifts, so the notes name the right one for a watch's chosen cardholder too).
+export type GiftLine = { clutchSlug: string; giftSlug: string; qty: number; swapped: boolean; wantedSlug?: string };
 
 // The cardholder a line would get right now. Unknown stock counts as available (the storefront
 // shows the matching one until the live numbers arrive; the server is the real judge).
@@ -85,10 +87,13 @@ export type GiftReservation =
 //     the reservation is retried. A gift never blocks the paid goods.
 //   - If a PAID item is short, nothing is reserved and only the paid shortfall is returned.
 // Every failed round moves at least one gift on, so the loop always ends.
+// `extra`: gifts chosen by the customer (a watch's free cardholder, lib/watch-gift.ts), each with its own candidates in order
+// (the chosen one first, then the fallbacks); they follow exactly the same rules as the clutch gifts.
 export async function reserveWithGifts(
   paid: { slug: string; qty: number }[],
   reserve: ReserveFn,
   usable: Usable,
+  extra: { forSlug: string; qty: number; candidates: string[] }[] = [],
 ): Promise<GiftReservation> {
   const paidBySlug = new Map<string, number>();
   for (const l of paid) paidBySlug.set(l.slug, (paidBySlug.get(l.slug) ?? 0) + l.qty);
@@ -99,12 +104,16 @@ export async function reserveWithGifts(
     const all = giftCandidates(clutchSlug);
     if (all.length) slots.push({ clutchSlug, qty, wanted: all[0], candidates: all.filter(usable), at: 0 });
   });
+  for (const e of extra) {
+    if (!e.candidates.length || !(e.qty > 0)) continue;
+    slots.push({ clutchSlug: e.forSlug, qty: e.qty, wanted: e.candidates[0], candidates: [...new Set(e.candidates)].filter(usable), at: 0 });
+  }
 
   for (;;) {
     const gifts: GiftLine[] = [];
     for (const s of slots) {
       if (s.at < s.candidates.length) {
-        gifts.push({ clutchSlug: s.clutchSlug, giftSlug: s.candidates[s.at], qty: s.qty, swapped: s.candidates[s.at] !== s.wanted });
+        gifts.push({ clutchSlug: s.clutchSlug, giftSlug: s.candidates[s.at], qty: s.qty, swapped: s.candidates[s.at] !== s.wanted, wantedSlug: s.wanted });
       }
     }
 
@@ -139,18 +148,19 @@ export async function reserveWithGifts(
 
 // Customer-facing notes when the order ended up with a different gift (or none) than the
 // storefront promised. Shown on the success screen and in the confirmation email.
-export function giftNotes(r: { gifts: GiftLine[]; missed: MissedGift[] }): string[] {
+// `forName`: how the paid line is named ("Toscana" for a clutch by default; the caller passes the watch's name).
+export function giftNotes(r: { gifts: GiftLine[]; missed: MissedGift[] }, forName: (slug: string) => string = shortModelName): string[] {
   const notes: string[] = [];
   for (const g of r.gifts) {
     if (!g.swapped) continue;
-    const wanted = giftCandidates(g.clutchSlug)[0];
+    const wanted = g.wantedSlug ?? giftCandidates(g.clutchSlug)[0];
     notes.push(
-      `Кардхолдър ${shortModelName(wanted)} вече не е наличен - към ${shortModelName(g.clutchSlug)} получавате кардхолдър ${shortModelName(g.giftSlug)} като подарък.`,
+      `Кардхолдър ${shortModelName(wanted)} вече не е наличен - към ${forName(g.clutchSlug)} получавате кардхолдър ${shortModelName(g.giftSlug)} като подарък.`,
     );
   }
   for (const m of r.missed) {
     notes.push(
-      `Подаръкът към ${shortModelName(m.clutchSlug)} (кардхолдър ${shortModelName(m.wantedSlug)}) вече не е наличен, затова поръчката е без него.`,
+      `Подаръкът към ${forName(m.clutchSlug)} (кардхолдър ${shortModelName(m.wantedSlug)}) вече не е наличен, затова поръчката е без него.`,
     );
   }
   return notes;

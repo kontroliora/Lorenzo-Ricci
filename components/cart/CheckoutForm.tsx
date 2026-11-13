@@ -6,6 +6,7 @@ import { BG_FREE_SHIPPING_EUR, BG_SHIPPING_HOME_EUR, BG_SHIPPING_OFFICE_EUR } fr
 import { cardDiscountEur, cardDiscountIsCapped, CARD_DISCOUNT_CAP_EUR } from "@/lib/card-discount";
 import { calcBundleDiscount, bundleLineText } from "@/lib/bundles";
 import { giftDisplayName } from "@/lib/gifts";
+import { getProductBySlug } from "@/lib/products";
 import { isValidFullName, FULL_NAME_ERROR_BG } from "@/lib/full-name";
 import { useGiftLines } from "@/lib/use-gifts";
 import { trackFbEvent, rememberMatchKeys } from "@/lib/fbq";
@@ -292,6 +293,8 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         qty:      i.quantity,
         price:    i.product.price,
         currency: i.product.currency,
+        // a watch's free cardholders (lib/watch-gift.ts): the server re-checks them and adds them as €0 gift lines
+        ...(i.giftSlugs?.length ? { giftSlugs: i.giftSlugs } : {}),
       })),
       bundles:      activeBundles.map(({ label, discount }) => ({ label, discount })),
       discount:     totalDiscount,
@@ -435,7 +438,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
 
   // ── Order summary rows (everything is computed above; this only formats it) ─
   const summaryLines: SummaryLine[] = items.flatMap(({ product, quantity }) => {
-    const gift = giftLines.find((g) => g.clutchSlug === product.slug);
+    const gifts = giftLines.filter((g) => g.clutchSlug === product.slug);
     const onSale = typeof product.originalPrice === "number" && product.originalPrice > product.price;
     const line: SummaryLine = {
       key: product.id,
@@ -446,9 +449,11 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       price: eurBg(product.price * quantity),
       compareAt: onSale ? eurBg((product.originalPrice as number) * quantity) : undefined,
     };
-    return gift
-      ? [line, { key: `gift-${product.id}`, name: `Подарък: ${giftDisplayName(gift.giftSlug)}`, quantity: gift.qty, price: "Подарък", gift: true }]
-      : [line];
+    // Gift lines: "Подарък" with the cardholder's own price struck through (€65).
+    return [line, ...gifts.map((gift) => {
+      const gp = getProductBySlug(gift.giftSlug);
+      return { key: `gift-${product.id}-${gift.giftSlug}`, image: gp?.coverImage.src, imageAlt: gp?.coverImage.alt, name: `Подарък: ${giftDisplayName(gift.giftSlug)}`, quantity: gift.qty, price: "Подарък", compareAt: gp ? eurBg(gp.price * gift.qty) : undefined, gift: true };
+    })];
   });
   const summaryRows: SummaryRow[] = [
     ...activeBundles.map((b) => ({ key: `bundle-${b.id}`, label: bundleLineText(b), value: `-${eurBg(b.discount)}`, tone: "discount" as const })),
