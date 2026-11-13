@@ -6,7 +6,7 @@ import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
-import { displayPrice, eurText, requiresPrepayment } from "@/lib/price";
+import { displayPrice, eurText, isOnSale, requiresPrepayment } from "@/lib/price";
 import { PayLine } from "@/components/product/CodNote";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
@@ -572,7 +572,8 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
           picked={pickedGift}
           onSelect={choosePick}
           totalText={price.text}
-          struckText={pickedGift ? eurText(product.price + giftPrice) : null /* the watch and the cardholder's own price together */}
+          // struck (owner, 14.11.2026): the watch's own struck price (€140 while on sale) + the cardholder's €65 = €205
+          struckText={pickedGift ? eurText((isOnSale(product) ? (product.originalPrice as number) : product.price) + giftPrice) : null}
           cta={cta}
         />
       ) : twoBoxes ? (
