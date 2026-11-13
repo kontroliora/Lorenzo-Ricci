@@ -183,6 +183,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
     if (slug !== product.slug) { setPendingVariant(slug); previewProductPhoto(slug); }
   };
   const opoStock = useLeatherStock(!!opoGroupOf(product.slug)); // the group's live stock (one batched call)
+  const swatchStock = useLeatherStock(product.category === "watches"); // the other watch colours' live stock (sold out = grey swatch)
   // A product with no description content gets no Descriere tab and opens on the specs instead of an empty tab.
   const hasDescription = Boolean(
     product.descriptionSections?.length || product.tabDescription?.length ||
@@ -413,12 +414,35 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   );
 
   // The colour row (also used inside box 1 of the women's collection's two boxes).
+  // Watches (owner, 14.11.2026, same as the BG page): a colour sold out in LIVE stock is greyed, crossed out and not clickable.
+  const watchSwatchOff = (v: { slug: string; inStock: boolean }) =>
+    product.category === "watches" && v.slug !== product.slug && (variantOff(v) || (swatchStock?.[v.slug] ?? 1) <= 0);
+  const strike = (
+    <span className="absolute inset-0 rounded-full overflow-hidden pointer-events-none" aria-label="Stoc epuizat">
+      <svg viewBox="0 0 24 24" className="w-full h-full">
+        <line x1="4" y1="4" x2="20" y2="20" stroke="white" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    </span>
+  );
   const colourRow = variants.length > 1 ? (
         <div className="flex items-start gap-3">
           {/* label on the first swatch row (the cardholders' 11 colours wrap inside box 1) */}
           <span className="flex-shrink-0 font-sans text-[10px] leading-6 text-ink-muted tracking-widest uppercase">Culoare:</span>
           <div className="flex flex-wrap items-center gap-2">
-            {variants.map((v) => (
+            {variants.map((v) => watchSwatchOff(v) ? (
+              <span
+                key={v.slug}
+                role="img"
+                aria-disabled="true"
+                aria-label={`${v.label} – Stoc epuizat`}
+                title={`${v.label} – Stoc epuizat`}
+                data-testid={`swatch-off-${v.slug}`}
+                className="relative w-6 h-6 rounded-full border-2 border-border opacity-35 grayscale cursor-not-allowed"
+                style={{ backgroundColor: v.color }}
+              >
+                {strike}
+              </span>
+            ) : (
               <Link
                 key={v.slug}
                 href={`/ro/produse/${v.slug}`}
