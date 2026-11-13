@@ -393,7 +393,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
 
   // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
   const inCollection = isCollectionSlug(product.slug);
-  const velvetBox = isVelvetBoxCardholder(product.slug); // new cardholders: the velvet-box line (lib/velvet-box.ts), no warranty line
+  const velvetBox = isVelvetBoxCardholder(product.slug); // new cardholders: the box line (lib/velvet-box.ts), no warranty line
   const twoBoxes = ((inCollection || cardOpo) && !!opo) || watchGift; // women's collection / cardholders with their 1+1, watches with the gift
   // Nothing picked yet (and something is pickable): the buttons point to box 2 instead of adding.
   const mustChoose = watchGift ? !pickedGift && giftItems.some((i) => i.available) : twoBoxes && !picked && freeItems.some((i) => i.available);
@@ -538,7 +538,8 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
             Безплатна доставка при поръчка над €{BG_FREE_SHIPPING_EUR} (още {eurComma(BG_FREE_SHIPPING_EUR - cardGoods).replace(/,00$/, "")})
           </p>
         )}
-        {(inCollection || velvetBox) && <BoxLine text="Луксозна велурена кутия LORENZO RICCI" />}
+        {inCollection && <BoxLine text="Луксозна велурена кутия LORENZO RICCI" />}
+        {velvetBox && <BoxLine text="Луксозна кутия LORENZO RICCI" />}
         {inCollection && <WarrantyLine text="Доживотна гаранция" href={"/warranty/jewelry"} />}
         {/* Order (owner, 12.11.2026): box -> lifetime warranty -> 30-day exchange (all products) */}
         <ExchangeLine text="30 дни лесна замяна" href="/policies/returns" first={!inCollection && !velvetBox} />

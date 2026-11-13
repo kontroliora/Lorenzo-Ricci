@@ -506,7 +506,8 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           {opo && shipsFree && <FreeShippingBadge text="Livrare gratuită" size="page" />}
         </div>
         <SavingsLine text={saved !== null ? `Economisiți ${fmtRON(saved)}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Livrare gratuită" : null} />
-        {(inCollection || velvetBox) && <BoxLine text="Cutie luxoasă din catifea LORENZO RICCI" />}
+        {inCollection && <BoxLine text="Cutie luxoasă din catifea LORENZO RICCI" />}
+        {velvetBox && <BoxLine text="Cutie luxoasă LORENZO RICCI" />}
         {inCollection && <WarrantyLine text="Garanție pe viață" href={WARRANTY_HREF} />}
         {/* 1+1 group (lib/one-plus-one.ts): "2 port-carduri pentru 341 lei ..." and the free second one, picked here */}
         {opo && !twoBoxes && <OnePlusOneLine badge={opo.text.ro.badge} line={opoPriceLineRo(product.slug)} size="page" />}
