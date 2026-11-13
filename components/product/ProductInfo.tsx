@@ -543,6 +543,12 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
         {inCollection && <WarrantyLine text="Доживотна гаранция" href={"/warranty/jewelry"} />}
         {/* Order (owner, 12.11.2026): box -> lifetime warranty -> 30-day exchange (all products) */}
         <ExchangeLine text="30 дни лесна замяна" href="/policies/returns" first={!inCollection && !velvetBox} />
+        {/* Cardholders while the watch gift runs (lib/watch-gift.ts): every watch comes with one free */}
+        {product.category === "cardholders" && watchGiftActive() && (
+          <p data-testid="watch-gift-line" className="mt-2 font-sans text-[13px] leading-snug text-[#2E6B3F]">
+            <Link href="/watches" className="underline underline-offset-2 decoration-[#2E6B3F]/40 hover:decoration-[#2E6B3F]">{WATCH_GIFT_TEXT.cardholderLine}</Link>
+          </p>
+        )}
         {/* 1+1 group (lib/one-plus-one.ts): "2 картодържателя за €65 ..." and the free second one, picked here */}
         {opo && !twoBoxes && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(product.slug)} size="page" />}
         {opo && !twoBoxes && (

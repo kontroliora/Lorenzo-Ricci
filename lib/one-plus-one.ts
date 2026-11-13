@@ -27,6 +27,8 @@ export interface OnePlusOneGroup {
   endsAt?: string;
   /** EUR price of every product of the group while it runs (replaces price / originalPrice / sale badge). */
   fixedPrice?: number;
+  /** true = the fixedPrice stays after the 1+1 is switched off (single items at that price, no struck price, no free second). */
+  keepPriceWhenOff?: boolean;
   /** A group without a fixed price: the cheapest a pair can cost (its lowest price), for "2 от €109" in the top bar. */
   fromPrice?: number;
   text: Record<OpoLang, {
@@ -54,8 +56,10 @@ export interface OnePlusOneGroup {
 
 // ─── Groups ──────────────────────────────────────────────────────────────────
 
-/** SWITCH: true = cardholders at €65 with 1+1. false = back to the old prices (€34 / €39 with €65 crossed out), no 1+1. */
-export const CARDHOLDER_ONE_PLUS_ONE = true;
+/** SWITCH: true = cardholders at €65 with 1+1. false = no 1+1: each cardholder sells alone at €65 (keepPriceWhenOff), no struck
+ *  price, no badge / banner / bar / second box. Off since 14.11.2026 (owner): the watches' free cardholder (lib/watch-gift.ts)
+ *  replaced it. BG + RO (the RO price is the same €65 in lei). */
+export const CARDHOLDER_ONE_PLUS_ONE = false;
 
 /** SWITCH: true = the 2026 jewellery collection's 1+1 (its own group: never mixed with the cardholders). */
 export const JEWELLERY_ONE_PLUS_ONE = true;
@@ -75,6 +79,7 @@ export const ONE_PLUS_ONE_GROUPS: OnePlusOneGroup[] = [
     slugs: new Set<string>(CARDHOLDER_SLUGS),
     enabled: CARDHOLDER_ONE_PLUS_ONE,
     fixedPrice: 65,
+    keepPriceWhenOff: true,
     text: {
       bg: {
         badge: "1+1 БЕЗПЛАТНО",
@@ -152,13 +157,19 @@ export const isOpoLineId = (id: string | undefined): boolean => !!id && id.start
  * (the 1+1 badge is drawn by the cards and pages). Anything else is returned unchanged.
  */
 export function withOnePlusOnePrice<T extends { slug: string; price: number; originalPrice?: number; badge?: string }>(p: T): T {
-  const g = opoGroupOf(p.slug);
-  if (!g || typeof g.fixedPrice !== "number") return p;
-  return { ...p, price: g.fixedPrice, originalPrice: undefined, badge: undefined };
+  const fixed = fixedPriceOf(p.slug);
+  if (fixed === undefined) return p;
+  return { ...p, price: fixed, originalPrice: undefined, badge: undefined };
 }
 
-/** True when the product's price is set by a running 1+1 group (price overrides and sale badges must not touch it). */
-export const opoFixesPrice = (slug: string): boolean => typeof opoGroupOf(slug)?.fixedPrice === "number";
+/** The EUR price a group fixes for a product: while the group runs, or after it with keepPriceWhenOff (the cardholders' €65). */
+function fixedPriceOf(slug: string, now?: Date): number | undefined {
+  const g = ONE_PLUS_ONE_GROUPS.find((x) => x.slugs.has(slug) && typeof x.fixedPrice === "number" && (groupActive(x, now) || x.keepPriceWhenOff));
+  return g?.fixedPrice;
+}
+
+/** True when the product's price is set by a 1+1 group (running, or kept after it): price overrides and sale badges must not touch it. */
+export const opoFixesPrice = (slug: string): boolean => fixedPriceOf(slug) !== undefined;
 
 // ─── Maths ───────────────────────────────────────────────────────────────────
 

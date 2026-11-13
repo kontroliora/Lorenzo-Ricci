@@ -36,6 +36,8 @@ export const WATCH_GIFT_TEXT = {
   reminderAdd: "Избери подарък",
   reminderDecline: "Продължи без подарък",
   free: "Подарък",
+  /** Cardholder pages: a small line under the price, linking to the watches. */
+  cardholderLine: "Подарък към всеки часовник до 24.12",
 } as const;
 
 /**
