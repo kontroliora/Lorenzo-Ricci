@@ -87,7 +87,7 @@ const WATCH_VARIANT_GROUPS = [
 
 const WALLET_VARIANTS = [
   { slug: "wallet-alabastro", label: "Alabastro - Бял",  color: "#E8E0D4", inStock: true  },
-  { slug: "wallet-rubino",    label: "Rubino - Червен", color: "#8B1F1F", inStock: true  },
+  { slug: "wallet-rubino",    label: "Rubino - Червен", color: "#8B1F1F", inStock: false },
   { slug: "wallet-smeraldo",  label: "Smeraldo - Зелен", color: "#2A4A1E", inStock: false },
 ];
 

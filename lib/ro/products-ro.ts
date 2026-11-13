@@ -542,7 +542,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "wallet-rubino": {
-    badge: BADGE_EARLY_BF,
+    badge: BADGE_SOLD_OUT,
     warranty: WARRANTY_NONE,
     shortDescription: "Portofel roșu din piele de crocodil",
     description: LEATHER_DESC,

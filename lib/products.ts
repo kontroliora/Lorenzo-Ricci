@@ -758,9 +758,10 @@ const catalog: Product[] = [
     originalPrice: 178,
     priceAED: 1200,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
-    inStock: true,
-    stock: 5,
+    // Sold out 2026-11-11 (owner): off switch - page stays live, not buyable, OutOfStock in JSON-LD / Meta catalogue.
+    badge: "Изчерпан",
+    inStock: false,
+    stock: 0,
     warranty: "", // leather: no warranty is offered (owner, 2026-09-27)
     shortDescription: "Червен портфейл от крокодилска кожа",
     description: 'Всяко изделие от линията на Lorenzo Ricci е израз на безкомпромисен лукс. Съчетаваме суровата елегантност на автентичната кожа от сиамски крокодил (Crocodylus siamensis) с прецизна градска функционалност за тези, които ценят строгата индивидуалност.',

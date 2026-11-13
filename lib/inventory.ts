@@ -17,7 +17,7 @@ const DEFAULTS: InventoryMap = {
   "necklace-milano-forte": 19,
   "necklace-milano-twist": 27,
   "wallet-alabastro": 10,
-  "wallet-rubino": 10,
+  "wallet-rubino": 0,
   "wallet-smeraldo": 0,
   "cardholder-ambra": 15,
   "cardholder-bianco": 15,

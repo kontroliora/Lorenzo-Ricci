@@ -102,7 +102,7 @@ const WATCH_VARIANT_GROUPS: Variant[][] = [
 
 const WALLET_VARIANTS: Variant[] = [
   { slug: "wallet-alabastro", label: "Alabastro - Alb",   color: "#E8E0D4", inStock: true  },
-  { slug: "wallet-rubino",    label: "Rubino - Roșu",     color: "#8B1F1F", inStock: true  },
+  { slug: "wallet-rubino",    label: "Rubino - Roșu",     color: "#8B1F1F", inStock: false },
   { slug: "wallet-smeraldo",  label: "Smeraldo - Verde",  color: "#2A4A1E", inStock: false },
 ];
 
