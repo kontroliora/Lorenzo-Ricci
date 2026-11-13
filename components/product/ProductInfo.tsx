@@ -180,6 +180,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   const opoStock = useLeatherStock(!!opoGroupOf(product.slug)); // the group's live stock (one batched call)
   const giftOn = product.category === "watches" && watchGiftActive(); // watch + free cardholder (lib/watch-gift.ts)
   const giftStock = useLeatherStock(giftOn); // the cardholders' live stock (same batched call)
+  const swatchStock = useLeatherStock(product.category === "watches"); // the other watch colours' live stock (sold out = grey swatch)
   // A product with no description content (e.g. the Yachting watches until they're
   // measured) gets no Описание tab and opens on the specs instead of an empty tab.
   const hasDescription = Boolean(
@@ -429,12 +430,51 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
 
   // The colour row (also used inside box 1 of the women's collection's two boxes).
   const shownLabel = variants?.find((v) => v.slug === shownVariant)?.label;
+  // Watches (owner, 14.11.2026): a colour sold out in LIVE stock (not only switched off in the catalog) is greyed, crossed out and
+  // not clickable - another watch's page can't be opened from a sold-out swatch.
+  const watchSwatchOff = (v: { slug: string; inStock: boolean }) =>
+    product.category === "watches" && v.slug !== product.slug && (variantOff(v) || (swatchStock?.[v.slug] ?? 1) <= 0);
+  const swatchOff = (v: { slug: string; inStock: boolean }) => variantOff(v) || watchSwatchOff(v);
+  const swatchDot = (v: { slug: string; inStock: boolean; color: string }) => (
+                  <span
+                    className={`relative block w-6 h-6 rounded-full border-2 transition-all duration-200 ${
+                      shownVariant === v.slug
+                        ? "border-navy scale-110 shadow-[0_0_0_2px_rgba(15,40,80,0.15)]"
+                        : watchSwatchOff(v) ? "border-border" : "border-border hover:border-navy/40"
+                    } ${watchSwatchOff(v) ? "opacity-35 grayscale" : swatchOff(v) ? "opacity-50" : ""}`}
+                    style={{ backgroundColor: v.color }}
+                  >
+                  {/* Diagonal strikethrough for out-of-stock */}
+                  {swatchOff(v) && (
+                    <span
+                      className="absolute inset-0 rounded-full overflow-hidden pointer-events-none"
+                      aria-label="Изчерпан"
+                    >
+                      <svg viewBox="0 0 24 24" className="w-full h-full">
+                        <line x1="4" y1="4" x2="20" y2="20" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </span>
+                  )}
+                  </span>
+  );
   const colourRow = variants ? (
           <div className="flex items-start gap-3">
             {/* label on the first swatch row (11 cardholder colours wrap inside box 1 on phones); same height as a swatch target */}
             <span className="flex-shrink-0 font-sans text-[10px] leading-6 [@media(pointer:coarse)]:leading-[44px] text-ink-muted tracking-widest uppercase">Цвят:{shownLabel && <span className="ml-1.5 text-xs normal-case tracking-normal text-ink">{colourNameBg(shownLabel)}</span>}</span>
             <div className="flex flex-wrap items-center gap-2 min-w-0 [@media(pointer:coarse)]:gap-0">
-              {variants.map((v) => (
+              {variants.map((v) => watchSwatchOff(v) ? (
+                <span
+                  key={v.slug}
+                  role="img"
+                  aria-disabled="true"
+                  aria-label={`${v.label} – Изчерпан`}
+                  title={`${colourNameBg(v.label)} – Изчерпан`}
+                  data-testid={`swatch-off-${v.slug}`}
+                  className="flex items-center justify-center w-6 h-6 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 cursor-not-allowed"
+                >
+                  {swatchDot(v)}
+                </span>
+              ) : (
                 <Link
                   key={v.slug}
                   href={`/products/${v.slug}`}
@@ -447,26 +487,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
                   aria-label={v.label}
                   className="flex items-center justify-center w-6 h-6 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11"
                 >
-                  <span
-                    className={`relative block w-6 h-6 rounded-full border-2 transition-all duration-200 ${
-                      shownVariant === v.slug
-                        ? "border-navy scale-110 shadow-[0_0_0_2px_rgba(15,40,80,0.15)]"
-                        : "border-border hover:border-navy/40"
-                    } ${variantOff(v) ? "opacity-50" : ""}`}
-                    style={{ backgroundColor: v.color }}
-                  >
-                  {/* Diagonal strikethrough for out-of-stock */}
-                  {variantOff(v) && (
-                    <span
-                      className="absolute inset-0 rounded-full overflow-hidden pointer-events-none"
-                      aria-label="Изчерпан"
-                    >
-                      <svg viewBox="0 0 24 24" className="w-full h-full">
-                        <line x1="4" y1="4" x2="20" y2="20" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                    </span>
-                  )}
-                  </span>
+                  {swatchDot(v)}
                 </Link>
               ))}
             </div>
