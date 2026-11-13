@@ -30,6 +30,7 @@ import { roReviewsCount, roRatingText } from "@/components/ro/product/ro-text";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { PAGE_LOW_STOCK_MAX, savingsRon } from "@/lib/home-card-hints";
 import { campaignLabelRo } from "@/lib/sale-campaign";
+import { isVelvetBoxCardholder } from "@/lib/velvet-box";
 import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
@@ -376,6 +377,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
 
   // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
   const inCollection = isCollectionSlug(product.slug);
+  const velvetBox = isVelvetBoxCardholder(product.slug); // new cardholders: the velvet-box line (lib/velvet-box.ts)
   const twoBoxes = (inCollection || cardOpo) && !!opo; // women's collection / cardholders with their 1+1 running and in stock
   // Nothing picked yet (and something is pickable): the buttons point to box 2 instead of adding.
   const mustChoose = twoBoxes && !picked && freeItems.some((i) => i.available);
@@ -504,7 +506,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           {opo && shipsFree && <FreeShippingBadge text="Livrare gratuită" size="page" />}
         </div>
         <SavingsLine text={saved !== null ? `Economisiți ${fmtRON(saved)}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Livrare gratuită" : null} />
-        {inCollection && <BoxLine text="Cutie luxoasă din catifea LORENZO RICCI" />}
+        {(inCollection || velvetBox) && <BoxLine text="Cutie luxoasă din catifea LORENZO RICCI" />}
         {inCollection && <WarrantyLine text="Garanție pe viață" href={WARRANTY_HREF} />}
         {/* 1+1 group (lib/one-plus-one.ts): "2 port-carduri pentru 341 lei ..." and the free second one, picked here */}
         {opo && !twoBoxes && <OnePlusOneLine badge={opo.text.ro.badge} line={opoPriceLineRo(product.slug)} size="page" />}

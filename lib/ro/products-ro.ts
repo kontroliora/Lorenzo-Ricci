@@ -661,6 +661,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     imageAlts: [
       "Port-card negru din piele de crocodil Lorenzo Ricci Onice - vedere frontală",
       "Lorenzo Ricci Onice - vedere din spate, compartimente pentru carduri",
+      "Lorenzo Ricci Onice - cutie luxoasă din catifea LORENZO RICCI",
     ],
   },
   "cardholder-giada": {
@@ -676,6 +677,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     imageAlts: [
       "Port-card verde închis din piele de crocodil Lorenzo Ricci Giada - vedere frontală",
       "Lorenzo Ricci Giada - vedere din spate, compartimente pentru carduri",
+      "Lorenzo Ricci Giada - cutie luxoasă din catifea LORENZO RICCI",
     ],
   },
   "cardholder-cremisi": {
@@ -692,6 +694,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
       "Port-card roșu din piele de crocodil Lorenzo Ricci Cremisi - vedere frontală",
       "Lorenzo Ricci Cremisi - vedere din spate, compartimente pentru carduri",
       "Port-card roșu din piele de crocodil Lorenzo Ricci Cremisi - fotografie lifestyle",
+      "Lorenzo Ricci Cremisi - cutie luxoasă din catifea LORENZO RICCI",
     ],
   },
   "cardholder-perla": {
@@ -707,6 +710,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     imageAlts: [
       "Port-card gri din piele de crocodil Lorenzo Ricci Perla - vedere frontală",
       "Lorenzo Ricci Perla - vedere din spate, compartimente pentru carduri",
+      "Lorenzo Ricci Perla - cutie luxoasă din catifea LORENZO RICCI",
     ],
   },
   "cardholder-topazio": {
@@ -722,6 +726,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     imageAlts: [
       "Port-card galben din piele de crocodil Lorenzo Ricci Topazio - vedere frontală",
       "Lorenzo Ricci Topazio - vedere din spate, compartimente pentru carduri",
+      "Lorenzo Ricci Topazio - cutie luxoasă din catifea LORENZO RICCI",
     ],
   },
   "cardholder-marina": {
@@ -738,6 +743,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
       "Port-card albastru din piele de crocodil Lorenzo Ricci Marina - vedere frontală",
       "Lorenzo Ricci Marina - vedere din spate, compartimente pentru carduri",
       "Port-card albastru din piele de crocodil Lorenzo Ricci Marina - fotografie lifestyle",
+      "Lorenzo Ricci Marina - cutie luxoasă din catifea LORENZO RICCI",
     ],
   },
   "cardholder-panna": {
@@ -754,6 +760,7 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
       "Port-card alb-crem din piele de crocodil Lorenzo Ricci Panna - vedere frontală",
       "Lorenzo Ricci Panna - vedere din spate, compartimente pentru carduri",
       "Port-card alb-crem din piele de crocodil Lorenzo Ricci Panna - fotografie lifestyle",
+      "Lorenzo Ricci Panna - cutie luxoasă din catifea LORENZO RICCI",
     ],
   },
 

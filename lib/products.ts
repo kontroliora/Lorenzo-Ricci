@@ -1,6 +1,7 @@
 import type { Product } from "./types";
 import { withOnePlusOnePrice } from "./one-plus-one";
 import { NEW_COLLECTION_PRODUCTS } from "./new-collection-products";
+import { CARDHOLDER_BOX_PHOTO } from "./velvet-box";
 
 // Confirmed crocodile species (per CITES permit) - single source for both the
 // specs "Вид" row and the LeatherDescription.tsx CITES bullet everywhere they're
@@ -1023,6 +1024,7 @@ const catalog: Product[] = [
     images: [
       { src: `/Products/wallets/Onice/kardholder-onice-cheren-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Onice черен кардхолдър крокодилска кожа - преден изглед' },
       { src: `/Products/wallets/Onice/kardholder-onice-zaden-izgled.webp`, alt: 'Lorenzo Ricci Onice - заден изглед, отделения за карти' },
+      { src: CARDHOLDER_BOX_PHOTO, alt: 'Lorenzo Ricci Onice - луксозна велурена кутия LORENZO RICCI' },
     ],
   },
   {
@@ -1058,6 +1060,7 @@ const catalog: Product[] = [
     images: [
       { src: `/Products/wallets/Giada/kardholder-giada-zelen-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Giada тъмнозелен кардхолдър крокодилска кожа - преден изглед' },
       { src: `/Products/wallets/Giada/kardholder-giada-zaden-izgled.webp`, alt: 'Lorenzo Ricci Giada - заден изглед, отделения за карти' },
+      { src: CARDHOLDER_BOX_PHOTO, alt: 'Lorenzo Ricci Giada - луксозна велурена кутия LORENZO RICCI' },
     ],
   },
   {
@@ -1095,6 +1098,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Cremisi/kardholder-cremisi-cherven-krokodilska-kozha-v2.webp`, alt: 'Lorenzo Ricci Cremisi червен кардхолдър крокодилска кожа - преден изглед' },
       { src: `/Products/wallets/Cremisi/kardholder-cremisi-zaden-izgled-v2.webp`, alt: 'Lorenzo Ricci Cremisi - заден изглед, отделения за карти' },
       { src: `/Products/wallets/Cremisi/kardholder-cremisi-lifestyle-v2.webp`, alt: 'Lorenzo Ricci Cremisi червен кардхолдър - лайфстайл снимка' },
+      { src: CARDHOLDER_BOX_PHOTO, alt: 'Lorenzo Ricci Cremisi - луксозна велурена кутия LORENZO RICCI' },
     ],
   },
   {
@@ -1130,6 +1134,7 @@ const catalog: Product[] = [
     images: [
       { src: `/Products/wallets/Perla/kardholder-perla-siv-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Perla сив кардхолдър крокодилска кожа - преден изглед' },
       { src: `/Products/wallets/Perla/kardholder-perla-zaden-izgled.webp`, alt: 'Lorenzo Ricci Perla - заден изглед, отделения за карти' },
+      { src: CARDHOLDER_BOX_PHOTO, alt: 'Lorenzo Ricci Perla - луксозна велурена кутия LORENZO RICCI' },
     ],
   },
   {
@@ -1165,6 +1170,7 @@ const catalog: Product[] = [
     images: [
       { src: `/Products/wallets/Topazio/kardholder-topazio-zhalt-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Topazio жълт кардхолдър крокодилска кожа - преден изглед' },
       { src: `/Products/wallets/Topazio/kardholder-topazio-zaden-izgled.webp`, alt: 'Lorenzo Ricci Topazio - заден изглед, отделения за карти' },
+      { src: CARDHOLDER_BOX_PHOTO, alt: 'Lorenzo Ricci Topazio - луксозна велурена кутия LORENZO RICCI' },
     ],
   },
   // Added 2026-11-03. Same rules as the 2026-09-27 batch: NO CITES permit number, no AED price, gallery front first.
@@ -1202,6 +1208,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Marina/kardholder-marina-sin-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Marina син кардхолдър крокодилска кожа - преден изглед' },
       { src: `/Products/wallets/Marina/kardholder-marina-zaden-izgled.webp`, alt: 'Lorenzo Ricci Marina - заден изглед, отделения за карти' },
       { src: `/Products/wallets/Marina/kardholder-marina-lifestyle.webp`, alt: 'Lorenzo Ricci Marina син кардхолдър - лайфстайл снимка' },
+      { src: CARDHOLDER_BOX_PHOTO, alt: 'Lorenzo Ricci Marina - луксозна велурена кутия LORENZO RICCI' },
     ],
   },
   // Added 2026-11-03. Creamy white, large belly scales - a separate model from Bianco. Same rules as Marina:
@@ -1240,6 +1247,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Panna/kardholder-panna-kremavo-byal-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Panna кремаво бял кардхолдър крокодилска кожа - преден изглед' },
       { src: `/Products/wallets/Panna/kardholder-panna-zaden-izgled.webp`, alt: 'Lorenzo Ricci Panna - заден изглед, отделения за карти' },
       { src: `/Products/wallets/Panna/kardholder-panna-lifestyle.webp`, alt: 'Lorenzo Ricci Panna кремаво бял кардхолдър - лайфстайл снимка' },
+      { src: CARDHOLDER_BOX_PHOTO, alt: 'Lorenzo Ricci Panna - луксозна велурена кутия LORENZO RICCI' },
     ],
   },
   // ─── BAGS ───────────────────────────────────────────────────────────────────

@@ -16,6 +16,7 @@ import { getProductBySlug } from "@/lib/products";
 import { PAGE_LOW_STOCK_MAX, savingsEur } from "@/lib/home-card-hints";
 import { campaignLabel } from "@/lib/sale-campaign";
 import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
+import { isVelvetBoxCardholder } from "@/lib/velvet-box";
 import { SavingsLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine, ExchangeLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
@@ -352,6 +353,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
 
   // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
   const inCollection = isCollectionSlug(product.slug);
+  const velvetBox = isVelvetBoxCardholder(product.slug); // new cardholders: the velvet-box line (lib/velvet-box.ts), no warranty line
   const twoBoxes = (inCollection || cardOpo) && !!opo; // women's collection / cardholders with their 1+1 running and in stock
   // Nothing picked yet (and something is pickable): the buttons point to box 2 instead of adding.
   const mustChoose = twoBoxes && !picked && freeItems.some((i) => i.available);
@@ -494,10 +496,10 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
             Безплатна доставка при поръчка над €{BG_FREE_SHIPPING_EUR} (още {eurComma(BG_FREE_SHIPPING_EUR - cardGoods).replace(/,00$/, "")})
           </p>
         )}
-        {inCollection && <BoxLine text="Луксозна велурена кутия LORENZO RICCI" />}
+        {(inCollection || velvetBox) && <BoxLine text="Луксозна велурена кутия LORENZO RICCI" />}
         {inCollection && <WarrantyLine text="Доживотна гаранция" href={"/warranty/jewelry"} />}
         {/* Order (owner, 12.11.2026): box -> lifetime warranty -> 30-day exchange (all products) */}
-        <ExchangeLine text="30 дни лесна замяна" href="/policies/returns" first={!inCollection} />
+        <ExchangeLine text="30 дни лесна замяна" href="/policies/returns" first={!inCollection && !velvetBox} />
         {/* 1+1 group (lib/one-plus-one.ts): "2 картодържателя за €65 ..." and the free second one, picked here */}
         {opo && !twoBoxes && <OnePlusOneLine badge={opo.text.bg.badge} line={opoPriceLineBg(product.slug)} size="page" />}
         {opo && !twoBoxes && (
