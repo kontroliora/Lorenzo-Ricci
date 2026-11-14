@@ -181,11 +181,9 @@ const catalog: Product[] = [
     sku: "LR-CHRONO-BLK",
     name: "Chrono Black",
     category: "watches",
-    // Early Black Friday 2026-10-30: €279 → €119. originalPrice = €279.
-    price: 119,
-    originalPrice: 279,
+    // 14.11.2026 (owner): sold out, back to the plain €279 - no sale, no struck price, no sale badge.
+    price: 279,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",
@@ -299,11 +297,9 @@ const catalog: Product[] = [
     sku: "LR-POLAR-FROST",
     name: "Polar Frost",
     category: "watches",
-    // Early Black Friday 2026-10-30: €279 → €119. originalPrice = €279.
-    price: 119,
-    originalPrice: 279,
+    // 14.11.2026 (owner): sold out, back to the plain €279 - no sale, no struck price, no sale badge.
+    price: 279,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",

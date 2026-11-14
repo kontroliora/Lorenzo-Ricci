@@ -10,13 +10,13 @@ import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
 import { useGiftFor, useLeatherStock } from "@/lib/use-gifts";
-import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS, CARD_GIFT_CLASS } from "@/lib/home-card-hints";
+import { lowStockCount, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS, CARD_GIFT_CLASS } from "@/lib/home-card-hints";
 import { giftDisplayName } from "@/lib/gifts";
 import { bgShipsFree } from "@/lib/shipping-rules";
 import { FreeShippingBadge, OnePlusOneLine, CardWarrantyLine } from "@/components/product/PriceExtras";
 import { isCollectionSlug } from "@/lib/new-collection";
 import { opoGroupOf, opoPriceLineBg } from "@/lib/one-plus-one";
-import { watchGiftActive, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
+import { savingsWithWatchGiftEur, watchGiftActive, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
 
 interface ProductCardProps {
   /** `sizes` of the card photos: the default fits 2-4 cards per row; one-per-row listings pass LISTING_CARD_SIZES. */
@@ -48,7 +48,8 @@ export function ProductCard({ product, priority = false, learnMore = false, size
   const price = displayPrice(product, useCountry());
 
   // Both hint lines on every card (homepage and listings): the saving while the struck EUR price is shown, the low-stock line from the one shared batched call.
-  const saved = price.original && !isSoldOut ? savingsEur(product) : null;
+  // Watches during the cardholder offer: the saving includes the free cardholder (+€65), also on a watch without a sale price.
+  const saved = !isSoldOut && (price.original || (isWatch && watchGiftActive())) ? savingsWithWatchGiftEur(product) : null;
   const left = !isSoldOut ? lowStockCount(liveStock) : null;
   const shipsFree = !isSoldOut && bgShipsFree(product);
   const opo = isSoldOut ? undefined : opoGroupOf(product.slug); // 1+1 group: badge on the photo + line under the price

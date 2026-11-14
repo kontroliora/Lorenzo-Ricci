@@ -10,10 +10,10 @@ import { useReveal } from "@/lib/useReveal";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
 import { useLeatherStock } from "@/lib/use-gifts";
-import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
+import { lowStockCount, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
 import { bgShipsFree } from "@/lib/shipping-rules";
 import { FreeShippingBadge } from "@/components/product/PriceExtras";
-import { watchGiftActive, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
+import { savingsWithWatchGiftEur, watchGiftActive, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
 import type { Product } from "@/lib/types";
 
 // Yachting is the new collection: its own block on top, the earlier models below -
@@ -163,7 +163,7 @@ function WatchCoverFlow({ watches, soldOut }: { watches: Product[]; soldOut: str
   const stockMap = useLeatherStock(true);
   // Sold out (switched off, in the server list or at 0 live): neither the savings nor the low-stock line.
   const activeSoldOut = !active.inStock || soldOut.includes(active.slug) || stockMap?.[active.slug] === 0;
-  const activeSaved = activePrice.original && !activeSoldOut ? savingsEur(active) : null;
+  const activeSaved = !activeSoldOut && (activePrice.original || watchGiftActive()) ? savingsWithWatchGiftEur(active) : null; // + the free cardholder during the offer
   const activeLeft = !activeSoldOut ? lowStockCount(stockMap?.[active.slug]) : null;
   const activeShipsFree = !activeSoldOut && bgShipsFree(active);
 

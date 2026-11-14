@@ -206,7 +206,6 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "chrono-black": {
-    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_WATCH,
     shortDescription: WATCH_TAGLINE,
     description:
@@ -256,7 +255,6 @@ export const RO_PRODUCTS: Record<string, RoProductText> = {
     ],
   },
   "polar-frost": {
-    badge: BADGE_EARLY_BF,
     warranty: WARRANTY_WATCH,
     shortDescription: WATCH_TAGLINE,
     description:

@@ -62,3 +62,20 @@ export function watchGiftSlots(
   }
   return [...out.values()];
 }
+
+/** The free cardholder's value in the watch "Спестявате" lines (the cardholders' fixed €65, lib/one-plus-one.ts). */
+export const WATCH_GIFT_VALUE_EUR = 65;
+
+/**
+ * Whole euros for a "Спестявате" line on cards and product pages (owner, 14.11.2026): the sale saving (struck - price), and on a
+ * watch while the offer runs + the free cardholder (Golden Eclipse: €279 - €119 = €160 + €65 = €225). Nothing to save = null.
+ * After the offer it is the plain sale saving again.
+ */
+export function savingsWithWatchGiftEur(
+  p: { category?: string; price: number; originalPrice?: number },
+  now?: Date,
+): number | null {
+  const sale = typeof p.originalPrice === "number" && p.originalPrice > p.price ? Math.round(p.originalPrice - p.price) : 0;
+  const total = sale + (p.category === "watches" && watchGiftActive(now) ? WATCH_GIFT_VALUE_EUR : 0);
+  return total > 0 ? total : null;
+}

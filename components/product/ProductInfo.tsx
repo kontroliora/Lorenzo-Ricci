@@ -13,7 +13,7 @@ import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { GiftOffer } from "@/components/product/GiftOffer";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { getProductBySlug } from "@/lib/products";
-import { PAGE_LOW_STOCK_MAX, savingsEur } from "@/lib/home-card-hints";
+import { PAGE_LOW_STOCK_MAX } from "@/lib/home-card-hints";
 import { campaignLabel } from "@/lib/sale-campaign";
 import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
 import { isVelvetBoxCardholder } from "@/lib/velvet-box";
@@ -27,7 +27,7 @@ import { CollectionTwoBoxes, TWO_BOX_BG, TWO_BOX_CARD_BG, type TwoBoxText } from
 import { previewProductPhoto, warmProductPhoto } from "@/lib/warm-product";
 import { opoGroupOf, opoPriceLineBg, opoPairPrice, opoPairPriceBg } from "@/lib/one-plus-one";
 import { useLeatherStock } from "@/lib/use-gifts";
-import { watchGiftActive, WATCH_GIFT_CHOICES, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
+import { savingsWithWatchGiftEur, watchGiftActive, WATCH_GIFT_CHOICES, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
 
 // A colour swatch reads as sold out when its product is switched off in
 // lib/products.ts (inStock: false - the owner's single on/off switch); the
@@ -293,7 +293,8 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
 
   const price = displayPrice(product, useCountry());
   // Under the price: the saving while the struck EUR price is shown (not on a sold-out product) with the running campaign's badge.
-  const saved = price.original && effectiveInStock ? savingsEur(product) : null;
+  // Watches during the cardholder offer: + the free cardholder's €65 (lib/watch-gift.ts).
+  const saved = effectiveInStock && (price.original || (product.category === "watches" && watchGiftActive())) ? savingsWithWatchGiftEur(product) : null;
   const campaign = campaignLabel();
   // Beside it: the free-delivery badge when the product alone reaches the threshold (not on a sold-out product).
   const shipsFree = effectiveInStock && bgShipsFree(product);
