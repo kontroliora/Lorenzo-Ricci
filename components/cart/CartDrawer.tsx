@@ -11,6 +11,7 @@ import { opoLines } from "@/lib/bundles";
 import { opoFreeUnits } from "@/lib/one-plus-one";
 import { DrawerTop, ReserveLine, ShipProgress, LineItem, SumRow, TotalRow, TrustRow } from "./drawer-ui";
 import { isOnSale } from "@/lib/price";
+import { cartSavingsEur } from "@/lib/cart-savings";
 import { CollectionOddModal, ODD_MODAL_BG } from "./CollectionOddModal";
 import { collectionFreeRanking, collectionUnits, pieceLive } from "@/lib/new-collection";
 import { opoGroupOf } from "@/lib/one-plus-one";
@@ -43,19 +44,12 @@ export function CartDrawer() {
   const afterBundles = subtotal - totalDiscount;
   // Promo codes are switched off (owner, 08.11.2026 - lib/promo.ts PROMO_CODES_ENABLED): no field, no promo discount.
   const promoDiscount = 0;
-  // "Спестявате": every crossed-out price minus the current one, over the whole cart (sale items only; sets and promo are separate lines).
-  const savings = Math.round(
-    items.reduce((s, { product, quantity }) => s + (isOnSale(product) ? ((product.originalPrice as number) - product.price) * quantity : 0), 0) * 100,
-  ) / 100;
   const total = afterBundles - promoDiscount;
   // The card saving is shown only in the checkout, on the card payment option (owner, 08.11.2026).
   const count = totalItems();
-  // The redesigned cart step (owner, 08.11.2026): one red "Спестявате" = every saving together (sale prices, sets incl. 1+1, promo).
-  // ... plus the watches' free cardholders at their own price (€65 each, owner 14.11.2026).
-  const watchGiftValue = giftLines
-    .filter((g) => getProductBySlug(g.clutchSlug)?.category === "watches")
-    .reduce((s, g) => s + (getProductBySlug(g.giftSlug)?.price ?? 0) * g.qty, 0);
-  const allSavings = Math.round((savings + totalDiscount + promoDiscount + watchGiftValue) * 100) / 100;
+  // The redesigned cart step (owner, 08.11.2026): one "Спестявате" = every saving together (sale prices, sets incl. 1+1, promo,
+  // the watches' free cardholders). Shared with the checkout summary so both always show the same number (lib/cart-savings.ts).
+  const allSavings = cartSavingsEur(items, giftLines, totalDiscount, promoDiscount);
   const freeUnits = opoFreeUnits(opoLines(items));
   const eur = (n: number) => `€${Number.isInteger(Math.round(n * 100) / 100) ? Math.round(n) : n.toFixed(2).replace(".", ",")}`;
   const freeShippingThreshold = 60;

@@ -21,6 +21,7 @@ import {
 } from "@/components/checkout/ui";
 import { EcontOfficePicker, useEcontOffices } from "@/components/checkout/EcontOfficePicker";
 import { officeLabel } from "@/lib/econt-label";
+import { cartSavingsEur } from "@/lib/cart-savings";
 
 // ─── Shipping options ────────────────────────────────────────────────────────
 // What the customer is told is missing (the field names in the red summary above the button).
@@ -56,6 +57,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   // Free gift cardholders for the clutches - shown only; the order payload below still carries
   // just the paid lines, and the server adds (and stocks) the gifts itself.
   const giftLines = useGiftLines(items);
+  const allSavings = cartSavingsEur(items, giftLines, totalDiscount, promoDiscount);
 
   // €1500+ items: cash-on-delivery is not offered - no card/PSP integration exists
   // yet, so the honest interim behaviour is to block normal checkout and route the
@@ -464,6 +466,8 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       ? [{ key: "card-discount", label: `−5% при плащане с карта${cardDiscountIsCapped(total, "EUR") ? ` (максимум €${CARD_DISCOUNT_CAP_EUR})` : ""}`, value: `-${eurBg(cardDiscount)}`, tone: "discount" as const }]
       : []),
     { key: "shipping", label: "Доставка", value: freeShipping ? "Безплатна" : eurBg(shippingCost), tone: freeShipping ? ("free" as const) : undefined },
+    // Right above the total: the cart's own "Спестявате" (same number, lib/cart-savings.ts), in green; only when there is a saving.
+    ...(allSavings > 0 ? [{ key: "savings", label: "Спестявате", value: `−${eurBg(allSavings)}`, tone: "free" as const }] : []),
   ];
   const inputProps = (key: string) => ({
     id: `bg-${key}`,
