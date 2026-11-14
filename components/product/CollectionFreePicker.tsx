@@ -21,7 +21,7 @@ import { CollectionQuickView } from "@/components/product/CollectionQuickView";
 
 export type FreeItem = {
   slug: string;
-  name: string;            // full name, e.g. "Гривна Verdis – Злато"
+  name: string;            // full name, e.g. "Гривна Verdis – Златиста"
   image: { src: string; alt: string };
   images: { src: string; alt: string }[];
   available: boolean;

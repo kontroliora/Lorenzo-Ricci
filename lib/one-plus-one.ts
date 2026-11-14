@@ -64,7 +64,7 @@ export const CARDHOLDER_ONE_PLUS_ONE = false;
 /** SWITCH: true = the 2026 jewellery collection's 1+1 (its own group: never mixed with the cardholders). */
 export const JEWELLERY_ONE_PLUS_ONE = true;
 
-// 'Lorenzo Ricci "Ambra"' -> "Ambra"; "Колие Verdis – Злато" -> "Verdis Злато" (the photo tells necklace from bracelet).
+// 'Lorenzo Ricci "Ambra"' -> "Ambra"; "Колие Verdis – Златисто" -> "Verdis Златисто" (the photo tells necklace from bracelet).
 const quotedModel = (name: string): string => name.match(/"([^"]+)"/)?.[1] ?? name;
 const jewelleryModel = (name: string): string => name.replace(/^\S+\s+/, "").replace(/\s+–\s+/, " ");
 

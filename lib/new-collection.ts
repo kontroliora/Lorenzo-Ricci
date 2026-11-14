@@ -130,7 +130,7 @@ export const isCollectionSlug = (slug: string | undefined | null): boolean => !!
 // ─── Gold / silver swatches (like the watches' colours) ──────────────────────
 
 export const METAL_SWATCH: Record<Metal, { bg: string; ro: string; color: string }> = {
-  gold:   { bg: "Злато",  ro: "Auriu",    color: "#C9A84C" },
+  gold:   { bg: "Златист", ro: "Auriu",    color: "#C9A84C" },
   silver: { bg: "Сребро", ro: "Argintiu", color: "#C4C7CC" },
 };
 

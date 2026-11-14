@@ -41,8 +41,13 @@ type DesignText = {
 };
 
 const METAL_WORD: Record<Metal, Lang> = { gold: { bg: "златна", ro: "aurie" }, silver: { bg: "сребриста", ro: "argintie" } };
-const METAL_NAME: Record<Metal, Lang> = { gold: { bg: "Злато", ro: "Auriu" }, silver: { bg: "Сребро", ro: "Argintiu" } };
-const COLOR: Record<Metal, Lang> = { gold: { bg: "Златен", ro: "Auriu" }, silver: { bg: "Сребърен", ro: "Argintiu" } };
+// The colour in the product name agrees with the piece in BG: "Колие Verdis – Златисто", "Гривна Verdis – Златиста" (owner, 14.11.2026:
+// "Златист" instead of "Злато" - the pieces are 18K PVD on steel, not gold). The slugs keep "-gold".
+const METAL_NAME: Record<Metal, Record<PieceType, Lang>> = {
+  gold: { necklace: { bg: "Златисто", ro: "Auriu" }, bracelet: { bg: "Златиста", ro: "Auriu" } },
+  silver: { necklace: { bg: "Сребро", ro: "Argintiu" }, bracelet: { bg: "Сребро", ro: "Argintiu" } },
+};
+const COLOR: Record<Metal, Lang> = { gold: { bg: "Златист", ro: "Auriu" }, silver: { bg: "Сребърен", ro: "Argintiu" } };
 const TYPE_NAME: Record<PieceType, Lang> = { necklace: { bg: "Колие", ro: "Colier" }, bracelet: { bg: "Гривна", ro: "Brățară" } };
 
 const INLAY = (bg: string, ro: string): { label: Lang; value: Lang } => ({ label: { bg: "Вложка", ro: "Inserție" }, value: { bg, ro } });
@@ -218,7 +223,7 @@ const fill = (s: string, metal: Metal, lang: "bg" | "ro") => s.replace("{metal}"
 
 export const NEW_COLLECTION_PRODUCTS: Product[] = COLLECTION_PIECES.map(({ slug, design, type, metal, price }) => {
   const t = TEXT[design.key];
-  const name = `${TYPE_NAME[type].bg} ${design.name} – ${METAL_NAME[metal].bg}`;
+  const name = `${TYPE_NAME[type].bg} ${design.name} – ${METAL_NAME[metal][type].bg}`;
   const alt = `${name} Lorenzo Ricci`;
   return {
     id: slug,
@@ -259,7 +264,7 @@ export const NEW_COLLECTION_RO: Record<string, {
 }> = Object.fromEntries(
   COLLECTION_PIECES.map(({ slug, design, type, metal }) => {
     const t = TEXT[design.key];
-    const name = `${TYPE_NAME[type].ro} ${design.name} – ${METAL_NAME[metal].ro}`;
+    const name = `${TYPE_NAME[type].ro} ${design.name} – ${METAL_NAME[metal][type].ro}`;
     return [slug, {
       name,
       shortDescription: t.short[type].ro,

@@ -102,7 +102,7 @@ export function partnerVisible(row: Row): boolean {
 
 // ── the pieces ───────────────────────────────────────────────────────────────
 const TYPE_BG = { necklace: "Колие", bracelet: "Гривна" } as const;
-const COLOR_BG = { gold: "Златен", silver: "Сребърен" } as const;
+const COLOR_BG = { gold: "Златист", silver: "Сребърен" } as const;
 
 export type PieceInfo = { slug: string; model: string; color: string; stone: string; sku: string };
 const PIECES: Map<string, PieceInfo> = new Map(COLLECTION_PIECES.map((p) => {
