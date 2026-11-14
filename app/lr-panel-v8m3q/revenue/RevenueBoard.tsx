@@ -36,6 +36,8 @@ export function RevenueBoard({ data, products, spend }: { data: RevenueData; pro
         <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Оборот · вижда се <b style={{ color: "#fff" }}>само от теб</b> (owner) — служителят няма достъп, нито до страницата, нито до числата.</span>
       </div>
 
+      <a href="/lr-panel-v8m3q/revenue/audit" style={{ alignSelf: "flex-end", color: "#85B7EB", fontSize: 12 }}>Проверка срещу Еконт, Stripe и Meta →</a>
+
       {/* Hero — current-month product revenue */}
       <div style={{ background: "rgba(250,199,117,0.1)", border: "1px solid rgba(250,199,117,0.4)", borderRadius: 12, padding: "16px 20px" }}>
         <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em" }}>Оборот от стока · текущ месец</div>

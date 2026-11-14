@@ -112,6 +112,15 @@ const pick = (list: { action_type: string; value: string }[] | undefined): numbe
   return 0;
 };
 
+/** Account-level spend per Sofia day straight from Meta (no ad breakdown) - the number Ads Manager shows. Used by the revenue audit. */
+export async function fetchAccountDailySpend(since: string, until: string): Promise<Map<string, number>> {
+  const { id } = account();
+  const raw = await getAll<{ date_start: string; spend?: string }>(`${id}/insights`, {
+    level: "account", time_increment: "1", time_range: JSON.stringify({ since, until }), fields: "spend",
+  });
+  return new Map(raw.map((r) => [r.date_start, Number(r.spend) || 0]));
+}
+
 export async function fetchInsights(since: string, until: string) {
   const { id } = account();
   const raw = await getAll<RawInsight>(`${id}/insights`, {

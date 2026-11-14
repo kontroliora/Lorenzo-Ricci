@@ -63,7 +63,7 @@ export async function getShipmentStatusesRaw(awbs: string[]): Promise<unknown> {
 // ── Structured analysis of a raw getShipmentStatuses object (Stage 1 fields) ──
 // All decisions use structured, code-based fields — never office-name text.
 type RawEvent = { destinationType?: string; officeCode?: string | null; time?: number; officeName?: string };
-type RawStatus = {
+export type RawStatus = {
   shipmentNumber?: string;
   sendTime?: number | null;          // set ONLY when Econt physically accepts the parcel
   deliveryTime?: number | null;      // set on delivery
@@ -213,7 +213,7 @@ export function classifyReturn(raw: RawStatus): { kind: ReturnKind; dwellDays: n
 }
 
 // Verdict straight from a raw status (delivered / returned / in_transit).
-function rawVerdict(raw: RawStatus): EcontVerdict {
+export function rawVerdict(raw: RawStatus): EcontVerdict {
   const bg = String(raw.shortDeliveryStatus ?? "").toLowerCase();
   const events = Array.isArray(raw.trackingEvents) ? raw.trackingEvents : [];
   const lastType = events.length ? events[events.length - 1]?.destinationType : null;
@@ -371,7 +371,11 @@ export async function reconcileShippedOrders(sb: SupabaseClient): Promise<Reconc
       details.push({ id: o.id, awb, status: raw?.shortDeliveryStatus ?? "—", verdict });
 
       if (verdict === "delivered") {
-        await sb.from("orders").update({ status: "completed", completed_at: now, completed_source: "econt" }).eq("id", o.id);
+        // completed_at = when Econt actually delivered it (deliveryTime, else when the COD was collected), not when this cron ran:
+        // the Оборот tab buckets months by completed_at, so a parcel delivered on the 31st must not land in the next month (14.11.2026).
+        const deliveredMs = raw ? (raw.deliveryTime ?? raw.cdCollectedTime ?? null) : null;
+        const completedAt = deliveredMs != null && Number(deliveredMs) > 0 && Number(deliveredMs) <= Date.now() ? new Date(Number(deliveredMs)).toISOString() : now;
+        await sb.from("orders").update({ status: "completed", completed_at: completedAt, completed_source: "econt" }).eq("id", o.id);
         completed++;
       } else if (verdict === "returned" && raw) {
         const { kind, dwellDays } = classifyReturn(raw);
