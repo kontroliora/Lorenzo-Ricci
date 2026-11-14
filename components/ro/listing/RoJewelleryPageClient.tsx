@@ -119,11 +119,10 @@ export function RoJewelleryPageView({ bracelets, necklaces, category }: Props & 
         </div>
 
         {/* Value props */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-8 mb-12 border-y border-border">
+        <div data-testid="jewellery-stats" className="grid grid-cols-3 gap-2 sm:gap-4 py-8 mb-12 border-y border-border">
           {[
             { val: "18K", label: "Placare PVD" },
             { val: "4", label: "Straturi de acoperire" },
-            { val: "316L", label: "Oțel chirurgical" },
             { val: "∞", label: "Garanție" },
           ].map(({ val, label }) => (
             <div key={label} className="text-center py-2">
