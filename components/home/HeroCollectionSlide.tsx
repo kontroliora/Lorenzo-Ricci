@@ -8,8 +8,8 @@ import { HOME_HERO_PHOTOS } from "@/lib/new-collection";
 // softer than the original (checked side by side, 08.11.2026). They always get the original; the slide mounts after load anyway.
 const COVER_SLIDE_SIZES = "2048px";
 
-// The home hero's second slide (BG + RO): the new collection. The watch slide stays first and is the page's LCP, so this one is
-// mounted only after the page has loaded (its photos never compete with the cover) and the two then alternate. Phones: the
+// The home hero's collection slide. BG (15.11.2026): the FIRST slide and the page's LCP (priority, photos chosen from live stock in
+// lib/hero.ts). RO: still the second slide, mounted after the page has loaded, after the watch slide. Phones: the
 // necklace on the neck, full screen; larger screens: necklace + bracelet on model side by side.
 
 export const HERO_SLIDE_MS = 6500;
@@ -48,7 +48,7 @@ export function useHeroSlides(count = 2) {
   return { slide, setSlide, ready, setPaused, swipe };
 }
 
-export function HeroDots({ slide, count = 2, onSelect, labels }: { slide: number; count?: number; onSelect: (i: number) => void; labels: string[] }) {
+export function HeroDots({ slide, count = 2, onSelect, labels, dark = false }: { slide: number; count?: number; onSelect: (i: number) => void; labels: string[]; dark?: boolean }) {
   return (
     <div className="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-20 flex gap-3" role="tablist">
       {Array.from({ length: count }, (_, i) => (
@@ -61,16 +61,20 @@ export function HeroDots({ slide, count = 2, onSelect, labels }: { slide: number
           onClick={() => onSelect(i)}
           className="p-2 -m-2"
         >
-          <span className={`block h-[3px] transition-all duration-500 ${slide === i ? "w-8 bg-white" : "w-4 bg-white/45"}`} />
+          <span className={`block h-[3px] transition-all duration-500 ${slide === i ? `w-8 ${dark ? "bg-navy" : "bg-white"}` : `w-4 ${dark ? "bg-navy/30" : "bg-white/45"}`}`} />
         </button>
       ))}
     </div>
   );
 }
 
-export function HeroCollectionSlide({ active, mounted, tag, title, badge, line, cta, href, alts }: {
+export function HeroCollectionSlide({ active, mounted, tag, title, badge, line, cta, href, alts, photos = HOME_HERO_PHOTOS, priority = false }: {
   active: boolean; mounted: boolean; tag: string; title: string; badge: string; line: string; cta: string; href: string;
   alts: { necklace: string; bracelet: string };
+  /** The two on-model photos (BG: chosen from live stock, lib/hero.ts); RO keeps the default pair. */
+  photos?: { necklace: string; bracelet: string };
+  /** BG: this is the first slide and the page's LCP - fetched at once, at high priority. */
+  priority?: boolean;
 }) {
   if (!mounted) return null;
   return (
@@ -81,10 +85,10 @@ export function HeroCollectionSlide({ active, mounted, tag, title, badge, line, 
     >
       <div className="absolute inset-0 grid grid-cols-1 sm:grid-cols-2">
         <div className="relative">
-          <Image src={HOME_HERO_PHOTOS.necklace} alt={alts.necklace} fill sizes={COVER_SLIDE_SIZES} quality={80} className="object-cover object-center" />
+          <Image src={photos.necklace} alt={alts.necklace} fill sizes={COVER_SLIDE_SIZES} quality={80} priority={priority} className="object-cover object-center" />
         </div>
         <div className="relative hidden sm:block">
-          <Image src={HOME_HERO_PHOTOS.bracelet} alt={alts.bracelet} fill sizes={COVER_SLIDE_SIZES} quality={80} className="object-cover object-center" />
+          <Image src={photos.bracelet} alt={alts.bracelet} fill sizes={COVER_SLIDE_SIZES} quality={80} priority={priority} className="object-cover object-center" />
         </div>
       </div>
       <div className="absolute inset-0 bg-black/35" />
@@ -92,7 +96,7 @@ export function HeroCollectionSlide({ active, mounted, tag, title, badge, line, 
 
       <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-5 drop-shadow-lg">
         <p className="font-sans text-[10px] font-light tracking-[0.32em] uppercase text-white/70 mb-6">{tag}</p>
-        <h2 className="font-serif text-display-xl text-white mb-5 text-balance">{title}</h2>
+        {priority ? <h1 className="font-serif text-display-xl text-white mb-5 text-balance">{title}</h1> : <h2 className="font-serif text-display-xl text-white mb-5 text-balance">{title}</h2>}
         <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 mb-10 font-sans text-sm sm:text-base font-light text-white/85 tracking-widest uppercase">
           <span className="font-sans text-[11px] sm:text-xs font-semibold tracking-[0.16em] bg-[#B3121F] text-white px-2.5 py-1">{badge}</span>
           <span>{line}</span>

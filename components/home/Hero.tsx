@@ -1,186 +1,104 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
-import { getImageProps } from "next/image";
-import { useCallback, useEffect, useState } from "react";
 import { HeroCollectionSlide, HeroDots, useHeroSlides } from "@/components/home/HeroCollectionSlide";
+import type { HeroJewel, HeroWatch } from "@/lib/hero";
 
-// The static cover is the page's LCP (fetched at high priority) and the poster under the video. The
-// looping video is mounted only after the page has loaded and the browser is idle, so it never competes
-// with the LCP (owner, 2026-09-28: with the video fetched up front, mobile LCP was 8.5 s).
-// Two encodes, both H.264 / yuv420p / no audio / moov atom first (so playback starts before the file
-// is down): a vertical 720p crop for phones (~1.5 MB) and 1080p for larger screens (~3.3 MB).
-// The video fades in only once it is really playing: if autoplay is refused (iOS Low Power Mode, data
-// saver) or the file fails, the cover simply stays. Phone/desktop split = the cover's own 640px breakpoint.
-const DESKTOP_MIN = "(min-width: 640px)";
-const VIDEO = { mobile: "/hero-video-mobile.mp4", desktop: "/hero-video-desktop.mp4" } as const;
-const POSTER = { mobile: "/covers/mobile%20cover.webp", desktop: "/covers/desktop%20cover.webp" } as const;
-
-// `campaign`: set by the home page while a campaign phase and a discount of at least 5% are live (the same condition as the red
-// sale banner, lib/sale-campaign.ts). Only the headline, subline and buttons change then; null = the original texts.
-export function Hero({ campaign = null }: { campaign?: { label: string; pct: number } | null }) {
-  const [loaded, setLoaded] = useState(false);
-  const [variant, setVariant] = useState<"mobile" | "desktop" | null>(null);
-  const [playing, setPlaying] = useState(false);
-  const [failed, setFailed] = useState(false);
-  // Two slides: the watches (first, the LCP) and the new collection (mounted after load), alternating.
-  const { slide, setSlide, ready, setPaused, swipe } = useHeroSlides(2);
-
-  useEffect(() => {
-    const t = setTimeout(() => setLoaded(true), 100);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    // No video for people who asked for less motion or less data.
-    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || conn?.saveData) return;
-
-    const mq = window.matchMedia(DESKTOP_MIN);
-    let ready = false;
-    const apply = () => {
-      if (!ready) return;
-      setPlaying(false);
-      setVariant(mq.matches ? "desktop" : "mobile");
-    };
-    const start = () => { ready = true; apply(); };
-    const idle = () => ("requestIdleCallback" in window ? window.requestIdleCallback(start, { timeout: 2500 }) : setTimeout(start, 1500));
-    if (document.readyState === "complete") idle();
-    else window.addEventListener("load", idle, { once: true });
-    mq.addEventListener("change", apply);
-    return () => {
-      window.removeEventListener("load", idle);
-      mq.removeEventListener("change", apply);
-    };
-  }, []);
-
-  // React sets `muted` as a property, never as the attribute, and iOS Safari decides on autoplay from
-  // the attribute: set both ourselves, then ask to play. A refusal is fine - the cover stays visible.
-  const videoRef = useCallback((v: HTMLVideoElement | null) => {
-    if (!v) return;
-    v.muted = true;
-    v.defaultMuted = true;
-    v.setAttribute("muted", "");
-    v.setAttribute("playsinline", "");
-    v.play().catch(() => {});
-  }, []);
-
-  // Art direction through next/image's optimizer: one <picture>, two covers.
-  // q70 is invisible under the 40% dark overlay and saves ~25 KB on the LCP image.
-  const common = { alt: "", fill: true as const, sizes: "100vw", quality: 70, priority: true };
-  const { props: mobile } = getImageProps({ ...common, src: "/covers/mobile cover.webp" });
-  const { props: desktop } = getImageProps({ ...common, src: "/covers/desktop cover.webp" });
+// Home hero (BG), two slides (owner, 15.11.2026):
+//   1. The women's collection (the page's LCP: its on-model photos load at once, at high priority).
+//   2. The watch + the free crocodile cardholder: an in-stock Yachting next to the cardholder Onice, on the photo's own off-white,
+//      so this slide is light with dark text. Mounted after the page has loaded; the two then alternate.
+// Neither slide ever shows a sold-out product: app/page.tsx picks both from live stock (lib/hero.ts). Without an in-stock watch
+// there is no watch slide; without an in-stock jewellery pair, slide 1 falls back to the watch slide alone.
+//
+// `campaign`: set while a campaign phase and a discount of at least 5% are live (lib/sale-campaign.ts) - its label ("Черен петък")
+// is the watch slide's headline. `watchGift`: the "Часовник + кардхолдър" offer is running (lib/watch-gift.ts).
+export function Hero({ campaign = null, jewel, watch, watchGift }: {
+  campaign?: { label: string; pct: number } | null;
+  jewel: HeroJewel | null;
+  watch: HeroWatch | null;
+  watchGift: boolean;
+}) {
+  const count = (jewel ? 1 : 0) + (watch ? 1 : 0);
+  const { slide, setSlide, ready, setPaused, swipe } = useHeroSlides(Math.max(count, 1));
+  const watchIndex = jewel ? 1 : 0;
 
   return (
-    <section className="relative w-full h-screen min-h-[600px] max-h-[1000px] overflow-hidden" {...swipe} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-      {/* Static cover: shown at once, stays under the video, and stays if the video never starts */}
-      <picture>
-        <source media={DESKTOP_MIN} srcSet={desktop.srcSet} sizes={desktop.sizes} />
-        {/* eslint-disable-next-line jsx-a11y/alt-text */}
-        <img {...mobile} fetchPriority="high" decoding="async" className="absolute inset-0 w-full h-full object-cover object-center" />
-      </picture>
-
-      {/* Hero video background: mounted after load, fades in once it is playing */}
-      {variant && !failed && (
-        <video
-          key={variant}
-          ref={videoRef}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          poster={POSTER[variant]}
-          onPlaying={() => setPlaying(true)}
-          onError={() => setFailed(true)}
-          className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-700 ${playing ? "opacity-100" : "opacity-0"}`}
-        >
-          <source src={VIDEO[variant]} type="video/mp4" onError={() => setFailed(true)} />
-        </video>
+    <section
+      className="relative w-full h-screen min-h-[600px] max-h-[1000px] overflow-hidden bg-[#FCFCFC]"
+      {...(count > 1 ? swipe : {})}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      {jewel && (
+        <HeroCollectionSlide
+          active={slide === 0}
+          mounted
+          priority
+          photos={{ necklace: jewel.necklace, bracelet: jewel.bracelet }}
+          tag="Lorenzo Ricci · 2026"
+          title="Дамска колекция"
+          badge="1+1 БЕЗПЛАТНО"
+          line="Второто бижу е подарък"
+          cta="Разгледай колекцията"
+          href="/jewellery#damska-kolekcia"
+          alts={jewel.alts}
+        />
       )}
 
-      {/* Base dark overlay - ensures text always readable over video */}
-      <div className="absolute inset-0 bg-black/40" />
-      {/* Gradient overlay - adds depth top & bottom */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
+      {watch && (
+        <WatchSlide
+          active={slide === watchIndex}
+          mounted={!jewel || ready}
+          priority={!jewel}
+          watch={watch}
+          headline={campaign?.label ?? null}
+          line={watchGift ? "Часовник + кардхолдър от крокодилска кожа подарък · до 24.12" : campaign ? `До −${campaign.pct}% на часовници, бижута и крокодилска кожа` : "Прецизност във всеки детайл"}
+        />
+      )}
 
-      {/* Content (the watch slide); hidden while the new-collection slide shows */}
-      <div
-        aria-hidden={slide !== 0}
-        className={`relative z-10 h-full flex flex-col items-center justify-center text-center px-5 transition-all duration-1000 drop-shadow-lg ${
-          loaded && slide === 0 ? "opacity-100 translate-y-0" : slide !== 0 ? "opacity-0 pointer-events-none" : "opacity-0 translate-y-6"
-        }`}
-      >
-        <p className="font-sans text-[10px] font-light tracking-[0.32em] uppercase text-white/55 mb-6 animate-fade-up">
-          Луксозни Часовници &amp; Бижута
-        </p>
+      {ready && count > 1 && (
+        <HeroDots slide={slide} count={count} onSelect={setSlide} labels={[jewel ? "Дамска колекция" : "Часовници", "Часовници"]} dark={slide === watchIndex} />
+      )}
+    </section>
+  );
+}
 
-        {campaign ? (
-          <>
-            <h1 className="font-serif text-display-xl text-white mb-4 animate-fade-up animate-delay-100 text-balance">
-              <em className="not-italic text-white">{campaign.label}</em>
-            </h1>
-
-            <p className="font-sans text-sm sm:text-base font-light text-white/70 tracking-widest uppercase mb-10 animate-fade-up animate-delay-200">
-              До −{campaign.pct}% на часовници, бижута и крокодилска кожа
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 animate-fade-up animate-delay-300">
-              <Link href="/namalenia" className="btn-primary min-w-[200px]">
-                Виж намаленията
-              </Link>
-              <Link href="/watches" className="btn-outline-light min-w-[200px]">
-                Разгледай часовници
-              </Link>
-            </div>
-          </>
-        ) : (
-          <>
-            <h1 className="font-serif text-display-xl text-white mb-4 animate-fade-up animate-delay-100 text-balance">
-              Създадени да
-              <br />
-              <em className="not-italic text-white">впечатляват</em>
-            </h1>
-
-            <p className="font-sans text-sm sm:text-base font-light text-white/70 tracking-widest uppercase mb-10 animate-fade-up animate-delay-200">
-              Прецизност във всеки детайл
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 animate-fade-up animate-delay-300">
-              <Link href="/watches" className="btn-primary min-w-[200px]">
-                Разгледай Часовници
-              </Link>
-              <Link href="/jewellery" className="btn-outline-light min-w-[200px]">
-                Разгледай Бижута
-              </Link>
-            </div>
-          </>
-        )}
-
-        {/* Rating pill */}
-        <div className="mt-10 flex items-center gap-3 bg-white/8 backdrop-blur-sm border border-white/15 px-5 py-2.5 rounded-full animate-fade-up animate-delay-400">
-          <div className="flex gap-0.5 text-white text-xs">★★★★★</div>
-          <span className="font-sans text-xs font-light text-white/70 tracking-wide">
-            4.8 · 1000+ ревюта
-          </span>
+/** Slide 2: light (#FCFCFC = how browsers draw the photo's own #FCFBFC background), the watch + cardholder image and dark text; image on the right on larger
+ *  screens, above the text on phones. The image is shown whole (object-contain) - nothing of the watch or the cardholder is cut. */
+function WatchSlide({ active, mounted, priority, watch, headline, line }: {
+  active: boolean; mounted: boolean; priority: boolean; watch: HeroWatch; headline: string | null; line: string;
+}) {
+  if (!mounted) return null;
+  const Title = priority ? "h1" : "h2";
+  return (
+    <div
+      data-testid="hero-watch-slide"
+      aria-hidden={!active}
+      className={`absolute inset-0 z-[6] bg-[#FCFCFC] transition-opacity duration-1000 ${active ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+    >
+      <div className="h-full max-w-7xl mx-auto px-5 sm:px-8 pt-[100px] sm:pt-[110px] pb-24 flex flex-col lg:flex-row-reverse items-center justify-center gap-6 lg:gap-12">
+        <div className="relative w-full lg:w-[58%] aspect-[5/3] max-h-[42vh] lg:max-h-none">
+          <Image src={watch.src} alt={watch.alt} fill priority={priority} quality={97} sizes="(max-width: 1023px) 100vw, 740px" className="object-contain" />
+        </div>
+        <div className="w-full lg:w-[42%] text-center lg:text-left">
+          <p className="font-sans text-[10px] font-medium tracking-[0.32em] uppercase text-ink-muted mb-4 sm:mb-5">Часовници Yachting</p>
+          <Title className="font-serif text-display-lg sm:text-display-xl text-navy mb-4 text-balance">
+            {headline ?? <>Създадени да <em className="not-italic">впечатляват</em></>}
+          </Title>
+          <p className="font-sans text-xs sm:text-sm font-medium text-charcoal tracking-[0.14em] uppercase leading-relaxed mb-8 sm:mb-10 max-w-md mx-auto lg:mx-0">
+            {line}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
+            <Link href="/watches" tabIndex={active ? 0 : -1} className="btn-primary min-w-[200px] text-center" data-testid="hero-watch-cta">
+              Виж часовниците
+            </Link>
+            <Link href="/namalenia" tabIndex={active ? 0 : -1} className="btn-outline min-w-[200px] text-center">
+              Виж намаленията
+            </Link>
+          </div>
         </div>
       </div>
-
-      <HeroCollectionSlide
-        active={slide === 1}
-        mounted={ready}
-        tag="Lorenzo Ricci · 2026"
-        title="Дамска колекция"
-        badge="1+1 БЕЗПЛАТНО"
-        line="Второто бижу е подарък"
-        cta="Разгледай колекцията"
-        href="/jewellery#damska-kolekcia"
-        alts={{ necklace: "Колие Lumen – Сребро на модел, дамска колекция Lorenzo Ricci", bracelet: "Гривна Lumen – Сребро на модел, дамска колекция Lorenzo Ricci" }}
-      />
-      {ready && <HeroDots slide={slide} onSelect={setSlide} labels={["Часовници", "Дамска колекция"]} />}
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
-        <div className="w-px h-12 bg-gradient-to-b from-white/40 to-transparent mx-auto" />
-      </div>
-    </section>
+    </div>
   );
 }

@@ -1,4 +1,6 @@
 import { Hero } from "@/components/home/Hero";
+import { heroJewel, heroWatch } from "@/lib/hero";
+import { watchGiftActive } from "@/lib/watch-gift";
 import { FeaturedWatches } from "@/components/home/FeaturedWatches";
 import { WalletsSection } from "@/components/home/WalletsSection";
 import { MilanoAvorioFlagship } from "@/components/home/MilanoAvorioFlagship";
@@ -38,6 +40,8 @@ export default async function HomePage() {
 
   // Sold-out products are left out of the home sections (stock-driven; their own pages still say "Изчерпан")
   const soldOut = await getSoldOutSlugs();
+  // Hero: never a sold-out product - both slides are picked from live stock (lib/hero.ts).
+  const soldOutSet = new Set(soldOut);
 
   // Sale banner (lib/sale-campaign.ts): biggest live discount among buyable products, rounded down to 5%, and the
   // campaign phase of today (Europe/Sofia). No discount, or a date outside every phase -> no banner.
@@ -49,7 +53,12 @@ export default async function HomePage() {
 
   return (
     <>
-      <Hero campaign={saleLabel && salePct >= 5 ? { label: saleLabel, pct: salePct } : null} />
+      <Hero
+        campaign={saleLabel && salePct >= 5 ? { label: saleLabel, pct: salePct } : null}
+        jewel={heroJewel(soldOutSet)}
+        watch={heroWatch(soldOutSet)}
+        watchGift={watchGiftActive()}
+      />
       {saleLabel && salePct >= 5 && <SaleBanner label={saleLabel} pct={salePct} />}
       {/* The new collection is the main campaign: right under the hero and the sale bar, above the watches and leather */}
       <NewCollectionSection pieces={newPieces} />
