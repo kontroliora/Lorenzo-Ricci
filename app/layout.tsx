@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { AD_SRC_SCRIPT } from "@/lib/hero-source";
 import { homeOgImage } from "@/lib/og";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -95,6 +96,10 @@ export default async function RootLayout({
   // lib/geo.ts stay dormant in case a market test comes back.
   return (
     <html lang="bg" className={`scroll-smooth ${playfair.variable} ${inter.variable}`} suppressHydrationWarning>
+      <head>
+        {/* The landing of the last ad click in this tab (lib/hero-source.ts): the home hero shows the matching slide first */}
+        <script dangerouslySetInnerHTML={{ __html: AD_SRC_SCRIPT }} />
+      </head>
       <body className="bg-ivory text-charcoal antialiased">
         <CartPersistence />
         <MetaPixel />

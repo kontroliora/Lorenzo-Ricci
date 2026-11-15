@@ -6,6 +6,7 @@
 //   Slide 2 (watch + gift): the first in-stock Yachting (Blue, Black, White) with the cardholder Onice next to it while that is in
 //   stock (images: scripts/make-hero-watch.mjs). No in-stock watch at all = no watch slide.
 import { COLLECTION_PHOTOS, collectionPhoto, pieceLive } from "./new-collection";
+import { getProductBySlug } from "./products";
 
 type Pair = { design: string; metal: "gold" | "silver"; label: string };
 const JEWEL_PAIRS: Pair[] = [
@@ -62,4 +63,30 @@ export function heroWatch(soldOut: ReadonlySet<string>): HeroWatch | null {
     alt: card ? `Часовник ${w.name} и кардхолдър от крокодилска кожа Onice – подарък` : `Часовник ${w.name}`,
     slugs: card ? [w.slug, GIFT_CARDHOLDER] : [w.slug],
   };
+}
+
+// General brand slide (owner, 15.11.2026): a watch, a jewellery piece and a crocodile-leather piece together, each the first one in
+// stock. The watch is its transparent cutout; the bracelet's photo no. 1 and the wallets' covers are on white, like the slide.
+const GENERAL_WATCHES = [
+  { slug: "yachting-blue", src: "/Products/watches/Yachting Blue/yachting-blue-hronograf-preden-izgled-v2.webp", name: "Yachting Blue" },
+  { slug: "yachting-black", src: "/Products/watches/Yachting Black/yachting-black-hronograf-preden-izgled-v2.webp", name: "Yachting Black" },
+  { slug: "yachting-white", src: "/Products/watches/Yachting White/yachting-white-hronograf-preden-izgled-v2.webp", name: "Yachting White" },
+];
+const GENERAL_DESIGNS = ["verdis", "lumen", "noctis", "solaris", "spira", "linea"];
+const GENERAL_JEWELS = [...GENERAL_DESIGNS.map((d) => `bracelet-${d}-gold`), ...GENERAL_DESIGNS.map((d) => `bracelet-${d}-silver`)];
+// Dark crocodile first (it reads on the white slide): the green / red wallets, else the black cardholder Onice, ...; the white wallet last.
+const GENERAL_LEATHER = ["wallet-smeraldo", "wallet-rubino", "cardholder-onice", "cardholder-giada", "cardholder-cremisi", "cardholder-zaffiro", "wallet-alabastro"];
+
+export type HeroGeneralItem = { src: string; alt: string; slug: string; kind: "watch" | "jewel" | "leather" };
+export type HeroGeneral = { items: HeroGeneralItem[]; slugs: string[] };
+
+export function heroGeneral(soldOut: ReadonlySet<string>): HeroGeneral | null {
+  const items: HeroGeneralItem[] = [];
+  const w = GENERAL_WATCHES.find((x) => !soldOut.has(x.slug));
+  if (w) items.push({ src: w.src, alt: `Часовник ${w.name}`, slug: w.slug, kind: "watch" });
+  const j = GENERAL_JEWELS.find((s) => pieceLive(s) && !soldOut.has(s) && COLLECTION_PHOTOS[s]);
+  if (j) { const [type, key, metal] = j.split("-"); items.push({ src: collectionPhoto(`${key}-${type}-${metal}-1.webp`), alt: `Гривна ${key[0].toUpperCase()}${key.slice(1)} – ${metal === "gold" ? "Злато" : "Сребро"}`, slug: j, kind: "jewel" }); }
+  const l = GENERAL_LEATHER.map((s) => getProductBySlug(s)).find((p) => p && !soldOut.has(p.slug));
+  if (l) items.push({ src: l.coverImage.src, alt: l.coverImage.alt, slug: l.slug, kind: "leather" });
+  return items.length >= 2 ? { items, slugs: items.map((i) => i.slug) } : null;
 }
