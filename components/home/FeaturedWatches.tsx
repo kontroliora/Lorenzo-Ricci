@@ -31,7 +31,7 @@ export function FeaturedWatches({ soldOut = [] }: { soldOut?: string[] }) {
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         {yachting.length > 0 && (
           <WatchGroup
-            tag="Нова Колекция"
+            tag="Лимитирана колекция"
             title="Yachting"
             subtitle="Черен · Син · Бял"
             watches={yachting}

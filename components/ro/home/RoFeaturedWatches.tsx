@@ -26,7 +26,7 @@ export function RoFeaturedWatches({ watches }: { watches: Product[] }) {
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         {yachting.length > 0 && (
           <WatchGroup
-            tag="Colecție nouă"
+            tag="Colecție limitată"
             title="Yachting"
             subtitle="Negru · Albastru · Alb"
             watches={yachting}
