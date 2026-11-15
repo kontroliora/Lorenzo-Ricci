@@ -331,6 +331,24 @@ export const RO_REVIEWS: Record<string, RoReviewText> = {
   "r-713": { author: "Deyan B.", body: "Cardurile stau stabil și se scot ușor. Exact asta căutam." },
   "r-714": { author: "Krasimir D.", body: "Execuție foarte bună și piele plăcută. Se vede atenția la detaliu." },
   "r-715": { author: "Anton M.", body: "Mă așteptam ca culoarea să fie puțin mai deschisă, dar este o chestiune de gust. Calitatea este excelentă." },
+  // bracelet-diamante-cross — recenzii de la femei
+  "r-955": { author: "Maria T.", body: "O port eu, nu am cumpărat-o pentru un bărbat. Am încheietura mică și 18 cm este exact. Crucea are o prezență plăcută — nu țipă, dar se vede." },
+  "r-956": { author: "Teodora V.", body: "Am cumpărat pentru soțul meu, dar sincer eu am plăcut-o mai mult. O să-mi iau una separat." },
+  "r-957": { author: "Elena K.", body: "Am luat set cu colierul Aurelius pentru prietenul meu. Împreună arată foarte bine. Livrare rapidă, cutia luxoasă." },
+  "r-958": { author: "Kalina R.", body: "Pentru mama de ziua ei. Este credincioasă și i-a plăcut mult crucea. Este mai delicată decât mă așteptam și tocmai de aceea este grozavă." },
+  "r-959": { author: "Veronica D.", body: "Am comandat pentru prietenul meu. Când a pus-o, a zis imediat că este frumoasă. Prima lui bijuterie în general." },
+  "r-960": { author: "Antonia G.", body: "O port eu. Este ușoară și nu simt că o port toată ziua. Cu lanț tip tenis și cruce este suficient de specială, fără să fie ostentativă." },
+  "r-961": { author: "Petia S.", body: "Brățara este frumoasă și crucea este drăguță, dar lanțul mi s-a părut puțin mai subțire decât mă așteptam. Totuși stă bine pe mână." },
+  "r-962": { author: "Denița I.", body: "O port eu și o poartă soțul meu. Am luat două. Unisex este cu adevărat — pe o mână feminină mică stă mai delicat, pe una masculină — mai masiv." },
+  // bracelet-signature — recenzii de la femei
+  "r-963": { author: "Simona P.", body: "Am luat pentru soțul meu. Subțire, discretă. O poartă cu ceasul și arată exact cum trebuie." },
+  "r-964": { author: "Nia R.", body: "Pentru fratele meu de ziua lui. Mă temeam dacă o să-i placă o bijuterie în general, dar când a văzut-o — a luat-o fără cuvinte." },
+  "r-965": { author: "Victoria K.", body: "Cumpărată online, arată la fel de bine pe viu. Am luat pentru soțul meu și eu însămi am rămas surprinsă de calitate." },
+  "r-966": { author: "Raluca N.", body: "O port eu. Am mâna subțire și 6 mm este exact perfect pentru mine. Nu este kitch, pur și simplu aur frumos." },
+  "r-967": { author: "Ivanka D.", body: "Pentru prietenul meu. Trei săptămâni o poartă în fiecare zi. Plănuiesc și pentru mine." },
+  // necklace-aurelius — femei care cumpără cadou
+  "r-968": { author: "Tania V.", body: "Am luat pentru soțul meu de aniversare. Când l-a deschis și l-a pus — arăta foarte bine. Crucea este mărimea potrivită, nu e uriașă." },
+  "r-969": { author: "Radina M.", body: "Pentru prietenul meu. Îi stă grozav. Nu arată ieftin, grosimea crucii este exactă." },
   // clutch-portofino
   "r-937": { author: "Alexandru P.", body: "Este foarte elegant, dar pentru culoarea deschisă trebuie să ai grijă — îl port doar la ocazii, că mă tem să nu-l murdaresc cumva." },
   "r-938": { author: "Mihai D.", body: "Pe viu arată chiar mai bine decât în poze. Pielea este super moale, practic nu mai vrei să ieși cu alt clutch." },

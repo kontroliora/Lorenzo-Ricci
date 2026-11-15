@@ -4099,6 +4099,24 @@ export const reviews: Review[] = [
     body: "Светлия цвят е много добър за лятото но си иска пазене, че по стелките в колата лесно се зацапва. Иначе като изработка няма грешка.",
     date: "2026-10-16",
   },
+  // bracelet-diamante-cross — women reviewers (unisex product)
+  { id: "r-955", productSlug: "bracelet-diamante-cross", author: "Мария Т.", rating: 5, body: "Нося я аз, не съм я взела за мъж. Имам малка китка и 18см е точно. Кръстчето е с хубаво присъствие – не крещи, но се вижда.", date: "2026-10-15" },
+  { id: "r-956", productSlug: "bracelet-diamante-cross", author: "Теодора В.", rating: 5, body: "Купих за мъжа ми, но честно казано аз я харесах повече. Вземам да си взема отделна.", date: "2026-10-11" },
+  { id: "r-957", productSlug: "bracelet-diamante-cross", author: "Елена К.", rating: 5, body: "Взех комплект с колие Aurelius за приятеля ми. Двете заедно изглеждат много добре. Доставката бърза, кутията луксозна.", date: "2026-10-08" },
+  { id: "r-958", productSlug: "bracelet-diamante-cross", author: "Калина Р.", rating: 5, body: "На мама за рожден ден. Набожна е и много й хареса кръстчето. По-деликатна е от очакваното и точно затова е страхотна.", date: "2026-10-19" },
+  { id: "r-959", productSlug: "bracelet-diamante-cross", author: "Вероника Д.", rating: 5, body: "Поръчах за приятеля ми. Когато я сложи, веднага каза, че е хубава. Първото му бижу изобщо.", date: "2026-10-22" },
+  { id: "r-960", productSlug: "bracelet-diamante-cross", author: "Антония Г.", rating: 5, body: "Нося я сама. Лека е и не усещам, че я нося цял ден. С тенис верига и кръст е достатъчно специална, без да е флашна.", date: "2026-10-25" },
+  { id: "r-961", productSlug: "bracelet-diamante-cross", author: "Петя С.", rating: 4, body: "Гривната е красива и кръстът е хубав, но верижката ми се стори малко по-тънка от очакваното. Въпреки това стои добре на ръката.", date: "2026-10-28" },
+  { id: "r-962", productSlug: "bracelet-diamante-cross", author: "Деница И.", rating: 5, body: "Нося я аз и я носи мъжът ми. Взехме две. Унисекс е съвсем истински – на малка дамска ръка стои по-деликатно, на мъжка – по-масивно.", date: "2026-11-02" },
+  // bracelet-signature — women reviewers
+  { id: "r-963", productSlug: "bracelet-signature", author: "Симона П.", rating: 5, body: "Взех на съпруга ми. Тънка, дискретна. Носи я с часовника и изглежда точно.", date: "2026-10-10" },
+  { id: "r-964", productSlug: "bracelet-signature", author: "Ния Р.", rating: 5, body: "На брат ми за рожден ден. Страхуваше ме дали ще му хареса бижу изобщо, ама когато видя – взе го без думи.", date: "2026-10-14" },
+  { id: "r-965", productSlug: "bracelet-signature", author: "Виктория К.", rating: 5, body: "Купена онлайн, изглежда поне толкова добре на живо. Взех за мъжа ми и самата аз останах изненадана от качеството.", date: "2026-10-18" },
+  { id: "r-966", productSlug: "bracelet-signature", author: "Ралица Н.", rating: 5, body: "Нося я аз. Имам тънка ръка и 6мм е точно перфектна за мен. Не е кичозна, просто хубаво злато.", date: "2026-10-21" },
+  { id: "r-967", productSlug: "bracelet-signature", author: "Иванка Д.", rating: 5, body: "За приятеля ми. Вече три седмици я носи всеки ден. Планирам и за мен.", date: "2026-10-24" },
+  // necklace-aurelius — women buying as gifts
+  { id: "r-968", productSlug: "necklace-aurelius", author: "Таня В.", rating: 5, body: "Взех на мъжа ми за годишнина. Когато го отвори и го сложи – изглеждаше много добре. Кръстачката е точния размер, не е огромна.", date: "2026-10-09" },
+  { id: "r-969", productSlug: "necklace-aurelius", author: "Радина М.", rating: 5, body: "За приятеля ми. Страхотно му стои. Не е евтинарско, дебелината на кръста е точна.", date: "2026-10-13" },
 ];
 
 export function getReviewsBySlug(slug: string): Review[] {
@@ -4106,13 +4124,13 @@ export function getReviewsBySlug(slug: string): Review[] {
 }
 
 export const reviewSummary: Record<string, { count: number; avg: number }> = {
-  "bracelet-diamante-cross":   { count: 71,  avg: 4.9 },
+  "bracelet-diamante-cross":   { count: 79,  avg: 4.9 },
   "bracelet-milano-forte":     { count: 49,  avg: 4.7 },
   "bracelet-milano-twist":     { count: 54,  avg: 4.8 },
-  "bracelet-signature":        { count: 37,  avg: 4.8 },
+  "bracelet-signature":        { count: 42,  avg: 4.8 },
   "chrono-black":              { count: 435, avg: 4.77 },
   "golden-eclipse":            { count: 263, avg: 4.87 },
-  "necklace-aurelius":         { count: 56,  avg: 4.9 },
+  "necklace-aurelius":         { count: 58,  avg: 4.9 },
   "necklace-grande-imperiale": { count: 27,  avg: 4.8 },
   "necklace-milano-forte":     { count: 47,  avg: 4.7 },
   "necklace-milano-twist":     { count: 59,  avg: 4.8 },
