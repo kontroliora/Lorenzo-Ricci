@@ -28,6 +28,7 @@ import { previewProductPhoto, warmProductPhoto } from "@/lib/warm-product";
 import { opoGroupOf, opoPriceLineBg, opoPairPrice, opoPairPriceBg } from "@/lib/one-plus-one";
 import { useLeatherStock } from "@/lib/use-gifts";
 import { savingsWithWatchGiftEur, watchGiftActive, WATCH_GIFT_CHOICES, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
+import { ChristmasDeliveryLine } from "@/components/ui/ChristmasDeliveryLine";
 
 // A colour swatch reads as sold out when its product is switched off in
 // lib/products.ts (inStock: false - the owner's single on/off switch); the
@@ -601,6 +602,8 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
         {inCollection && <WarrantyLine text="Доживотна гаранция" href={"/warranty/jewelry"} />}
         {/* Order (owner, 12.11.2026): box -> lifetime warranty -> 30-day exchange (all products) */}
         <ExchangeLine text="30 дни лесна замяна" href="/policies/returns" first={!inCollection && !velvetBox} />
+        {/* Watches, 01.12-21.12 only (lib/christmas-delivery.ts) */}
+        {product.category === "watches" && <ChristmasDeliveryLine className="mt-2 font-sans text-[13px] leading-snug font-medium text-[#2E6B3F]" />}
         {/* Cardholders while the watch gift runs (lib/watch-gift.ts): every watch comes with one free */}
         {product.category === "cardholders" && watchGiftActive() && (
           <p data-testid="watch-gift-line" className="mt-2 font-sans text-[13px] leading-snug text-[#2E6B3F]">

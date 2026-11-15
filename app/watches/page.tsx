@@ -7,6 +7,7 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { displayPrice } from "@/lib/price";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 import { LISTING_CARD_SIZES } from "@/lib/image-loader";
+import { ChristmasDeliveryLine } from "@/components/ui/ChristmasDeliveryLine";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
 // lib/price-overrides.ts) — page stays statically generated; the admin discount
@@ -49,6 +50,8 @@ export default async function WatchesPage() {
           <p className="font-sans text-xs font-light text-white/50 max-w-md mx-auto leading-relaxed tracking-widest uppercase">
             Сапфирен кристал · Японски механизъм · 5 ATM · 5 г. търговска гаранция
           </p>
+          {/* 01.12-21.12 only (lib/christmas-delivery.ts) */}
+          <ChristmasDeliveryLine className="mt-5 font-sans text-xs font-medium text-white/85 tracking-widest uppercase" />
         </div>
       </div>
 

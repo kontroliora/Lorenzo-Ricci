@@ -20,6 +20,7 @@ import { useLeatherStock } from "@/lib/use-gifts";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
 import { watchGiftActive, WATCH_GIFT_CHOICES, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
+import { ChristmasDeliveryLine } from "@/components/ui/ChristmasDeliveryLine";
 
 
 const CART_TIMEOUT = 15 * 60; // 900 seconds
@@ -274,6 +275,8 @@ export function CartDrawer() {
                 <SumRow label="Доставка" value={reached ? "Безплатна" : "Изчислява се"} tone={reached ? "free" : undefined} testId="drawer-shipping" />
                 <TotalRow label="Общо" value={eur(total)} />
               </div>
+              {/* 01.12-21.12 only (lib/christmas-delivery.ts) */}
+              <ChristmasDeliveryLine className="mt-2 font-sans text-[12px] font-medium text-[#2E6B3F] text-center" />
 
               <button
                 data-testid="drawer-checkout"

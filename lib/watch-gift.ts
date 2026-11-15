@@ -12,10 +12,10 @@
 
 import { CARDHOLDER_SLUGS } from "./one-plus-one";
 
-/** SWITCH + last moment of the offer: 24.12.2026 23:59 Sofia (EET, UTC+2). */
+/** SWITCH + last moment of the offer: 31.12.2026 23:59 Sofia (EET, UTC+2). Extended from 24.12 (owner, 15.11.2026). */
 export const WATCH_GIFT_PROMO = {
   enabled: true,
-  endsAt: "2026-12-24T23:59:59+02:00",
+  endsAt: "2026-12-31T23:59:59+02:00",
 } as const;
 
 export const watchGiftActive = (now: Date = new Date()): boolean =>
@@ -29,15 +29,17 @@ export const WATCH_GIFT_TEXT = {
   /** Red badge by the price (product page) and on the listing cards. */
   badge: "+ КАРДХОЛДЪР ПОДАРЪК",
   /** Top black bar. */
-  bar: { desktop: "Часовник + кардхолдър от крокодилска кожа ПОДАРЪК · до 24.12", mobile: "Часовник + кардхолдър ПОДАРЪК · до 24.12" },
+  bar: { desktop: "Часовник + кардхолдър от крокодилска кожа ПОДАРЪК · до 31.12", mobile: "Часовник + кардхолдър ПОДАРЪК · до 31.12" },
   /** Cart reminder when a watch has no cardholder chosen. */
   reminderTitle: "Забравихте подаръка си – кардхолдър от крокодилска кожа",
   reminderSub: "Към всеки часовник получавате кардхолдър от крокодилска кожа безплатно. Изберете го с едно докосване:",
   reminderAdd: "Избери подарък",
+  /** Home hero, watch slide subtitle. */
+  hero: "Часовник + кардхолдър от крокодилска кожа подарък · до 31.12",
   reminderDecline: "Продължи без подарък",
   free: "Подарък",
   /** Cardholder pages: a small line under the price, linking to the watches. */
-  cardholderLine: "Подарък към всеки часовник до 24.12",
+  cardholderLine: "Подарък към всеки часовник до 31.12",
 } as const;
 
 /**

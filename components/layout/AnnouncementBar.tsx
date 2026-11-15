@@ -6,7 +6,7 @@ import { opoBarGroups, opoPriceBg } from "@/lib/one-plus-one";
 import { watchGiftActive, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
 
 // Every running 1+1 group (lib/one-plus-one.ts: the new jewellery, then the cardholders) leads the rotation, in full white.
-// The watch + free cardholder offer (lib/watch-gift.ts) leads while it runs (until 24.12), then drops out on its own.
+// The watch + free cardholder offer (lib/watch-gift.ts) leads while it runs (until 31.12), then drops out on its own.
 const OPO_BARS = [
   ...(watchGiftActive() ? [WATCH_GIFT_TEXT.bar] : []),
   ...opoBarGroups().map((g) => g.text.bg.bar({ one: opoPriceBg(g) })),

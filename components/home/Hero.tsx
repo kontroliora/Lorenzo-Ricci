@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { HeroCollectionSlide, HeroDots, useHeroSlides } from "@/components/home/HeroCollectionSlide";
 import type { HeroJewel, HeroWatch } from "@/lib/hero";
+import { WATCH_GIFT_TEXT } from "@/lib/watch-gift";
+import { ChristmasDeliveryLine } from "@/components/ui/ChristmasDeliveryLine";
 
 // Home hero (BG), two slides (owner, 15.11.2026):
 //   1. The women's collection (the page's LCP: its on-model photos load at once, at high priority).
@@ -53,7 +55,7 @@ export function Hero({ campaign = null, jewel, watch, watchGift }: {
           priority={!jewel}
           watch={watch}
           headline={campaign?.label ?? null}
-          line={watchGift ? "Часовник + кардхолдър от крокодилска кожа подарък · до 24.12" : campaign ? `До −${campaign.pct}% на часовници, бижута и крокодилска кожа` : "Прецизност във всеки детайл"}
+          line={watchGift ? WATCH_GIFT_TEXT.hero : campaign ? `До −${campaign.pct}% на часовници, бижута и крокодилска кожа` : "Прецизност във всеки детайл"}
         />
       )}
 
@@ -89,6 +91,8 @@ function WatchSlide({ active, mounted, priority, watch, headline, line }: {
           <p className="font-sans text-xs sm:text-sm font-medium text-charcoal tracking-[0.14em] uppercase leading-relaxed mb-8 sm:mb-10 max-w-md mx-auto lg:mx-0">
             {line}
           </p>
+          {/* 01.12-21.12 only (lib/christmas-delivery.ts) */}
+          <ChristmasDeliveryLine className="-mt-5 sm:-mt-6 mb-7 sm:mb-8 font-sans text-[11px] sm:text-xs font-medium text-[#2E6B3F] tracking-[0.14em] uppercase" />
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
             <Link href="/watches" tabIndex={active ? 0 : -1} className="btn-primary min-w-[200px] text-center" data-testid="hero-watch-cta">
               Виж часовниците
