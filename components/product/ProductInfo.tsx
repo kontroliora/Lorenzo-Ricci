@@ -234,28 +234,19 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
     product.category === "bags";
   const featuresLimit = isLeatherGoods ? 5 : 4;
 
+  // Live viewers (owner, 15.11.2026: real, not generated): different visitors who opened this page in the last 5 minutes
+  // (app/api/viewers/[slug] on page_views), refreshed every minute. Under 2 the line is hidden.
   useEffect(() => {
-    const pick = () => {
-      const r = Math.random();
-      if (r < 0.12) return 2;
-      if (r < 0.80) return 3 + Math.floor(Math.random() * 6);
-      return 9 + Math.floor(Math.random() * 6);
-    };
-    let current = pick();
-    setViewerCount(current);
-    let timerId: number;
-    const schedule = () => {
-      timerId = window.setTimeout(() => {
-        const drift = 1 + Math.floor(Math.random() * 2);
-        const dir = Math.random() < 0.5 ? -1 : 1;
-        current = Math.min(14, Math.max(2, current + dir * drift));
-        setViewerCount(current);
-        schedule();
-      }, 45000 + Math.random() * 15000);
-    };
-    schedule();
-    return () => window.clearTimeout(timerId);
-  }, []);
+    let alive = true;
+    const load = () =>
+      fetch(`/api/viewers/${product.slug}`)
+        .then((r) => r.json())
+        .then((d) => { if (alive) setViewerCount(typeof d.count === "number" ? d.count : null); })
+        .catch(() => {});
+    load();
+    const id = window.setInterval(load, 60000);
+    return () => { alive = false; window.clearInterval(id); };
+  }, [product.slug]);
 
   useEffect(() => {
     if (!hasInventory) return;
@@ -560,6 +551,42 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
             Безплатна доставка при поръчка над €{BG_FREE_SHIPPING_EUR} (още {eurComma(BG_FREE_SHIPPING_EUR - cardGoods).replace(/,00$/, "")})
           </p>
         )}
+        {/* Stock + live viewers (owner, 15.11.2026): right under the price row, above the box / warranty / exchange lines.
+            Stock = the number AVAILABLE from live inventory (/api/stock), only below the low-stock threshold. Viewers = real visitors
+            in the last 5 minutes, only next to the low-stock line and from 2 up. Stacked on mobile, one line on desktop. */}
+        <div data-testid="stock-viewers" className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-x-5 gap-y-1 empty:hidden">
+          {shownCount !== null && shownCount <= PAGE_LOW_STOCK_MAX && (
+            <div className="flex items-center gap-2">
+              {shownCount === 0 ? (
+                <>
+                  <span className="text-ink-muted text-xs">◈</span>
+                  <span className="font-sans text-[11px] text-ink-muted tracking-wide">Изчерпан</span>
+                </>
+              ) : product.slug === "bag-milano-avorio" ? (
+                // A one-of-one is limited, not "running out".
+                <>
+                  <span className="text-navy/70 text-xs">◈</span>
+                  <span className="font-sans text-[11px] text-navy tracking-wide font-medium">Лимитиран до 1 брой</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-amber-600/80 text-xs">◈</span>
+                  <span className="font-sans text-[11px] text-amber-700 tracking-wide font-medium">
+                    {shownCount === 1 ? "Остава последният брой" : `Остават само ${shownCount} броя`}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+          {viewerCount !== null && viewerCount >= 2 && shownCount !== null && shownCount > 0 && shownCount <= PAGE_LOW_STOCK_MAX && (
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#B5451B] animate-pulse flex-shrink-0" />
+              <span className="font-sans text-[11px] text-[#B5451B] tracking-wide">
+                {viewerCount} души разглеждат този продукт в момента
+              </span>
+            </div>
+          )}
+        </div>
         {inCollection && <BoxLine text="Луксозна велурена кутия LORENZO RICCI" />}
         {velvetBox && <BoxLine text="Луксозна кутия LORENZO RICCI" />}
         {inCollection && <WarrantyLine text="Доживотна гаранция" href={"/warranty/jewelry"} />}
@@ -630,45 +657,6 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
 
       {/* Clutches: the free gift cardholder (renders nothing for any other product) */}
       <GiftOffer clutchSlug={product.slug} />
-
-      {/* Stock indicator - the number AVAILABLE (free to order), matching the
-          admin panel's "Налични". Shown only below the low-stock threshold; above
-          it nothing is revealed (we don't disclose how much we hold). Premium and
-          restrained - a quiet nudge, never a loud "HURRY". */}
-      {shownCount !== null && shownCount <= PAGE_LOW_STOCK_MAX && (
-        <div className="flex items-center gap-2">
-          {shownCount === 0 ? (
-            <>
-              <span className="text-ink-muted text-xs">◈</span>
-              <span className="font-sans text-[11px] text-ink-muted tracking-wide">Изчерпан</span>
-            </>
-          ) : product.slug === "bag-milano-avorio" ? (
-            // A one-of-one is limited, not "running out".
-            <>
-              <span className="text-navy/70 text-xs">◈</span>
-              <span className="font-sans text-[11px] text-navy tracking-wide font-medium">Лимитиран до 1 брой</span>
-            </>
-          ) : (
-            <>
-              <span className="text-amber-600/80 text-xs">◈</span>
-              <span className="font-sans text-[11px] text-amber-700 tracking-wide font-medium">
-                {shownCount === 1 ? "Остава последният брой" : `Остават само ${shownCount} броя`}
-              </span>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Viewer count badge — shown only alongside the low-stock nudge so it
-          reads as social proof rather than a standalone pressure tactic */}
-      {viewerCount !== null && shownCount !== null && shownCount > 0 && shownCount <= PAGE_LOW_STOCK_MAX && (
-        <div className="flex items-center gap-1.5">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#B5451B] animate-pulse flex-shrink-0" />
-          <span className="font-sans text-[11px] text-[#B5451B] tracking-wide">
-            {viewerCount} души разглеждат този продукт в момента
-          </span>
-        </div>
-      )}
 
       {/* Features */}
       <ul className="flex flex-col gap-2.5">

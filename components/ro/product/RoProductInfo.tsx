@@ -212,28 +212,19 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
       : []
   ).filter((v) => RO_SLUGS.includes(v.slug));
 
+  // Live viewers (owner, 15.11.2026: real, not generated): different visitors who opened this product in the last 5 minutes
+  // (app/api/viewers/[slug] on page_views), refreshed every minute. Under 2 the line is hidden.
   useEffect(() => {
-    const pick = () => {
-      const r = Math.random();
-      if (r < 0.12) return 2;
-      if (r < 0.80) return 3 + Math.floor(Math.random() * 6);
-      return 9 + Math.floor(Math.random() * 6);
-    };
-    let current = pick();
-    setViewerCount(current);
-    let timerId: number;
-    const schedule = () => {
-      timerId = window.setTimeout(() => {
-        const drift = 1 + Math.floor(Math.random() * 2);
-        const dir = Math.random() < 0.5 ? -1 : 1;
-        current = Math.min(14, Math.max(2, current + dir * drift));
-        setViewerCount(current);
-        schedule();
-      }, 45000 + Math.random() * 15000);
-    };
-    schedule();
-    return () => window.clearTimeout(timerId);
-  }, []);
+    let alive = true;
+    const load = () =>
+      fetch(`/api/viewers/${product.slug}`)
+        .then((r) => r.json())
+        .then((d) => { if (alive) setViewerCount(typeof d.count === "number" ? d.count : null); })
+        .catch(() => {});
+    load();
+    const id = window.setInterval(load, 60000);
+    return () => { alive = false; window.clearInterval(id); };
+  }, [product.slug]);
 
   // Small colour groups (watches, wallets: 3): warm the other colours' main photo once the page has settled.
   // Big groups (cardholders: 11) only on touch/hover, so a phone doesn't download photos it may never look at.
@@ -604,7 +595,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         </div>
       )}
 
-      {viewerCount !== null && shownCount !== null && shownCount > 0 && shownCount <= PAGE_LOW_STOCK_MAX && (
+      {viewerCount !== null && viewerCount >= 2 && shownCount !== null && shownCount > 0 && shownCount <= PAGE_LOW_STOCK_MAX && (
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#B5451B] animate-pulse flex-shrink-0" />
           <span className="font-sans text-[11px] text-[#B5451B] tracking-wide">
