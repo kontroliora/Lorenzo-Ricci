@@ -750,9 +750,8 @@ const catalog: Product[] = [
     sku: "WLT-RUB",
     name: 'Lorenzo Ricci "Rubino"',
     category: "wallets",
-    // Early Black Friday 2026-10-30: €178 → €139. originalPrice = €178.
-    price: 139,
-    originalPrice: 178,
+    // Discount removed 2026-11-15 (owner): plain €178, no crossed-out price - same as Smeraldo.
+    price: 178,
     priceAED: 1200,
     currency: "€",
     // Sold out 2026-11-11 (owner): off switch - page stays live, not buyable, OutOfStock in JSON-LD / Meta catalogue.
