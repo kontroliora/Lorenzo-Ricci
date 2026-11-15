@@ -1471,8 +1471,8 @@ const catalog: Product[] = [
     sku: "CLU-TOSCANA",
     name: 'Lorenzo Ricci "Toscana"',
     category: "bags",
-    // 2026-10-31: raised to €349 (Torino/Verona/Portofino stay at €299). Badge changed to savings label.
-    price: 349,
+    // 2026-10-31: raised to €349; 2026-11-15 (owner): back to €299 like every evening clutch.
+    price: 299,
     originalPrice: 749,
     currency: "€",
     badge: "РАНЕН ЧЕРЕН ПЕТЪК",
@@ -1563,8 +1563,8 @@ const catalog: Product[] = [
     sku: "CLU-CAPRI",
     name: 'Lorenzo Ricci "Capri"',
     category: "bags",
-    // 2026-10-31: raised to €349 (Torino/Verona/Portofino stay at €299). Badge changed to savings label.
-    price: 349,
+    // 2026-10-31: raised to €349; 2026-11-15 (owner): back to €299 like every evening clutch.
+    price: 299,
     originalPrice: 749,
     currency: "€",
     badge: "РАНЕН ЧЕРЕН ПЕТЪК",
