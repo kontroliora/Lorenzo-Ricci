@@ -12,7 +12,7 @@ const str = (v: unknown, max = 300) => String(v ?? "").trim().slice(0, max);
 export type RoCapiContext = CapiContext;
 
 /** `kind` = a CUSTOMER e-mail (Romanian templates, language rule in lib/mail-policy.ts); leave it out for the Bulgarian team e-mail. */
-export async function sendMail(opts: { from: string; to: string[]; subject: string; html: string }, kind?: MailKind): Promise<void> {
+export async function sendMail(opts: { from: string; to: string[]; subject: string; html: string; replyTo?: string }, kind?: MailKind): Promise<void> {
   if (kind && !mayEmail(kind, "ro", "ro")) return;
   const key = process.env.RESEND_API_KEY;
   if (!key) { console.warn("[order-ro] RESEND_API_KEY not set - skipping e-mail"); return; }

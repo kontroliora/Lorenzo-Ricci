@@ -4,7 +4,7 @@ import { isValidFullName, FULL_NAME_ERROR_BG } from "@/lib/full-name";
 import { insertOrderResilient } from "@/lib/order-insert";
 import { langOf, mayEmail } from "@/lib/mail-policy";
 import { supabase } from "@/lib/supabase";
-import { buildAdminEmail, buildCustomerEmail, sendAdminEmail, sendCustomerEmail, sendCapiPurchase, type CapiContext } from "@/lib/order-notify";
+import { buildAdminEmail, buildCustomerEmail, customerSubjects, sendAdminEmail, sendCustomerEmail, sendCapiPurchase, type CapiContext } from "@/lib/order-notify";
 import { notifyPartnerOnce } from "@/lib/partner/email";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { CARD_PAYMENTS_ENABLED, PENDING_PAYMENT } from "@/lib/payments";
@@ -382,7 +382,7 @@ export async function POST(req: NextRequest) {
       // The customer's confirmation is the BULGARIAN template: it only goes to a Bulgarian recipient (a Romanian order has its own
       // route, /api/order-ro, with a Romanian e-mail). Never a Bulgarian text to a Romanian.
       ...(customerAddress && mayEmail("order_confirmation", langOf({ order_ref: String(order.orderRef ?? "") }), "bg")
-        ? [sendCustomerEmail(customerAddress, buildCustomerEmail(savedOrder), undefined, { kind: "order_confirmation", lang: langOf({ order_ref: String(order.orderRef ?? "") }) })]
+        ? [sendCustomerEmail(customerAddress, buildCustomerEmail(savedOrder), customerSubjects.received(String(order.orderRef ?? "")), { kind: "order_confirmation", lang: langOf({ order_ref: String(order.orderRef ?? "") }) })]
         : []),
       // Meta's Purchase value is the server-validated amount, not the browser's number.
       sendCapiPurchase(order, String(order.orderRef ?? ""), pricing.total, capiCtx),

@@ -11,20 +11,20 @@ const on = await L("lib/order-notify.ts"), sh = await L("lib/shipment-emails.ts"
 const ro = await L("lib/ro/emails.ts"), rorec = await L("lib/ro/recovery-email.ts"), pe = await L("lib/partner/email.ts");
 const wl = await L("lib/waitlist-email.ts"), nc = await L("lib/new-collection.ts");
 const slug = [...nc.NEW_COLLECTION_SLUGS][0];
-const bgOrder = { customer: { name: "Иван Петров", email: "x", phone: "0888123456", officeAddress: "Еконт офис София - Младост 1, бул. Ал. Малинов 23", shippingMethod: "Еконт - до офис" },
+const bgOrder = { orderRef: "LR-A9XTB6UZ", customer: { name: "Иван Петров", email: "x", phone: "0888123456", officeAddress: "Еконт офис София - Младост 1, бул. Ал. Малинов 23", shippingMethod: "Еконт - до офис" },
   shipping: { method: "Еконт - до офис" }, items: [{ name: "Yachting Black", quantity: 1, price: 89, currency: "€" }, { name: "Кожена кутия (подарък)", quantity: 1, price: 0, gift: true }], total: 89 };
 const sd = { firstName: "Иван", ref: "LR-104233", items: [{ name: "Yachting Black", qty: 1, price: 89, currency: "€" }], total: "89.00", currency: "€", tracking: "1051234567890", trackUrl: sh.trackPageUrl("1051234567890"), officeName: "Еконт София - Младост 1" };
 const roData = { orderRef: "LRRO-20412", customer: { name: "Andrei Popescu", phone: "0722", email: "x", county: "Cluj", city: "Cluj-Napoca", address: "Str. Memorandumului 12", postCode: "400114" },
   items: [{ name: "Yachting Black", sku: "LR-YB", quantity: 1, price: 449 }], subtotal: 449, shippingCost: 0, total: 449 };
 const roLines = roData.items;
 const T = [
-  ["bg-order-confirmation", "Вашата поръчка е получена - Lorenzo Ricci", on.buildCustomerEmail(bgOrder)],
-  ["bg-card-paid", "Плащането е получено - Lorenzo Ricci", on.buildCustomerEmail(bgOrder, { paidByCard: true })],
+  ["bg-order-confirmation", on.customerSubjects.received("LR-A9XTB6UZ"), on.buildCustomerEmail(bgOrder)],
+  ["bg-card-paid", on.customerSubjects.paid("LR-A9XTB6UZ"), on.buildCustomerEmail(bgOrder, { paidByCard: true })],
   ["bg-shipped", sh.shipmentSubjects.shipped(sd.ref), sh.buildShippedEmail(sd)],
   ["bg-reminder-office", sh.shipmentSubjects.reminder(sd.ref), sh.buildReminderOfficeEmail(sd)],
   ["bg-reminder-door", sh.shipmentSubjects.reminder(sd.ref) + " (door)", sh.buildReminderDoorEmail(sd)],
   ["bg-cart-recovery", "Вашата количка Ви очаква - Lorenzo Ricci", rec.buildRecoveryEmail({ session_id: "test", email: "x", name: "Иван Петров", phone: null, items: [{ name: "Yachting Black", sku: "LR-YB", price: 89, currency: "€", quantity: 1 }], subtotal: 89, updated_at: new Date().toISOString() })],
-  ["ro-card-paid", ro.roPaidSubject, ro.buildRoCustomerEmail(roData)],
+  ["ro-card-paid", ro.roPaidSubject("LRRO-TEST1234"), ro.buildRoCustomerEmail(roData)],
   ["ro-confirmed", ro.roConfirmedSubject?.("LRRO-20412") ?? "Comanda a fost confirmată", ro.buildRoConfirmedEmail({ orderRef: "LRRO-20412", firstName: "Andrei", items: roLines, total: 449, payment: "card" })],
   ["ro-shipped", ro.roShippedSubject("LRRO-20412"), ro.buildRoShippedEmail({ orderRef: "LRRO-20412", firstName: "Andrei", items: roLines, total: 449, payment: "card", awb: "60012345678", trackUrl: "https://lorenzo-ricci.com/ro" })],
   ["ro-delivered", ro.roDeliveredSubject?.("LRRO-20412") ?? "Comanda a fost livrată", ro.buildRoDeliveredEmail({ orderRef: "LRRO-20412", firstName: "Andrei" })],

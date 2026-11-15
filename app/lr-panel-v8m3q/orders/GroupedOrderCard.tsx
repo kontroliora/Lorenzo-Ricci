@@ -57,6 +57,7 @@ export function GroupedOrderCard({
   const allItems = sorted.flatMap((o) => o.items ?? []);
   const promoCodes = Array.from(new Set(sorted.map((o) => o.promo_code).filter(Boolean))) as string[];
   const digits = (last.phone ?? "").replace(/[^\d+]/g, "");
+  const groupEmails = [...new Set(orders.map((o) => (o.email ?? "").trim()).filter(Boolean))];
 
   // Summed стока/доставка — only when EVERY order in the group has a reconciling
   // split, else a mix of legacy + new rows would under-count. Falls back to the
@@ -112,7 +113,13 @@ export function GroupedOrderCard({
       </div>
 
       {/* Phone */}
-      <a href={`tel:${digits}`} style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "#85B7EB", fontSize: 18, fontWeight: 500, textDecoration: "none", margin: "12px 0" }}>☎ {last.phone || "—"}</a>
+      <a href={`tel:${digits}`} style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "#85B7EB", fontSize: 18, fontWeight: 500, textDecoration: "none", margin: "12px 0 4px" }}>☎ {last.phone || "—"}</a>
+      {/* E-mail(s) of the grouped orders (owner + employee only) */}
+      <div style={{ margin: "0 0 12px", fontSize: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+        {groupEmails.length > 0
+          ? groupEmails.map((e) => <a key={e} href={`mailto:${e}`} style={{ color: "#85B7EB", textDecoration: "none", wordBreak: "break-all" }}>✉ {e}</a>)
+          : <span style={{ color: "rgba(255,255,255,0.35)" }}>✉ няма имейл</span>}
+      </div>
 
       {/* Details */}
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>

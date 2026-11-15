@@ -55,3 +55,16 @@ export function emailHeaderRow(_width = 560): string {
         ${emailLogo()}
       </td></tr>`;
 }
+
+/** Where customers reply: every order e-mail carries Reply-To so the answer lands in our inbox with "Re: Поръчка LR-…". */
+export const ORDER_REPLY_TO = "info@lorenzo-ricci.com";
+
+/** The order number, big, at the very top of a customer order e-mail (a table row right under the header). */
+export function emailOrderRefRow(ref: string, label: string): string {
+  const r = String(ref ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+  if (!r) return "";
+  return `<tr><td align="center" style="padding:28px 40px 0;text-align:center">
+        <p style="margin:0 0 6px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#888">${label}</p>
+        <p style="margin:0;font-family:Georgia,serif;font-size:28px;line-height:1.2;font-weight:bold;letter-spacing:.06em;color:${EMAIL_NAVY}">${r}</p>
+      </td></tr>`;
+}

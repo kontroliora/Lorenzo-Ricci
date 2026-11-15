@@ -3,7 +3,7 @@ import { Resend } from "resend";
 import { buildUserData, eventSourceUrl, mayPostPurchase, sendCapiEvents, type CapiContext } from "@/lib/meta-capi";
 import { mayEmail, type MailKind, type MailLang } from "./mail-policy";
 import { onePlusOneOfOrder } from "./one-plus-one";
-import { emailHead, emailHeaderRow } from "@/lib/email-layout";
+import { emailHead, emailHeaderRow, emailOrderRefRow, ORDER_REPLY_TO } from "@/lib/email-layout";
 
 // The 1+1 part of the order's discounts (lib/one-plus-one.ts), read back from its own lines: lines - goods after discounts - promo.
 const onePlusOneOf = (order: Record<string, unknown>): number => {
@@ -175,10 +175,11 @@ ${emailHead("Вашата поръчка от Lorenzo Ricci")}
           <!-- Header -->
           ${emailHeaderRow(560)}
           <tr><td style="padding:0 40px;line-height:0;font-size:0"><div style="border-top:1px solid #e8dfc8"></div></td></tr>
+          ${emailOrderRefRow(String(order.orderRef ?? ""), "Номер на поръчката")}
 
           <!-- Body -->
           <tr>
-            <td style="padding:40px 40px 0">
+            <td style="padding:32px 40px 0">
               <p style="margin:0 0 6px;font-family:'Georgia',serif;font-size:22px;color:#0a0e1f">Благодарим Ви, ${firstName}!</p>
               <p style="margin:0 0 28px;color:#666;font-size:14px;line-height:1.6">${opts.paidByCard
                 ? "Плащането Ви с карта е получено, благодарим Ви! Подготвяме поръчката за изпращане. Доставка за 1–2 работни дни с Еконт. Не се дължи плащане при доставка."
@@ -308,6 +309,12 @@ export async function sendAdminEmail(subject: string, html: string): Promise<voi
  * The customer's e-mail. `policy` is the language rule (CLAUDE.md, lib/mail-policy.ts): the kind of mail, the RECIPIENT's language and
  * the language of the template. The templates here are Bulgarian: a Romanian recipient is never mailed one (the call simply does nothing).
  */
+/** Customer subjects: the order number is always in them, so a reply arrives as "Re: Поръчка LR-…". */
+export const customerSubjects = {
+  received: (ref: string) => `Поръчка ${ref} е приета – Lorenzo Ricci`,
+  paid: (ref: string) => `Поръчка ${ref} – плащането е получено – Lorenzo Ricci`,
+};
+
 export async function sendCustomerEmail(
   to: string, html: string, subject = "Вашата поръчка е получена - Lorenzo Ricci",
   policy: { kind: MailKind; lang: MailLang } = { kind: "order_confirmation", lang: "bg" },
@@ -318,6 +325,7 @@ export async function sendCustomerEmail(
   const { error } = await resend.emails.send({
     from:    "Lorenzo Ricci <info@lorenzo-ricci.com>",
     to,
+    replyTo: ORDER_REPLY_TO,
     subject,
     html,
   });

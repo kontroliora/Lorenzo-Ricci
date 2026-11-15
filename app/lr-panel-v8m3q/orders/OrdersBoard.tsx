@@ -53,6 +53,8 @@ function orderMatches(o: AdminOrder, rawQuery: string): boolean {
   if (!q) return false;
   // name (keeps Cyrillic)
   if ((o.name ?? "").toLowerCase().includes(q)) return true;
+  // e-mail (full or partial, case-insensitive)
+  if ((o.email ?? "").toLowerCase().includes(q)) return true;
   // product name / slug
   if ((o.items ?? []).some((it) =>
     (it.name ?? "").toLowerCase().includes(q) || (it.slug ?? "").toLowerCase().includes(q)
@@ -493,7 +495,7 @@ function SearchBox({
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Търси по име, телефон, номер или продукт…"
+        placeholder="Търси по име, телефон, имейл, номер или продукт…"
         aria-label="Търси в поръчките"
         style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", color: "#fff", fontSize: 14 }}
       />

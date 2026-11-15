@@ -4,6 +4,7 @@
 // mail-policy: shipment_shipped, shipment_reminder
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
+import { ORDER_REPLY_TO } from "@/lib/email-layout";
 import { langOf, mayEmail } from "@/lib/mail-policy";
 import { hasCardMoney } from "@/lib/payments";
 import { getRawStatuses, analyzeShipment } from "./econt";
@@ -121,7 +122,7 @@ export async function sendShipConfirmations(sb: SupabaseClient): Promise<{ sent:
     const d = a.atFinalOffice
       ? { ...toEmailData(o, clean(o.tracking_number), await officeText(a.finalOfficeCode, a.officeName)), atOffice: true }
       : toEmailData(o, clean(o.tracking_number));
-    const { error: e } = await resend.emails.send({ from: FROM, to: [o.email!], subject: shipmentSubjects.shipped(d.ref), html: buildShippedEmail(d) });
+    const { error: e } = await resend.emails.send({ from: FROM, to: [o.email!], replyTo: ORDER_REPLY_TO, subject: shipmentSubjects.shipped(d.ref), html: buildShippedEmail(d) });
     if (e) {
       console.error("[ship] email failed", o.id, e.message);
       const { error: relErr } = await sb.from("orders").update({ ship_email_sent_at: null }).eq("id", o.id).eq("ship_email_sent_at", nowIso);
@@ -172,7 +173,7 @@ export async function sendReminders(sb: SupabaseClient): Promise<{ sent: number;
     if (!officeCase && !doorCase) continue;
     const d = toEmailData(o, clean(o.tracking_number), a.officeName);
     const html = doorCase ? buildReminderDoorEmail(d) : buildReminderOfficeEmail(d);
-    const { error: e } = await resend.emails.send({ from: FROM, to: [o.email!], subject: shipmentSubjects.reminder(d.ref), html });
+    const { error: e } = await resend.emails.send({ from: FROM, to: [o.email!], replyTo: ORDER_REPLY_TO, subject: shipmentSubjects.reminder(d.ref), html });
     if (e) { console.error("[reminder] email failed", o.id, e.message); continue; }
     await sb.from("orders").update({ reminder_sent_at: nowIso }).eq("id", o.id);
     sent++;

@@ -3,7 +3,8 @@ import { SITE_ORIGIN } from "./meta-capi";
 import { supabaseAdmin } from "./supabase-admin";
 import type { OrderRow } from "./payment-orders";
 import { langOf } from "./mail-policy";
-import { buildAdminEmail, buildCustomerEmail, sendAdminEmail, sendCustomerEmail, sendCapiPurchase } from "./order-notify";
+import { buildAdminEmail, buildCustomerEmail, customerSubjects, sendAdminEmail, sendCustomerEmail, sendCapiPurchase } from "./order-notify";
+import { ORDER_REPLY_TO } from "./email-layout";
 import { onePlusOneOfOrder } from "./one-plus-one";
 import { notifyPartnerOnce } from "./partner/email";
 import { buildRoAdminEmail, buildRoCustomerEmail, roPaidSubject, type RoOrderEmailData } from "./ro/emails";
@@ -62,7 +63,7 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
     const names = ["team e-mail", ...(email ? ["customer e-mail"] : []), "Meta Purchase", "partner e-mail"];
     const r = await Promise.allSettled([
       within(sendMail({ from: "Lorenzo Ricci Orders <orders@lorenzo-ricci.com>", to: RO_ADMIN_RECIPIENTS, subject: `💳🇷🇴 Платена поръчка (Румъния) - ${name} - ${order.order_ref}`, html: buildRoAdminEmail(data, undefined, { paidByCard: true }) }), "team e-mail"),
-      ...(email ? [within(sendMail({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [email], subject: roPaidSubject, html: buildRoCustomerEmail(data) }, "card_paid"), "customer e-mail")] : []),
+      ...(email ? [within(sendMail({ from: "Lorenzo Ricci <info@lorenzo-ricci.com>", to: [email], replyTo: ORDER_REPLY_TO, subject: roPaidSubject(order.order_ref), html: buildRoCustomerEmail(data) }, "card_paid"), "customer e-mail")] : []),
       within(sendRoCapiPurchase({ ...data, skus: paidLines.map((i) => String(i.sku ?? "")).filter(Boolean) }, ctx), "Meta Purchase"),
       within(notifyPartnerOnce(order.order_ref).then((r) => { if (r === "failed") throw new Error("partner e-mail failed (Telegram alert sent)"); }), "partner e-mail"),
     ]);
@@ -86,7 +87,7 @@ export async function notifyPaid(order: OrderRow, meta: Record<string, string> =
   const names = ["team e-mail", ...(email ? ["customer e-mail"] : []), "Meta Purchase", "partner e-mail"];
   const r = await Promise.allSettled([
     within(sendAdminEmail(`💳 Платена поръчка - ${name}`, buildAdminEmail(orderObj, null, { paidByCard: true })), "team e-mail"),
-    ...(email ? [within(sendCustomerEmail(email, buildCustomerEmail(orderObj, { paidByCard: true }), "Плащането е получено - Lorenzo Ricci", { kind: "card_paid", lang: langOf(order) }), "customer e-mail")] : []),
+    ...(email ? [within(sendCustomerEmail(email, buildCustomerEmail(orderObj, { paidByCard: true }), customerSubjects.paid(order.order_ref), { kind: "card_paid", lang: langOf(order) }), "customer e-mail")] : []),
     within(sendCapiPurchase({ ...orderObj, items: paidLines }, order.order_ref, Number(order.total ?? 0), ctx), "Meta Purchase"),
     within(notifyPartnerOnce(order.order_ref).then((r) => { if (r === "failed") throw new Error("partner e-mail failed (Telegram alert sent)"); }), "partner e-mail"),
   ]);

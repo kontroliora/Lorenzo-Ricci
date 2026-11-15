@@ -5,6 +5,7 @@
 // changed, and only for Romanian orders: for any other order (Bulgarian) this does nothing, so no Bulgarian text can reach a Romanian
 // customer and no Romanian text a Bulgarian one. A mail problem never undoes the status change: it comes back as a warning text.
 import { Resend } from "resend";
+import { ORDER_REPLY_TO } from "@/lib/email-layout";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { langOf, mayEmail, type MailKind } from "@/lib/mail-policy";
 import { hasCardMoney, isCard } from "@/lib/payments";
@@ -60,7 +61,7 @@ export async function sendRoPanelMail(sb: SupabaseClient, orderId: number, mail:
   try {
     const key = process.env.RESEND_API_KEY;
     if (!key) throw new Error("RESEND_API_KEY липсва");
-    const { error: mailErr } = await new Resend(key).emails.send({ from: FROM, to: [o.email], subject, html });
+    const { error: mailErr } = await new Resend(key).emails.send({ from: FROM, to: [o.email], replyTo: ORDER_REPLY_TO, subject, html });
     if (mailErr) throw new Error(mailErr.message);
     return null;
   } catch (e) {

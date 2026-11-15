@@ -1,7 +1,7 @@
 // Transactional shipment / uncollected-parcel emails (Resend). Plain, personal,
 // premium - designed to land in the inbox, not read as marketing. No caps for
 // emphasis, no exclamation, no "buy". One CTA (own /track page), one logo.
-import { emailHead, emailHeaderRow } from "@/lib/email-layout";
+import { emailHead, emailHeaderRow, emailOrderRefRow } from "@/lib/email-layout";
 
 export interface ShipmentItem {
   name: string;
@@ -25,8 +25,8 @@ export interface ShipmentEmailData {
 }
 
 export const shipmentSubjects = {
-  shipped: (ref: string) => `Поръчка ${ref} е изпратена`,
-  reminder: (ref: string) => `Пратката Ви очаква в офис на Еконт (${ref})`,
+  shipped: (ref: string) => `Поръчка ${ref} е изпратена – Lorenzo Ricci`,
+  reminder: (ref: string) => `Поръчка ${ref} – пратката Ви очаква в офис на Еконт`,
 };
 
 // All emails point to our own branded page, never econt.com.
@@ -46,7 +46,8 @@ function shell(d: ShipmentEmailData, preheader: string, bodyHtml: string): strin
     <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#fff;max-width:560px;width:100%">
       ${emailHeaderRow(560)}
       <tr><td style="padding:0;line-height:0;font-size:0"><div style="height:2px;background:linear-gradient(to right,#b8944a,#d4af6a,#e8c878,#d4af6a,#b8944a)"></div></td></tr>
-      <tr><td style="padding:40px 40px 8px">${bodyHtml}</td></tr>
+      ${emailOrderRefRow(d.ref, "Номер на поръчката")}
+      <tr><td style="padding:32px 40px 8px">${bodyHtml}</td></tr>
       <tr><td style="padding:24px 40px 40px;text-align:center">
         <div style="border-top:1px solid #e8dfc8;padding-top:24px">
           <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:13px;color:${NAVY};letter-spacing:.08em">LORENZO RICCI</p>

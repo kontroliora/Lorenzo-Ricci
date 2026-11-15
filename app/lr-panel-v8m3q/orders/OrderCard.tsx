@@ -218,13 +218,18 @@ export function OrderCard({
       </div>
 
       {/* Phone */}
-      <a href={`tel:${digits}`} style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "#85B7EB", fontSize: 18, fontWeight: 500, textDecoration: "none", margin: "12px 0 12px" }}>☎ {order.phone || "—"}</a>
+      <a href={`tel:${digits}`} style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "#85B7EB", fontSize: 18, fontWeight: 500, textDecoration: "none", margin: "12px 0 4px" }}>☎ {order.phone || "—"}</a>
+      {/* E-mail (owner + employee only; the partner view never gets it, lib/partner/orders.ts) */}
+      <div style={{ margin: "0 0 12px", fontSize: 14 }}>
+        {order.email
+          ? <a href={`mailto:${order.email}`} style={{ color: "#85B7EB", textDecoration: "none", wordBreak: "break-all" }}>✉ {order.email}</a>
+          : <span style={{ color: "rgba(255,255,255,0.35)" }}>✉ няма имейл</span>}
+      </div>
 
       {/* Details */}
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
         <OrderItemsList items={order.items ?? []} />
         <div style={{ color: "#fff" }}>{ro ? (isRoOfficeMethod(order.shipping_method) ? "Locker / офис на Speedy (Румъния)" : "Куриер до адрес (Румъния)") : (order.shipping_method || (order.courier === "home" ? "Еконт до адрес" : "Еконт до офис"))} — {order.address || "—"}{order.city ? `, ${order.city}` : ""}{ro && order.post_code ? `, ${order.post_code}` : ""}</div>
-        {ro && order.email && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{order.email}</div>}
         {showBreakdown && (
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2, display: "flex", gap: 14, flexWrap: "wrap" }}>
             <span>Стока: <span style={{ color: "rgba(255,255,255,0.8)" }}>{money(codSub!)}</span></span>

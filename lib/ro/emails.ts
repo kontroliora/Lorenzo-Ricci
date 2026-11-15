@@ -1,7 +1,7 @@
 // Romania market: e-mails. Customer mails are in Romanian, the team mail stays in Bulgarian (the team reads it).
 // Pure builders: no sending here (app/api/order-ro/route.ts and the panel action send them).
 import { fmtRON, RO_DELIVERY_DAYS, RO_COURIER_LABEL, RO_RETURN_DAYS } from "./config";
-import { emailHead, emailHeaderRow } from "@/lib/email-layout";
+import { emailHead, emailHeaderRow, emailOrderRefRow } from "@/lib/email-layout";
 
 export type RoOrderLine = { name?: string; sku?: string; quantity?: number; price?: number };
 export type RoOrderEmailData = {
@@ -23,8 +23,9 @@ const setPart = (o: Pick<RoOrderEmailData, "discount" | "onePlusOne">): number =
 const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const NAVY = "#0a0e1f";
 
-export const roPaidSubject = "Plata a fost primită - Lorenzo Ricci";
-export const roShippedSubject = (ref: string) => `Comanda ${ref} a fost expediată`;
+// The order number is in every customer subject, so a reply arrives as "Re: Comanda LRRO-…".
+export const roPaidSubject = (ref: string) => `Comanda ${ref} – plata a fost primită – Lorenzo Ricci`;
+export const roShippedSubject = (ref: string) => `Comanda ${ref} a fost expediată – Lorenzo Ricci`;
 
 // Dark-mode safe shell (lib/email-layout.ts): the header is the opaque PNG with the white wordmark baked in.
 function shell(title: string, bodyHtml: string, ref: string): string {
@@ -35,7 +36,8 @@ function shell(title: string, bodyHtml: string, ref: string): string {
 <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;max-width:560px;width:100%">
   ${emailHeaderRow(560)}
   <tr><td style="padding:0 40px;line-height:0;font-size:0"><div style="border-top:1px solid #e8dfc8"></div></td></tr>
-  <tr><td style="padding:40px 40px 0">${bodyHtml}</td></tr>
+  ${emailOrderRefRow(ref, "Numărul comenzii")}
+  <tr><td style="padding:32px 40px 0">${bodyHtml}</td></tr>
   <tr><td style="padding:32px 40px 40px;text-align:center"><div style="border-top:1px solid #e8dfc8;padding-top:28px">
     <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:13px;color:${NAVY};letter-spacing:.08em">LORENZO RICCI</p>
     <p style="margin:0;font-size:11px;color:#aaa;line-height:1.8">info@lorenzo-ricci.com<br><a href="https://lorenzo-ricci.com/ro" style="color:#aaa;text-decoration:none">lorenzo-ricci.com/ro</a></p>
@@ -112,10 +114,10 @@ export function buildRoShippedEmail(d: { orderRef: string; firstName: string; it
 }
 
 // ── Customer: status e-mails sent from the panel (Romanian only; see lib/ro/panel-mail.ts) ──────────────────────────────────
-export const roConfirmedSubject = (ref: string) => `Comanda ${ref} a fost confirmată`;
-export const roCancelledSubject = (ref: string) => `Comanda ${ref} a fost anulată`;
-export const roDeliveredSubject = (ref: string) => `Comanda ${ref} a fost livrată`;
-export const roReturnedSubject = (ref: string) => `Comanda ${ref} - coletul s-a întors la noi`;
+export const roConfirmedSubject = (ref: string) => `Comanda ${ref} a fost confirmată – Lorenzo Ricci`;
+export const roCancelledSubject = (ref: string) => `Comanda ${ref} a fost anulată – Lorenzo Ricci`;
+export const roDeliveredSubject = (ref: string) => `Comanda ${ref} a fost livrată – Lorenzo Ricci`;
+export const roReturnedSubject = (ref: string) => `Comanda ${ref} – coletul s-a întors la noi – Lorenzo Ricci`;
 
 const greet = (firstName: string) => `<p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Bună ziua, ${esc(firstName || "client")},</p>`;
 const para = (html: string, bottom = 24) => `<p style="margin:0 0 ${bottom}px;color:#666;font-size:14px;line-height:1.7">${html}</p>`;
