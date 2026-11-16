@@ -177,9 +177,15 @@ export function OrdersBoard({
   // The payment filters combine with the tabs, the summary counters and the search.
   const real = salesOrders.filter((o) => matchesPayment(o, payMethod, payState) && (!partnerOnly || !!o.partner_mark));
   const markedCount = salesOrders.filter((o) => !!o.partner_mark).length;
-  const fake = orders.filter((o) => o.excluded_from_stock && inMarket(o));
+  // "Фалшиви": every order marked fake/test, newest mark first (the time comes from order_status_log; without it, the order date).
+  const markedAtMs = (o: AdminOrder) => {
+    const row = [...(log[o.id] ?? [])].reverse().find((r) => r.old_status === "маркиране" && r.new_status === "фалшива/тестова");
+    return new Date(row?.changed_at ?? o.created_at).getTime();
+  };
+  const fake = orders.filter((o) => o.excluded_from_stock && inMarket(o)).sort((a, b) => markedAtMs(b) - markedAtMs(a));
+  const fakeRecent = fake.filter((o) => now - markedAtMs(o) <= 14 * 86_400_000).length;
   const marketCount = (m: MarketFilter) => orders.filter((o) => !o.excluded_from_stock && notLead(o) && !isUnpaidCardAttempt(o) && (m === "all" || marketOf(o) === m)).length;
-  const openTab = (t: Tab) => { setTab(t); setShowPending(false); setShowCarts(false); };
+  const openTab = (t: Tab) => { setTab(t); setShowPending(false); setShowCarts(false); setShowFake(false); };
   // Abandoned carts are Bulgarian: the view and its chip disappear under the Romania filter.
   const cartsOpen = showCarts && market !== "ro";
   const cartsRecent = carts.filter((c) => cartSection(c.updatedAt, now) === "recent").length;
@@ -319,7 +325,7 @@ export function OrdersBoard({
               + Създай поръчка
             </button>
             {TABS.map((t) => {
-              const active = !showPending && !cartsOpen && tab === t.key;
+              const active = !showPending && !cartsOpen && !showFake && tab === t.key;
               const c = count(t.key);
               return (
                 <button
@@ -342,7 +348,7 @@ export function OrdersBoard({
             {/* Unpaid card attempts: not orders, read-only, shown only here */}
             {(openAttempts.length > 0 || deadAttempts.length > 0 || showPending) && (
               <button
-                onClick={() => { setShowPending(true); setShowCarts(false); }}
+                onClick={() => { setShowPending(true); setShowCarts(false); setShowFake(false); }}
                 aria-current={showPending ? "page" : undefined}
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 6,
@@ -355,10 +361,27 @@ export function OrdersBoard({
                 Чакат плащане · {openAttempts.length}
               </button>
             )}
+            {/* Orders marked "Фалшива": hidden from every tab and from the turnover; here they can be checked and put back with "Върни" */}
+            {(fake.length > 0 || showFake) && (
+              <button
+                onClick={() => { setShowFake(true); setShowPending(false); setShowCarts(false); }}
+                aria-current={showFake ? "page" : undefined}
+                data-testid="fake-chip"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  background: showFake ? "rgba(211,209,199,0.14)" : "transparent",
+                  border: `${showFake ? "1px" : "0.5px"} dashed ${showFake ? "#D3D1C7" : "rgba(255,255,255,0.25)"}`,
+                  borderRadius: 20, padding: "5px 12px", cursor: "pointer",
+                  fontSize: 11, color: showFake ? "#D3D1C7" : "rgba(255,255,255,0.5)",
+                }}
+              >
+                Фалшиви · {fake.length}
+              </button>
+            )}
             {/* Saved carts with a phone and no order: to be phoned (Bulgaria only). Always visible under Всички / България: it also holds the "засядания в чекаута" strip. */}
             {market !== "ro" && (
               <button
-                onClick={() => { setShowCarts(true); setShowPending(false); }}
+                onClick={() => { setShowCarts(true); setShowPending(false); setShowFake(false); }}
                 aria-current={cartsOpen ? "page" : undefined}
                 data-testid="carts-chip"
                 style={{
@@ -392,6 +415,18 @@ export function OrdersBoard({
           <>
             {cartsOpen ? (
               <AbandonedCartsView carts={carts} now={now} onNotice={setNotice} stuck={stuck} />
+            ) : showFake ? (
+              <>
+                <SectionHeader label={`Фалшиви · ${fake.length}`} color="#D3D1C7" />
+                <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, margin: 0 }}>
+                  Маркирани като фалшиви/тестови: скрити са от всички подтабове, от оборота и от наличността (статусът им не е променян).
+                  Ако е станало по грешка, натисни „Върни“ - поръчката се връща в същия подтаб, а действието се записва в историята.
+                  {fake.length > 0 && <> За последните 14 дни: <span style={{ color: "#fff" }}>{fakeRecent}</span>.</>}
+                </p>
+                {fake.length === 0
+                  ? <Empty text="Няма маркирани като фалшиви." />
+                  : fake.map(card)}
+              </>
             ) : showPending ? (
               <>
                 <SectionHeader label={`Чакат плащане · ${openAttempts.length}`} color="#FAC775" />
@@ -454,19 +489,6 @@ export function OrdersBoard({
                   ? <Empty text="Няма поръчки в този подтаб." />
                   : tabOrders.map(card)}
               </>
-            )}
-
-            {/* Fake / test orders — kept out of the working tabs, revealable */}
-            {!showPending && !cartsOpen && fake.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-white/6">
-                <button
-                  onClick={() => setShowFake((s) => !s)}
-                  style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", fontSize: 12, cursor: "pointer", padding: 0 }}
-                >
-                  {showFake ? "▾" : "▸"} {fake.length} маркирани фалшиви / тестови
-                </button>
-                {showFake && <div className="flex flex-col gap-4 mt-3">{fake.map(card)}</div>}
-              </div>
             )}
           </>
         )}

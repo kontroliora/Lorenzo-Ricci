@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { adminDb } from "@/lib/supabase/admin-db";
+import { adminDb, getAdminSession } from "@/lib/supabase/admin-db";
 import { applyOfMark } from "@/lib/partner/marks";
 import { reconcileShippedOrders, matchTrackingNumbers, classifyExistingReturns, markRestocked as markRestockedTx, econtCodAmount, type MatchResult } from "@/lib/econt";
 import { sendShipConfirmations } from "@/lib/shipment-notify";
@@ -435,6 +435,34 @@ export async function checkEcontStatuses(): Promise<{ ok: boolean; message: stri
 // Discrete "mark as fake / test" toggle — excludes the order from stock entirely.
 export async function setFake(id: number, fake: boolean): Promise<string | null> {
   return patchOrder(id, { excluded_from_stock: fake });
+}
+
+// "Върни" (owner, 16.11.2026): takes a wrongly marked order out of "Фалшиви". Marking only sets the flag - the status is never touched -
+// so the order comes back in exactly the status it had. The database trigger writes the history row (маркиране -> върната в реални,
+// with the admin's e-mail); should it not have (trigger missing), the row is written here, so an undo is never unlogged.
+export async function restoreFake(id: number): Promise<string | null> {
+  const supabase = await adminDb();
+  const logRows = async () => (await supabase.from("order_status_log").select("order_id", { count: "exact", head: true }).eq("order_id", id)).count ?? 0;
+  const before = await logRows();
+  const { data, error } = await supabase.from("orders").update({ excluded_from_stock: false }).eq("id", id).eq("excluded_from_stock", true).select("id");
+  if (error) {
+    console.error("[orders] restoreFake error:", error.message);
+    return error.message;
+  }
+  let warning: string | null = null;
+  if (data?.length && (await logRows()) <= before) {
+    const who = await getAdminSession();
+    const { error: logErr } = await supabase.from("order_status_log").insert({
+      order_id: id, old_status: "маркиране", new_status: "върната в реални",
+      changed_by: who?.userId ?? null, changed_by_email: who?.email ?? null, change_number: before + 1,
+    });
+    if (logErr) {
+      console.error("[orders] restoreFake log error:", logErr.message);
+      warning = `Поръчката е върната, но записът в историята не успя: ${logErr.message}`;
+    }
+  }
+  revalidatePath(ORDERS_PATH);
+  return warning;
 }
 
 // ── Manual order creation ("Създай поръчка" — from Viber/Instagram/chat) ──────

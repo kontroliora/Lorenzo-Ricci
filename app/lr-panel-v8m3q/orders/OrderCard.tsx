@@ -14,6 +14,7 @@ import {
   markReturned,
   markRestocked,
   setFake,
+  restoreFake,
   addOrderNote,
 } from "./actions";
 import { callTimer, sofiaHHMM, formatAttemptList, formatAttemptAudit } from "@/lib/callSchedule";
@@ -138,6 +139,8 @@ export function OrderCard({
   const testPay = paidCard && refundPlan(order.stripe_session_id, stripeKey === "live" ? "sk_live_x" : stripeKey === "test" ? "sk_test_x" : "").action === "skip";
   const badge = deadAttempt ? DEAD_ATTEMPT_BADGE : (STATUS_BADGE[order.status] ?? STATUS_BADGE.new);
   const excluded = order.excluded_from_stock;
+  // Who marked it fake and when (order_status_log, owner only): the newest "маркиране → фалшива/тестова" row.
+  const fakeMark = excluded ? [...(log ?? [])].reverse().find((r) => r.old_status === "маркиране" && r.new_status === "фалшива/тестова") : undefined;
   const digits = (order.phone ?? "").replace(/[^\d+]/g, "");
 
   // COD breakdown (стока / доставка / общо). Legacy rows have no subtotal → show
@@ -187,7 +190,11 @@ export function OrderCard({
   const fakeLink = (
     <button
       disabled={pending}
-      onClick={() => run(() => setFake(order.id, true))}
+      onClick={() => {
+        // A slip of the finger must not hide a real order from the turnover: ask first (owner, 16.11.2026).
+        if (!window.confirm("Сигурни ли сте? Поръчката ще бъде скрита от оборота.")) return;
+        run(() => setFake(order.id, true));
+      }}
       style={{ background: "none", border: "none", color: "rgba(255,255,255,0.28)", fontSize: 11, borderBottom: "1px dotted rgba(255,255,255,0.25)", cursor: "pointer", padding: 0 }}
     >
       маркирай като фалшива / тестова
@@ -356,8 +363,12 @@ export function OrderCard({
         </div>
       ) : excluded ? (
         <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", marginTop: 14, paddingTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-          <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>Маркирана като фалшива/тестова · не се брои в наличността</span>
-          <button disabled={pending} onClick={() => run(() => setFake(order.id, false))} style={outlineBtn("rgba(255,255,255,0.2)", "rgba(255,255,255,0.6)")}>Върни в реални</button>
+          <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, lineHeight: 1.6 }}>
+            Маркирана като фалшива/тестова{fakeMark ? ` · ${fakeMark.changed_by_email ?? "—"} · ${fmtDate(fakeMark.changed_at)}` : ""}
+            <br />
+            <span style={{ color: "rgba(255,255,255,0.35)" }}>не се брои в оборота и наличността · с „Върни“ става пак „{badge.label}“</span>
+          </span>
+          <button disabled={pending} onClick={() => run(() => restoreFake(order.id))} style={outlineBtn("#97C459", "#97C459")}>↩ Върни</button>
         </div>
       ) : (
         <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", marginTop: 14, paddingTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
