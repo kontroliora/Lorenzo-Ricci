@@ -5,6 +5,7 @@ import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import { useRoCart } from "@/lib/ro/store";
 import { getProductBySlug } from "@/lib/products";
 import { ronPrice, roNeedsPrepayment } from "@/lib/ro/config";
+import { safeRehydrate } from "@/lib/safe-rehydrate";
 
 // A cart line is a price snapshot taken when it was added. Re-derive each line's lei price from the catalog plus the
 // current price overrides (the same inputs /api/order-ro validates against), so a price change never leaves a customer
@@ -33,7 +34,7 @@ async function repriceCart(): Promise<void> {
 // (the root layout is shared with the Bulgarian site and renders lang="bg").
 export function RoProviders({ children }: { children: ReactNode }) {
   useEffect(() => {
-    void Promise.resolve(useRoCart.persist.rehydrate()).then(repriceCart);
+    void safeRehydrate(useRoCart, repriceCart);
     const html = document.documentElement;
     const previous = html.lang;
     html.lang = "ro";

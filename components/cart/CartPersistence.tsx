@@ -5,6 +5,7 @@ import { getProductBySlug } from "@/lib/products";
 import { opoFixesPrice } from "@/lib/one-plus-one";
 import type { CartItem } from "@/lib/types";
 import { isWatchGiftChoice, watchGiftActive } from "@/lib/watch-gift";
+import { safeRehydrate } from "@/lib/safe-rehydrate";
 
 // Restores the Bulgarian cart saved in the browser (lib/store.ts, "lr-cart") once after mount (owner, 08.11.2026):
 //   1. a saved cart whose reservation ran out (15 min from the first item, the drawer's countdown) is dropped;
@@ -48,7 +49,7 @@ async function revalidate(): Promise<void> {
 
 export function CartPersistence() {
   useEffect(() => {
-    void Promise.resolve(useCartStore.persist.rehydrate()).then(revalidate);
+    void safeRehydrate(useCartStore, revalidate);
   }, []);
   return null;
 }
