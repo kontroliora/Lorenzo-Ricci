@@ -166,9 +166,10 @@ interface ProductInfoProps {
   soldOut?: string[];
   pieceOf?: (slug: string) => Product | undefined;
   onSwitch?: (slug: string) => void;
+  onPickChange?: (slug: string | null) => void; // the free second piece picked in step 2 (null = none), for blocks that depend on it
 }
 
-export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, onSwitch }: ProductInfoProps) {
+export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, onSwitch, onPickChange }: ProductInfoProps) {
   const { addItem, items: cartItems } = useCartStore();
   const [added, setAdded] = useState(false);
   // 1+1 group: the free second item picked on the page (null = none; may be this same model)
@@ -295,10 +296,10 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
 
   // Cap the cart quantity at the LIVE stock (not the static products.ts value)
   // for leather goods, so the +/− stepper and re-adds can't exceed what we hold.
-  const effectiveStock =
   // Until this product's own number arrives, the group's batched live stock (already loaded: the 1+1 picker reads it) stands in -
   // the catalogue's static stock is 0 for the women's collection, which would lock the picker for a moment after every in-place switch.
   const batchedStock = opoStock?.[product.slug];
+  const effectiveStock =
     hasInventory && stockLoaded && walletStock !== null ? walletStock : typeof batchedStock === "number" ? batchedStock : product.stock;
 
   useEffect(() => {
@@ -359,6 +360,9 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
     : [];
   // The pair costs the dearer of the two (the cheaper one is free): €65 for two cardholders, €109 / €115 for jewellery.
   const pickedPrice = picked ? (lookup(picked.slug)?.price ?? product.price) : product.price;
+  // Report the valid pick (not a stale one that became unavailable) to the page.
+  const pickedSlug = picked?.slug ?? null;
+  useEffect(() => { onPickChange?.(pickedSlug); }, [pickedSlug, onPickChange]);
   // The pay line's card price: 5% (max €25) off what the button adds - the 1+1 pair price once a second piece is picked (same base as the checkout).
   const cardGoods = picked ? opoPairPrice(product.price, pickedPrice) : product.price;
   const eurComma = (n: number) => `€${n.toFixed(2).replace(".", ",")}`;

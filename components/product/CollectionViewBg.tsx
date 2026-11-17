@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import type { Product } from "@/lib/types";
 import { getProductBySlug } from "@/lib/products";
 import { opoFixesPrice } from "@/lib/one-plus-one";
-import { CollectionProductView } from "@/components/product/CollectionProductView";
+import { CollectionProductView, useSetSecondPiece } from "@/components/product/CollectionProductView";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductInfo } from "@/components/product/ProductInfo";
 
@@ -17,6 +17,7 @@ export function CollectionViewBg({ pageSlug, priceOverrides, soldOut, reviewCoun
   soldOut: string[];                             // the collection's pieces that cannot be bought (lib/sold-out.ts)
   reviewCounts: Record<string, number>;
 }) {
+  const setSecond = useSetSecondPiece();
   const pieceOf = useCallback((s: string): Product | undefined => {
     const base = getProductBySlug(s);
     if (!base) return undefined;
@@ -30,7 +31,7 @@ export function CollectionViewBg({ pageSlug, priceOverrides, soldOut, reviewCoun
       hrefPrefix="/products/"
       pieceOf={pieceOf}
       renderGallery={(p) => <ProductGallery images={p.images} productName={p.name} />}
-      renderInfo={(p, switchTo) => <ProductInfo product={p} reviewCount={reviewCounts[p.slug] ?? 0} soldOut={soldOut} pieceOf={pieceOf} onSwitch={switchTo} />}
+      renderInfo={(p, switchTo) => <ProductInfo product={p} reviewCount={reviewCounts[p.slug] ?? 0} soldOut={soldOut} pieceOf={pieceOf} onSwitch={switchTo} onPickChange={setSecond} />}
     />
   );
 }

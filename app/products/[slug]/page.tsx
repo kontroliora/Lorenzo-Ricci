@@ -29,7 +29,7 @@ import { getSoldOutSlugs } from "@/lib/sold-out";
 import { productJsonLd, jsonLdString } from "@/lib/product-jsonld";
 import { RO_SLUGS } from "@/lib/ro/catalog";
 import { collectionRelated, isCollectionSlug, NEW_COLLECTION_SLUGS } from "@/lib/new-collection";
-import { ActiveProductProvider, ActiveProductName, ShowForPieces } from "@/components/product/CollectionProductView";
+import { ActiveProductProvider, ActiveProductName, ShowForPair } from "@/components/product/CollectionProductView";
 import { CollectionViewBg } from "@/components/product/CollectionViewBg";
 import { CollectionReviews } from "@/components/product/CollectionReviews";
 import { RO_STORE_ENABLED } from "@/lib/ro-store";
@@ -245,8 +245,8 @@ export default async function ProductPage({ params }: Props) {
 
         {/* Jewellery description - two product images + quality comparison (18K PVD gold: not on a silver piece) */}
         {product.category === "jewellery" && (inCollection
-          // a collection page switches pieces in place: the gold description follows the piece shown (gold yes, silver no)
-          ? <ShowForPieces pageSlug={slug} slugs={collectionPieces.filter((p) => p.metal !== "silver").map((p) => p.slug)}><JewelleryDescription stamp={false} comparison={false} /></ShowForPieces>
+          // a collection page: the 18K PVD gold section shows while at least one of the two 1+1 pieces is gold (owner, 18.11.2026)
+          ? <ShowForPair pageSlug={slug} slugs={collectionPieces.filter((p) => p.metal !== "silver").map((p) => p.slug)}><JewelleryDescription stamp={false} comparison={false} /></ShowForPair>
           : product.metal !== "silver" && <JewelleryDescription stamp={!isCollectionSlug(product.slug)} comparison={!isCollectionSlug(product.slug)} />)}
 
         {/* Leather description - material & craft Q&A */}
