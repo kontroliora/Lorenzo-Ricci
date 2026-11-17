@@ -1,15 +1,15 @@
-// What is on the shop window (owner, 17.11.2026): ONLY the women's collection (the 2026 pieces: Verdis, Noctis, Lumen, Linea,
-// Solaris, Spira - lib/new-collection.ts). The other collections are HIDDEN, never deleted: their products, photos, stock rows,
-// orders and every piece of copy stay in the code and in Supabase; only the public shop stops showing / selling them.
+// What is on the shop window: one flag per collection (women's 2026 pieces: Verdis, Noctis, Lumen, Linea, Solaris, Spira -
+// lib/new-collection.ts). A collection that is switched OFF is HIDDEN, never deleted: its products, photos, stock rows,
+// orders and every piece of copy stay in the code and in Supabase; only the public shop stops showing / selling it.
 //
 // TO BRING A COLLECTION BACK: set its flag below to true and deploy. That one change puts it back in the menu, the home page,
 // the footer, the listings, the sitemap, the cart and the order checks, and stops the 301s (lib/storefront-redirects.ts) for it.
 //
 //   womens           the 2026 women's collection (jewellery)                                   - ON
-//   jewelleryClassic the older jewellery range (Milano Forte / Twist, Aurelius, Signature ...) - OFF (the home page called it
-//                    "Мъжка колекция"; unisex / men's)
-//   watches          Yachting, Chrono Black, Golden Eclipse, Polar Frost                       - OFF
-//   leather          wallets, cardholders, clutch bags (crocodile leather)                     - OFF
+//   jewelleryClassic the older jewellery range (Milano Forte / Twist, Aurelius, Signature ...) - ON (back since 17.11.2026; the
+//                    home page called it "Мъжка колекция"; unisex / men's)
+//   watches          Yachting, Chrono Black, Golden Eclipse, Polar Frost                       - ON (back since 17.11.2026)
+//   leather          wallets, cardholders, clutch bags (crocodile leather)                     - ON (back since 17.11.2026)
 //
 // How it works: lib/products.ts builds `products` (the shop's catalogue: listings, product pages, sitemap, cart, cross-sells, the
 // order APIs) from the pieces that are ON the shelf, and keeps `allProducts` / getCatalogProductBySlug() (everything) for the
@@ -24,9 +24,9 @@ export type ShelfGroup = "womens" | "jewelleryClassic" | "watches" | "leather";
 
 export const SHELF: Record<ShelfGroup, boolean> = {
   womens: true,
-  jewelleryClassic: false,
-  watches: false,
-  leather: false,
+  jewelleryClassic: true,
+  watches: true,
+  leather: true,
 };
 
 /** Which collection a product belongs to. Women's pieces are told apart by slug (lib/new-collection.ts), the rest by category. */
