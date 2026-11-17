@@ -34,7 +34,7 @@ import { isVelvetBoxCardholder } from "@/lib/velvet-box";
 import { SavingsLine, DeliveryLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
-import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
+import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, collectionKindRow, collectionModelRow, COLLECTION_GROUP_LABEL } from "@/lib/new-collection";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
 import { CollectionTwoBoxes, TWO_BOX_RO, TWO_BOX_CARD_RO } from "@/components/product/CollectionTwoBoxes";
@@ -164,11 +164,15 @@ interface RoProductInfoProps {
   reviewCount?: number; // number of reviews of the same product, as the Bulgarian store shows it (lib/reviews.ts)
   reviewAvg?: number;
   reviewsTranslated?: boolean; // every one of those reviews has a Romanian text: the numbers then need no "(Bulgaria)" label
-  typeRow?: ModelRow | null;   // women's collection: "Tip" row (Colier / Brățară), above "Culoare"
-  modelRow?: ModelRow | null;  // women's collection: "Piatră" / "Pietre" row (lib/new-collection.ts collectionModelRow)
+  // Women's collection (components/product/CollectionProductView.tsx, as on the Bulgarian page): the pieces that cannot be bought (the
+  // "Tip" / "Piatră" rows leave them out), a lookup of every piece as the page shows it (Romanian, price overrides applied), and
+  // the in-place switch of step 1.
+  soldOut?: string[];
+  pieceOf?: (slug: string) => Product | undefined;
+  onSwitch?: (slug: string) => void;
 }
 
-export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviewsTranslated = false, typeRow = null, modelRow = null }: RoProductInfoProps) {
+export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviewsTranslated = false, soldOut = [], pieceOf, onSwitch }: RoProductInfoProps) {
   const addItem = useRoCart((s) => s.addItem);
   const cartItems = useRoCart((s) => s.items);
   const [added, setAdded] = useState(false);
@@ -178,8 +182,12 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   const [pendingVariant, setPendingVariant] = useState<string | null>(null);
   useEffect(() => { setPendingVariant(null); }, [product.slug]);
   const shownVariant = pendingVariant ?? product.slug;
+  // Women's collection with the in-place switch: step 1's selectors change the piece shown here, with no page load.
+  const inCollection = isCollectionSlug(product.slug);
+  const inPlace = inCollection && !!onSwitch;
   const tapVariant = (e: React.MouseEvent, slug: string) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    if (inPlace) { e.preventDefault(); if (slug !== product.slug) onSwitch!(slug); return; }
     if (slug !== product.slug) { setPendingVariant(slug); previewProductPhoto(slug); }
   };
   const opoStock = useLeatherStock(!!opoGroupOf(product.slug)); // the group's live stock (one batched call)
@@ -258,6 +266,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   // catalog switch decides.
   useEffect(() => {
     let alive = true;
+    setLiveStock(null); // the piece can change under this component (step 1 switches in place): never apply the previous piece's number
     fetch(`/api/stock/${product.slug}`)
       .then((r) => r.json())
       .then((d: { stock?: unknown }) => {
@@ -298,7 +307,8 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   // (EUR 1500 and up: not sold through the card checkout; the checkout then shows the prepayment flow instead of the delivery form).
   // ── 1+1 (lib/one-plus-one.ts), as on the Bulgarian page: the group's models sold in Romania, each available when its live stock,
   //    less what the cart already holds, covers it (this same model needs 2). Names and photos are the localized ones.
-  const opo = effectiveInStock ? opoGroupOf(product.slug) : undefined;
+  const opoGroup = opoGroupOf(product.slug);
+  const opo = effectiveInStock ? opoGroup : undefined;
   const inCart = (slug: string) => cartItems.find((i) => i.slug === slug)?.quantity ?? 0;
   const freeLeft = (slug: string): number => {
     const p = getProductBySlug(slug);
@@ -310,7 +320,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
     ? [...opo.slugs].filter((slug) => RO_SLUGS.includes(slug)).flatMap((slug) => {
         const raw = getProductBySlug(slug);
         if (!raw) return [];
-        const p = slug === product.slug ? product : localizeProduct(raw);
+        const p = slug === product.slug ? product : (pieceOf?.(slug) ?? localizeProduct(raw));
         const name = safeText(opo.text.ro.shortName(p.name)) ?? opo.text.ro.shortName(raw.name);
         return [{ slug, name, image: { src: p.coverImage.src, alt: safeText(p.coverImage.alt) ?? name }, available: freeLeft(slug) >= (slug === product.slug ? 2 : 1) && freeLeft(product.slug) >= 1 }];
       })
@@ -318,7 +328,8 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   // Women's collection (owner, 08.11.2026): NO default pick. Box 2 shows the picker open; the customer taps the free piece. Until
   // then the buttons read "↑ Изберете безплатното бижу" (they scroll to box 2) and "или добави само 1" adds the piece alone.
   const picked = opo && pick ? pickOptions.find((o) => o.slug === pick && o.available) ?? null : null;
-  useEffect(() => { setPick(null); }, [product.slug]);
+  // A collection piece keeps the free second piece while step 1 switches (the page is then keyed per opened page); elsewhere a new product starts clean.
+  useEffect(() => { if (!inCollection) setPick(null); }, [product.slug, inCollection]);
   const choosePick = (slug: string | null) => setPick(slug);
   const removePick = () => setPick(null);
   // Women's collection: the redesigned picker (set card, groups, quick view), localized names / texts / lei prices.
@@ -329,7 +340,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
         const raw = getProductBySlug(o.slug);
         const group = cardOpo ? "all" as const : collectionGroupOf(o.slug);
         if (!raw || !group) return [];
-        const p = o.slug === product.slug ? product : localizeProduct(raw);
+        const p = o.slug === product.slug ? product : (pieceOf?.(o.slug) ?? localizeProduct(raw));
         const name = safeText(p.name) ?? o.name;
         return [{ slug: o.slug, name, image: o.image,
           images: p.images.map((im) => ({ src: im.src, alt: safeText(im.alt) ?? name })), available: o.available, group,
@@ -338,13 +349,13 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
     : [];
   // The pair costs the dearer of the two in lei (the cheaper one is free): 341 lei for two cardholders, a piece's lei for jewellery.
   const pickedRaw = picked ? getProductBySlug(picked.slug) : undefined;
-  const pickedRon = picked && picked.slug !== product.slug && pickedRaw ? ronOf(localizeProduct(pickedRaw)) : ron;
+  const pickedRon = picked && picked.slug !== product.slug && pickedRaw ? ronOf(pieceOf?.(picked.slug) ?? localizeProduct(pickedRaw)) : ron;
   const pairLabel = picked && opo ? opo.text.ro.addPair({ one: fmtRON(opoPairPrice(ron, pickedRon)) }) : null;
 
   const handleAdd = () => {
     addItem(roCartLine(product, effectiveStock));
     const raw = picked && picked.slug !== product.slug ? getProductBySlug(picked.slug) : undefined;
-    const second = picked ? (picked.slug === product.slug ? product : raw ? localizeProduct(raw) : undefined) : undefined;
+    const second = picked ? (picked.slug === product.slug ? product : raw ? (pieceOf?.(raw.slug) ?? localizeProduct(raw)) : undefined) : undefined;
     if (second) addItem(roCartLine(second, second.slug === product.slug ? effectiveStock : (opoStock?.[second.slug] ?? second.stock)));
     setAdded(true);
     setPick(null);
@@ -376,8 +387,15 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
   const odd = trust.length % 2 === 1;
   const lastRowStart = odd ? trust.length - 1 : trust.length - 2;
 
+  // Step 1's selectors of a women's-collection piece (RO): "Tip" = every kind of piece step 2 offers, "Piatră" / "Pietre". Both come from the
+  // same catalogue as step 2's grid (the 1+1 group's slugs, lib/new-collection.ts), so no kind is listed in a second place.
+  const soldOutSet = new Set(soldOut);
+  const rowAllowed = (s: string) => RO_SLUGS.includes(s) && (!opoGroup || opoGroup.slugs.has(s));
+  const typeRow = inCollection ? collectionKindRow(product.slug, "ro", soldOutSet, rowAllowed) : null;
+  const modelRow = inCollection ? collectionModelRow(product.slug, "ro", soldOutSet, rowAllowed) : null;
+  const rowSwitch = inPlace ? onSwitch : undefined;
+
   // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
-  const inCollection = isCollectionSlug(product.slug);
   const velvetBox = isVelvetBoxCardholder(product.slug); // new cardholders: the velvet-box line (lib/velvet-box.ts)
   const twoBoxes = (inCollection || cardOpo) && !!opo; // women's collection / cardholders with their 1+1 running and in stock
   // Nothing picked yet (and something is pickable): the buttons point to box 2 instead of adding.
@@ -448,7 +466,7 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
                 href={`/ro/produse/${v.slug}`}
                 title={v.label}
                 aria-label={v.label}
-                prefetch={true}
+                prefetch={inPlace ? false : true}
                 onClick={(e) => tapVariant(e, v.slug)}
                 scroll={false} // a colour switch keeps the visitor where they are (no jump to the top)
                 onTouchStart={() => prefetchMainImage(v.slug)}
@@ -493,12 +511,12 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
       </div>
 
       {/* Women's collection: "Вид" row (necklace / bracelet of the same model and metal) above the colour */}
-      {!twoBoxes && typeRow && <CollectionModelRow row={typeRow} current={product.slug} hrefPrefix="/ro/produse/" onPrefetch={prefetchMainImage} />}
+      {!twoBoxes && typeRow && <CollectionModelRow row={typeRow} current={product.slug} hrefPrefix="/ro/produse/" onPrefetch={prefetchMainImage} onSelect={rowSwitch} />}
 
       {!twoBoxes && colourRow}
 
       {/* Women's collection: stone / stones row (other models, same type and metal) */}
-      {!twoBoxes && modelRow && <CollectionModelRow row={modelRow} current={product.slug} hrefPrefix="/ro/produse/" onPrefetch={prefetchMainImage} />}
+      {!twoBoxes && modelRow && <CollectionModelRow row={modelRow} current={product.slug} hrefPrefix="/ro/produse/" onPrefetch={prefetchMainImage} onSelect={rowSwitch} />}
 
       {/* Rating: the product's reviews from the Bulgarian store (same numbers it shows). Labelled "(Bulgaria)" until every
           one of those reviews has a Romanian text. */}
@@ -550,9 +568,9 @@ export function RoProductInfo({ product, reviewCount = 0, reviewAvg = 0, reviews
           current={{ name: product.name, image: product.coverImage, priceText: fmtRON(ron), type: product.slug.startsWith("necklace") ? "necklace" : "bracelet" }}
           selectors={(typeRow || colourRow || modelRow) ? (
             <div className="flex flex-col gap-4">
-              {typeRow && <CollectionModelRow row={typeRow} current={product.slug} hrefPrefix="/ro/produse/" onPrefetch={prefetchMainImage} />}
+              {typeRow && <CollectionModelRow row={typeRow} current={product.slug} hrefPrefix="/ro/produse/" onPrefetch={prefetchMainImage} onSelect={rowSwitch} />}
               {colourRow}
-              {modelRow && <CollectionModelRow row={modelRow} current={product.slug} hrefPrefix="/ro/produse/" onPrefetch={prefetchMainImage} />}
+              {modelRow && <CollectionModelRow row={modelRow} current={product.slug} hrefPrefix="/ro/produse/" onPrefetch={prefetchMainImage} onSelect={rowSwitch} />}
             </div>
           ) : null}
           items={freeItems}

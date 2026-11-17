@@ -22,7 +22,9 @@ import { RoLeatherDescription } from "@/components/ro/product/RoLeatherDescripti
 import { RoProductReviews, type RoReviewPool } from "@/components/ro/product/RoProductReviews";
 import { roSafeProduct, roMissingText } from "@/components/ro/product/ro-text";
 import { roReviewView } from "@/components/ro/product/review-data";
-import { collectionModelRow, collectionTypeRow, collectionRelated, isCollectionSlug } from "@/lib/new-collection";
+import { collectionRelated, isCollectionSlug, NEW_COLLECTION_SLUGS } from "@/lib/new-collection";
+import { ActiveProductProvider, ActiveProductName, ShowForPieces } from "@/components/product/CollectionProductView";
+import { CollectionViewRo } from "@/components/ro/product/CollectionViewRo";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { RoProductCard } from "@/components/ro/RoProductCard";
 
@@ -231,9 +233,28 @@ export default async function RoProductPage({ params }: Props) {
     ? { href: "/ro/bijuterii", label: "Bijuterii" }
     : { href: "/ro/piele-de-crocodil", label: "Articole din piele de crocodil" };
 
+  // Women's collection: step 1 of the 1+1 boxes switches the piece in place (the same CollectionProductView as the Bulgarian page, through its
+  // Romanian adapter). The server sends only what it alone knows about the pieces; the catalogue and the Romanian texts are in the browser.
+  const inCollection = isCollectionSlug(slug);
+  const collectionPieces = inCollection ? products.filter((p) => NEW_COLLECTION_SLUGS.has(p.slug) && RO_SLUGS.includes(p.slug)) : [];
+  const collectionOverrides: Record<string, { price: number; originalPrice: number }> = {};
+  const collectionNames: Record<string, string> = {};
+  const collectionReviews: Record<string, { count: number; avg: number; translated: boolean }> = {};
+  for (const p of collectionPieces) {
+    const ov = overrides.get(p.slug);
+    if (ov) collectionOverrides[p.slug] = ov;
+    collectionNames[p.slug] = roView(p, overrides).product.name;
+    const r = roReviewView(p.slug);
+    collectionReviews[p.slug] = { count: r.count, avg: r.avg, translated: r.allTranslated };
+  }
+  const collectionSoldOut = collectionPieces.filter((p) => roSoldOut.has(p.slug)).map((p) => p.slug);
+  const Shell = ({ children }: { children: React.ReactNode }) =>
+    inCollection ? <ActiveProductProvider key={slug} initialSlug={slug}>{children}</ActiveProductProvider> : <>{children}</>;
+
   return (
     <div className="min-h-screen pt-[116px] pb-24">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }} />
+      <Shell>
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-[10px] font-sans tracking-widest uppercase text-ink-faint mb-10">
@@ -243,24 +264,28 @@ export default async function RoProductPage({ params }: Props) {
             {crumb.label}
           </Link>
           <span className="text-border-strong">/</span>
-          <span className="text-ink-muted">{product.name}</span>
+          <span className="text-ink-muted">{inCollection ? <ActiveProductName pageSlug={slug} names={collectionNames} /> : product.name}</span>
         </div>
 
         {/* Product main */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-16">
-          <RoProductGallery images={galleryImages} productName={product.name} />
-          <div>
-            <RoProductInfo
-              product={product}
-              reviewCount={ownReviews.count}
-              reviewAvg={ownReviews.avg}
-              reviewsTranslated={ownReviews.allTranslated}
-              typeRow={isCollectionSlug(slug) ? collectionTypeRow(slug, "ro", roSoldOut, (s) => RO_SLUGS.includes(s)) : null}
-              modelRow={isCollectionSlug(slug) ? collectionModelRow(slug, "ro", roSoldOut, (s) => RO_SLUGS.includes(s)) : null}
-            />
-            {/* Women's collection: no "Completați ansamblul" block (the 1+1 picker above already offers the matching piece); sets stay in /ro/seturi */}
-            {bundle && !isCollectionSlug(slug) && <RoBundleUpsell product={slim(product)} partners={bundle.partners} discountPct={bundle.discountPct} onePlusOne={bundle.onePlusOne} />}
-          </div>
+          {inCollection ? (
+            <CollectionViewRo pageSlug={slug} priceOverrides={collectionOverrides} soldOut={collectionSoldOut} reviews={collectionReviews} />
+          ) : (
+            <>
+              <RoProductGallery images={galleryImages} productName={product.name} />
+              <div>
+                <RoProductInfo
+                  product={product}
+                  reviewCount={ownReviews.count}
+                  reviewAvg={ownReviews.avg}
+                  reviewsTranslated={ownReviews.allTranslated}
+                />
+                {/* Women's collection: no "Completați ansamblul" block (the 1+1 picker above already offers the matching piece); sets stay in /ro/seturi */}
+                {bundle && <RoBundleUpsell product={slim(product)} partners={bundle.partners} discountPct={bundle.discountPct} onePlusOne={bundle.onePlusOne} />}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Editorial storytelling section - watches that have editorial photos */}
@@ -270,7 +295,10 @@ export default async function RoProductPage({ params }: Props) {
 
         {/* Jewellery description - two product images + quality comparison */}
         {/* 18K PVD gold block: not on a silver piece of the 2026 collection */}
-        {isJewellery && product.metal !== "silver" && <RoJewelleryDescription stamp={!isCollectionSlug(product.slug)} comparison={!isCollectionSlug(product.slug)} />}
+        {isJewellery && (inCollection
+          // a collection page switches pieces in place: the gold description follows the piece shown (gold yes, silver no)
+          ? <ShowForPieces pageSlug={slug} slugs={collectionPieces.filter((p) => p.metal !== "silver").map((p) => p.slug)}><RoJewelleryDescription stamp={false} comparison={false} /></ShowForPieces>
+          : product.metal !== "silver" && <RoJewelleryDescription stamp={!isCollectionSlug(product.slug)} comparison={!isCollectionSlug(product.slug)} />)}
 
         {/* Leather description - material & craft */}
         {!isWatch && !isJewellery && !product.hideLeatherDescription && (
@@ -309,6 +337,7 @@ export default async function RoProductPage({ params }: Props) {
           </div>
         )}
       </div>
+      </Shell>
     </div>
   );
 }

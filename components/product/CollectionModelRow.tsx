@@ -8,11 +8,14 @@ import { previewProductPhoto, warmWhenIdle } from "@/lib/warm-product";
 // The women's collection's second selector row under "Цвят" (BG + RO): "Камък" (round stone swatches, clover pieces) or
 // "Камъни" (small photo + label, nail bangles). Every option is an existing product page, like the metal swatches.
 // The row itself (which options, hidden / sold-out ones left out) comes from lib/new-collection.ts collectionModelRow.
-export function CollectionModelRow({ row, current, hrefPrefix, onPrefetch }: {
+export function CollectionModelRow({ row, current, hrefPrefix, onPrefetch, onSelect }: {
   row: ModelRow;
   current: string;
   hrefPrefix: string; // "/products/" or "/ro/produse/"
   onPrefetch?: (slug: string) => void;
+  /** Switch in place (the 1+1 boxes of the Bulgarian page): a plain click calls this instead of loading the option's page. The
+   *  href stays for a new tab / crawlers. `current` is then already the new piece, so no optimistic state is needed. */
+  onSelect?: (slug: string) => void;
 }) {
   // Instant feedback: the tapped option is shown as selected at once, while the (prefetched) page loads.
   const [pending, setPending] = useState<string | null>(null);
@@ -23,6 +26,7 @@ export function CollectionModelRow({ row, current, hrefPrefix, onPrefetch }: {
   useEffect(() => (optionSlugs ? warmWhenIdle(optionSlugs.split(",")) : undefined), [optionSlugs]);
   const tap = (e: React.MouseEvent, slug: string) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; // new tab / window: no optimistic state
+    if (onSelect) { e.preventDefault(); if (slug !== current) onSelect(slug); return; }
     if (slug !== current) { setPending(slug); previewProductPhoto(slug); }
   };
   const selected = row.options.find((o) => o.slug === shown);
@@ -39,7 +43,7 @@ export function CollectionModelRow({ row, current, hrefPrefix, onPrefetch }: {
                 title={o.label}
                 aria-label={o.label}
                 aria-current={o.slug === shown ? "true" : undefined}
-                prefetch={true}
+                prefetch={onSelect ? false : true}
                 scroll={false} // a sibling switch keeps the visitor where they are (no jump to the top)
                 onClick={(e) => tap(e, o.slug)}
                 onTouchStart={() => onPrefetch?.(o.slug)}
@@ -60,13 +64,13 @@ export function CollectionModelRow({ row, current, hrefPrefix, onPrefetch }: {
           {selected && <span className="font-sans text-xs text-ink-muted">{selected.label}</span>}
         </>
       ) : (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={row.grid ? "grid grid-cols-2 gap-2 w-full" : "flex flex-wrap items-center gap-2"}>
           {row.options.map((o) => (
             <Link
               key={o.slug}
               href={`${hrefPrefix}${o.slug}`}
               aria-current={o.slug === shown ? "true" : undefined}
-              prefetch={true}
+              prefetch={onSelect ? false : true}
               scroll={false}
               onClick={(e) => tap(e, o.slug)}
               onTouchStart={() => onPrefetch?.(o.slug)}
@@ -78,7 +82,7 @@ export function CollectionModelRow({ row, current, hrefPrefix, onPrefetch }: {
               {o.image && (
                 <Image src={o.image} alt="" width={36} height={36} sizes="36px" className="w-9 h-9 object-cover bg-white" />
               )}
-              <span className={`font-sans text-xs whitespace-nowrap ${o.slug === shown ? "text-charcoal" : "text-ink-muted"}`}>{o.label}</span>
+              <span className={`font-sans text-xs ${row.grid ? "leading-tight" : "whitespace-nowrap"} ${o.slug === shown ? "text-charcoal" : "text-ink-muted"}`}>{o.label}</span>
             </Link>
           ))}
         </div>

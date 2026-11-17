@@ -20,7 +20,7 @@ import { isVelvetBoxCardholder } from "@/lib/velvet-box";
 import { SavingsLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine, ExchangeLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
-import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, COLLECTION_GROUP_LABEL, type ModelRow } from "@/lib/new-collection";
+import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, collectionKindRow, collectionModelRow, COLLECTION_GROUP_LABEL } from "@/lib/new-collection";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
 import { CollectionTwoBoxes, TWO_BOX_BG, TWO_BOX_CARD_BG, type TwoBoxText } from "@/components/product/CollectionTwoBoxes";
@@ -161,11 +161,14 @@ const ADD_WATCH_ONLY_BG = "или добави само часовника";
 interface ProductInfoProps {
   product: Product;
   reviewCount?: number;
-  typeRow?: ModelRow | null;  // women's collection: "Вид" row (Колие / Гривна), above "Цвят"
-  modelRow?: ModelRow | null; // women's collection: "Камък" / "Камъни" row (lib/new-collection.ts collectionModelRow)
+  // Women's collection (components/product/CollectionProductView.tsx): the pieces that cannot be bought (the "Вид" / "Камък" rows leave
+  // them out), a lookup of every piece as the page sees it (price overrides applied), and the in-place switch of step 1.
+  soldOut?: string[];
+  pieceOf?: (slug: string) => Product | undefined;
+  onSwitch?: (slug: string) => void;
 }
 
-export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow = null }: ProductInfoProps) {
+export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, onSwitch }: ProductInfoProps) {
   const { addItem, items: cartItems } = useCartStore();
   const [added, setAdded] = useState(false);
   // 1+1 group: the free second item picked on the page (null = none; may be this same model)
@@ -174,8 +177,14 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   const [pendingVariant, setPendingVariant] = useState<string | null>(null);
   useEffect(() => { setPendingVariant(null); }, [product.slug]);
   const shownVariant = pendingVariant ?? product.slug;
+  // Women's collection with the in-place switch: step 1's selectors change the piece shown here, with no page load.
+  const inCollection = isCollectionSlug(product.slug);
+  const inPlace = inCollection && !!onSwitch;
+  // A piece as the page sees it (price overrides applied); other products: the plain catalogue.
+  const lookup = (slug: string): Product | undefined => pieceOf?.(slug) ?? getProductBySlug(slug);
   const tapVariant = (e: React.MouseEvent, slug: string) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    if (inPlace) { e.preventDefault(); if (slug !== product.slug) onSwitch!(slug); return; }
     if (slug !== product.slug) { setPendingVariant(slug); previewProductPhoto(slug); }
   };
   const opoStock = useLeatherStock(!!opoGroupOf(product.slug)); // the group's live stock (one batched call)
@@ -260,13 +269,20 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
 
   useEffect(() => {
     if (!hasInventory) return;
+    // The piece can change under this component (step 1 switches in place): the previous piece's number must never be applied to
+    // the new one, and a slow answer for a piece the visitor already left is ignored.
+    let cancelled = false;
+    setWalletStock(null);
+    setStockLoaded(false);
     fetch(`/api/stock/${product.slug}`)
       .then((r) => r.json())
       .then((d) => {
+        if (cancelled) return;
         setWalletStock(typeof d.stock === "number" ? d.stock : null);
         setStockLoaded(true);
       })
-      .catch(() => setStockLoaded(true));
+      .catch(() => { if (!cancelled) setStockLoaded(true); });
+    return () => { cancelled = true; };
   }, [product.slug, hasInventory]);
 
   // inStock: false in lib/products.ts is the owner's hard off switch ("not for
@@ -302,17 +318,18 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
 
   // ── 1+1 (lib/one-plus-one.ts): the group's models, each available when its live stock, less what the cart already holds, covers
   //    it (the page's own model needs 2 for "the same one again"). A pick that stops being available is dropped.
-  const opo = effectiveInStock ? opoGroupOf(product.slug) : undefined;
+  const opoGroup = opoGroupOf(product.slug);
+  const opo = effectiveInStock ? opoGroup : undefined;
   const inCart = (slug: string) => cartItems.find((i) => i.product.slug === slug)?.quantity ?? 0;
   const freeLeft = (slug: string): number => {
-    const p = getProductBySlug(slug);
+    const p = lookup(slug);
     if (!p || !p.inStock) return 0;
     const live = slug === product.slug ? effectiveStock : (opoStock?.[slug] ?? p.stock);
     return (typeof live === "number" ? live : Infinity) - inCart(slug);
   };
   const pickOptions: PickOption[] = opo
     ? [...opo.slugs].flatMap((slug) => {
-        const p = getProductBySlug(slug);
+        const p = lookup(slug);
         if (!p) return [];
         return [{ slug, name: opo.text.bg.shortName(p.name), image: p.coverImage, available: freeLeft(slug) >= (slug === product.slug ? 2 : 1) && freeLeft(product.slug) >= 1 }];
       })
@@ -320,7 +337,8 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   // Women's collection (owner, 08.11.2026): NO default pick. Box 2 shows the picker open; the customer taps the free piece. Until
   // then the buttons read "↑ Изберете безплатното бижу" (they scroll to box 2) and "или добави само 1" adds the piece alone.
   const picked = opo && pick ? pickOptions.find((o) => o.slug === pick && o.available) ?? null : null;
-  useEffect(() => { setPick(null); }, [product.slug]);
+  // A collection piece keeps the free second piece while step 1 switches (the page is then keyed per opened page); elsewhere a new product starts clean.
+  useEffect(() => { if (!inCollection) setPick(null); }, [product.slug, inCollection]);
   const choosePick = (slug: string | null) => setPick(slug);
   const removePick = () => setPick(null);
   // Women's collection: the redesigned picker (set card, groups, quick view) gets the same options with more to show.
@@ -329,7 +347,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
   const cardOpo = opo?.id === "cardholders";
   const freeItems: FreeItem[] = opo && (isCollectionSlug(product.slug) || cardOpo)
     ? pickOptions.flatMap((o) => {
-        const p = getProductBySlug(o.slug);
+        const p = lookup(o.slug);
         const group = cardOpo ? "all" as const : collectionGroupOf(o.slug);
         if (!p || !group) return [];
         return [{ slug: o.slug, name: p.name, image: p.coverImage, images: p.images, available: o.available, group,
@@ -337,7 +355,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
       }).sort((a, b) => (cardOpo ? 0 : collectionRank(a.slug) - collectionRank(b.slug)))
     : [];
   // The pair costs the dearer of the two (the cheaper one is free): €65 for two cardholders, €109 / €115 for jewellery.
-  const pickedPrice = picked ? (getProductBySlug(picked.slug)?.price ?? product.price) : product.price;
+  const pickedPrice = picked ? (lookup(picked.slug)?.price ?? product.price) : product.price;
   // The pay line's card price: 5% (max €25) off what the button adds - the 1+1 pair price once a second piece is picked (same base as the checkout).
   const cardGoods = picked ? opoPairPrice(product.price, pickedPrice) : product.price;
   const eurComma = (n: number) => `€${n.toFixed(2).replace(".", ",")}`;
@@ -371,7 +389,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
       return;
     }
     addItem({ ...product, stock: effectiveStock });
-    const second = picked ? getProductBySlug(picked.slug) : undefined;
+    const second = picked ? lookup(picked.slug) : undefined;
     if (second) addItem(second.slug === product.slug ? { ...product, stock: effectiveStock } : { ...second, stock: opoStock?.[second.slug] ?? second.stock });
     setAdded(true);
     setPick(null);
@@ -394,8 +412,15 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
     });
   };
 
+  // Step 1's selectors of a women's-collection piece (BG): "Вид" = every kind of piece step 2 offers, "Камък" / "Камъни". Both come from the
+  // same catalogue as step 2's grid (the 1+1 group's slugs, lib/new-collection.ts), so no kind is listed in a second place.
+  const soldOutSet = new Set(soldOut);
+  const rowAllowed = (s: string) => !!lookup(s) && (!opoGroup || opoGroup.slugs.has(s));
+  const typeRow = inCollection ? collectionKindRow(product.slug, "bg", soldOutSet, rowAllowed) : null;
+  const modelRow = inCollection ? collectionModelRow(product.slug, "bg", soldOutSet, rowAllowed) : null;
+  const rowSwitch = inPlace ? onSwitch : undefined;
+
   // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
-  const inCollection = isCollectionSlug(product.slug);
   const velvetBox = isVelvetBoxCardholder(product.slug); // new cardholders: the box line (lib/velvet-box.ts), no warranty line
   const twoBoxes = ((inCollection || cardOpo) && !!opo) || watchGift; // women's collection / cardholders with their 1+1, watches with the gift
   // Nothing picked yet (and something is pickable): the buttons point to box 2 instead of adding.
@@ -481,7 +506,7 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
                   key={v.slug}
                   href={`/products/${v.slug}`}
                   title={v.label}
-                  prefetch={true}
+                  prefetch={inPlace ? false : true}
                   onClick={(e) => tapVariant(e, v.slug)}
                   scroll={false} // a colour switch keeps the visitor where they are (no jump to the top)
                   onTouchStart={() => prefetchMainImage(v.slug)}
@@ -516,12 +541,12 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
       </div>
 
       {/* Women's collection: "Вид" row (necklace / bracelet of the same model and metal) above the colour */}
-      {!twoBoxes && typeRow && <CollectionModelRow row={typeRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} />}
+      {!twoBoxes && typeRow && <CollectionModelRow row={typeRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} onSelect={rowSwitch} />}
 
       {!twoBoxes && colourRow}
 
       {/* Women's collection: stone / stones row (other models, same type and metal) */}
-      {!twoBoxes && modelRow && <CollectionModelRow row={modelRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} />}
+      {!twoBoxes && modelRow && <CollectionModelRow row={modelRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} onSelect={rowSwitch} />}
 
       {/* Rating */}
       {reviewCount > 0 && (
@@ -643,9 +668,9 @@ export function ProductInfo({ product, reviewCount = 0, typeRow = null, modelRow
           current={{ name: product.name, image: product.coverImage, priceText: opoPairPriceBg(product.price, 0) /* "€109", like the totals */, type: product.slug.startsWith("necklace") ? "necklace" : "bracelet" }}
           selectors={(typeRow || colourRow || modelRow) ? (
             <div className="flex flex-col gap-4">
-              {typeRow && <CollectionModelRow row={typeRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} />}
+              {typeRow && <CollectionModelRow row={typeRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} onSelect={rowSwitch} />}
               {colourRow}
-              {modelRow && <CollectionModelRow row={modelRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} />}
+              {modelRow && <CollectionModelRow row={modelRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} onSelect={rowSwitch} />}
             </div>
           ) : null}
           items={freeItems}

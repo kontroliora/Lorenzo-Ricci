@@ -189,7 +189,8 @@ export function collectionRelated<T extends { slug: string; inStock: boolean }>(
 // current piece always shows. A row with fewer than 2 options is not shown at all.
 
 export type ModelOption = { slug: string; label: string; color?: string; background?: string; image?: string };
-export type ModelRow = { title: string; kind: "swatch" | "image"; options: ModelOption[] };
+/** `grid`: the options sit in a 2-column grid (the "Вид" row of collectionKindRow); otherwise they flow inline after the title. */
+export type ModelRow = { title: string; kind: "swatch" | "image"; options: ModelOption[]; grid?: boolean };
 
 const STONE_OPTIONS: Partial<Record<CollectionKey, { bg: string; ro: string; color: string; background?: string }>> = {
   verdis: { bg: "Зелен", ro: "Verde", color: "#1E6B47" },
@@ -233,6 +234,52 @@ export function collectionTypeRow(slug: string, lang: "bg" | "ro", soldOut: Read
     .map(({ type, slug: s }): ModelOption => ({ slug: s, label: label[type][lang], image: collectionPhoto(`${me.design.key}-${type}-${me.metal}-1.webp`) }));
   if (options.length < 2) return null;
   return { title: lang === "bg" ? "Вид" : "Tip", kind: "image", options };
+}
+
+// ─── "Вид" of step 1 of the 1+1 boxes: every kind of piece the free-item picker (step 2) offers ───────────────────────────────
+
+/**
+ * The four kinds of piece (owner, 18.11.2026): clover necklace, clover bracelet, nail bangle, snake bangle. They are derived from the
+ * SAME catalogue as the picker's items (COLLECTION_PIECES -> NEW_COLLECTION_SLUGS -> the 1+1 group's slugs), never listed twice: a
+ * piece belongs to the kind collectionFamilyOf() says, so a new design shows up in both steps by itself.
+ */
+export type CollectionFamily = "clover-necklace" | "clover-bracelet" | "nail" | "snake";
+export const COLLECTION_FAMILY_ORDER: CollectionFamily[] = ["clover-necklace", "clover-bracelet", "nail", "snake"];
+export const COLLECTION_FAMILY_LABEL: Record<CollectionFamily, { bg: string; ro: string }> = {
+  "clover-necklace": { bg: "Колие детелина",   ro: "Colier trifoi" },
+  "clover-bracelet": { bg: "Гривна детелина",  ro: "Brățară trifoi" },
+  nail:              { bg: "Гривна пирон",     ro: "Brățară cui" },
+  snake:             { bg: "Гривна змия",      ro: "Brățară șarpe" },
+};
+export function collectionFamilyOf(slug: string): CollectionFamily | null {
+  const p = COLLECTION_PIECES.find((x) => x.slug === slug);
+  if (!p) return null;
+  if (p.design.kind === "clover") return p.type === "necklace" ? "clover-necklace" : "clover-bracelet";
+  return p.design.key === "spira" ? "snake" : "nail";
+}
+
+/**
+ * "Вид" row of step 1 (BG + RO wording): one option per kind of piece that is in the shop (`allowed`, `pieceLive`) and not sold out,
+ * as small photo + label. Tapping a kind leads to a piece of it with the SAME metal and, where the kind has that design, the same
+ * model (Verdis necklace -> Verdis bracelet); otherwise the kind's first design in collection order (clover -> nail: Linea). The
+ * current piece is its own kind's option. Fewer than 2 kinds: no row. The metal and stone rows then follow the chosen piece.
+ */
+export function collectionKindRow(slug: string, lang: "bg" | "ro", soldOut: ReadonlySet<string>, allowed: (slug: string) => boolean = () => true): ModelRow | null {
+  const me = COLLECTION_PIECES.find((p) => p.slug === slug);
+  if (!me) return null;
+  const options: ModelOption[] = [];
+  for (const family of COLLECTION_FAMILY_ORDER) {
+    const candidates = COLLECTION_PIECES.filter((p) => collectionFamilyOf(p.slug) === family && (p.slug === slug || (pieceLive(p.slug) && !soldOut.has(p.slug) && allowed(p.slug))));
+    if (candidates.length === 0) continue;
+    const best = candidates.find((p) => p.slug === slug)
+      ?? [...candidates].sort((a, b) =>
+        Number(b.metal === me.metal) - Number(a.metal === me.metal) ||
+        Number(b.design.key === me.design.key) - Number(a.design.key === me.design.key) ||
+        collectionRank(a.slug) - collectionRank(b.slug))[0];
+    options.push({ slug: best.slug, label: COLLECTION_FAMILY_LABEL[family][lang], image: collectionPhoto(`${best.design.key}-${best.type}-${best.metal}-1.webp`) });
+  }
+  if (options.length < 2) return null;
+  return { title: lang === "bg" ? "Вид" : "Tip", kind: "image", options, grid: true };
 }
 
 // ─── The free-item picker's grouping (owner, 08.11.2026) ─────────────────────

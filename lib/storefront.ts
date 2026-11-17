@@ -42,3 +42,29 @@ export const onShelf = (p: { slug: string; category: string }): boolean => SHELF
 
 /** Where a visitor of a hidden page is sent (301): the women's collection, with its anchor on the listing page. */
 export const WOMENS_LANDING = { bg: { path: "/jewellery", hash: "damska-kolekcia" }, ro: { path: "/ro/bijuterii", hash: "colectia-pentru-femei" } } as const;
+
+// ─── Customer reviews with moderation (Bulgarian shop only; owner, 17.11.2026) ───────────────────────────────────────────────
+// Which product groups show the "Ревюта" section under the product (approved reviews + the "Напиши ревю" form, supabase/reviews.sql,
+// lib/user-reviews-server.ts). A group that is OFF keeps whatever it showed before (the older Shopify reviews of lib/reviews.ts) and
+// accepts no new reviews. TO SWITCH A GROUP ON: set its flag to true and deploy; nothing else to edit. The Romanian shop (/ro) never
+// reads these flags.
+//
+//   bracelets  the women's collection bracelets (bracelet-<model>-<gold|silver>)  - OFF until supabase/reviews.sql is run in production
+//              (18.11.2026: deployed with the code switched off - without the table no review could be saved; turn ON after the SQL)
+//   necklaces  the women's collection necklaces (necklace-<model>-<gold|silver>)  - OFF
+//   other      everything else (older jewellery, watches, leather goods)           - OFF
+export type ReviewGroup = "bracelets" | "necklaces" | "other";
+
+export const USER_REVIEWS: Record<ReviewGroup, boolean> = {
+  bracelets: false,
+  necklaces: false,
+  other: false,
+};
+
+export function reviewGroup(p: { slug: string; category: string }): ReviewGroup {
+  if (isCollectionSlug(p.slug)) return p.slug.startsWith("bracelet-") ? "bracelets" : p.slug.startsWith("necklace-") ? "necklaces" : "other";
+  return "other";
+}
+
+/** The product shows the moderated reviews section and takes new reviews. */
+export const userReviewsOn = (p: { slug: string; category: string }): boolean => USER_REVIEWS[reviewGroup(p)];

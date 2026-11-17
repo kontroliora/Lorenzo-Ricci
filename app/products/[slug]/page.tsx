@@ -27,7 +27,16 @@ import { getPriceOverrides, applyOverride, applyOverrides } from "@/lib/price-ov
 import { getLiveStock } from "@/lib/live-stock";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { productJsonLd, jsonLdString } from "@/lib/product-jsonld";
-import { collectionModelRow, collectionTypeRow, collectionRelated, isCollectionSlug } from "@/lib/new-collection";
+import { RO_SLUGS } from "@/lib/ro/catalog";
+import { collectionRelated, isCollectionSlug, NEW_COLLECTION_SLUGS } from "@/lib/new-collection";
+import { ActiveProductProvider, ActiveProductName, ShowForPieces } from "@/components/product/CollectionProductView";
+import { CollectionViewBg } from "@/components/product/CollectionViewBg";
+import { CollectionReviews } from "@/components/product/CollectionReviews";
+import { RO_STORE_ENABLED } from "@/lib/ro-store";
+import { absUrl } from "@/lib/site";
+import { userReviewsOn } from "@/lib/storefront";
+import { getApprovedReviews } from "@/lib/user-reviews-server";
+import { UserReviews } from "@/components/product/UserReviews";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
 // lib/price-overrides.ts) — every product page stays statically generated
@@ -70,6 +79,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: pageTitle,
     ...(keywords && { keywords }),
+    // Always the page's OWN absolute address (no query string): a women's-collection page switches pieces in place and rewrites the
+    // address bar (components/product/CollectionProductView.tsx), but the document stays the one rendered for this slug, so it names itself.
+    // hreflang only while the Romanian store is on (lib/ro-store.ts: off = every /ro page redirects, and a hreflang to a redirect is
+    // ignored); the Romanian page lists this page back (app/ro/produse/[slug]/page.tsx), so the pair is reciprocal.
+    alternates: {
+      canonical: absUrl(`/products/${product.slug}`), // SITE_URL (www): the apex 308-redirects there
+      ...(RO_STORE_ENABLED && RO_SLUGS.includes(product.slug) ? { languages: { "bg-BG": absUrl(`/products/${product.slug}`), "ro-RO": absUrl(`/ro/produse/${product.slug}`) } } : {}),
+    },
     description: `${product.name} - ${product.shortDescription}. ${eurText(product.price, product.currency)}. ${product.warranty ? `${product.warranty}. ` : ""}Безплатна доставка над €60. ${paymentNote}`,
     // openGraph replaces (not merges with) the one in app/layout.tsx, so type/locale/site name are repeated.
     openGraph: {
@@ -91,13 +108,22 @@ export default async function ProductPage({ params }: Props) {
   const overrides = await getPriceOverrides();
   const product = applyOverride(rawProduct, overrides);
 
-  const reviews = getReviewsBySlug(slug);
+  // Moderated customer reviews (lib/storefront.ts USER_REVIEWS, currently the women's bracelets): only the APPROVED ones ever get here.
+  // Such a product ignores the older Shopify reviews of lib/reviews.ts (none of them belongs to the collection anyway).
+  const userReviews = userReviewsOn(product);
+  const approved = userReviews ? await getApprovedReviews(slug) : null;
+  const reviews = userReviews ? [] : getReviewsBySlug(slug);
   const liveStock = await getLiveStock(slug);
   const summary = reviewSummary[slug];
-  // JSON-LD aggregateRating uses ONLY this product's own reviews (never pooled).
+  // JSON-LD aggregateRating uses ONLY this product's own reviews (never pooled); for a moderated product, only approved ones, and
+  // only when there is at least one.
   const jsonLd = productJsonLd(product, {
     liveStock,
-    reviews: reviews.length > 0 && summary ? summary : null,
+    reviews: approved
+      ? approved.count > 0
+        ? { count: approved.count, avg: approved.avg, items: approved.reviews.map((r) => ({ name: r.name, rating: r.rating, body: r.body, date: r.createdAt })) }
+        : null
+      : reviews.length > 0 && summary ? summary : null,
   });
 
   // Category pool: all cardholder or wallet reviews shown together, own product first.
@@ -153,9 +179,25 @@ export default async function ProductPage({ params }: Props) {
       )
     : product.images;
 
+  // Women's collection: step 1 of the 1+1 boxes switches the piece in place - the server sends only what it alone knows about the pieces
+  // (price overrides, sold out, review counts); the catalogue is already in the browser.
+  const collectionPieces = inCollection ? products.filter((p) => NEW_COLLECTION_SLUGS.has(p.slug)) : [];
+  const collectionOverrides: Record<string, { price: number; originalPrice: number }> = {};
+  const collectionReviewCounts: Record<string, number> = {};
+  for (const p of collectionPieces) {
+    const ov = overrides.get(p.slug);
+    if (ov) collectionOverrides[p.slug] = ov;
+    collectionReviewCounts[p.slug] = reviewSummary[p.slug]?.count ?? (userReviewsOn(p) ? 0 : getReviewsBySlug(p.slug).length);
+  }
+  const collectionSoldOut = collectionPieces.filter((p) => soldOut.has(p.slug)).map((p) => p.slug);
+  const collectionNames: Record<string, string> = Object.fromEntries(collectionPieces.map((p) => [p.slug, p.name]));
+  const Shell = ({ children }: { children: React.ReactNode }) =>
+    inCollection ? <ActiveProductProvider key={slug} initialSlug={slug}>{children}</ActiveProductProvider> : <>{children}</>;
+
   return (
     <div className="min-h-screen pt-[116px] pb-24">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }} />
+      <Shell>
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-[10px] font-sans tracking-widest uppercase text-ink-faint mb-10">
@@ -176,17 +218,24 @@ export default async function ProductPage({ params }: Props) {
              "Бижута"}
           </Link>
           <span className="text-border-strong">/</span>
-          <span className="text-ink-muted">{product.name}</span>
+          <span className="text-ink-muted">{inCollection ? <ActiveProductName pageSlug={slug} names={collectionNames} /> : product.name}</span>
         </div>
 
         {/* Product main */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-16">
-          <ProductGallery images={galleryImages} productName={product.name} />
-          <div>
-            <ProductInfo product={product} reviewCount={reviewSummary[slug]?.count ?? reviews.length} typeRow={inCollection ? collectionTypeRow(product.slug, "bg", soldOut) : null} modelRow={inCollection ? collectionModelRow(product.slug, "bg", soldOut) : null} />
-            {/* Women's collection: no "Завърши визията" block (the 1+1 picker above already offers the matching piece); sets stay in /bundles */}
-            {!inCollection && <BundleUpsell product={product} />}
-          </div>
+          {inCollection ? (
+            // Women's collection: gallery + info switch pieces in place with step 1 (no "Завърши визията" block: the 1+1 picker already
+            // offers the matching piece; sets stay in /bundles)
+            <CollectionViewBg pageSlug={slug} priceOverrides={collectionOverrides} soldOut={collectionSoldOut} reviewCounts={collectionReviewCounts} />
+          ) : (
+            <>
+              <ProductGallery images={galleryImages} productName={product.name} />
+              <div>
+                <ProductInfo product={product} reviewCount={reviewSummary[slug]?.count ?? reviews.length} />
+                <BundleUpsell product={product} />
+              </div>
+            </>
+          )}
         </div>
 
         {/* Editorial storytelling section - watches only */}
@@ -195,7 +244,10 @@ export default async function ProductPage({ params }: Props) {
         )}
 
         {/* Jewellery description - two product images + quality comparison (18K PVD gold: not on a silver piece) */}
-        {product.category === "jewellery" && product.metal !== "silver" && <JewelleryDescription stamp={!isCollectionSlug(product.slug)} comparison={!isCollectionSlug(product.slug)} />}
+        {product.category === "jewellery" && (inCollection
+          // a collection page switches pieces in place: the gold description follows the piece shown (gold yes, silver no)
+          ? <ShowForPieces pageSlug={slug} slugs={collectionPieces.filter((p) => p.metal !== "silver").map((p) => p.slug)}><JewelleryDescription stamp={false} comparison={false} /></ShowForPieces>
+          : product.metal !== "silver" && <JewelleryDescription stamp={!isCollectionSlug(product.slug)} comparison={!isCollectionSlug(product.slug)} />)}
 
         {/* Leather description - material & craft Q&A */}
         {(product.category === "wallets" || product.category === "cardholders" || product.category === "bags") && !product.hideLeatherDescription && (
@@ -204,7 +256,15 @@ export default async function ProductPage({ params }: Props) {
 
         {/* Reviews: hidden while the product has none (no "Все още няма ревюта" block); it shows again by itself with the first
             review. Cardholders / wallets show their category pool, so they always have some. Same rule as the Romanian page. */}
-        {(reviews.length > 0 || (reviewPool && reviewPool.reviews.length > 0)) && (
+        {/* Women's collection: the section follows the piece step 1 shows (the page's own from the server, another one read from
+            GET /api/product-review), and its form sends the review to that piece */}
+        {inCollection && <CollectionReviews pageSlug={slug} initial={approved ? { reviews: approved.reviews, count: approved.count, avg: approved.avg } : null} />}
+        {!inCollection && approved && (
+          <div className="mt-20">
+            <UserReviews productSlug={slug} reviews={approved.reviews} count={approved.count} avg={approved.avg} />
+          </div>
+        )}
+        {!inCollection && !approved && (reviews.length > 0 || (reviewPool && reviewPool.reviews.length > 0)) && (
           <div className="mt-20">
             <ProductReviews reviews={reviews} productSlug={slug} pool={reviewPool} />
           </div>
@@ -228,6 +288,7 @@ export default async function ProductPage({ params }: Props) {
           </div>
         )}
       </div>
+      </Shell>
     </div>
   );
 }
