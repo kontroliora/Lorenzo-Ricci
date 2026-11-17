@@ -238,11 +238,9 @@ const catalog: Product[] = [
     sku: "LR-MIDNIGHT-ECL",
     name: "Golden Eclipse",
     category: "watches",
-    // Early Black Friday 2026-10-30: €279 → €119. originalPrice = €279.
-    price: 119,
-    originalPrice: 279,
+    // 17.11.2026 (owner): back to the plain €279 - no sale, no struck price, no sale badge (same as Chrono Black / Polar Frost).
+    price: 279,
     currency: "€",
-    badge: "РАНЕН ЧЕРЕН ПЕТЪК",
     inStock: true,
     warranty: "Търговска гаранция 5 години",
     shortDescription: "Италиански дизайн. Японска точност.",
