@@ -296,7 +296,10 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
   // Cap the cart quantity at the LIVE stock (not the static products.ts value)
   // for leather goods, so the +/− stepper and re-adds can't exceed what we hold.
   const effectiveStock =
-    hasInventory && stockLoaded && walletStock !== null ? walletStock : product.stock;
+  // Until this product's own number arrives, the group's batched live stock (already loaded: the 1+1 picker reads it) stands in -
+  // the catalogue's static stock is 0 for the women's collection, which would lock the picker for a moment after every in-place switch.
+  const batchedStock = opoStock?.[product.slug];
+    hasInventory && stockLoaded && walletStock !== null ? walletStock : typeof batchedStock === "number" ? batchedStock : product.stock;
 
   useEffect(() => {
     trackFbEvent("ViewContent", {
