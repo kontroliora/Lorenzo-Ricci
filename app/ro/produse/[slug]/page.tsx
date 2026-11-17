@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { productOgImage } from "@/lib/og";
 import { notFound } from "next/navigation";
+import { redirectIfProductOff } from "@/lib/storefront-guard";
 import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { getProductBySlug, products } from "@/lib/products";
@@ -149,7 +150,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function RoProductPage({ params }: Props) {
   const { slug } = await params;
   const loaded = await loadRoProduct(slug);
-  if (!loaded) notFound();
+  if (!loaded) { redirectIfProductOff(slug, "ro"); notFound(); } // a product of a hidden collection (lib/storefront.ts) -> the women's collection, an unknown slug -> 404
   const { product, overrides } = loaded;
 
   const ownReviews = roReviewView(slug);

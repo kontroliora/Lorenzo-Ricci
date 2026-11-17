@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRoCart } from "@/lib/ro/store";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
+import { SHELF } from "@/lib/storefront";
 
 // Romanian counterpart of components/layout/Header.tsx: same fixed bar and mobile overlay, own nav (Romanian routes only)
 // and the separate Romanian cart (lib/ro/store.ts). Labels follow the old Romanian dictionary (lib/i18n/dict.ts):
@@ -14,11 +15,12 @@ import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 //
 // Six items with long uppercase labels need the full desktop width, so the inline nav starts at `xl` (1280px) and the
 // hamburger menu serves everything below it.
-const LEFT_NAV = [
-  { href: "/ro/ceasuri", label: "Ceasuri" },
+// Watches and leather goods are in the menu only while their collection is on the shelf (lib/storefront.ts).
+const LEFT_NAV: readonly { href: string; label: string }[] = [
+  ...(SHELF.watches ? [{ href: "/ro/ceasuri", label: "Ceasuri" }] : []),
   { href: "/ro/bijuterii#colectia-pentru-femei", label: "Bijuterii" }, // lands on "Colecția pentru femei"
-  { href: "/ro/piele-de-crocodil", label: "Articole din piele de crocodil" },
-] as const;
+  ...(SHELF.leather ? [{ href: "/ro/piele-de-crocodil", label: "Articole din piele de crocodil" }] : []),
+];
 
 const RIGHT_NAV = [
   { href: "/ro/seturi", label: "Seturi" },
@@ -26,7 +28,7 @@ const RIGHT_NAV = [
   { href: "/ro/intrebari-frecvente", label: "Întrebări frecvente" },
 ] as const;
 
-const MOBILE_NAV = [{ href: "/ro", label: "Acasă" }, ...LEFT_NAV, ...RIGHT_NAV] as const;
+const MOBILE_NAV: readonly { href: string; label: string }[] = [{ href: "/ro", label: "Acasă" }, ...LEFT_NAV, ...RIGHT_NAV];
 
 export function RoHeader({ showSets = true }: { showSets?: boolean }) {
   const rightNav = showSets ? RIGHT_NAV : RIGHT_NAV.filter((l) => l.href !== "/ro/seturi");

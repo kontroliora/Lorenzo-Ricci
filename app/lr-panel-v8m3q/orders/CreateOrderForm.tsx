@@ -1,6 +1,6 @@
 "use client";
 import { useState, useTransition, useEffect } from "react";
-import { products } from "@/lib/products";
+import { allProducts as products } from "@/lib/products"; // the whole catalogue, as before the shop window was narrowed (lib/storefront.ts)
 import { createManualOrder, type ManualItemInput } from "./actions";
 
 const field: React.CSSProperties = {

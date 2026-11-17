@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirectIfCollectionOff } from "@/lib/storefront-guard";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { soldOutLast } from "@/lib/sold-out-order";
 import { products } from "@/lib/products";
@@ -43,6 +44,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function RoLeatherPage() {
+  redirectIfCollectionOff("leather", "ro"); // hidden collection (lib/storefront.ts)
   const overrides = await getPriceOverrides();
   const catalog = applyOverrides(products.filter(roEligible), overrides).map(localizeProduct);
   const soldOut = new Set(await getSoldOutSlugs());

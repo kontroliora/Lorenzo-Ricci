@@ -27,7 +27,7 @@ export default function AnulataPage() {
         </p>
 
         <div className="flex justify-center mt-10">
-          <Link href="/ro/ceasuri" className="btn-primary min-w-[220px]">Încercați din nou</Link>
+          <Link href="/ro/bijuterii#colectia-pentru-femei" className="btn-primary min-w-[220px]">Încercați din nou</Link>
         </div>
 
         <p className="font-sans text-xs text-ink-muted leading-relaxed tracking-wide text-center mt-8">

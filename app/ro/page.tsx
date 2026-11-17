@@ -17,17 +17,17 @@ import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { soldOutLast } from "@/lib/sold-out-order";
 import { localizeProduct } from "@/lib/ro/catalog";
-import { campaignLabelRo, maxDiscountRounded } from "@/lib/sale-campaign";
 import { roEligible, fmtRON, RO_FREE_SHIPPING_RON, RO_DELIVERY_DAYS } from "@/lib/ro/config";
 import { RO_REVIEWS_NOTE } from "@/lib/ro/reviews-ro";
+import { SHELF } from "@/lib/storefront";
 
-const TITLE = "Lorenzo Ricci - Ceasuri de lux, bijuterii și piele de crocodil";
-const DESCRIPTION = `Ceasuri Lorenzo Ricci cu sticlă safir și mecanism japonez, bijuterii placate cu aur de 18K, portofele, port-carduri și clutch-uri din piele de crocodil. Livrare gratuită de la ${fmtRON(RO_FREE_SHIPPING_RON)}, în ${RO_DELIVERY_DAYS} zile lucrătoare.`;
+const TITLE = "Lorenzo Ricci - Colecția pentru femei";
+const DESCRIPTION = `Colecția pentru femei Lorenzo Ricci: brățări și coliere placate cu aur de 18K, în cutie din catifea. Livrare gratuită de la ${fmtRON(RO_FREE_SHIPPING_RON)}, în ${RO_DELIVERY_DAYS} zile lucrătoare.`;
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESCRIPTION,
-  keywords: ["Lorenzo Ricci", "ceasuri de lux", "cronograf", "sticlă safir", "bijuterii", "brățări", "coliere", "placare cu aur de 18K", "articole din piele de crocodil", "portofel piele de crocodil", "Yachting", "Chrono Black", "Golden Eclipse", "Polar Frost"],
+  keywords: ["Lorenzo Ricci", "colecția pentru femei", "bijuterii pentru femei", "bijuterii", "brățări", "coliere", "placare cu aur de 18K", "Verdis", "Noctis", "Lumen", "Linea", "Solaris", "Spira"],
   alternates: {
     canonical: "https://lorenzo-ricci.com/ro",
     languages: {
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     url: "https://lorenzo-ricci.com/ro",
     title: TITLE,
     description: DESCRIPTION,
-    images: [homeOgImage("Lorenzo Ricci - ceas de lux, colier placat cu aur de 18K și geantă din piele de crocodil")],
+    images: [homeOgImage("Lorenzo Ricci - colecția pentru femei: colier și brățări placate cu aur de 18K")],
   },
 };
 
@@ -70,21 +70,19 @@ export default async function RoHomePage() {
   const flagshipProduct = catalog.find((p) => p.slug === FLAGSHIP_SLUG);
   const flagship = flagshipProduct ? toRoTile(flagshipProduct) : undefined;
   const testimonials = pickRoTestimonials();
-  // Campaign hero (same phase config and 5% rule as the Bulgarian banner/hero): the discount is the biggest live one among the products sold in Romania.
-  const salePct = maxDiscountRounded(catalog, soldOut);
-  const saleLabel = campaignLabelRo();
   // "Colecția pentru femei": one row of 4 sold in Romania, in stock, showcase order (lib/new-collection.ts).
   const newPieces = homeCollectionPicks(catalog, soldOut);
 
   return (
     <>
-      <RoHero campaign={saleLabel && salePct >= 5 ? { label: saleLabel, pct: salePct } : null} />
+      <RoHero />
       {/* The new collection is the main campaign: right under the hero, above the watches and leather */}
       <RoNewCollectionSection pieces={newPieces} />
-      <RoFeaturedWatches watches={watches} />
-      <RoLeatherSection products={leather} />
-      {flagship && <RoMilanoAvorioFlagship product={flagship} />}
-      <RoJewellerySection />
+      {/* Hidden collections (lib/storefront.ts SHELF): their home sections are not drawn; switch the flag back on to restore them */}
+      {SHELF.watches && <RoFeaturedWatches watches={watches} />}
+      {SHELF.leather && <RoLeatherSection products={leather} />}
+      {SHELF.leather && flagship && <RoMilanoAvorioFlagship product={flagship} />}
+      {SHELF.jewelleryClassic && <RoJewellerySection />}
       <RoEditorialJewellery />
       <RoBrandValues />
       {testimonials.length > 0 && <RoTestimonialsSection items={testimonials} note={RO_REVIEWS_NOTE} />}

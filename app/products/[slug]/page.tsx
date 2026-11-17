@@ -2,6 +2,7 @@ import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { productOgImage } from "@/lib/og";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { redirectIfProductOff } from "@/lib/storefront-guard";
 import Link from "next/link";
 import { products, getProductBySlug, getRelatedProducts } from "@/lib/products";
 import {
@@ -86,7 +87,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const rawProduct = getProductBySlug(slug);
-  if (!rawProduct) notFound();
+  if (!rawProduct) { redirectIfProductOff(slug); notFound(); } // a product of a hidden collection (lib/storefront.ts) -> the women's collection, an unknown slug -> 404
   const overrides = await getPriceOverrides();
   const product = applyOverride(rawProduct, overrides);
 

@@ -11,6 +11,7 @@
 //     box 2, no reminder, and the server ignores any giftSlugs still in an old cart.
 
 import { CARDHOLDER_SLUGS } from "./one-plus-one";
+import { SHELF } from "./storefront";
 
 /** SWITCH + last moment of the offer: 31.12.2026 23:59 Sofia (EET, UTC+2). Extended from 24.12 (owner, 15.11.2026). */
 export const WATCH_GIFT_PROMO = {
@@ -18,8 +19,10 @@ export const WATCH_GIFT_PROMO = {
   endsAt: "2026-12-31T23:59:59+02:00",
 } as const;
 
+// Also off while the watches (or the cardholders that are the gift) are not on the shelf (lib/storefront.ts): no bar line, no hero
+// line, no reminder; it resumes by itself when both collections are switched back on (and the end date has not passed).
 export const watchGiftActive = (now: Date = new Date()): boolean =>
-  WATCH_GIFT_PROMO.enabled && now.getTime() <= Date.parse(WATCH_GIFT_PROMO.endsAt);
+  WATCH_GIFT_PROMO.enabled && SHELF.watches && SHELF.leather && now.getTime() <= Date.parse(WATCH_GIFT_PROMO.endsAt);
 
 /** Every cardholder can be the gift (the page greys out the sold-out ones). */
 export const WATCH_GIFT_CHOICES: readonly string[] = CARDHOLDER_SLUGS;

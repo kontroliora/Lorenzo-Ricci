@@ -2,6 +2,7 @@ import type { Product } from "./types";
 import { withOnePlusOnePrice } from "./one-plus-one";
 import { NEW_COLLECTION_PRODUCTS } from "./new-collection-products";
 import { CARDHOLDER_BOX_PHOTO } from "./velvet-box";
+import { onShelf } from "./storefront";
 
 // Confirmed crocodile species (per CITES permit) - single source for both the
 // specs "Вид" row and the LeatherDescription.tsx CITES bullet everywhere they're
@@ -1607,11 +1608,22 @@ export const allProducts: Product[] = [...catalog, ...NEW_COLLECTION_PRODUCTS].m
 /**
  * The shop's catalog: hidden products are left out everywhere (listings, pages, sitemap, sets, order checks); catalog prices,
  * except products of a running 1+1 group with a fixed price (lib/one-plus-one.ts).
+ * Besides the pre-launch `hidden` flag, a product whose collection is switched off (lib/storefront.ts SHELF) is left out too: that
+ * is how the watches, the leather goods and the older jewellery range are off the public shop while staying in `allProducts`.
  */
-export const products: Product[] = allProducts.filter((p) => !p.hidden);
+export const products: Product[] = allProducts.filter((p) => !p.hidden && onShelf(p));
 
 export function getProductBySlug(slug: string): Product | undefined {
   return products.find((p) => p.slug === slug);
+}
+
+/**
+ * Any product of the catalogue, ON the shop window or not (a hidden collection, a pre-launch piece). For the admin panel and for
+ * anything that reads an OLD order (names, photos): an order placed for a product that is now off the shelf must still show it.
+ * Never use it to decide what the public shop shows or sells - that is `products` / getProductBySlug().
+ */
+export function getCatalogProductBySlug(slug: string): Product | undefined {
+  return allProducts.find((p) => p.slug === slug);
 }
 
 export function getWatches(): Product[] {

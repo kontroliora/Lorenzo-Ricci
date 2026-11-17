@@ -7,9 +7,9 @@ import { soldOutLast } from "@/lib/sold-out-order";
 import { JewelleryPageClient, JewelleryPageView } from "./JewelleryPageClient";
 
 export const metadata: Metadata = {
-  title: "Бижута",
+  title: "Дамска колекция бижута",
   description:
-    "Lorenzo Ricci бижута - гривни и колиета с 4-слойно 18K PVD позлата. Хипоалергенни, устойчиви на вода. Доживотна гаранция.",
+    "Lorenzo Ricci дамска колекция - гривни и колиета с 4-слойно 18K PVD позлата. Хипоалергенни, устойчиви на вода. Доживотна гаранция.",
 };
 
 // JewelleryPageClient is "use client" and used to call getBracelets()/getNecklaces()

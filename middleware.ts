@@ -4,6 +4,7 @@ import { updateSession } from "@/lib/supabase/middleware";
 import { decideGeoRedirect, LANG_COOKIE } from "@/lib/geo-redirect";
 import { RO_ALWAYS_OPEN, RO_STORE_ENABLED } from "@/lib/ro-store";
 import { roToBgPath } from "@/lib/ro/route-map";
+import { offShelfTarget } from "@/lib/storefront-redirects";
 
 // Two jobs: (1) the admin panel / admin API session gate (below, unchanged); (2) the first-visit redirect of Romanian
 // visitors to the Romanian store (lib/geo-redirect.ts has the rules). The storefront pages themselves stay static: only this
@@ -47,6 +48,19 @@ export async function middleware(request: NextRequest) {
 
 async function route(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
+  // A collection switched off (lib/storefront.ts): its category pages and product pages answer 301 -> the women's collection
+  // (lib/storefront-redirects.ts), never a 404. The query string stays (utm_* / fbclid: the ad click is still attributed on the
+  // landing); the attribution cookie is set on this response too (middleware() above). Short browser cache so that switching a
+  // collection back on is not held up by redirects people's browsers remembered.
+  const off = offShelfTarget(pathname, RO_STORE_ENABLED);
+  if (off) {
+    const to = new URL(off.path, request.url);
+    to.search = request.nextUrl.search;
+    to.hash = off.hash;
+    const res = NextResponse.redirect(to, 301);
+    res.headers.set("Cache-Control", "public, max-age=3600");
+    return res;
+  }
   // Romanian store off (lib/ro-store.ts): every /ro page -> its Bulgarian twin (302, query string kept: utm_* / fbclid).
   if ((pathname === "/ro" || pathname.startsWith("/ro/")) && !RO_STORE_ENABLED && !RO_ALWAYS_OPEN(pathname)) {
     const to = new URL(roToBgPath(pathname), request.url);

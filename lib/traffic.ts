@@ -1,6 +1,6 @@
 // The ТРАФИК tab: page_views (traffic_summary RPC) x orders. Read-only, server-only; callers gate on isOwner().
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { products } from "@/lib/products";
+import { allProducts as products } from "@/lib/products"; // admin board: names of every product, also the ones off the shelf (lib/storefront.ts)
 import { fetchOrders, inMarket, isMetaOrder } from "@/lib/ad-performance";
 import { periodRange, type Market, type PeriodKey } from "@/lib/sofia-time";
 

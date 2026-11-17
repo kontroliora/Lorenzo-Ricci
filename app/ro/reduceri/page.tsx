@@ -10,7 +10,7 @@ import { RoProductCard } from "@/components/ro/RoProductCard";
 
 // Romanian counterpart of /namalenia: every product on sale that can be bought now, biggest discount first.
 const PATH = "/ro/reduceri";
-const DESCRIPTION = "Toate ceasurile, bijuteriile și articolele din piele de crocodil Lorenzo Ricci aflate la reducere, ordonate după mărimea reducerii.";
+const DESCRIPTION = "Toate bijuteriile din colecția pentru femei Lorenzo Ricci aflate la reducere, ordonate după mărimea reducerii.";
 
 export const metadata: Metadata = {
   title: "Reduceri",
@@ -50,7 +50,7 @@ export default async function RoSalePage() {
             ))}
           </div>
         ) : (
-          <p className="text-center font-sans text-sm text-ink-muted">Descoperiți toate <a className="underline" href="/ro/ceasuri">ceasurile</a> și <a className="underline" href="/ro/bijuterii">bijuteriile</a>.</p>
+          <p className="text-center font-sans text-sm text-ink-muted">Descoperiți toată <a className="underline" href="/ro/bijuterii#colectia-pentru-femei">colecția pentru femei</a>.</p>
         )}
       </div>
     </div>

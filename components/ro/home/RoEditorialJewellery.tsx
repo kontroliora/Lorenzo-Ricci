@@ -34,7 +34,7 @@ export function RoEditorialJewellery() {
               <em className="not-italic text-white">noastră</em>
             </h2>
             <p className="font-sans text-sm font-light text-white/45 leading-relaxed tracking-wide mb-8 max-w-xs">
-              Inspirați de măiestria italiană și de pasiunea pentru precizie, creăm ceasuri și bijuterii născute pentru a fi purtate cu mândrie.
+              Inspirați de măiestria italiană și de pasiunea pentru precizie, creăm bijuterii născute pentru a fi purtate cu mândrie.
             </p>
             <Link
               href="/ro/despre-noi"

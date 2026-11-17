@@ -4,6 +4,7 @@ import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import Image from "next/image";
 import Link from "next/link";
 import { useCartStore } from "@/lib/store";
+import { SHELF } from "@/lib/storefront";
 
 export function Header() {
   const [scrolled, setScrolled]       = useState(false);
@@ -38,11 +39,11 @@ export function Header() {
           {/* Left nav - flex-1 keeps logo centred */}
           <div className="flex-1 flex items-center gap-10">
             <div className="hidden lg:flex items-center gap-10">
-              <NavLink href="/watches">Часовници</NavLink>
+              {SHELF.watches && <NavLink href="/watches">Часовници</NavLink>}
 
               <NavLink href="/jewellery#damska-kolekcia">Бижута</NavLink>
 
-              <NavLink href="/leather-goods">Кожени изделия</NavLink>
+              {SHELF.leather && <NavLink href="/leather-goods">Кожени изделия</NavLink>}
             </div>
           </div>
 
@@ -108,8 +109,8 @@ export function Header() {
               {/* Static links */}
               {([
                 { href: "/",        label: "Начало" },
-                { href: "/watches", label: "Часовници" },
-              ] as const).map(({ href, label }) => (
+                ...(SHELF.watches ? [{ href: "/watches", label: "Часовници" }] : []),
+              ] as { href: string; label: string }[]).map(({ href, label }) => (
                 <Link key={href} href={href} onClick={closeMobile}
                   className="py-1 font-serif text-4xl text-white/80 hover:text-white transition-colors duration-300">
                   {label}
@@ -123,10 +124,10 @@ export function Header() {
 
               {/* Rest */}
               {([
-                { href: "/leather-goods", label: "Кожени изделия" },
+                ...(SHELF.leather ? [{ href: "/leather-goods", label: "Кожени изделия" }] : []),
                 { href: "/story",         label: "История" },
                 { href: "/faq",           label: "FAQ" },
-              ] as const).map(({ href, label }) => (
+              ] as { href: string; label: string }[]).map(({ href, label }) => (
                 <Link key={href} href={href} onClick={closeMobile}
                   className="py-1 font-serif text-4xl text-white/80 hover:text-white transition-colors duration-300">
                   {label}

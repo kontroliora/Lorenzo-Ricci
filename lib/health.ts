@@ -32,7 +32,9 @@ async function probe(path: string, init?: RequestInit): Promise<{ status: number
 
 // ── 1. Site + checkout up ────────────────────────────────────────────────────
 async function checkSite(): Promise<Check[]> {
-  const pages = ["/", ...(RO_STORE_ENABLED ? ["/ro"] : []), "/products/yachting-black"]; // RO only while the store is on (lib/ro-store.ts)
+  // A product page that is on the shelf (lib/storefront.ts: a hidden collection's page answers 301, which is not a failure but is no longer a product page to watch).
+  const sample = products.find((p) => p.inStock) ?? products[0];
+  const pages = ["/", ...(RO_STORE_ENABLED ? ["/ro"] : []), ...(sample ? [`/products/${sample.slug}`] : [])]; // RO only while the store is on (lib/ro-store.ts)
   // The order endpoints answer GET with 405 when they are deployed and alive; 5xx / timeout = the checkout cannot take orders.
   const checkout = ["/api/order", ...(RO_STORE_ENABLED ? ["/api/order-ro"] : [])];
   const [p, c] = await Promise.all([Promise.all(pages.map((x) => probe(x))), Promise.all(checkout.map((x) => probe(x)))]);

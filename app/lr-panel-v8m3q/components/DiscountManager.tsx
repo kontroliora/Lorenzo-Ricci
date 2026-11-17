@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { products as staticProducts } from "@/lib/products";
+import { allProducts as staticProducts } from "@/lib/products"; // the whole catalogue (lib/storefront.ts): the panel keeps managing every product
 
 const VALID_DISCOUNTS = [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
 

@@ -184,12 +184,3 @@ html.dark .border-border { border-color: rgba(255, 255, 255, 0.08) !important; }
 html.dark .divide-border > * + * { border-color: rgba(255, 255, 255, 0.08) !important; }
 
 html.dark .logo-invert { filter: none; }
-
-/* Home hero, first paint (components/home/Hero.tsx, lib/hero-source.ts): until React has decided the order, show only the slide the
-   inline script chose (<html data-hero-first>); the general slide when nothing was chosen. */
-[data-hero-pending] > [data-hero-slide] { display: none; }
-html:not([data-hero-first="jewel"]):not([data-hero-first="watch"]) [data-hero-pending] > [data-hero-slide="general"],
-html[data-hero-first="jewel"] [data-hero-pending] > [data-hero-slide="jewel"],
-html[data-hero-first="watch"] [data-hero-pending] > [data-hero-slide="watch"] { display: block; }
-html[data-hero-first="jewel"] [data-hero-pending] > [data-hero-slide="jewel"] > div,
-html[data-hero-first="watch"] [data-hero-pending] > [data-hero-slide="watch"] > div { opacity: 1; }

@@ -167,8 +167,7 @@ export function RoCartDrawer() {
             <p className="font-serif text-[22px] text-navy">Coșul este gol</p>
             <p className="font-sans text-[13px] text-ink-muted">Adăugați produse pentru a continua</p>
             <div className="flex flex-col sm:flex-row gap-3 mt-3 w-full sm:w-auto">
-              <Link href="/ro/ceasuri" onClick={close} className="btn-outline">Ceasuri</Link>
-              <Link href="/ro/piele-de-crocodil" onClick={close} className="btn-outline">Piele de crocodil</Link>
+              <Link href="/ro/bijuterii#colectia-pentru-femei" onClick={close} className="btn-outline">Colecția pentru femei</Link>
             </div>
           </div>
         ) : (

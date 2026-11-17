@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { SHELF } from "@/lib/storefront";
 
 export const metadata: Metadata = {
   title: "Нашата История",
-  description: "Lorenzo Ricci е основана от братя часовникари, водени от стремежа да създават луксозни часовници с характер, прецизност и изискано присъствие.",
+  description: "Lorenzo Ricci е основана от братя часовникари, водени от стремежа да създават изделия с характер, прецизност и изискано присъствие. Историята на марката и на дамската колекция бижута.",
 };
 
 export default function StoryPage() {
@@ -17,7 +18,7 @@ export default function StoryPage() {
         <h1 className="font-serif text-display-lg text-charcoal mb-4">Нашата История</h1>
         <div className="gold-divider" />
         <p className="font-sans text-sm font-light text-ink-muted max-w-xl mx-auto mt-6 leading-relaxed tracking-wide">
-          Луксозни часовници, създадени с прецизност и характер
+          Бижута, създадени с прецизност и характер
         </p>
       </div>
 
@@ -40,10 +41,10 @@ export default function StoryPage() {
             <h2 className="font-serif text-display-md text-charcoal mb-8">Кои сме ние</h2>
             <div className="gold-divider mb-8 mx-0" />
             <p className="font-sans text-base font-light text-ink-soft leading-[1.9] tracking-wide mb-6">
-              Lorenzo Ricci е основана от братя часовникари, водени от стремежа да създават часовници с характер и изискано присъствие. От самото начало нашата визия е ясна - да съчетаем класическа елегантност с модерна интерпретация на лукса.
+              Lorenzo Ricci е основана от братя часовникари, водени от стремежа да създават изделия с характер и изискано присъствие. От самото начало нашата визия е ясна - да съчетаем класическа елегантност с модерна интерпретация на лукса.
             </p>
             <p className="font-sans text-base font-light text-ink-soft leading-[1.9] tracking-wide">
-              Всеки модел носи внимателно подбран дизайн, прецизна изработка и усещане за стил, което остава във времето. За нас часовникът не е просто аксесоар - той е израз на увереност.
+              Всеки модел носи внимателно подбран дизайн, прецизна изработка и усещане за стил, което остава във времето. За нас бижуто не е просто аксесоар - то е израз на увереност.
             </p>
           </div>
         </div>
@@ -72,10 +73,10 @@ export default function StoryPage() {
             <h2 className="font-serif text-display-md text-charcoal mb-8">Страстта към Занаята</h2>
             <div className="gold-divider mb-8 mx-0" />
             <p className="font-sans text-base font-light text-ink-soft leading-[1.9] tracking-wide mb-6">
-              Нашият фокус е върху създаването на часовници, които съчетават изключително качество с изискан дизайн. За разлика от много марки, които залагат на масово производство, ние наблягаме на майсторската изработка и усещането за лукс.
+              Нашият фокус е върху създаването на бижута, които съчетават изключително качество с изискан дизайн. За разлика от много марки, които залагат на масово производство, ние наблягаме на майсторската изработка и усещането за лукс.
             </p>
             <p className="font-sans text-base font-light text-ink-soft leading-[1.9] tracking-wide">
-              Независимо дали търсите подарък за специален човек или искате да се поглезите сами - нашите часовници са създадени, за да се носят с гордост.
+              Независимо дали търсите подарък за специален човек или искате да се поглезите сами - нашите бижута са създадени, за да се носят с гордост.
             </p>
           </div>
           <div className="relative aspect-[4/5] overflow-hidden">
@@ -94,7 +95,7 @@ export default function StoryPage() {
         <div className="relative w-full aspect-[21/9] overflow-hidden mb-24">
           <Image
             src="/story/sea.webp"
-            alt="Lorenzo Ricci - италианска визия и морска естетика, луксозни часовници с характер"
+            alt="Lorenzo Ricci - италианска визия и морска естетика"
             fill
             quality={85}
             sizes="100vw"
@@ -107,14 +108,16 @@ export default function StoryPage() {
                 Нашата Визия
               </h2>
               <p className="font-sans text-sm font-light text-white/65 leading-relaxed tracking-wide">
-                Да обединим високи технологични стандарти с елегантен дизайн, вдъхновен от класиката и съвременните тенденции - всеки часовник преминава строг контрол за издръжливост и прецизност.
+                Да обединим високи технологични стандарти с елегантен дизайн, вдъхновен от класиката и съвременните тенденции.
               </p>
             </div>
           </div>
         </div>
 
         {/* Section 4: Преосмисляне на лукса */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
+        <div className={`grid grid-cols-1 ${SHELF.watches ? "lg:grid-cols-2" : "max-w-3xl mx-auto"} gap-16 items-center mb-24`}>
+          {/* The photo shows the watch collection: only while it is on the shelf (lib/storefront.ts) */}
+          {SHELF.watches && (
           <div className="relative aspect-[4/5] overflow-hidden">
             <Image
               src="/story/watches.webp"
@@ -125,6 +128,7 @@ export default function StoryPage() {
               className="object-cover object-right"
             />
           </div>
+          )}
           <div>
             <p className="section-tag mb-4">Достъпен Лукс</p>
             <h2 className="font-serif text-display-md text-charcoal mb-8">Преосмисляме Лукса</h2>
@@ -133,7 +137,7 @@ export default function StoryPage() {
               Работим директно с нашите клиенти, което елиминира традиционните търговски надценки. Инвестираме в качествено производство, а не в скъпа реклама или посланици на марката.
             </p>
             <p className="font-sans text-base font-light text-ink-soft leading-[1.9] tracking-wide">
-              Резултатът - часовник и бижута с истинска луксозна стойност на достъпна цена. Вие получавате максимума, ние запазваме честността.
+              Резултатът - бижута с истинска луксозна стойност на достъпна цена. Вие получавате максимума, ние запазваме честността.
             </p>
           </div>
         </div>
@@ -144,16 +148,17 @@ export default function StoryPage() {
           <h2 className="font-serif text-display-sm mb-6" style={{color: "#ffffff"}}>Непоколебима Увереност</h2>
           <div className="w-12 h-px mx-auto mb-8" style={{backgroundColor: "rgba(255,255,255,0.3)"}} />
           <p className="font-sans text-sm font-light leading-relaxed max-w-2xl mx-auto mb-6" style={{color: "rgba(255,255,255,0.8)"}}>
-            Ние заставаме зад качеството на нашите часовници и бижута с пълна увереност. Всеки модел е свидетелство за отдадеността ни към съвършенството - 5 години търговска гаранция на механизмите, доживотна гаранция на бижутата.
+            Ние заставаме зад качеството на нашите бижута с пълна увереност. Всеки модел е свидетелство за отдадеността ни към съвършенството - доживотна гаранция на бижутата.
           </p>
           <p className="font-sans text-sm font-light leading-relaxed max-w-xl mx-auto" style={{color: "rgba(255,255,255,0.6)"}}>
-            Присъединете се към общността, която празнува елегантните, прецизно изработени часовници.
+            Присъединете се към общността, която празнува елегантните, прецизно изработени бижута.
           </p>
 
           {/* Trust badges */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-12 max-w-2xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 mt-12 max-w-2xl mx-auto">
             {[
-              { label: "5 г. Гаранция", sub: "Търговска, на механизма" },
+              // the watches' 5-year guarantee is shown only while the watches are on the shelf (lib/storefront.ts)
+              ...(SHELF.watches ? [{ label: "5 г. Гаранция", sub: "Търговска, на механизма" }] : []),
               { label: "Доживотна", sub: "На бижутата" },
               { label: "4.8 ★", sub: "1000+ ревюта" },
               { label: "30 дни", sub: "Лесна замяна" },
@@ -171,10 +176,12 @@ export default function StoryPage() {
           <div className="w-12 h-px bg-border mx-auto mb-10" />
           <p className="font-serif text-display-sm text-charcoal mb-8">Намерете своя стил</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/watches" className="btn-primary min-w-[200px]">
-              Разгледай Часовници
-            </Link>
-            <Link href="/jewellery" className="btn-outline min-w-[200px]">
+            {SHELF.watches && (
+              <Link href="/watches" className="btn-primary min-w-[200px]">
+                Разгледай Часовници
+              </Link>
+            )}
+            <Link href="/jewellery#damska-kolekcia" className={`${SHELF.watches ? "btn-outline" : "btn-primary"} min-w-[200px]`}>
               Разгледай Бижута
             </Link>
           </div>

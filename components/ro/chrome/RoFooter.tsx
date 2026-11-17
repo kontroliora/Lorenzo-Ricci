@@ -3,13 +3,16 @@ import Image from "next/image";
 import { fmtRON, RO_DELIVERY_DAYS, RO_COURIER_LABEL, RO_FREE_SHIPPING_RON, RO_RETURN_DAYS } from "@/lib/ro/config";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import { RoNewsletterStrip } from "./RoNewsletterStrip";
+import { SHELF } from "@/lib/storefront";
 
 // Romanian counterpart of components/layout/Footer.tsx (server component). Company name, e-mail, opening hours and
 // the postal address are the ones the Bulgarian site already publishes (footer + privacy policy). The newsletter signup
 // (RoNewsletterStrip, Romanian, stores lang = ro) sits above it; no social links. The trust badges take every figure from lib/ro/config.ts. The BG · RO switch sits in the brand column
 // (the footer is one of the places it may live: never beside the cart icon in the header).
 const TRUST = [
-  { title: "5 ani garanție comercială", sub: "la ceasuri · pe viață la bijuterii" },
+  SHELF.watches
+    ? { title: "5 ani garanție comercială", sub: "la ceasuri · pe viață la bijuterii" }
+    : { title: "Garanție pe viață", sub: "la bijuterii" },
   { title: `Livrare în ${RO_DELIVERY_DAYS} zile lucrătoare`, sub: `cu ${RO_COURIER_LABEL}` },
   { title: "Livrare gratuită", sub: `Pentru comenzi de peste ${fmtRON(RO_FREE_SHIPPING_RON)}` },
   { title: `Retur în ${RO_RETURN_DAYS} zile`, sub: "Plata securizată cu cardul" },
@@ -38,11 +41,11 @@ export function RoFooter({ showSets = true }: { showSets?: boolean }) {
           <div>
             <FooterHeading>Colecții</FooterHeading>
             <div className="flex flex-col gap-3">
-              <FooterLink href="/ro/ceasuri">Ceasuri</FooterLink>
-              <FooterLink href="/ro/bijuterii">Bijuterii</FooterLink>
-              <FooterLink href="/ro/bijuterii#bracelets">Brățări</FooterLink>
-              <FooterLink href="/ro/bijuterii#necklaces">Coliere</FooterLink>
-              <FooterLink href="/ro/piele-de-crocodil">Articole din piele de crocodil</FooterLink>
+              {SHELF.watches && <FooterLink href="/ro/ceasuri">Ceasuri</FooterLink>}
+              <FooterLink href="/ro/bijuterii#colectia-pentru-femei">Bijuterii</FooterLink>
+              <FooterLink href="/ro/bijuterii?category=bracelets">Brățări</FooterLink>
+              <FooterLink href="/ro/bijuterii?category=necklaces">Coliere</FooterLink>
+              {SHELF.leather && <FooterLink href="/ro/piele-de-crocodil">Articole din piele de crocodil</FooterLink>}
               {showSets && <FooterLink href="/ro/seturi">Seturi</FooterLink>}
             </div>
           </div>
@@ -54,9 +57,9 @@ export function RoFooter({ showSets = true }: { showSets?: boolean }) {
               <FooterLink href="/ro/intrebari-frecvente">Întrebări frecvente</FooterLink>
               <FooterLink href="/ro/politici/livrare">Livrare</FooterLink>
               <FooterLink href="/ro/politici/retur">Retur</FooterLink>
-              <FooterLink href="/ro/garantie-bijuterii#ceasuri">Garanție ceasuri</FooterLink>
+              {SHELF.watches && <FooterLink href="/ro/garantie-bijuterii#ceasuri">Garanție ceasuri</FooterLink>}
               <FooterLink href="/ro/garantie-bijuterii">Garanție bijuterii</FooterLink>
-              <FooterLink href="/ro/ghid-ceas">Ghid ceas</FooterLink>
+              {SHELF.watches && <FooterLink href="/ro/ghid-ceas">Ghid ceas</FooterLink>}
               <FooterLink href="/ro/politici/confidentialitate">Politica de confidențialitate</FooterLink>
               <FooterLink href="/ro/politici/termeni">Termeni și condiții</FooterLink>
             </div>

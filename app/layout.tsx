@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { AD_SRC_SCRIPT } from "@/lib/hero-source";
 import { homeOgImage } from "@/lib/og";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -43,22 +42,27 @@ import { HideOnCart } from "@/components/layout/HideOnCart";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://lorenzo-ricci.com"),
+  // Only the women's collection is on the shelf (lib/storefront.ts): site-wide copy speaks of it alone.
   title: {
-    default: "Lorenzo Ricci - Луксозни Часовници и Бижута",
+    default: "Lorenzo Ricci - Дамска колекция бижута",
     template: "%s | Lorenzo Ricci",
   },
   description:
-    "Lorenzo Ricci - Прецизност във всеки детайл. Луксозни хронографи и бижута с 18K позлата. Безплатна доставка. 5 г. търговска гаранция на часовниците. Доживотна гаранция на бижутата.",
+    "Lorenzo Ricci - дамска колекция гривни и колиета с 18K позлата, в луксозна велурена кутия. Италиански дизайн. Безплатна доставка над €60. Доживотна гаранция на бижутата.",
   keywords: [
     "Lorenzo Ricci",
-    "луксозни часовници",
-    "хронограф",
+    "дамска колекция",
+    "дамски бижута",
+    "гривни",
+    "колиета",
     "бижута позлата",
     "18K PVD",
-    "сапфирено стъкло",
-    "Chrono Black",
-    "Golden Eclipse",
-    "Polar Frost",
+    "Verdis",
+    "Noctis",
+    "Lumen",
+    "Linea",
+    "Solaris",
+    "Spira",
   ],
   authors: [{ name: "Lorenzo Ricci" }],
   creator: "Lorenzo Ricci",
@@ -67,10 +71,10 @@ export const metadata: Metadata = {
     locale: "bg_BG",
     url: "https://lorenzo-ricci.com",
     siteName: "Lorenzo Ricci",
-    title: "Lorenzo Ricci - Луксозни Часовници и Бижута",
+    title: "Lorenzo Ricci - Дамска колекция бижута",
     description:
-      "Прецизност във всеки детайл. Луксозни хронографи и бижута с 18K позлата.",
-    images: [homeOgImage("Lorenzo Ricci - луксозен часовник, колие с 18K позлата и сак от крокодилска кожа")],
+      "Дамска колекция гривни и колиета с 18K позлата. Италиански дизайн, луксозна велурена кутия.",
+    images: [homeOgImage("Lorenzo Ricci - дамска колекция: колие и гривни с 18K позлата")],
   },
   robots: {
     index: true,
@@ -96,10 +100,6 @@ export default async function RootLayout({
   // lib/geo.ts stay dormant in case a market test comes back.
   return (
     <html lang="bg" className={`scroll-smooth ${playfair.variable} ${inter.variable}`} suppressHydrationWarning>
-      <head>
-        {/* The landing of the last ad click in this tab (lib/hero-source.ts): the home hero shows the matching slide first */}
-        <script dangerouslySetInnerHTML={{ __html: AD_SRC_SCRIPT }} />
-      </head>
       <body className="bg-ivory text-charcoal antialiased">
         <CartPersistence />
         <MetaPixel />

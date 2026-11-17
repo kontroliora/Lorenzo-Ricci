@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
-import { getProductBySlug } from "@/lib/products";
+import { getCatalogProductBySlug } from "@/lib/products"; // full catalogue: an old order of a product now off the shelf keeps its photo
 import type { OrderItem } from "@/lib/orders";
 
 const THUMB = 64; // px — left of the name, compact for fast fulfillment scanning
@@ -53,7 +53,7 @@ export function OrderItemsList({ items }: { items: OrderItem[] }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, margin: "3px 0" }}>
       {items.map((it, i) => {
-        const product = it.slug ? getProductBySlug(it.slug) : undefined;
+        const product = it.slug ? getCatalogProductBySlug(it.slug) : undefined;
         const qty = it.quantity ?? it.qty ?? 1;
         return (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 11 }}>

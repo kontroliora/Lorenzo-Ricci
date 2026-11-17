@@ -1,72 +1,15 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
 import { HOME_HERO_PHOTOS } from "@/lib/new-collection";
 
 // The slide photos fill a full-screen box (object-cover): cropped and drawn larger than the box, so a resized copy looked a touch
 // softer than the original (checked side by side, 08.11.2026). They always get the original; the slide mounts after load anyway.
 const COVER_SLIDE_SIZES = "2048px";
 
-// The home hero's collection slide. BG (15.11.2026): the FIRST slide and the page's LCP (priority, photos chosen from live stock in
-// lib/hero.ts). RO: still the second slide, mounted after the page has loaded, after the watch slide. Phones: the
-// necklace on the neck, full screen; larger screens: necklace + bracelet on model side by side.
-
-export const HERO_SLIDE_MS = 6500;
-
-/**
- * Slide rotation: 0 = the watch slide, 1 = the new collection. Starts after the page has loaded; pauses while the tab is hidden;
- * no automatic rotation for people who asked for less motion (the dots still switch). Swipe on touch screens.
- */
-export function useHeroSlides(count = 2) {
-  const [slide, setSlide] = useState(0);
-  const [ready, setReady] = useState(false);
-  const [paused, setPaused] = useState(false);
-  const touchX = useRef<number | null>(null);
-
-  useEffect(() => {
-    const go = () => setReady(true);
-    if (document.readyState === "complete") { const t = setTimeout(go, 400); return () => clearTimeout(t); }
-    window.addEventListener("load", go, { once: true });
-    return () => window.removeEventListener("load", go);
-  }, []);
-
-  useEffect(() => {
-    if (!ready || paused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const t = setInterval(() => { if (!document.hidden) setSlide((s) => (s + 1) % count); }, HERO_SLIDE_MS);
-    return () => clearInterval(t);
-  }, [ready, paused, count, slide]);
-
-  const swipe = {
-    onTouchStart: (e: React.TouchEvent) => { touchX.current = e.touches[0].clientX; },
-    onTouchEnd: (e: React.TouchEvent) => {
-      if (touchX.current === null) return;
-      const dx = e.changedTouches[0].clientX - touchX.current; touchX.current = null;
-      if (Math.abs(dx) > 50) setSlide((s) => (s + (dx < 0 ? 1 : count - 1)) % count);
-    },
-  };
-  return { slide, setSlide, ready, setPaused, swipe };
-}
-
-export function HeroDots({ slide, count = 2, onSelect, labels, dark = false }: { slide: number; count?: number; onSelect: (i: number) => void; labels: string[]; dark?: boolean }) {
-  return (
-    <div className="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-20 flex gap-3" role="tablist">
-      {Array.from({ length: count }, (_, i) => (
-        <button
-          key={i}
-          type="button"
-          role="tab"
-          aria-selected={slide === i}
-          aria-label={labels[i]}
-          onClick={() => onSelect(i)}
-          className="p-2 -m-2"
-        >
-          <span className={`block h-[3px] transition-all duration-500 ${slide === i ? `w-8 ${dark ? "bg-navy" : "bg-white"}` : `w-4 ${dark ? "bg-navy/30" : "bg-white/45"}`}`} />
-        </button>
-      ))}
-    </div>
-  );
-}
+// The home hero's collection slide (BG + RO): the page's only hero slide (owner, 17.11.2026) - no slider, no dots, no automatic switching.
+// BG: the page's LCP (priority, photos chosen from live stock in lib/hero.ts); RO: the default photos. Phones: the necklace on the
+// neck, full screen; larger screens: necklace + bracelet on model side by side.
 
 export function HeroCollectionSlide({ active, mounted, tag, title, badge, line, cta, href, alts, photos = HOME_HERO_PHOTOS, priority = false }: {
   active: boolean; mounted: boolean; tag: string; title: string; badge: string; line: string; cta: string; href: string;

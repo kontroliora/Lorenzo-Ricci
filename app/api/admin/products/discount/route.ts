@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { getProductBySlug } from "@/lib/products";
+import { getCatalogProductBySlug } from "@/lib/products"; // admin: any product of the catalogue, on the shelf or not
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { PRICE_OVERRIDES_TAG } from "@/lib/price-overrides";
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   // applying a NEW discount on a product that's already discounted (a row already
   // exists), it must apply against the current CATALOG price, not the stale
   // original_price sitting in the override row, or discounts would compound.
-  const product = getProductBySlug(slug);
+  const product = getCatalogProductBySlug(slug);
   if (!product) return NextResponse.json({ ok: false, error: "Product not found" }, { status: 404 });
   const catalogPrice = product.price;
 

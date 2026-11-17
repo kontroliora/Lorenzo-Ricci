@@ -33,7 +33,7 @@ export function EditorialJewellery() {
               <em className="not-italic text-white">история</em>
             </h2>
             <p className="font-sans text-sm font-light text-white/45 leading-relaxed tracking-wide mb-8 max-w-xs">
-              Вдъхновени от италианското майсторство и страстта към прецизността - създаваме часовници и бижута, родени да се носят с гордост.
+              Вдъхновени от италианското майсторство и страстта към прецизността - създаваме бижута, родени да се носят с гордост.
             </p>
             <Link
               href="/story"

@@ -7,7 +7,7 @@ import { ProductCard } from "@/components/product/ProductCard";
 
 export const metadata: Metadata = {
   title: "Намаления",
-  description: "Всички намалени часовници, бижута и кожени изделия Lorenzo Ricci, подредени по размер на отстъпката.",
+  description: "Всички намалени бижута от дамската колекция Lorenzo Ricci, подредени по размер на отстъпката.",
 };
 
 // Rebuilt hourly, like the homepage; a sell-out, a price change or a campaign phase switch rebuilds it at once.
@@ -38,7 +38,7 @@ export default async function SalePage() {
             ))}
           </div>
         ) : (
-          <p className="text-center font-sans text-sm text-ink-muted">Разгледайте всички <a className="underline" href="/watches">часовници</a> и <a className="underline" href="/jewellery">бижута</a>.</p>
+          <p className="text-center font-sans text-sm text-ink-muted">Разгледайте цялата <a className="underline" href="/jewellery#damska-kolekcia">дамска колекция</a>.</p>
         )}
       </div>
     </div>

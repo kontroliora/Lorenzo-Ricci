@@ -1,8 +1,5 @@
 import { Hero } from "@/components/home/Hero";
-import { heroGeneral, heroJewel, heroWatch } from "@/lib/hero";
-import { heroFirstScript, type HeroSlideKey } from "@/lib/hero-source";
-import { heroSourceCfg } from "@/lib/hero-source-server";
-import { watchGiftActive } from "@/lib/watch-gift";
+import { heroJewel } from "@/lib/hero";
 import { FeaturedWatches } from "@/components/home/FeaturedWatches";
 import { WalletsSection } from "@/components/home/WalletsSection";
 import { MilanoAvorioFlagship } from "@/components/home/MilanoAvorioFlagship";
@@ -16,6 +13,7 @@ import { getProductBySlug, products } from "@/lib/products";
 import { SaleBanner } from "@/components/home/SaleBanner";
 import { campaignLabel, maxDiscountRounded } from "@/lib/sale-campaign";
 import { getPriceOverrides, applyOverride, applyOverrides } from "@/lib/price-overrides";
+import { SHELF } from "@/lib/storefront";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 // import { InstagramSection } from "@/components/home/InstagramSection";
 
@@ -53,30 +51,20 @@ export default async function HomePage() {
   // "Дамска колекция" (the 2026 collection): one row of 4 in the shop and in stock, showcase order (lib/new-collection.ts).
   const newPieces = homeCollectionPicks(applyOverrides(products, overrides), new Set(soldOut));
 
-  // Hero: three slides from live stock; which comes first is decided per visitor by traffic source (lib/hero-source.ts).
-  const general = heroGeneral(soldOutSet), jewel = heroJewel(soldOutSet), watch = heroWatch(soldOutSet);
-  const avail = ([general && "general", jewel && "jewel", watch && "watch"] as const).filter(Boolean) as HeroSlideKey[];
-  const heroSource = await heroSourceCfg(avail);
+  // Hero: one slide, "Дамска колекция", with the photos of a necklace + bracelet pair that is in stock (lib/hero.ts).
+  const jewel = heroJewel(soldOutSet);
 
   return (
     <>
-      {/* Runs before the hero is parsed: marks <html data-hero-first> so the right slide is the first thing painted */}
-      <script dangerouslySetInnerHTML={{ __html: heroFirstScript(heroSource) }} />
-      <Hero
-        campaign={saleLabel && salePct >= 5 ? { label: saleLabel, pct: salePct } : null}
-        general={general}
-        jewel={jewel}
-        watch={watch}
-        watchGift={watchGiftActive()}
-        source={heroSource}
-      />
+      <Hero jewel={jewel} />
       {saleLabel && salePct >= 5 && <SaleBanner label={saleLabel} pct={salePct} />}
       {/* The new collection is the main campaign: right under the hero and the sale bar, above the watches and leather */}
       <NewCollectionSection pieces={newPieces} />
-      <FeaturedWatches soldOut={soldOut} />
-      <WalletsSection soldOut={soldOut} />
-      {milanoAvorio && <MilanoAvorioFlagship product={milanoAvorio} />}
-      <JewellerySection />
+      {/* Hidden collections (lib/storefront.ts SHELF): their home sections are not drawn; switch the flag back on to restore them */}
+      {SHELF.watches && <FeaturedWatches soldOut={soldOut} />}
+      {SHELF.leather && <WalletsSection soldOut={soldOut} />}
+      {SHELF.leather && milanoAvorio && <MilanoAvorioFlagship product={milanoAvorio} />}
+      {SHELF.jewelleryClassic && <JewellerySection />}
       <EditorialJewellery />
       <BrandValues />
       <TestimonialsSection />

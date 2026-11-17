@@ -32,7 +32,9 @@ const productLabel = (slug: string): string | undefined =>
 
 export function pickRoTestimonials(limit = LIMIT): RoTestimonial[] {
   const eligible = new Map<string, Review>();
+  const onTheShelf = new Set(products.map((p) => p.slug)); // lib/storefront.ts: no review of a product of a hidden collection
   for (const r of reviews) {
+    if (!onTheShelf.has(r.productSlug)) continue;
     const ro = localizeReview(r);
     if (!ro || !ro.body || ro.rating < 4) continue;
     if (hasCyrillic(ro.author) || hasCyrillic(ro.body) || (ro.title && hasCyrillic(ro.title))) continue; // never show foreign script

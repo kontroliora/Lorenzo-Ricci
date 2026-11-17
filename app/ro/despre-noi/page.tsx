@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SHELF } from "@/lib/storefront";
 import Image from "next/image";
 import Link from "next/link";
 import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
@@ -188,15 +189,19 @@ export default function DespreNoiPage() {
           <div className="w-12 h-px bg-border mx-auto mb-10" />
           <p className="font-serif text-display-sm text-charcoal mb-8">Găsiți-vă stilul</p>
           <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4 justify-center">
-            <Link href="/ro/ceasuri" className="btn-primary min-w-[200px]">
-              Descoperiți ceasurile
-            </Link>
-            <Link href="/ro/bijuterii" className="btn-outline min-w-[200px]">
+            {SHELF.watches && (
+              <Link href="/ro/ceasuri" className="btn-primary min-w-[200px]">
+                Descoperiți ceasurile
+              </Link>
+            )}
+            <Link href="/ro/bijuterii#colectia-pentru-femei" className={`${SHELF.watches ? "btn-outline" : "btn-primary"} min-w-[200px]`}>
               Descoperiți bijuteriile
             </Link>
-            <Link href="/ro/piele-de-crocodil" className="btn-outline min-w-[200px]">
-              Descoperiți pielea de crocodil
-            </Link>
+            {SHELF.leather && (
+              <Link href="/ro/piele-de-crocodil" className="btn-outline min-w-[200px]">
+                Descoperiți pielea de crocodil
+              </Link>
+            )}
           </div>
         </div>
 

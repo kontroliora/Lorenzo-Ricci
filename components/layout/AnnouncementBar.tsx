@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import { opoBarGroups, opoPriceBg } from "@/lib/one-plus-one";
 import { watchGiftActive, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
+import { SHELF } from "@/lib/storefront";
 
 // Every running 1+1 group (lib/one-plus-one.ts: the new jewellery, then the cardholders) leads the rotation, in full white.
 // The watch + free cardholder offer (lib/watch-gift.ts) leads while it runs (until 31.12), then drops out on its own.
@@ -12,8 +13,8 @@ const OPO_BARS = [
   ...opoBarGroups().map((g) => g.text.bg.bar({ one: opoPriceBg(g) })),
 ];
 
-const BASE_DESKTOP = ["Безплатна доставка за поръчки над €60", "5 години търговска гаранция на часовниците · Доживотна на бижутата", CARD_PAYMENTS_ENABLED ? "Доставка за 1–2 работни дни с Еконт · Карта (−5%) или наложен платеж" : "Доставка за 1–2 работни дни с Еконт · Преглед и тест преди плащане"];
-const BASE_MOBILE  = ["Безплатна доставка над €60", "Гаранция 5 год. · Доживотна за бижута", "Доставка за 1–2 работни дни с Еконт"];
+const BASE_DESKTOP = ["Безплатна доставка за поръчки над €60", SHELF.watches ? "5 години търговска гаранция на часовниците · Доживотна на бижутата" : "Доживотна гаранция на бижутата", CARD_PAYMENTS_ENABLED ? "Доставка за 1–2 работни дни с Еконт · Карта (−5%) или наложен платеж" : "Доставка за 1–2 работни дни с Еконт · Преглед и тест преди плащане"];
+const BASE_MOBILE  = ["Безплатна доставка над €60", SHELF.watches ? "Гаранция 5 год. · Доживотна за бижута" : "Доживотна гаранция на бижутата", "Доставка за 1–2 работни дни с Еконт"];
 const DESKTOP = [...OPO_BARS.map((b) => b.desktop), ...BASE_DESKTOP];
 const MOBILE  = [...OPO_BARS.map((b) => b.mobile), ...BASE_MOBILE];
 

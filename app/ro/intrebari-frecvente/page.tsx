@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
 import { roToBgPath } from "@/lib/ro/route-map";
+import { SHELF } from "@/lib/storefront";
 import {
   RO_COURIER_LABEL,
   RO_DELIVERY_DAYS,
@@ -21,7 +22,7 @@ const PREPAY_EUR = PREPAYMENT_THRESHOLD_EUR.toLocaleString("ro-RO");
 
 export const metadata: Metadata = {
   title: "Întrebări frecvente",
-  description: "Răspunsuri la cele mai frecvente întrebări despre ceasurile, bijuteriile și articolele din piele de crocodil Lorenzo Ricci: comandă, plată, livrare, garanție și retur.",
+  description: "Răspunsuri la cele mai frecvente întrebări despre bijuteriile Lorenzo Ricci: comandă, plată, livrare, garanție și retur.",
   alternates: {
     canonical: `https://lorenzo-ricci.com${PATH}`,
     languages: {
@@ -36,11 +37,14 @@ type FaqItem = {
   q: string;
   a: React.ReactNode;
   link?: { text: string; href: string };
+  hidden?: boolean;
 };
 
-const faqs: { category: string; items: FaqItem[] }[] = [
+// `hidden` = belongs to a collection that is switched off (lib/storefront.ts SHELF); the text stays here for when it is back.
+const ALL_FAQS: { category: string; hidden?: boolean; items: FaqItem[] }[] = [
   {
     category: "CEASURI",
+    hidden: !SHELF.watches,
     items: [
       {
         q: "Din ce materiale sunt realizate ceasurile voastre?",
@@ -131,6 +135,7 @@ const faqs: { category: string; items: FaqItem[] }[] = [
     category: "GARANȚIE ȘI RETUR",
     items: [
       {
+        hidden: !SHELF.watches,
         q: "Ce garanție au ceasurile?",
         a: "Lorenzo Ricci oferă o garanție comercială de 5 ani pentru mecanism, în plus față de drepturile dumneavoastră legale de consumator (inclusiv garanția legală de conformitate de 2 ani). Aceasta acoperă defectele de fabricație. Nu acoperă: carcasa, sticla, cureaua, catarama, daunele cauzate de utilizarea necorespunzătoare sau de lovituri.",
         link: { text: "Vedeți condițiile detaliate de garanție", href: "/ro/politici/termeni#garantie" },
@@ -153,6 +158,7 @@ const faqs: { category: string; items: FaqItem[] }[] = [
   },
   {
     category: "ARTICOLE DIN PIELE DE CROCODIL",
+    hidden: !SHELF.leather,
     items: [
       {
         q: "Din ce fel de piele sunt realizate produsele voastre?",
@@ -186,6 +192,8 @@ const faqs: { category: string; items: FaqItem[] }[] = [
     ],
   },
 ];
+
+const faqs = ALL_FAQS.filter((s) => !s.hidden).map((s) => ({ ...s, items: s.items.filter((i) => !i.hidden) })).filter((s) => s.items.length > 0);
 
 export default function IntrebariFrecventePage() {
   return (

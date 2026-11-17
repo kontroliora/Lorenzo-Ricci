@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirectIfCollectionOff } from "@/lib/storefront-guard";
 import Image from "next/image";
 import { getWatches } from "@/lib/products";
 import { getSoldOutSlugs } from "@/lib/sold-out";
@@ -33,6 +34,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function WatchesPage() {
+  redirectIfCollectionOff("watches"); // hidden collection (lib/storefront.ts): 308 to the women's collection; the middleware gives the 301
   const overrides = await getPriceOverrides();
   const soldOut = new Set(await getSoldOutSlugs());
   const watches = soldOutLast(applyOverrides(getWatches(), overrides), (s) => soldOut.has(s));

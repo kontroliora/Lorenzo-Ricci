@@ -2,10 +2,16 @@
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { useState } from "react";
 import Link from "next/link";
+import { SHELF } from "@/lib/storefront";
 
-const faqs = [
+type FaqItem = { q: string; a: string; link?: { text: string; href: string }; hidden?: boolean };
+type FaqSection = { category: string; hidden?: boolean; items: FaqItem[] };
+
+// `hidden` = the question belongs to a collection that is switched off (lib/storefront.ts SHELF); the text stays here for when it is back.
+const ALL_FAQS: FaqSection[] = [
   {
     category: "ЧАСОВНИЦИ",
+    hidden: !SHELF.watches,
     items: [
       {
         q: "От какви материали са изработени вашите часовници?",
@@ -89,6 +95,7 @@ const faqs = [
     category: "ГАРАНЦИЯ И ВРЪЩАНЕ",
     items: [
       {
+        hidden: !SHELF.watches,
         q: "Каква е гаранцията на часовниците?",
         a: "5-годишна търговска гаранция на механизма, предоставена от Lorenzo Ricci в допълнение към законовите Ви права като потребител. Покрива фабрични дефекти. Не покрива: корпус, стъкло, каишка, закопчалка, щети от неправилна употреба или удар.",
       },
@@ -105,6 +112,7 @@ const faqs = [
   },
   {
     category: "КОЖЕНИ ИЗДЕЛИЯ",
+    hidden: !SHELF.leather,
     items: [
       {
         q: "От каква кожа са изработени продуктите ви?",
@@ -138,6 +146,8 @@ const faqs = [
     ],
   },
 ];
+
+const faqs = ALL_FAQS.filter((s) => !s.hidden).map((s) => ({ ...s, items: s.items.filter((i) => !i.hidden) })).filter((s) => s.items.length > 0);
 
 export default function FaqPage() {
   const [open, setOpen] = useState<string | null>(null);

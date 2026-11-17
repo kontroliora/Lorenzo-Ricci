@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { fmtRON, RO_DELIVERY_TEXT, RO_FREE_SHIPPING_RON, opoPriceRo } from "@/lib/ro/config";
 import { opoBarGroups } from "@/lib/one-plus-one";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
+import { SHELF } from "@/lib/storefront";
 
 // Romanian counterpart of components/layout/AnnouncementBar.tsx: same fixed bar, same rotation.
 // Every figure comes from lib/ro/config.ts. Romania pays by card only (no ramburs). The warranty lines are the Bulgarian bar's:
@@ -15,13 +16,13 @@ const OPO_BARS = opoBarGroups().map((g) => g.text.ro.bar({ one: opoPriceRo(g) })
 
 const BASE_DESKTOP = [
   `Livrare gratuită pentru comenzi de peste ${FREE}`,
-  "5 ani garanție comercială la ceasuri",
+  ...(SHELF.watches ? ["5 ani garanție comercială la ceasuri"] : []),
   "Garanție pe viață la bijuterii",
   `${RO_DELIVERY_TEXT} · Plata securizată cu cardul`,
 ];
 const BASE_MOBILE = [
   `Livrare gratuită peste ${FREE}`,
-  "Garanție 5 ani la ceasuri",
+  ...(SHELF.watches ? ["Garanție 5 ani la ceasuri"] : []),
   "Garanție pe viață la bijuterii",
   RO_DELIVERY_TEXT,
 ];

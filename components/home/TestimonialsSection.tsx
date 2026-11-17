@@ -2,6 +2,7 @@
 import Image from "next/image";
 import { useRef, useState, useEffect } from "react";
 import type { Review } from "@/lib/types";
+import { getProductBySlug } from "@/lib/products";
 
 // Curated home-page testimonials - shown in this exact order
 const FEATURED: Review[] = [
@@ -161,7 +162,8 @@ export function TestimonialsSection() {
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(true);
 
-  const sorted = FEATURED;
+  // Only reviews of products that are on the shop window (lib/storefront.ts): a review of a hidden collection is not shown.
+  const sorted = FEATURED.filter((r) => !r.productSlug || !!getProductBySlug(r.productSlug));
 
   const checkScroll = () => {
     const el = carouselRef.current;
@@ -181,6 +183,9 @@ export function TestimonialsSection() {
     el.scrollBy({ left: dir === "next" ? amount : -amount, behavior: "smooth" });
     setTimeout(checkScroll, 550);
   };
+
+  // No review left for the products on the shelf: no section (rather than reviews of products that are not sold).
+  if (sorted.length === 0) return null;
 
   return (
     <section className="py-28 sm:py-40 bg-ivory-warm border-y border-border overflow-hidden">

@@ -1,4 +1,5 @@
 import { PREPAYMENT_THRESHOLD_EUR } from "@/lib/price";
+import { SHELF } from "@/lib/storefront";
 import {
   fmtRON, ronPrice,
   RO_DELIVERY_TEXT, RO_FREE_SHIPPING_RON, RO_RETURN_DAYS, RO_SHIPPING_FEE_RON,
@@ -21,7 +22,9 @@ const VALUES = [
   },
   {
     title: "Garanție inclusă",
-    desc: "5 ani garanție comercială la ceasuri, pentru fiecare mecanism, și garanție pe viață la bijuterii.",
+    desc: SHELF.watches
+      ? "5 ani garanție comercială la ceasuri, pentru fiecare mecanism, și garanție pe viață la bijuterii."
+      : "Garanție pe viață la bijuterii.",
   },
   {
     title: `Retur în ${RO_RETURN_DAYS} zile`,

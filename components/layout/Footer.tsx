@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import Image from "next/image";
 import { NewsletterStrip } from "./NewsletterStrip";
+import { SHELF } from "@/lib/storefront";
 
 export function Footer() {
   return (
@@ -31,11 +32,11 @@ export function Footer() {
           <div>
             <FooterHeading>Колекции</FooterHeading>
             <div className="flex flex-col gap-3 [@media(pointer:coarse)]:gap-0">
-              <FooterLink href="/watches">Часовници</FooterLink>
-              <FooterLink href="/jewellery">Бижута</FooterLink>
-              <FooterLink href="/jewellery#bracelets">Гривни</FooterLink>
-              <FooterLink href="/jewellery#necklaces">Колиета</FooterLink>
-              <FooterLink href="/leather-goods">Кожени изделия</FooterLink>
+              {SHELF.watches && <FooterLink href="/watches">Часовници</FooterLink>}
+              <FooterLink href="/jewellery#damska-kolekcia">Бижута</FooterLink>
+              <FooterLink href="/jewellery?category=bracelets">Гривни</FooterLink>
+              <FooterLink href="/jewellery?category=necklaces">Колиета</FooterLink>
+              {SHELF.leather && <FooterLink href="/leather-goods">Кожени изделия</FooterLink>}
             </div>
           </div>
 
@@ -45,7 +46,7 @@ export function Footer() {
             <div className="flex flex-col gap-3 [@media(pointer:coarse)]:gap-0">
               <FooterLink href="/faq">Често задавани въпроси</FooterLink>
               <FooterLink href="/policies/shipping">Доставка и връщане</FooterLink>
-              <FooterLink href="/warranty/jewelry#chasovnici">Гаранция на часовниците</FooterLink>
+              {SHELF.watches && <FooterLink href="/warranty/jewelry#chasovnici">Гаранция на часовниците</FooterLink>}
               <FooterLink href="/warranty/jewelry">Гаранция на бижутата</FooterLink>
             </div>
           </div>
@@ -72,9 +73,9 @@ export function Footer() {
         </div>
 
         {/* Trust badges */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 py-10 border-y border-border mb-8">
+        <div className={`grid grid-cols-2 ${SHELF.watches ? "sm:grid-cols-4" : "sm:grid-cols-3"} gap-8 py-10 border-y border-border mb-8`}>
           {([
-            { title: "5 г. търговска гаранция", sub: "на часовниците" },
+            ...(SHELF.watches ? [{ title: "5 г. търговска гаранция", sub: "на часовниците" }] : []),
             { title: "Доживотна гаранция",  sub: "на бижутата" },
             { title: "Доставка за 1–2 работни дни", sub: "с Еконт" },
             CARD_PAYMENTS_ENABLED ? { title: "Карта или наложен платеж", sub: "−5% при плащане с карта" } : { title: "Преглед преди плащане", sub: "Наложен платеж" },

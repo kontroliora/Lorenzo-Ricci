@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirectIfCollectionOff } from "@/lib/storefront-guard";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { soldOutLast } from "@/lib/sold-out-order";
 import Image from "next/image";
@@ -50,6 +51,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function RoWatchesPage() {
+  redirectIfCollectionOff("watches", "ro"); // hidden collection (lib/storefront.ts)
   const overrides = await getPriceOverrides();
   const soldOut = new Set(await getSoldOutSlugs());
   const watches = soldOutLast(applyOverrides(roWatches, overrides).map(localizeProduct), (s) => soldOut.has(s));

@@ -11,7 +11,7 @@ export default function NotFound() {
       </p>
       <div className="flex flex-col sm:flex-row gap-4">
         <Link href="/" className="btn-primary">Към начало</Link>
-        <Link href="/watches" className="btn-outline">Разгледай часовници</Link>
+        <Link href="/jewellery#damska-kolekcia" className="btn-outline">Разгледай дамската колекция</Link>
       </div>
     </div>
   );
