@@ -21,7 +21,7 @@ import { officeLabel } from "@/lib/econt-label";
 import { validateOrderPricing } from "@/lib/order-pricing";
 import { checkOrderable } from "@/lib/order-availability";
 import { checkPromoCode, PROMO_CODES_ENABLED, PROMO_DISABLED_ERROR, PROMO_NOT_ON_SALE } from "@/lib/promo";
-import { reserveWithGifts, giftNotes, giftDisplayName, shortModelName, GIFT_FALLBACK, type GiftLine, type GiftReservation, type MissedGift, type ReserveFn, type Shortfall } from "@/lib/gifts";
+import { reserveWithGifts, giftNotes, giftDisplayName, shortModelName, GIFT_FALLBACK, clutchGiftLabel, clutchGiftSlots, isClutchGiftChoice, isGiftClutch, type GiftLine, type GiftReservation, type MissedGift, type ReserveFn, type Shortfall } from "@/lib/gifts";
 import { watchGiftSlots, WATCH_GIFT_CHOICES } from "@/lib/watch-gift";
 
 // Insert an order row. econt_office_code (supabase/orders_econt_office.sql) is optional: if the column is not there yet the order is saved
@@ -197,13 +197,27 @@ export async function POST(req: NextRequest) {
     //    are skipped by the RPC. (Was: watches on a fail-open KV read-check; unified
     //    onto the stricter leather model so watches can no longer oversell either.)
     //
-    //    Clutch gifts (lib/gifts.ts) ride on the same reservation: each clutch also reserves
-    //    its gift cardholder (swapped for Bianco if the matching one is short, dropped if
-    //    nothing is left). A gift never blocks the paid goods - only a short PAID item does.
+    //    Free cardholders ride on the same reservation. A clutch's (lib/gifts.ts) is the one the customer chose, reserved
+    //    STRICTLY: if it ran out meanwhile the order is refused with code "gift_sold_out" and the cart sends the customer back to
+    //    the choice (never a silent swap). A watch's (lib/watch-gift.ts) is swapped if short. A clutch line without a chosen
+    //    cardholder (every one was sold out, or the customer added the clutch alone) is sold alone.
     let gifts: GiftLine[] = [];
     let missedGifts: MissedGift[] = [];
     {
       const lines = (order.items ?? []) as ItemPayload[];
+      // A free cardholder exists only with a clutch (or a watch while its offer runs): giftSlugs anywhere else, or anything that is not
+      // one cardholder per unit, is refused - the free cardholder can't be ordered on its own.
+      const badGift = lines.find((i) => {
+        if (i.giftSlugs === undefined) return false;
+        const slug = String(i.slug ?? "");
+        const isWatch = getProductBySlug(slug)?.category === "watches";
+        if (!isGiftClutch(slug) && !isWatch) return true;
+        if (!Array.isArray(i.giftSlugs) || i.giftSlugs.length > qtyOf(i)) return true;
+        return isGiftClutch(slug) && !i.giftSlugs.every(isClutchGiftChoice);
+      });
+      if (badGift) {
+        return NextResponse.json({ success: false, code: "gift_not_allowed", error: "Безплатният кардхолдър се поръчва само заедно с клъч. Моля, презаредете страницата и опитайте отново." }, { status: 400 });
+      }
       const reserveItems = lines
         .filter((i) => i.slug)
         .map((i) => ({ slug: String(i.slug), qty: qtyOf(i), name: String(i.name ?? i.slug) }));
@@ -223,17 +237,29 @@ export async function POST(req: NextRequest) {
         const watchGifts = watchGiftSlots(lines.filter((i) => i.slug).map((i) => ({
           slug: String(i.slug), qty: qtyOf(i), giftSlugs: i.giftSlugs, isWatch: getProductBySlug(String(i.slug))?.category === "watches",
         }))).map((g) => ({ forSlug: g.watchSlug, qty: g.qty, candidates: [g.giftSlug, GIFT_FALLBACK, ...WATCH_GIFT_CHOICES] }));
+        // Clutches: the chosen cardholder only (strict).
+        const clutchGifts = clutchGiftSlots(lines.filter((i) => i.slug).map((i) => ({ slug: String(i.slug), qty: qtyOf(i), giftSlugs: i.giftSlugs })))
+          .map((g) => ({ forSlug: g.clutchSlug, qty: g.qty, candidates: [g.giftSlug], strict: true }));
         let reservation: GiftReservation;
         try {
           reservation = await reserveWithGifts(
             reserveItems.map(({ slug, qty }) => ({ slug, qty })),
             reserveStock,
             (slug) => findProductWithOverride(slug)?.inStock === true,
-            watchGifts,
+            [...clutchGifts, ...watchGifts],
           );
         } catch (e) {
           console.error("[Order] reserve_wallet_stock error:", e instanceof Error ? e.message : e);
           return NextResponse.json({ success: false, error: "Възникна проблем с проверката на наличността. Моля, опитайте отново." }, { status: 503 });
+        }
+        if (!reservation.ok && reservation.giftSoldOut?.length) {
+          const g = reservation.giftSoldOut[0];
+          return NextResponse.json({
+            success: false,
+            code: "gift_sold_out",
+            giftSoldOut: reservation.giftSoldOut,
+            error: `${giftDisplayName(g.giftSlug)}, който избрахте безплатно към клъч ${shortModelName(g.forSlug)}, току-що се изчерпа. Моля, изберете друг кардхолдър.`,
+          }, { status: 409 });
         }
         if (!reservation.ok) {
           const named = reservation.shortfall.map((s) => ({ name: reserveItems.find((l) => l.slug === s.slug)?.name ?? s.slug, available: s.available }));
@@ -254,7 +280,8 @@ export async function POST(req: NextRequest) {
       return {
         sku: p?.sku ?? g.giftSlug,
         slug: g.giftSlug,
-        name: `ПОДАРЪК: ${giftDisplayName(g.giftSlug)}`,
+        // clutch: "ПОДАРЪК: Кардхолдър Zaffiro (безплатно) към клъч Capri" - the panel, the e-mails and fulfilment read both
+        name: `ПОДАРЪК: ${isGiftClutch(g.clutchSlug) ? clutchGiftLabel(g.clutchSlug, g.giftSlug) : giftDisplayName(g.giftSlug)}`,
         quantity: g.qty,
         qty: g.qty,
         price: 0,

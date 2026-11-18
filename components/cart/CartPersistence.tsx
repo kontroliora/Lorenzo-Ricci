@@ -5,6 +5,7 @@ import { getProductBySlug } from "@/lib/products";
 import { opoFixesPrice } from "@/lib/one-plus-one";
 import type { CartItem } from "@/lib/types";
 import { isWatchGiftChoice, watchGiftActive } from "@/lib/watch-gift";
+import { isClutchGiftChoice, isGiftClutch } from "@/lib/gifts";
 import { safeRehydrate } from "@/lib/safe-rehydrate";
 
 // Restores the Bulgarian cart saved in the browser (lib/store.ts, "lr-cart") once after mount (owner, 08.11.2026):
@@ -27,9 +28,12 @@ async function revalidate(): Promise<void> {
   // The cart may have changed while the checks ran (the customer added something): re-check what is there now.
   const now = useCartStore.getState().items;
   // The watches' free cardholders (lib/watch-gift.ts): kept while the offer runs, one per unit at most; dropped after it ends.
-  const giftsOf = (g: unknown, q: number) => {
-    if (!watchGiftActive() || !Array.isArray(g)) return {};
-    const giftSlugs = g.filter(isWatchGiftChoice).slice(0, q);
+  // The clutches' chosen cardholders (lib/gifts.ts) are always kept.
+  const giftsOf = (g: unknown, q: number, slug: string) => {
+    if (!Array.isArray(g)) return {};
+    const clutch = isGiftClutch(slug);
+    if (!clutch && !watchGiftActive()) return {};
+    const giftSlugs = g.filter(clutch ? isClutchGiftChoice : isWatchGiftChoice).slice(0, q);
     return giftSlugs.length ? { giftSlugs } : {};
   };
   const next: CartItem[] = now.flatMap(({ product: saved, quantity, giftSlugs }) => {
@@ -40,9 +44,9 @@ async function revalidate(): Promise<void> {
     const live = stock?.[base.slug];
     if (typeof live === "number") {
       if (live <= 0) return [];
-      return [{ product: { ...product, stock: live }, quantity: Math.min(quantity, live), ...giftsOf(giftSlugs, Math.min(quantity, live)) }];
+      return [{ product: { ...product, stock: live }, quantity: Math.min(quantity, live), ...giftsOf(giftSlugs, Math.min(quantity, live), base.slug) }];
     }
-    return [{ product: { ...product, stock: saved.stock ?? product.stock }, quantity, ...giftsOf(giftSlugs, quantity) }];
+    return [{ product: { ...product, stock: saved.stock ?? product.stock }, quantity, ...giftsOf(giftSlugs, quantity, base.slug) }];
   });
   useCartStore.getState().replaceItems(next);
 }

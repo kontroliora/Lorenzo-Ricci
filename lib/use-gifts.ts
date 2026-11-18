@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { getProductBySlug } from "@/lib/products";
-import { deriveGiftLines, isGiftClutch, pickGift, type GiftLine } from "@/lib/gifts";
+import { clutchGiftSlots, defaultClutchGift, isGiftClutch, type GiftLine } from "@/lib/gifts";
 import type { CartItem } from "@/lib/types";
 import { watchGiftSlots } from "@/lib/watch-gift";
 
@@ -43,27 +43,27 @@ export function useLeatherStock(enabled: boolean): StockMap | null {
 // The catalog's on/off switch: a cardholder switched off in lib/products.ts is never gifted.
 const usable = (slug: string) => getProductBySlug(slug)?.inStock === true;
 
-// The cardholder a clutch gets right now (matching one, else Bianco), or null. Non-clutches: null.
+// The cardholder a clutch's page pre-selects right now (matching colour, else the first in stock), or null. Non-clutches: null.
+// The cards' "+ подарък: Кардхолдър X" line reads it too. Unknown stock counts as available until the live numbers arrive.
 export function useGiftFor(clutchSlug: string, qty = 1): string | null {
   const isClutch = isGiftClutch(clutchSlug);
   const stock = useLeatherStock(isClutch);
   return useMemo(
-    () => (isClutch ? pickGift(clutchSlug, qty, (s) => stock?.[s], usable) : null),
+    () => (isClutch ? defaultClutchGift(clutchSlug, (s) => usable(s) && (stock?.[s] ?? Infinity) >= qty) : null),
     [isClutch, clutchSlug, qty, stock],
   );
 }
 
-// Gift rows for the paid cart lines (display only - they are never cart items).
+// Gift rows for the paid cart lines (display only - they are never cart items): the clutches' and the watches' chosen
+// cardholders. /api/order checks the stock (a clutch's sold-out choice is refused; a watch's is swapped).
 export function useGiftLines(items: CartItem[]): GiftLine[] {
-  const hasClutch = items.some((i) => isGiftClutch(i.product.slug));
-  const stock = useLeatherStock(hasClutch);
   return useMemo(
     () => [
-      ...deriveGiftLines(items.map((i) => ({ slug: i.product.slug, qty: i.quantity })), (s) => stock?.[s], usable),
-      // The watches' chosen cardholders (lib/watch-gift.ts): shown as chosen; /api/order checks the stock and swaps if needed.
+      ...clutchGiftSlots(items.map((i) => ({ slug: i.product.slug, qty: i.quantity, giftSlugs: i.giftSlugs })))
+        .map((g) => ({ clutchSlug: g.clutchSlug, giftSlug: g.giftSlug, qty: g.qty, swapped: false })),
       ...watchGiftSlots(items.map((i) => ({ slug: i.product.slug, qty: i.quantity, giftSlugs: i.giftSlugs, isWatch: i.product.category === "watches" })))
         .map((g) => ({ clutchSlug: g.watchSlug, giftSlug: g.giftSlug, qty: g.qty, swapped: false })),
     ],
-    [items, stock],
+    [items],
   );
 }

@@ -24,6 +24,8 @@ interface CartStore {
   addItem: (product: Product, giftSlug?: string) => void;
   /** The cart reminder: give a watch line's next unit its free cardholder. */
   addLineGift: (productId: string, giftSlug: string) => void;
+  /** Drop every chosen gift `giftSlug` from a line (it ran out: /api/order said gift_sold_out), so the customer chooses again. */
+  dropLineGift: (productId: string, giftSlug: string) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -76,6 +78,17 @@ export const useCartStore = create<CartStore>()(persist((set, get) => ({
           ? { ...i, giftSlugs: [...(i.giftSlugs ?? []), giftSlug] }
           : i
       ),
+    }));
+  },
+
+  dropLineGift: (productId, giftSlug) => {
+    set((state) => ({
+      items: state.items.map((i) => {
+        if (i.product.id !== productId || !i.giftSlugs) return i;
+        const giftSlugs = i.giftSlugs.filter((g) => g !== giftSlug);
+        const { giftSlugs: _old, ...rest } = i; void _old;
+        return giftSlugs.length ? { ...rest, giftSlugs } : rest;
+      }),
     }));
   },
 

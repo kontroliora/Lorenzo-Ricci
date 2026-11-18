@@ -10,7 +10,6 @@ import { displayPrice, eurText, isOnSale, requiresPrepayment } from "@/lib/price
 import { PayLine } from "@/components/product/CodNote";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
-import { GiftOffer } from "@/components/product/GiftOffer";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
 import { getProductBySlug } from "@/lib/products";
 import { PAGE_LOW_STOCK_MAX } from "@/lib/home-card-hints";
@@ -28,6 +27,8 @@ import { previewProductPhoto, warmProductPhoto } from "@/lib/warm-product";
 import { opoGroupOf, opoPriceLineBg, opoPairPrice, opoPairPriceBg } from "@/lib/one-plus-one";
 import { useLeatherStock } from "@/lib/use-gifts";
 import { savingsWithWatchGiftEur, watchGiftActive, WATCH_GIFT_CHOICES, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
+import { CLUTCH_GIFT_CHOICES, defaultClutchGift, giftDisplayName, isGiftClutch, matchingCardholder } from "@/lib/gifts";
+import { SHELF } from "@/lib/storefront";
 import { ChristmasDeliveryLine } from "@/components/ui/ChristmasDeliveryLine";
 
 // A colour swatch reads as sold out when its product is switched off in
@@ -155,6 +156,19 @@ const FREE_PICKER_WATCH_BG: FreePickerText = {
 };
 const CHOOSE_LABEL_WATCH_BG = "↑ ИЗБЕРЕТЕ ПОДАРЪКА";
 const ADD_WATCH_ONLY_BG = "или добави само часовника";
+// Clutch + free cardholder (lib/gifts.ts, owner 18.11.2026): the same two boxes - 1 the clutch, 2 the free cardholder. The matching
+// colour is pre-selected when in stock ("Съвпадащ цвят" above it), else the first one in stock. A tap on the selected one clears it:
+// the buttons then scroll to box 2 and a small link adds the clutch alone. None left: the clutch sells alone (CLUTCH_SOLO_BG).
+const TWO_BOX_CLUTCH_BG: TwoBoxText = {
+  ...TWO_BOX_BG, yours: "Изберете клъч", yoursShort: "Клъч", second: "Изберете кардхолдър", secondShort: "Кардхолдър –", free: "Безплатно",
+};
+const FREE_PICKER_CLUTCH_BG: FreePickerText = {
+  ...FREE_PICKER_BG, title: "Изберете кардхолдър – безплатно:", groups: {}, setLabel: "Съвпадащ цвят", free: "Безплатно към клъча",
+  chooseSecond: "Избери този кардхолдър", second: "Кардхолдър:", freeShort: "Безплатно", again: "",
+};
+const CHOOSE_LABEL_CLUTCH_BG = "↑ ИЗБЕРЕТЕ БЕЗПЛАТНИЯ КАРДХОЛДЪР";
+const ADD_CLUTCH_ONLY_BG = "или добави само клъча";
+const CLUTCH_SOLO_BG = "Безплатните кардхолдъри към клъча са изчерпани – в момента клъчът се продава самостоятелно, без кардхолдър.";
 
 // Show the low-stock line only when AVAILABLE units are at or below PAGE_LOW_STOCK_MAX (lib/home-card-hints.ts).
 
@@ -189,7 +203,9 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
     if (slug !== product.slug) { setPendingVariant(slug); previewProductPhoto(slug); }
   };
   const opoStock = useLeatherStock(!!opoGroupOf(product.slug)); // the group's live stock (one batched call)
-  const giftOn = product.category === "watches" && watchGiftActive(); // watch + free cardholder (lib/watch-gift.ts)
+  const watchGiftOn = product.category === "watches" && watchGiftActive(); // watch + free cardholder (lib/watch-gift.ts)
+  const clutchGiftOn = isGiftClutch(product.slug) && SHELF.leather; // clutch + free cardholder of the customer's choice (lib/gifts.ts)
+  const giftOn = watchGiftOn || clutchGiftOn;
   const giftStock = useLeatherStock(giftOn); // the cardholders' live stock (same batched call)
   const swatchStock = useLeatherStock(product.category === "watches"); // the other watch colours' live stock (sold out = grey swatch)
   // A product with no description content (e.g. the Yachting watches until they're
@@ -342,8 +358,10 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
   // then the buttons read "↑ Изберете безплатното бижу" (they scroll to box 2) and "или добави само 1" adds the piece alone.
   const picked = opo && pick ? pickOptions.find((o) => o.slug === pick && o.available) ?? null : null;
   // A collection piece keeps the free second piece while step 1 switches (the page is then keyed per opened page); elsewhere a new product starts clean.
-  useEffect(() => { if (!inCollection) setPick(null); }, [product.slug, inCollection]);
-  const choosePick = (slug: string | null) => setPick(slug);
+  // Clutch: until the customer touches box 2 the pick is the default one (matching colour, else the first in stock).
+  const [giftTouched, setGiftTouched] = useState(false);
+  useEffect(() => { if (!inCollection) { setPick(null); setGiftTouched(false); } }, [product.slug, inCollection]);
+  const choosePick = (slug: string | null) => { setPick(slug); setGiftTouched(true); };
   const removePick = () => setPick(null);
   // Women's collection: the redesigned picker (set card, groups, quick view) gets the same options with more to show.
   const country = useCountry();
@@ -368,12 +386,14 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
   const eurComma = (n: number) => `€${n.toFixed(2).replace(".", ",")}`;
   const pairLabel = picked && opo ? opo.text.bg.addPair({ one: opoPairPriceBg(product.price, pickedPrice) }) : null;
 
-  // ── Watch + free cardholder: every cardholder, available when its live stock less what the cart already holds (bought or chosen
-  //    as a gift) covers one more. Sold out = greyed in the grid. A pick that stops being available is dropped.
-  const watchGift = giftOn && effectiveInStock;
+  // ── Watch / clutch + free cardholder: every cardholder, available when its live stock less what the cart already holds (bought or
+  //    chosen as a gift) covers one more. Sold out = greyed, struck and "Изчерпан" in the grid. A pick that stops being available
+  //    is dropped. A clutch with no cardholder left sells alone (no box 2) - the clutch itself is never blocked by its cardholder.
+  const watchGift = watchGiftOn && effectiveInStock;
+  const clutchGift = clutchGiftOn && effectiveInStock;
   const giftUsed = (slug: string) => cartItems.reduce((n, i) => n + (i.product.slug === slug ? i.quantity : 0) + (i.giftSlugs ?? []).filter((g) => g === slug).length, 0);
-  const giftItems: FreeItem[] = watchGift
-    ? WATCH_GIFT_CHOICES.flatMap((slug) => {
+  const giftItems: FreeItem[] = watchGift || clutchGift
+    ? (clutchGift ? CLUTCH_GIFT_CHOICES : WATCH_GIFT_CHOICES).flatMap((slug) => {
         const p = getProductBySlug(slug);
         if (!p) return [];
         const live = giftStock?.[slug] ?? p.stock;
@@ -381,14 +401,22 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
           group: "all" as const, priceText: displayPrice(p, country).text, description: p.description || p.shortDescription, href: `/products/${slug}` }];
       })
     : [];
-  const pickedGift = watchGift && pick ? giftItems.find((i) => i.slug === pick && i.available) ?? null : null;
+  const giftAvailable = (slug: string) => giftItems.some((i) => i.slug === slug && i.available);
+  const clutchSolo = clutchGift && !giftItems.some((i) => i.available); // every cardholder sold out: the clutch alone
+  const giftBoxes = watchGift || (clutchGift && !clutchSolo);
+  const giftPickSlug = clutchGift && !giftTouched ? defaultClutchGift(product.slug, giftAvailable) : pick;
+  const pickedGift = giftBoxes && giftPickSlug ? giftItems.find((i) => i.slug === giftPickSlug && i.available) ?? null : null;
   const giftPrice = pickedGift ? getProductBySlug(pickedGift.slug)?.price ?? 0 : 0;
+  // "Съвпадащ цвят" above the clutch's own colour - only while that one can be picked.
+  const clutchMatch = clutchGift ? matchingCardholder(product.slug) ?? null : null;
+  const clutchMatchShown = clutchMatch && giftAvailable(clutchMatch) ? clutchMatch : null;
 
   const handleAdd = () => {
-    if (watchGift) {
+    if (giftBoxes || clutchGift) {
       addItem({ ...product, stock: effectiveStock }, pickedGift?.slug);
       setAdded(true);
       setPick(null);
+      setGiftTouched(false);
       setTimeout(() => setAdded(false), 2000);
       trackWithCapi("AddToCart", {
         content_ids: [product.sku], content_name: product.name, content_type: "product", value: product.price, currency: "EUR", num_items: 1,
@@ -429,10 +457,12 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
 
   // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
   const velvetBox = isVelvetBoxCardholder(product.slug); // new cardholders: the box line (lib/velvet-box.ts), no warranty line
-  const twoBoxes = ((inCollection || cardOpo) && !!opo) || watchGift; // women's collection / cardholders with their 1+1, watches with the gift
+  const twoBoxes = ((inCollection || cardOpo) && !!opo) || giftBoxes; // women's collection / cardholders with their 1+1, watches / clutches with the cardholder
   // Nothing picked yet (and something is pickable): the buttons point to box 2 instead of adding.
-  const mustChoose = watchGift ? !pickedGift && giftItems.some((i) => i.available) : twoBoxes && !picked && freeItems.some((i) => i.available);
-  const chooseLabel = mustChoose ? (watchGift ? CHOOSE_LABEL_WATCH_BG : cardOpo ? CHOOSE_LABEL_CARD_BG : CHOOSE_LABEL_BG) : null;
+  const mustChoose = giftBoxes ? !pickedGift && giftItems.some((i) => i.available) : twoBoxes && !picked && freeItems.some((i) => i.available);
+  const chooseLabel = mustChoose ? (watchGift ? CHOOSE_LABEL_WATCH_BG : clutchGift ? CHOOSE_LABEL_CLUTCH_BG : cardOpo ? CHOOSE_LABEL_CARD_BG : CHOOSE_LABEL_BG) : null;
+  // Clutch with its cardholder picked: "Добави 2 в количката – €299" (the cardholder is free, the price stays the clutch's).
+  const ctaPairLabel = clutchGift && pickedGift ? `Добави 2 в количката – ${price.text}` : pairLabel;
   const goToBox2 = () => document.querySelector("[data-testid=box-second]")?.scrollIntoView({ behavior: "smooth", block: "start" });
   const cta = (
     <>
@@ -450,12 +480,12 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
         ? "ИЗЧЕРПАНА НАЛИЧНОСТ"
         : added
         ? "✓ ДОБАВЕНО В КОЛИЧКАТА"
-        : chooseLabel ?? pairLabel ?? "ДОБАВИ В КОЛИЧКАТА"}
+        : chooseLabel ?? ctaPairLabel ?? "ДОБАВИ В КОЛИЧКАТА"}
     </button>
     {chooseLabel && !added && (
       <button type="button" data-testid="add-one" onClick={handleAdd}
         className="block mx-auto -mt-1 py-2 px-3 font-sans text-xs text-ink-muted underline underline-offset-2 hover:text-charcoal">
-        {watchGift ? ADD_WATCH_ONLY_BG : ADD_ONE_BG}
+        {watchGift ? ADD_WATCH_ONLY_BG : clutchGift ? ADD_CLUTCH_ONLY_BG : ADD_ONE_BG}
       </button>
     )}
   
@@ -653,16 +683,17 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
 
       {/* Women's collection: two numbered boxes (your piece + its selectors, the free second piece), the summary and the button
           (components/product/CollectionTwoBoxes.tsx). Sold out (no 1+1): the plain button. */}
-      {watchGift ? (
+      {giftBoxes ? (
         <CollectionTwoBoxes
-          t={TWO_BOX_WATCH_BG}
-          current={{ name: product.name, image: product.coverImage, priceText: price.text, type: "bracelet" /* unused for watches */ }}
+          t={clutchGift ? TWO_BOX_CLUTCH_BG : TWO_BOX_WATCH_BG}
+          current={{ name: product.name, image: product.coverImage, priceText: price.text, type: "bracelet" /* unused for watches / clutches */ }}
           selectors={colourRow}
           items={giftItems}
           selfSlug={product.slug}
-          matchSlug={null}
-          pickerText={FREE_PICKER_WATCH_BG}
+          matchSlug={clutchMatchShown}
+          pickerText={clutchGift ? FREE_PICKER_CLUTCH_BG : FREE_PICKER_WATCH_BG}
           picked={pickedGift}
+          pickedLabel={clutchGift && pickedGift ? <>{giftDisplayName(pickedGift.slug)} – <span className="font-semibold text-[#2F6B3B]">Безплатно</span></> : undefined}
           onSelect={choosePick}
           totalText={price.text}
           // struck (owner, 14.11.2026): the watch's own struck price (€140 while on sale) + the cardholder's €65 = €205
@@ -699,8 +730,10 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
           : <PayLine text="Наложен платеж" marks={false} />
       )}
 
-      {/* Clutches: the free gift cardholder (renders nothing for any other product) */}
-      <GiftOffer clutchSlug={product.slug} />
+      {/* Clutch with every cardholder sold out: it sells alone - say so plainly */}
+      {clutchSolo && (
+        <p data-testid="clutch-solo" className="font-sans text-[13px] leading-snug text-ink-soft border border-border bg-ivory px-4 py-3">{CLUTCH_SOLO_BG}</p>
+      )}
 
       {/* Features */}
       <ul className="flex flex-col gap-2.5">
@@ -756,7 +789,7 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
       </div>
       )}
 
-      <StickyCartBar product={product} effectiveInStock={effectiveInStock} onAdd={handleAdd} pairLabel={pairLabel} chooseLabel={chooseLabel} onChoose={goToBox2} />
+      <StickyCartBar product={product} effectiveInStock={effectiveInStock} onAdd={handleAdd} pairLabel={ctaPairLabel} chooseLabel={chooseLabel} onChoose={goToBox2} />
 
       {/* Trust strip */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-0 border border-border">

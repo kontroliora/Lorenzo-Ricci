@@ -5,7 +5,7 @@ import { useCartStore } from "@/lib/store";
 import { BG_FREE_SHIPPING_EUR, BG_SHIPPING_HOME_EUR, BG_SHIPPING_OFFICE_EUR } from "@/lib/shipping-rules";
 import { cardDiscountEur, cardDiscountIsCapped, CARD_DISCOUNT_CAP_EUR } from "@/lib/card-discount";
 import { calcBundleDiscount, bundleLineText } from "@/lib/bundles";
-import { giftDisplayName } from "@/lib/gifts";
+import { clutchGiftLabel, giftDisplayName, isGiftClutch } from "@/lib/gifts";
 import { getProductBySlug } from "@/lib/products";
 import { isValidFullName, FULL_NAME_ERROR_BG } from "@/lib/full-name";
 import { useGiftLines } from "@/lib/use-gifts";
@@ -49,10 +49,13 @@ interface CheckoutFormProps {
   promoDiscount?: number;
   promoRate?: number; // fraction of the applied code - for the "-X%" label (10% / 5%)
   onSuccess: () => void;
+  /** /api/order refused a clutch's chosen cardholder that just ran out (code gift_sold_out): the choice is already dropped from the
+   *  cart; the drawer goes back to the cart and asks for another one. */
+  onGiftSoldOut?: (message: string) => void;
 }
 
-export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promoRate = 0.10, onSuccess }: CheckoutFormProps) {
-  const { clearCart } = useCartStore();
+export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promoRate = 0.10, onSuccess, onGiftSoldOut }: CheckoutFormProps) {
+  const { clearCart, dropLineGift } = useCartStore();
   const { totalDiscount, active: activeBundles } = calcBundleDiscount(items);
   // Free gift cardholders for the clutches - shown only; the order payload below still carries
   // just the paid lines, and the server adds (and stocks) the gifts itself.
@@ -319,8 +322,23 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       if (!res.ok) {
         let msg = "Възникна грешка при изпращането на поръчката. Моля, опитайте отново.";
         let errCode = "";
-        try { const body = await res.json(); if (body?.error) msg = body.error; if (typeof body?.code === "string") errCode = body.code; } catch { /* ignore parse error */ }
+        let soldOut: { forSlug?: unknown; giftSlug?: unknown }[] = [];
+        try {
+          const body = await res.json();
+          if (body?.error) msg = body.error;
+          if (typeof body?.code === "string") errCode = body.code;
+          if (Array.isArray(body?.giftSoldOut)) soldOut = body.giftSoldOut;
+        } catch { /* ignore parse error */ }
         logCheckoutFailure({ market: "bg", kind: "server", code: errCode || undefined, status: res.status, delivery: isHomeAddress ? "home" : pickerActive ? "office" : "office-manual", picker: offices.status, sessionId: sessionIdRef.current || undefined });
+        if (errCode === "gift_sold_out" && soldOut.length) {
+          // Back to the choice: the sold-out cardholder leaves the clutch line, the cart asks for another one (no silent swap).
+          for (const g of soldOut) {
+            const line = items.find((i) => i.product.slug === g.forSlug);
+            if (line && typeof g.giftSlug === "string") dropLineGift(line.product.id, g.giftSlug);
+          }
+          setSubmitting(false);
+          if (onGiftSoldOut) { onGiftSoldOut(msg); return; }
+        }
         setSubmitError(msg);
         setSubmitting(false);
         return;
@@ -454,7 +472,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     // Gift lines: "Подарък" with the cardholder's own price struck through (€65).
     return [line, ...gifts.map((gift) => {
       const gp = getProductBySlug(gift.giftSlug);
-      return { key: `gift-${product.id}-${gift.giftSlug}`, image: gp?.coverImage.src, imageAlt: gp?.coverImage.alt, name: `Подарък: ${giftDisplayName(gift.giftSlug)}`, quantity: gift.qty, price: "Подарък", compareAt: gp ? eurBg(gp.price * gift.qty) : undefined, gift: true };
+      return { key: `gift-${product.id}-${gift.giftSlug}`, image: gp?.coverImage.src, imageAlt: gp?.coverImage.alt, name: isGiftClutch(gift.clutchSlug) ? clutchGiftLabel(gift.clutchSlug, gift.giftSlug) : `Подарък: ${giftDisplayName(gift.giftSlug)}`, quantity: gift.qty, price: isGiftClutch(gift.clutchSlug) ? "Безплатно" : "Подарък", compareAt: gp ? eurBg(gp.price * gift.qty) : undefined, gift: true };
     })];
   });
   const summaryRows: SummaryRow[] = [

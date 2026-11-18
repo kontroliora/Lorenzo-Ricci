@@ -40,7 +40,7 @@ export const TWO_BOX_CARD_RO: TwoBoxText = {
   ...TWO_BOX_RO, yours: "Alegeți primul port-card", yoursShort: "Primul port-card", second: "Alegeți al doilea", secondShort: "Al doilea –",
 };
 
-export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, matchSlug, pickerText, picked, onSelect, totalText, struckText, cta }: {
+export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, matchSlug, pickerText, picked, pickedLabel, onSelect, totalText, struckText, cta }: {
   t: TwoBoxText;
   current: { name: string; image: { src: string; alt: string }; priceText: string; type: "necklace" | "bracelet" };
   selectors: ReactNode;
@@ -49,6 +49,7 @@ export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, mat
   matchSlug: string | null;
   pickerText: FreePickerText;
   picked: FreeItem | null;
+  pickedLabel?: ReactNode;    // optional: the picked item's name under the summary (the clutches' "Кардхолдър Zaffiro – Безплатно")
   onSelect: (slug: string | null) => void;
   totalText: string;          // what the customer pays ("€109")
   struckText: string | null;  // the two pieces' own prices together ("€218"), null with one piece
@@ -88,6 +89,7 @@ export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, mat
           {struckText && <span className="ml-2 text-ink-muted line-through">{struckText}</span>}
         </p>
       </div>}
+      {picked && pickedLabel && <p data-testid="two-box-picked-name" className="-mt-2 font-sans text-xs text-charcoal">{pickedLabel}</p>}
       {cta}
     </div>
   );
