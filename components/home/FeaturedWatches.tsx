@@ -31,7 +31,9 @@ export function FeaturedWatches({ soldOut = [] }: { soldOut?: string[] }) {
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         {yachting.length > 0 && (
           <WatchGroup
-            tag="Лимитирана колекция"
+            tag="Лимитирана серия"
+            // Owner, 18.11.2026: a small muted label (the subtitle's colour, the top bar's / buttons' spacing) - Yachting only.
+            tagClassName="font-sans text-[10px] sm:text-[11px] font-medium tracking-[0.22em] uppercase text-ink-muted mb-3"
             title="Yachting"
             subtitle="Черен · Син · Бял"
             watches={yachting}
@@ -82,8 +84,9 @@ export function FeaturedWatches({ soldOut = [] }: { soldOut?: string[] }) {
 }
 
 // One collection: heading, desktop row and its own mobile carousel.
-function WatchGroup({ tag, title, subtitle, watches, soldOut, priority = false }: {
+function WatchGroup({ tag, tagClassName = "section-tag mb-4", title, subtitle, watches, soldOut, priority = false }: {
   tag: string;
+  tagClassName?: string; // default: the shared section label
   title: string;
   subtitle: string;
   watches: Product[];
@@ -95,7 +98,7 @@ function WatchGroup({ tag, title, subtitle, watches, soldOut, priority = false }
   return (
     <div data-watch-group>
       <div className="text-center mb-10 sm:mb-16">
-        <p className="section-tag mb-4">{tag}</p>
+        <p data-testid="watch-group-tag" className={tagClassName}>{tag}</p>
         <h2 className="section-title mb-4">{title}</h2>
         <div className="gold-divider" />
         <p className="font-sans text-sm font-light text-ink-muted max-w-lg mx-auto mt-6 leading-relaxed tracking-wide">
