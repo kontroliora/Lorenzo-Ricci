@@ -16,7 +16,7 @@ import { PAGE_LOW_STOCK_MAX } from "@/lib/home-card-hints";
 import { campaignLabel } from "@/lib/sale-campaign";
 import { BG_FREE_SHIPPING_EUR, bgShipsFree } from "@/lib/shipping-rules";
 import { isVelvetBoxCardholder } from "@/lib/velvet-box";
-import { SavingsLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine, ExchangeLine } from "@/components/product/PriceExtras";
+import { SavingsLine, OnePlusOneLine, OnePlusOneBadge, FreeShippingBadge, BoxLine, WarrantyLine, ExchangeLine, GoldLine } from "@/components/product/PriceExtras";
 import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusOnePicker";
 import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, collectionKindRow, collectionModelRow, COLLECTION_GROUP_LABEL } from "@/lib/new-collection";
@@ -669,6 +669,8 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
         {inCollection && <WarrantyLine text="Доживотна гаранция" href={"/warranty/jewelry"} />}
         {/* Order (owner, 12.11.2026): box -> lifetime warranty -> 30-day exchange (all products) */}
         <ExchangeLine text="30 дни лесна замяна" href="/policies/returns" first={!inCollection && !velvetBox} />
+        {/* Gold jewellery only (Product.metal unset = gold); follows step 1's piece when it is switched in place */}
+        {product.category === "jewellery" && (product.metal ?? "gold") === "gold" && <GoldLine text="18 карата PVD" />}
         {/* Watches, 01.12-21.12 only (lib/christmas-delivery.ts) */}
         {product.category === "watches" && <ChristmasDeliveryLine className="mt-2 font-sans text-[13px] leading-snug font-medium text-[#2E6B3F]" />}
         {/* Cardholders while the watch gift runs (lib/watch-gift.ts): every watch comes with one free */}

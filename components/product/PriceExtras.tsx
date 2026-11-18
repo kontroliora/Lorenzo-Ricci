@@ -2,7 +2,7 @@
 // and the free-delivery badge, and one delivery line. The pages decide the text and when to show them (savings: on sale and not sold out).
 // Colours pass WCAG AA on the page's ivory: green 6.1, white on the badge red 6.6, white on the free-delivery green 5.4, ink-soft 9.3.
 import Link from "next/link";
-import { Package, ShieldCheck, Truck, RefreshCw } from "lucide-react";
+import { Package, ShieldCheck, Truck, RefreshCw, Gem } from "lucide-react";
 
 const PAGE_BADGE = "inline-flex items-center whitespace-nowrap text-white font-sans text-[11px] font-medium tracking-[0.14em] uppercase leading-none px-2.5 py-1.5";
 
@@ -68,6 +68,17 @@ export function ExchangeLine({ text, href, first = false }: { text: string; href
     <p data-testid="page-exchange-line" className={`${first ? "mt-2.5" : "mt-1.5"} flex items-center gap-1.5 font-sans text-[13px] leading-snug text-ink-soft`}>
       <RefreshCw aria-hidden className="h-3.5 w-3.5 shrink-0 text-[#B8963E]" strokeWidth={1.75} />
       <Link href={href} className="underline decoration-dotted decoration-ink-soft/50 underline-offset-2 hover:text-navy hover:decoration-navy transition-colors">{text}</Link>
+    </p>
+  );
+}
+
+/** Gold jewellery (owner, 18.11.2026): "18 карата PVD" under the exchange line, same style, plain text (no link). The page decides
+ *  when it shows (gold pieces only). */
+export function GoldLine({ text }: { text: string }) {
+  return (
+    <p data-testid="page-gold-line" className="mt-1.5 flex items-center gap-1.5 font-sans text-[13px] leading-snug text-ink-soft">
+      <Gem aria-hidden className="h-3.5 w-3.5 shrink-0 text-[#B8963E]" strokeWidth={1.75} />
+      {text}
     </p>
   );
 }
