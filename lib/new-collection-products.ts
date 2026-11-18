@@ -201,21 +201,24 @@ function details(key: CollectionKey, type: PieceType, metal: Metal, skuCode: str
 // ── Sizes per article (BG shop, owner 18.11.2026). ONE place: the "Спецификации" rows and the short size line under the piece's name
 //    (ProductInfo) are both built from it. Only measured values go here - no guesses. A missing value hides its row; with nothing
 //    known, the piece shows no size line. Source: the owner's size list of 18.11.2026 (the clover numbers are the supplier's
-//    measurements of 07.11.2026). The bangles have no numbers yet: "Стандартен дамски размер" until the owner measures them.
+//    measurements of 07.11.2026). Linea / Solaris: measured by the owner, 18.11.2026. Spira has no numbers yet: "Стандартен дамски
+//    размер" until the owner measures it.
 //    Still missing (owner to give): see the comment on each line.
 export type PieceSize = {
   lengthCm?: number;        // bracelet length / necklace chain length, without the extender
   extenderCm?: number;      // the extender on top of it
   widthMm?: number;         // bracelet width
-  innerDiameterMm?: number; // bangles (Linea / Solaris / Spira)
-  wristCm?: [number, number]; // bangles: the wrist circumference they fit, from-to
+  innerCm?: string;         // bangles (Linea / Solaris / Spira): the inside, e.g. "6 × 5"
+  innerShape?: string;      // ... and its shape, e.g. "овал"
+  wristCm?: string;         // bangles: the wrist they fit, e.g. "до ~16,5"
   cloverCm?: number;        // clover bracelets: the size of one clover
   pendantMm?: string;       // necklaces: the pendant, e.g. "15 × 15"
   sizeText?: string;        // a size in words (row "Размер" and the short line) while there are no numbers - the bangles
 };
 const CLOVER_BRACELET_SIZE: PieceSize = { lengthCm: 16.5, extenderCm: 5, cloverCm: 1.3 }; // missing: widthMm
 const CLOVER_NECKLACE_SIZE: PieceSize = { lengthCm: 38, extenderCm: 6 };                  // missing: pendantMm
-const BANGLE_SIZE_UNKNOWN: PieceSize = { sizeText: "Стандартен дамски размер" };         // missing: innerDiameterMm, wristCm, widthMm
+const NAIL_BANGLE_SIZE: PieceSize = { innerCm: "6 × 5", innerShape: "овал", wristCm: "до ~16,5" }; // Linea = Solaris; missing: widthMm
+const BANGLE_SIZE_UNKNOWN: PieceSize = { sizeText: "Стандартен дамски размер" };         // Spira - missing: innerCm, wristCm, widthMm
 export const COLLECTION_SIZES: Record<string, PieceSize> = {
   "GR-VERDIS-G": CLOVER_BRACELET_SIZE, "GR-VERDIS-S": CLOVER_BRACELET_SIZE,
   "GR-NOCTIS-G": CLOVER_BRACELET_SIZE, "GR-NOCTIS-S": CLOVER_BRACELET_SIZE,
@@ -223,8 +226,8 @@ export const COLLECTION_SIZES: Record<string, PieceSize> = {
   "KO-VERDIS-G": CLOVER_NECKLACE_SIZE, "KO-VERDIS-S": CLOVER_NECKLACE_SIZE,
   "KO-NOCTIS-G": CLOVER_NECKLACE_SIZE, "KO-NOCTIS-S": CLOVER_NECKLACE_SIZE,
   "KO-LUMEN-G": CLOVER_NECKLACE_SIZE, "KO-LUMEN-S": CLOVER_NECKLACE_SIZE,
-  "GR-LINEA-G": BANGLE_SIZE_UNKNOWN, "GR-LINEA-S": BANGLE_SIZE_UNKNOWN,
-  "GR-SOLARIS-G": BANGLE_SIZE_UNKNOWN, "GR-SOLARIS-S": BANGLE_SIZE_UNKNOWN,
+  "GR-LINEA-G": NAIL_BANGLE_SIZE, "GR-LINEA-S": NAIL_BANGLE_SIZE,
+  "GR-SOLARIS-G": NAIL_BANGLE_SIZE, "GR-SOLARIS-S": NAIL_BANGLE_SIZE,
   "GR-SPIRA-G": BANGLE_SIZE_UNKNOWN, "GR-SPIRA-S": BANGLE_SIZE_UNKNOWN,
 };
 
@@ -246,8 +249,8 @@ function sizeRowsBg(type: PieceType, bangle: boolean, s: PieceSize): ProductSpec
     ...(bangle
       ? [
           { label: "Размер", value: s.sizeText ?? "" },
-          { label: "Вътрешен диаметър", value: s.innerDiameterMm !== undefined ? `${num(s.innerDiameterMm)} мм` : "" },
-          { label: "За обиколка на китката", value: s.wristCm ? `${num(s.wristCm[0])}–${num(s.wristCm[1])} см` : "" },
+          { label: "Вътрешен размер", value: s.innerCm ? `${s.innerCm} см${s.innerShape ? ` (${s.innerShape})` : ""}` : "" }, // "6 × 5 см (овал)"
+          { label: "Подходяща за китка", value: s.wristCm ? `${s.wristCm} см` : "" },                                     // "до ~16,5 см"
         ]
       : [{ label: "Дължина", value: len }]),
     { label: "Ширина", value: s.widthMm !== undefined ? `${num(s.widthMm)} мм` : "" },
@@ -261,10 +264,11 @@ export function sizeLineBg(type: PieceType, bangle: boolean, s: PieceSize): stri
   const plain = s.lengthCm !== undefined ? `${num(s.lengthCm)} см` : "";
   if (type === "necklace") return [to ? `Верижка ${to}, регулируема` : plain && `Верижка ${plain}`, s.pendantMm && `висулка ${s.pendantMm} мм`].filter(Boolean).join(" · ");
   if (bangle) {
+    // "Вътрешен овал 6 × 5 см, за китка до ~16,5 см" (owner, 18.11.2026)
     const nums = [
-      s.innerDiameterMm !== undefined && `Вътрешен диаметър ${num(s.innerDiameterMm)} мм`,
-      s.wristCm && `за китка ${num(s.wristCm[0])}–${num(s.wristCm[1])} см`,
-    ].filter(Boolean).join(" · ");
+      s.innerCm && `Вътрешен ${s.innerShape ?? "размер"} ${s.innerCm} см`,
+      s.wristCm && `за китка ${s.wristCm} см`,
+    ].filter(Boolean).join(", ");
     return nums || s.sizeText || "";
   }
   return to ? `Регулируема ${to}` : plain && `Дължина ${plain}`;
