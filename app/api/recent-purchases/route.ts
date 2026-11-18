@@ -41,9 +41,9 @@ function firstName(full: string | null): string | null {
   return w.charAt(0).toLocaleUpperCase("bg") + w.slice(1).toLocaleLowerCase("bg");
 }
 
-/** "гр. софия " -> "София"; empty or odd -> null. */
+/** "гр. софия " -> "София", "Загоре Община Стара Загора" -> "Загоре"; empty or odd -> null. */
 function cleanCity(c: string | null): string | null {
-  const s = String(c ?? "").replace(/^\s*(гр\.?|град|с\.|село)\s*/i, "").replace(/\s+/g, " ").trim();
+  const s = String(c ?? "").replace(/^\s*(гр\.?|град|с\.|село)\s*/i, "").replace(/[,(]?\s*(община|общ\.|област|обл\.)[\s\S]*$/i, "").replace(/\s+/g, " ").trim();
   if (s.length < 2 || s.length > 30 || /\d/.test(s)) return null;
   return s.split(/([ -])/).map((p) => (p.length > 1 ? p.charAt(0).toLocaleUpperCase("bg") + p.slice(1).toLocaleLowerCase("bg") : p)).join("");
 }
