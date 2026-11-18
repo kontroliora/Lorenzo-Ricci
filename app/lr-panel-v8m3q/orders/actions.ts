@@ -14,6 +14,7 @@ import { isPaidCard, hasCardMoney, cardMoneyMissing } from "@/lib/payments";
 import { refundPlan, isMissingStripeObject } from "@/lib/stripe-mode";
 import { fmtRON, roTrackUrl } from "@/lib/ro/config";
 import { refreshStockPages } from "@/lib/stock-pages";
+import { CONFIRM_REQUEST_AUTO, sendConfirmRequest } from "@/lib/confirm-request";
 
 const ORDERS_PATH = "/lr-panel-v8m3q/orders";
 
@@ -167,6 +168,15 @@ async function cancelPaidCardOrder(
   return notifyRo(supabase, [b], (st) => st === "cancelled", { kind: "order_cancelled", category, refundLabel: fmtRON(Number(b.total ?? 0)) });
 }
 
+// "Потвърдете поръчката си" e-mail at "не вдига (1)" / "не вдига (2)" (lib/confirm-request.ts): once per order, only while the
+// automatic mode is on. sendConfirmRequest re-checks everything (attempt 1/2, still new, has e-mail, not mailed yet) and never throws;
+// a mail problem never blocks the "не вдига" press.
+async function autoConfirmRequest(supabase: SupabaseClient, id: number): Promise<void> {
+  if (!CONFIRM_REQUEST_AUTO) return;
+  const r = await sendConfirmRequest(supabase, id);
+  if (!r.ok && r.reason !== "вече изпратен" && r.reason !== "няма имейл" && r.reason !== "не е „не вдига (1/2)“") console.warn("[orders] confirm e-mail not sent", id, r.reason);
+}
+
 // „Не вдига" → never locks. Atomic server-side increment (no race on rapid
 // presses); the audit trigger logs each attempt with the exact time + who.
 export async function markNoAnswer(id: number): Promise<string | null> {
@@ -177,6 +187,7 @@ export async function markNoAnswer(id: number): Promise<string | null> {
       console.error("[orders] no-answer error:", error.message);
       return error.message;
     }
+    await autoConfirmRequest(supabase, id);
     revalidatePath(ORDERS_PATH);
     return null;
   } catch (e) {
@@ -225,6 +236,7 @@ export async function markNoAnswerOrders(ids: number[]): Promise<string | null> 
     for (const id of ids) {
       const { error } = await supabase.rpc("mark_no_answer", { p_id: id });
       if (error) { console.error("[orders] bulk no-answer error:", error.message); return error.message; }
+      await autoConfirmRequest(supabase, id);
     }
     revalidatePath(ORDERS_PATH);
     return null;

@@ -69,6 +69,9 @@ const backLink: React.CSSProperties = {
   background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 11, cursor: "pointer", padding: 0, textAlign: "left",
 };
 
+const sofiaDateTime = (iso: string) =>
+  new Date(iso).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
 export function OrderCard({
   order, history, log, now, onNotice, stripeKey = "none",
 }: {
@@ -267,6 +270,15 @@ export function OrderCard({
             {order.promo_discount ? <span style={{ color: "rgba(255,255,255,0.5)" }}> · отстъпка −{money(Number(order.promo_discount))}</span> : null}
           </div>
         )}
+        {order.email_confirmed_at ? (
+          <div data-testid="email-confirmed" style={{ marginTop: 6, padding: "6px 10px", borderRadius: 6, background: "#173404", color: "#C0DD97", fontSize: 13, fontWeight: 600 }}>
+            ✓ Потвърдена по имейл на {sofiaDateTime(order.email_confirmed_at)} – не звънете
+          </div>
+        ) : order.confirm_email_sent_at ? (
+          <div data-testid="email-sent" style={{ marginTop: 4, fontSize: 12, color: "#85B7EB" }}>
+            ✉ Имейл за потвърждение изпратен на {sofiaDateTime(order.confirm_email_sent_at)}{order.status === "new" ? " · още не е потвърдил" : ""}
+          </div>
+        ) : null}
         {order.partner_mark && <PartnerMarkBadge id={order.id} status={order.status} mark={order.partner_mark} onNotice={onNotice} />}
         {order.status === "new" && !excluded && hoursOpen !== null && (
           <div style={{ color: hoursOpen > 24 ? "#F09595" : "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 4 }}>

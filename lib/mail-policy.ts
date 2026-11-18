@@ -15,6 +15,7 @@ export const MAIL_LANGS = {
   order_cancelled: ["ro"],            // panel action "Отказва" (Romanian wording by reason category, never the Bulgarian free text)
   order_delivered: ["ro"],            // panel action "Доставена"
   order_returned: ["ro"],             // panel action "Върната"
+  confirm_request: ["bg"],            // "Потвърдете поръчката си" to "не вдига (1/2)" customers (lib/confirm-request.ts): Bulgarian only
   shipment_reminder: ["bg"],          // "your parcel waits at an Econt office": Bulgarian only, so Romanians never get it
   abandoned_cart: ["bg", "ro"],       // lib/recovery-email.ts, lib/ro/recovery-email.ts
   newsletter_campaign: ["bg"],        // campaign templates exist per language; a Romanian campaign needs its own template first
