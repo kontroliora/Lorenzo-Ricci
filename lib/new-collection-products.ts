@@ -198,6 +198,92 @@ function details(key: CollectionKey, type: PieceType, metal: Metal, skuCode: str
 }
 
 
+// ── Sizes per article (BG shop, owner 18.11.2026). ONE place: the "Спецификации" rows and the short size line under the piece's name
+//    (ProductInfo) are both built from it. Only measured values go here - no guesses. A missing value hides its row; with nothing
+//    known, the piece shows no size line. Source of every value below: the supplier's measurements passed on by the owner on
+//    07.11.2026 (commit 2cfa7e0), clover pieces only. Still missing (owner to give): see the comment on each line.
+export type PieceSize = {
+  lengthCm?: number;        // bracelet length / necklace chain length, without the extender
+  extenderCm?: number;      // the extender on top of it
+  widthMm?: number;         // bracelet width
+  innerDiameterMm?: number; // bangles (Linea / Solaris / Spira)
+  wristCm?: [number, number]; // bangles: the wrist circumference they fit, from-to
+  cloverCm?: number;        // clover bracelets: the size of one clover
+  pendantMm?: string;       // necklaces: the pendant, e.g. "15 × 15"
+};
+const CLOVER_BRACELET_SIZE: PieceSize = { lengthCm: 16.5, extenderCm: 5, cloverCm: 1.3 }; // missing: widthMm
+const CLOVER_NECKLACE_SIZE: PieceSize = { lengthCm: 38, extenderCm: 6 };                  // missing: pendantMm
+const BANGLE_SIZE_UNKNOWN: PieceSize = {};                                                 // missing: innerDiameterMm, wristCm, widthMm
+export const COLLECTION_SIZES: Record<string, PieceSize> = {
+  "GR-VERDIS-G": CLOVER_BRACELET_SIZE, "GR-VERDIS-S": CLOVER_BRACELET_SIZE,
+  "GR-NOCTIS-G": CLOVER_BRACELET_SIZE, "GR-NOCTIS-S": CLOVER_BRACELET_SIZE,
+  "GR-LUMEN-G": CLOVER_BRACELET_SIZE, "GR-LUMEN-S": CLOVER_BRACELET_SIZE,
+  "KO-VERDIS-G": CLOVER_NECKLACE_SIZE, "KO-VERDIS-S": CLOVER_NECKLACE_SIZE,
+  "KO-NOCTIS-G": CLOVER_NECKLACE_SIZE, "KO-NOCTIS-S": CLOVER_NECKLACE_SIZE,
+  "KO-LUMEN-G": CLOVER_NECKLACE_SIZE, "KO-LUMEN-S": CLOVER_NECKLACE_SIZE,
+  "GR-LINEA-G": BANGLE_SIZE_UNKNOWN, "GR-LINEA-S": BANGLE_SIZE_UNKNOWN,
+  "GR-SOLARIS-G": BANGLE_SIZE_UNKNOWN, "GR-SOLARIS-S": BANGLE_SIZE_UNKNOWN,
+  "GR-SPIRA-G": BANGLE_SIZE_UNKNOWN, "GR-SPIRA-S": BANGLE_SIZE_UNKNOWN,
+};
+
+const num = (n: number) => String(n).replace(".", ","); // 16.5 -> "16,5"
+/** "Спецификации" size rows (BG), in the order they follow Материал / Покритие. */
+function sizeRowsBg(type: PieceType, bangle: boolean, s: PieceSize): ProductSpec[] {
+  const len = s.lengthCm !== undefined ? `${num(s.lengthCm)} см${s.extenderCm ? ` + ${num(s.extenderCm)} см удължител` : ""}` : "";
+  if (type === "necklace") {
+    return [
+      { label: "Дължина на верижката", value: len },
+      { label: "Размер на висулката", value: s.pendantMm ? `${s.pendantMm} мм` : "" },
+    ];
+  }
+  return [
+    ...(bangle
+      ? [
+          { label: "Вътрешен диаметър", value: s.innerDiameterMm !== undefined ? `${num(s.innerDiameterMm)} мм` : "" },
+          { label: "За обиколка на китката", value: s.wristCm ? `${num(s.wristCm[0])}–${num(s.wristCm[1])} см` : "" },
+        ]
+      : [{ label: "Дължина", value: len }]),
+    { label: "Ширина", value: s.widthMm !== undefined ? `${num(s.widthMm)} мм` : "" },
+    { label: "Размер на детелината", value: s.cloverCm !== undefined ? `${num(s.cloverCm)} см` : "" },
+  ];
+}
+/** The short line under the piece's name ("Дължина 16,5–21,5 см, регулируема"); "" when nothing is known. */
+export function sizeLineBg(type: PieceType, bangle: boolean, s: PieceSize): string {
+  const range = s.lengthCm !== undefined
+    ? s.extenderCm ? `${num(s.lengthCm)}–${num(s.lengthCm + s.extenderCm)} см, регулируема` : `${num(s.lengthCm)} см`
+    : "";
+  if (type === "necklace") return [range && `Верижка ${range}`, s.pendantMm && `висулка ${s.pendantMm} мм`].filter(Boolean).join(" · ");
+  if (bangle) {
+    return [
+      s.innerDiameterMm !== undefined && `Вътрешен диаметър ${num(s.innerDiameterMm)} мм`,
+      s.wristCm && `за китка ${num(s.wristCm[0])}–${num(s.wristCm[1])} см`,
+    ].filter(Boolean).join(" · ");
+  }
+  return range ? `Дължина ${range}` : "";
+}
+
+// BG "Спецификации": Материал, Покритие, then the size rows, then the rest; Опаковка and Гаранция last (the page shows those two once
+// under both pieces of the 1+1 - ProductInfo COMMON_SPEC_LABELS). Empty rows are hidden by the tab.
+function specsBg(key: CollectionKey, type: PieceType, metal: Metal, skuCode: string): ProductSpec[] {
+  const bangle = COLLECTION_DESIGNS_KIND[key] === "bangle";
+  const d = details(key, type, metal, skuCode, "bg");
+  const row = (label: string) => d.filter((r) => r.label === label);
+  return [
+    ...materialSpecs(metal, "bg"),
+    ...sizeRowsBg(type, bangle, COLLECTION_SIZES[skuCode] ?? {}),
+    ...(TEXT[key].extraSpecs ?? []).map((s) => ({ label: s.label.bg, value: s.value?.bg ?? "" })), // Вложка / Камъни
+    ...row("Закопчаване"),
+    { label: "Пол", value: "Дамски" },
+    { label: "Цвят", value: COLOR[metal].bg },
+    ...row("Артикул"),
+    ...row("Опаковка"),
+    ...row("Гаранция"),
+  ];
+}
+const COLLECTION_DESIGNS_KIND: Record<CollectionKey, "clover" | "bangle"> = Object.fromEntries(
+  COLLECTION_PIECES.map((p) => [p.design.key, p.design.kind]),
+) as Record<CollectionKey, "clover" | "bangle">;
+
 function specs(key: CollectionKey, type: PieceType, metal: Metal, skuCode: string, lang: "bg" | "ro"): ProductSpec[] {
   // "Спецификации" tab = the specs and the former "Детайли" rows in one list, no duplicates: "Метал" says the same as "Материал"
   // (same value), and Вложка / Камъни / Дължина are in both - each shown once. A row with no value stays hidden (the tab skips it).
@@ -238,7 +324,8 @@ export const NEW_COLLECTION_PRODUCTS: Product[] = COLLECTION_PIECES.map(({ slug,
     shortDescription: t.short[type].bg,
     description: fill(t.description[type].bg, metal, "bg"),
     features: t.features[type].map((f) => f.bg),
-    specs: specs(design.key, type, metal, sku(type, design.key, metal), "bg"), // incl. the former "Детайли" rows
+    specs: specsBg(design.key, type, metal, sku(type, design.key, metal)), // incl. the former "Детайли" rows + the sizes
+    sizeLine: sizeLineBg(type, design.kind === "bangle", COLLECTION_SIZES[sku(type, design.key, metal)] ?? {}),
     coverImage: photos(slug, type, design.key, metal, alt, "bg")[0],
     images: photos(slug, type, design.key, metal, alt, "bg"),
   };

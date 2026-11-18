@@ -29,6 +29,7 @@ export type FreeItem = {
   priceText: string;       // its own price, shown struck through
   description: string;
   href: string;
+  sizeLine?: string;       // the main size in one line (BG women's collection), shown under the picked piece in box 2
 };
 
 export type FreePickerText = {

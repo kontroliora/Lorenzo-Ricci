@@ -49,6 +49,9 @@ export interface Product {
   // would otherwise repeat it right below.
   shortDescription: string;
   specs: ProductSpec[];
+  // BG jewellery: the main size in one short line, under the piece's name ("Дължина 16,5–21,5 см, регулируема"). Built from the
+  // catalogue's size data (lib/new-collection-products.ts COLLECTION_SIZES, lib/products.ts); unset / "" = no line.
+  sizeLine?: string;
   features: string[];
   // "Детайли" rows under the bullets (2026 collection); a row with an empty value is not shown.
   details?: ProductSpec[];

@@ -372,10 +372,11 @@ const catalog: Product[] = [
       "Регулируема 18-22 см",
       "Унисекс дизайн",
     ],
+    sizeLine: "Дължина 18–22 см, регулируема", // the main size under the name (from the rows below)
     specs: [
       { label: "Материал", value: "316L неръждаема стомана с 18K PVD покритие" },
-      { label: "Дължина", value: "18 + 4 см (регулируема)" },
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
+      { label: "Дължина", value: "18 + 4 см (регулируема)" },
       { label: "Печат", value: "750 IT" },
       { label: "Пол", value: "Унисекс" },
       { label: "Цвят", value: "Златен" },
@@ -415,11 +416,12 @@ const catalog: Product[] = [
       "Дължина 20 см",
       "Миланска изработка",
     ],
+    sizeLine: "Дължина 20 см · ширина 8 мм", // the main size under the name (from the rows below)
     specs: [
       { label: "Материал", value: "316L неръждаема стомана с 18K PVD покритие" },
+      { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Ширина", value: "8 мм" },
       { label: "Дължина", value: "20 см" },
-      { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
       { label: "Пол", value: "Унисекс" },
       { label: "Цвят", value: "Златен" },
@@ -459,11 +461,12 @@ const catalog: Product[] = [
       "Дължина 22 см",
       "Ежедневна елегантност",
     ],
+    sizeLine: "Дължина 22 см · дебелина 6 мм", // the main size under the name (from the rows below)
     specs: [
       { label: "Материал", value: "316L неръждаема стомана с 18K PVD покритие" },
+      { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Дебелина", value: "6 мм" },
       { label: "Дължина", value: "22 см" },
-      { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
       { label: "Пол", value: "Унисекс" },
       { label: "Цвят", value: "Златен" },
@@ -503,11 +506,12 @@ const catalog: Product[] = [
       "Т-закопчалка",
       "Дължина 22 см",
     ],
+    sizeLine: "Дължина 22 см · ширина 6 мм", // the main size under the name (from the rows below)
     specs: [
       { label: "Материал", value: "316L неръждаема стомана с 18K PVD покритие" },
+      { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Ширина", value: "6 мм" },
       { label: "Дължина", value: "22 см" },
-      { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Печат", value: "750 IT" },
       { label: "Пол", value: "Унисекс" },
       { label: "Цвят", value: "Златен" },
@@ -547,12 +551,13 @@ const catalog: Product[] = [
       "Дължина 60 см",
       "Унисекс силует",
     ],
+    sizeLine: "Верижка 60 см · кръст 3,7 × 2 см", // the main size under the name (from the rows below)
     specs: [
       { label: "Материал", value: "316L неръждаема стомана с 18K PVD покритие" },
+      { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Размер на кръста", value: "3.7 × 2 см" },
       { label: "Дебелина", value: "3 мм" },
-      { label: "Дължина", value: "60 см" },
-      { label: "Покритие", value: "4-слойно 18K PVD златно" },
+      { label: "Дължина на верижката", value: "60 см" },
       { label: "Печат", value: "750 IT" },
       { label: "Пол", value: "Унисекс" },
       { label: "Цвят", value: "Златен" },
@@ -593,12 +598,13 @@ const catalog: Product[] = [
       "Дължина 60 см",
       "Изразителен акцент",
     ],
+    sizeLine: "Верижка 60 см · кръст 8,5 × 5 см", // the main size under the name (from the rows below)
     specs: [
       { label: "Материал", value: "316L неръждаема стомана с 18K PVD покритие" },
+      { label: "Покритие", value: "4-слойно 18K PVD златно" },
       { label: "Размер на кръста", value: "8.5 × 5 см" },
       { label: "Ширина на верижката", value: "3 мм" },
-      { label: "Дължина", value: "60 см" },
-      { label: "Покритие", value: "4-слойно 18K PVD златно" },
+      { label: "Дължина на верижката", value: "60 см" },
       { label: "Печат", value: "750 IT" },
       { label: "Цвят", value: "Златен" },
     ],
@@ -637,11 +643,12 @@ const catalog: Product[] = [
       "Дължина 55 см",
       "Миланска плетка",
     ],
+    sizeLine: "Дължина 55 см · ширина 8 мм", // the main size under the name (from the rows below)
     specs: [
       { label: "Материал", value: "316L неръждаема стомана с 18K PVD покритие" },
-      { label: "Ширина", value: "8 мм" },
-      { label: "Дължина", value: "55 см" },
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
+      { label: "Ширина", value: "8 мм" },
+      { label: "Дължина на верижката", value: "55 см" },
       { label: "Печат", value: "750 IT" },
       { label: "Цвят", value: "Златен" },
     ],
@@ -680,11 +687,12 @@ const catalog: Product[] = [
       "Дължина 55 см",
       "Самостоятелно или с висулка",
     ],
+    sizeLine: "Дължина 55 см · ширина 6 мм", // the main size under the name (from the rows below)
     specs: [
       { label: "Материал", value: "316L неръждаема стомана с 18K PVD покритие" },
-      { label: "Ширина", value: "6 мм" },
-      { label: "Дължина", value: "55 см" },
       { label: "Покритие", value: "4-слойно 18K PVD златно" },
+      { label: "Ширина", value: "6 мм" },
+      { label: "Дължина на верижката", value: "55 см" },
       { label: "Печат", value: "750 IT" },
       { label: "Цвят", value: "Златен" },
     ],

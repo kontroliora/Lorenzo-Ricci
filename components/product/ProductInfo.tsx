@@ -21,6 +21,7 @@ import { OnePlusOnePicker, type PickOption } from "@/components/product/OnePlusO
 import { ProductDetails } from "@/components/product/ProductDetails";
 import { collectionSwatches, isCollectionSlug, collectionGroupOf, collectionMatchOf, collectionRank, collectionKindRow, collectionModelRow, COLLECTION_GROUP_LABEL } from "@/lib/new-collection";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
+import { SizeLine } from "@/components/product/SizeLine";
 import { CollectionModelRow } from "@/components/product/CollectionModelRow";
 import { CollectionTwoBoxes, TWO_BOX_BG, TWO_BOX_CARD_BG, type TwoBoxText } from "@/components/product/CollectionTwoBoxes";
 import { previewProductPhoto, warmProductPhoto } from "@/lib/warm-product";
@@ -373,7 +374,7 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
         const group = cardOpo ? "all" as const : collectionGroupOf(o.slug);
         if (!p || !group) return [];
         return [{ slug: o.slug, name: p.name, image: p.coverImage, images: p.images, available: o.available, group,
-          priceText: displayPrice(p, country).text, description: p.description || p.shortDescription, href: `/products/${o.slug}` }];
+          priceText: displayPrice(p, country).text, description: p.description || p.shortDescription, href: `/products/${o.slug}`, sizeLine: p.sizeLine }];
       }).sort((a, b) => (cardOpo ? 0 : collectionRank(a.slug) - collectionRank(b.slug)))
     : [];
   // The pair costs the dearer of the two (the cheaper one is free): €65 for two cardholders, €109 / €115 for jewellery.
@@ -458,6 +459,9 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
   // The add-to-cart button and its payment line (placed under the picker for a women's-collection piece, else lower down).
   const velvetBox = isVelvetBoxCardholder(product.slug); // new cardholders: the box line (lib/velvet-box.ts), no warranty line
   const twoBoxes = ((inCollection || cardOpo) && !!opo) || giftBoxes; // women's collection / cardholders with their 1+1, watches / clutches with the cardholder
+  // Specs tab of a women's-collection 1+1: a section per piece (the second one once picked).
+  const pairSpecs = inCollection && !!opo && !cardOpo && !giftBoxes;
+  const secondPiece = pairSpecs && picked ? lookup(picked.slug) ?? null : null;
   // Nothing picked yet (and something is pickable): the buttons point to box 2 instead of adding.
   const mustChoose = giftBoxes ? !pickedGift && giftItems.some((i) => i.available) : twoBoxes && !picked && freeItems.some((i) => i.available);
   const chooseLabel = mustChoose ? (watchGift ? CHOOSE_LABEL_WATCH_BG : clutchGift ? CHOOSE_LABEL_CLUTCH_BG : cardOpo ? CHOOSE_LABEL_CARD_BG : CHOOSE_LABEL_BG) : null;
@@ -575,6 +579,7 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
         <p className="font-sans text-[10px] text-ink-muted tracking-[0.2em] mt-1.5">
           Арт. {product.sku}
         </p>
+        {!twoBoxes && product.sizeLine && <SizeLine text={product.sizeLine} className="mt-2" />}
       </div>
 
       {/* Women's collection: "Вид" row (necklace / bracelet of the same model and metal) above the colour */}
@@ -703,7 +708,7 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
       ) : twoBoxes ? (
         <CollectionTwoBoxes
           t={cardOpo ? TWO_BOX_CARD_BG : TWO_BOX_BG}
-          current={{ name: product.name, image: product.coverImage, priceText: opoPairPriceBg(product.price, 0) /* "€109", like the totals */, type: product.slug.startsWith("necklace") ? "necklace" : "bracelet" }}
+          current={{ name: product.name, image: product.coverImage, priceText: opoPairPriceBg(product.price, 0) /* "€109", like the totals */, type: product.slug.startsWith("necklace") ? "necklace" : "bracelet", sizeLine: product.sizeLine }}
           selectors={(typeRow || colourRow || modelRow) ? (
             <div className="flex flex-col gap-4">
               {typeRow && <CollectionModelRow row={typeRow} current={product.slug} hrefPrefix="/products/" onPrefetch={prefetchMainImage} onSelect={rowSwitch} />}
@@ -887,18 +892,25 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
               )}
             </div>
           )}
-          {activeTab === "specs" && (
-            <div className="flex flex-col gap-3">
-              {/* An empty value (e.g. clutch dimensions not measured yet) hides the whole
-                  row - customers never see a placeholder like "TBD". */}
-              {product.specs.filter(({ value }) => value.trim() !== "").map(({ label, value }) => (
-                <div key={label} className="flex justify-between py-2 border-b border-border">
-                  <span className="font-sans text-[11px] text-ink-muted tracking-wide uppercase">{label}</span>
-                  <span className="font-sans text-sm font-light text-charcoal text-right max-w-[60%]">{value}</span>
-                </div>
-              ))}
+          {activeTab === "specs" && (pairSpecs ? (
+            // Women's collection 1+1 (owner, 18.11.2026): one section per piece, both following the current choice in place; the rows
+            // common to both (Опаковка, Гаранция) once, under the two.
+            <div data-testid="specs-pair" className="flex flex-col gap-6">
+              <section data-testid="specs-first">
+                <SpecsHeading n={1} name={product.name} />
+                <SpecRows rows={product.specs.filter((r) => !COMMON_SPEC_LABELS.has(r.label))} />
+              </section>
+              <section data-testid="specs-second">
+                <SpecsHeading n={2} name={secondPiece?.name ?? null} />
+                {secondPiece
+                  ? <SpecRows rows={secondPiece.specs.filter((r) => !COMMON_SPEC_LABELS.has(r.label))} />
+                  : <p className="font-sans text-sm font-light text-ink-soft py-2">Изберете второ бижу, за да видите спецификациите му</p>}
+              </section>
+              <SpecRows rows={product.specs.filter((r) => COMMON_SPEC_LABELS.has(r.label))} />
             </div>
-          )}
+          ) : (
+            <SpecRows rows={product.specs} />
+          ))}
           {activeTab === "delivery" && (
             <div className="flex flex-col gap-4 text-sm font-light text-ink-soft leading-relaxed tracking-wide">
               <p><strong className="text-charcoal font-normal">Безплатна доставка</strong> за поръчки над €60</p>
@@ -912,6 +924,31 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
         </div>
       </div>
     </div>
+  );
+}
+
+// The rows shown once under both pieces of the 1+1 in the "Спецификации" tab (lib/new-collection-products.ts puts them last).
+const COMMON_SPEC_LABELS = new Set(["Опаковка", "Гаранция"]);
+
+// "Спецификации" rows. An empty value (e.g. a size not measured yet) hides the whole row - customers never see a placeholder like "TBD".
+function SpecRows({ rows }: { rows: { label: string; value: string }[] }) {
+  return (
+    <div className="flex flex-col gap-3">
+      {rows.filter(({ value }) => value.trim() !== "").map(({ label, value }) => (
+        <div key={label} className="flex justify-between gap-4 py-2 border-b border-border">
+          <span className="font-sans text-[11px] text-ink-muted tracking-wide uppercase">{label}</span>
+          <span className="font-sans text-sm font-light text-charcoal text-right max-w-[60%]">{value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SpecsHeading({ n, name }: { n: 1 | 2; name: string | null }) {
+  return (
+    <p className="font-sans text-xs font-medium tracking-[0.12em] uppercase text-charcoal mb-1">
+      Бижу {n}{name ? <span className="normal-case tracking-normal font-normal"> – {name}</span> : null}
+    </p>
   );
 }
 

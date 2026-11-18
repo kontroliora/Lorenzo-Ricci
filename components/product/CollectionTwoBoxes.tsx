@@ -2,6 +2,7 @@
 import { type ReactNode } from "react";
 import Image from "next/image";
 import { CollectionFreePicker, type FreeItem, type FreePickerText } from "@/components/product/CollectionFreePicker";
+import { SizeLine } from "@/components/product/SizeLine";
 
 // Women's collection product page, right column (owner, 08.11.2026), BG + RO, desktop + phones: two numbered boxes.
 //   1  ИЗБЕРЕТЕ ПЪРВО БИЖУ (price on the right): small photo + name of the page's piece, then its selectors (Вид / Цвят / Камък).
@@ -42,7 +43,7 @@ export const TWO_BOX_CARD_RO: TwoBoxText = {
 
 export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, matchSlug, pickerText, picked, pickedLabel, onSelect, totalText, struckText, cta }: {
   t: TwoBoxText;
-  current: { name: string; image: { src: string; alt: string }; priceText: string; type: "necklace" | "bracelet" };
+  current: { name: string; image: { src: string; alt: string }; priceText: string; type: "necklace" | "bracelet"; sizeLine?: string };
   selectors: ReactNode;
   items: FreeItem[];
   selfSlug: string;
@@ -65,7 +66,10 @@ export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, mat
             <span className="relative flex-shrink-0 w-14 h-14 bg-white border border-border">
               <Image src={current.image.src} alt={current.image.alt} fill sizes="56px" quality={60} className="object-contain p-0.5" />
             </span>
-            <p className="font-sans text-sm text-charcoal leading-snug">{current.name}</p>
+            <div className="min-w-0">
+              <p className="font-sans text-sm text-charcoal leading-snug">{current.name}</p>
+              {current.sizeLine && <SizeLine text={current.sizeLine} className="mt-0.5" testId="size-line-first" />}
+            </div>
           </div>
           {selectors}
         </div>
@@ -77,6 +81,13 @@ export function CollectionTwoBoxes({ t, current, selectors, items, selfSlug, mat
         <div className="px-4 sm:px-5 py-4">
           <CollectionFreePicker embedded items={items} currentName={current.name} selfSlug={selfSlug} matchSlug={matchSlug}
             selected={picked?.slug ?? null} onSelect={onSelect} onRemove={() => onSelect(null)} text={pickerText} />
+          {/* The picked piece's name and main size (BG women's collection: only pieces with a size line) */}
+          {picked?.sizeLine && (
+            <div data-testid="second-picked" className="mt-3 pt-3 border-t border-border">
+              <p className="font-sans text-sm text-charcoal leading-snug">{picked.name}</p>
+              <SizeLine text={picked.sizeLine} className="mt-0.5" testId="size-line-second" />
+            </div>
+          )}
         </div>
       </section>
 
