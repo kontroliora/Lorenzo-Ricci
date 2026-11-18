@@ -4,12 +4,17 @@
 // status = 'new'): a second click, or a click after a phone confirmation, changes nothing and just says "already confirmed".
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import type { ConfirmClaim } from "@/lib/order-confirm-token";
+import { deliveryText, itemLines, type ConfirmRow } from "@/lib/confirm-request";
+import { hasCardMoney } from "@/lib/payments";
+
+/** What the page shows before the click: the order as the e-mail described it. */
+export type OrderSummary = { items: { name: string; color: string; qty: number; gift: boolean }[]; total: string; payment: string; delivery: string };
 
 export type ConfirmOutcome =
   | { kind: "confirmed"; ref: string; test?: boolean }   // confirmed by THIS click
   | { kind: "already"; ref: string }                     // confirmed before (by e-mail or by phone) / already shipped
   | { kind: "closed"; ref: string }                      // cancelled / returned: nothing to confirm
-  | { kind: "open"; ref: string }                        // still waiting for confirmation (page view only)
+  | { kind: "open"; ref: string; summary?: OrderSummary } // still waiting for confirmation (page view only)
   | { kind: "error" };
 
 type Row = { id: number; order_ref: string | null; status: string; payment_status?: string | null; email_confirmed_at?: string | null };
@@ -27,7 +32,13 @@ async function readState(orderId: number): Promise<ConfirmOutcome> {
   const ref = String(o.order_ref ?? o.id);
   if (o.email_confirmed_at || DONE.has(o.status)) return { kind: "already", ref };
   if (o.status !== "new" || o.payment_status === "refunded") return { kind: "closed", ref };
-  return { kind: "open", ref };
+  const r = data as ConfirmRow;
+  return { kind: "open", ref, summary: {
+    items: itemLines(r.items),
+    total: `€${(Number(r.total ?? 0) || 0).toFixed(2)}`,
+    payment: hasCardMoney(r) ? "платено с карта" : "наложен платеж",
+    delivery: deliveryText(r),
+  } };
 }
 
 export async function confirmByEmail(claim: ConfirmClaim): Promise<ConfirmOutcome> {

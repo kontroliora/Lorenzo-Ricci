@@ -66,3 +66,26 @@ export async function deleteTestOrders(): Promise<string> {
   revalidatePath("/lr-panel-v8m3q/orders");
   return `Изтрити: ${(data ?? []).map((r) => r.order_ref).join(", ") || "няма"}.`;
 }
+
+// Owner only (18.11.2026): undo an e-mail confirmation that looks like a link scanner (sent and "confirmed" in the same minute).
+// Back to "не вдига" in the call queue (status new, call_state no_answer, attempts unchanged), email_confirmed_at cleared, a stamped
+// note in the comments. confirm_email_sent_at stays set, so no second e-mail goes out; the customer's link still works (button).
+export async function returnToCallQueue(orderId: number, note: string): Promise<string> {
+  const me = await getAdminSession();
+  if (me?.role !== "owner") return "Само собственикът.";
+  const sb = await adminDb();
+  const { data: o, error } = await sb.from("orders").select("order_ref, status, call_notes, email_confirmed_at").eq("id", orderId).single();
+  if (error || !o) return `Грешка: ${error?.message ?? "няма такава поръчка"}`;
+  if (!o.email_confirmed_at || o.status !== "confirmed") return `${o.order_ref}: не е „потвърдена (имейл)“ и неизпратена – нищо не е променено.`;
+  const stamp = new Date().toLocaleString("bg-BG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Sofia" });
+  const line = `[${stamp}] ${note.trim() || "върната в опашката за звънене"}`;
+  const prev = String(o.call_notes ?? "").trim();
+  const { data: done, error: upErr } = await sb.from("orders")
+    .update({ status: "new", call_state: "no_answer", email_confirmed_at: null, call_notes: prev ? `${prev}\n${line}` : line })
+    .eq("id", orderId).eq("status", "confirmed").not("email_confirmed_at", "is", null).select("id");
+  if (upErr) return `Грешка: ${upErr.message}`;
+  if (!done?.length) return `${o.order_ref}: междувременно е променена – нищо не е направено.`;
+  revalidatePath(PATH);
+  revalidatePath("/lr-panel-v8m3q/orders");
+  return `${o.order_ref} е върната в опашката за звънене („не вдига“) с бележка.`;
+}

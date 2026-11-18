@@ -4,8 +4,9 @@ import { verifyConfirmToken } from "@/lib/order-confirm-token";
 import { readConfirmState } from "@/lib/confirm-by-email";
 import { ConfirmClient } from "./ConfirmClient";
 
-// The page behind "ПОТВЪРЖДАВАМ ПОРЪЧКАТА" (lib/confirm-request.ts). Opening it (GET) changes nothing - mail scanners open links
-// too; the page itself posts to /api/order-confirm (ConfirmClient), which confirms the order once.
+// The page behind "ПОТВЪРЖДАВАМ ПОРЪЧКАТА" (lib/confirm-request.ts). Opening it changes NOTHING, not even with a script on load
+// (owner, 18.11.2026: a link scanner had confirmed LR-59AZ367Z). It shows the order and a button; only pressing the button POSTs
+// the token to /api/order-confirm (ConfirmClient), which confirms the order once.
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Потвърждение на поръчка", robots: { index: false, follow: false } };
 
@@ -43,5 +44,5 @@ export default async function Page({ params }: { params: Promise<{ token: string
   if (state.kind === "already") return <ConfirmClient token="" ref_={state.ref} initial="already" />;
   if (state.kind === "closed") return <Notice title={`Поръчка №${state.ref}`} text={`Тази поръчка вече не е активна. Ако желаете да я възстановите, ${CONTACT.charAt(0).toLowerCase()}${CONTACT.slice(1)}`} />;
   if (!v.ok) return <Notice title="Линкът е изтекъл" text={`Линкът за потвърждение на поръчка №${"ref" in state ? state.ref : ""} е валиден 7 дни и вече е изтекъл. ${CONTACT}`} />;
-  return <ConfirmClient token={token} ref_={"ref" in state ? state.ref : ""} initial={v.claim.test ? "test" : "open"} />;
+  return <ConfirmClient token={token} ref_={"ref" in state ? state.ref : ""} initial="open" summary={state.kind === "open" ? state.summary : undefined} />;
 }

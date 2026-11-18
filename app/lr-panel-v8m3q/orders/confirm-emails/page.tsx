@@ -4,6 +4,7 @@ import { getAdminSession, adminDb } from "@/lib/supabase/admin-db";
 import { CONFIRM_REQUEST_AUTO, confirmUrl, hasEmail, isNoAnswerTarget, type ConfirmRow } from "@/lib/confirm-request";
 import { ConfirmEmailButtons } from "./Buttons";
 import { TestOrderButtons } from "./TestButtons";
+import { ReturnToQueueButton } from "./ReturnButton";
 
 const TEST_NOTE = "ТЕСТ имейл потвърждение – изтрий";   // same as ./actions.ts
 
@@ -26,7 +27,7 @@ function Table({ rows, showSent }: { rows: ConfirmRow[]; showSent?: boolean }) {
           <td style={{ padding: "6px 8px" }}>{o.name ?? "—"}</td>
           <td style={{ padding: "6px 8px" }}>{o.email?.trim() || "—"}</td>
           <td style={{ padding: "6px 8px" }}>{o.status === "new" ? `не вдига (${o.call_attempts})` : o.status}</td>
-          {showSent && <td style={{ padding: "6px 8px" }}>✉ {fmt(o.confirm_email_sent_at)}{o.email_confirmed_at ? ` · ✓ ${fmt(o.email_confirmed_at)}` : ""}</td>}
+          {showSent && <td style={{ padding: "6px 8px" }}>✉ {fmt(o.confirm_email_sent_at)}{o.email_confirmed_at ? ` · ✓ ${fmt(o.email_confirmed_at)}` : ""}{o.email_confirmed_at && o.status === "confirmed" ? <ReturnToQueueButton orderId={o.id} /> : null}</td>}
         </tr>
       ))}</tbody>
     </table>

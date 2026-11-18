@@ -1,8 +1,13 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import type { OrderSummary } from "@/lib/confirm-by-email";
 
-type View = "working" | "confirmed" | "already" | "closed" | "error";
+// Nothing happens on load: the order is confirmed ONLY when the customer presses the button (a POST with the token). Without
+// JavaScript the same button submits a plain form (POST) and the server sends the page back showing the result.
+type View = "ask" | "working" | "confirmed" | "already" | "closed" | "error";
+
+const GOLD = "#C9A961";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -22,37 +27,65 @@ const Check = () => (
   </div>
 );
 
-/** Posts the token once on load (a mail scanner's GET never confirms); without JavaScript the form button does the same. */
-export function ConfirmClient({ token, ref_, initial }: { token: string; ref_: string; initial: "open" | "test" | "already" }) {
-  const [view, setView] = useState<View>(initial === "already" ? "already" : "working");
+const Help = () => (
+  <p className="font-sans text-xs text-ink-muted leading-relaxed mt-4">
+    Нещо не е наред? Отговорете на имейла или ни пишете на{" "}
+    <a href="mailto:info@lorenzo-ricci.com" className="underline">info@lorenzo-ricci.com</a>
+  </p>
+);
+
+export function ConfirmClient({ token, ref_, initial, summary }: { token: string; ref_: string; initial: "open" | "already"; summary?: OrderSummary }) {
+  const [view, setView] = useState<View>(initial === "already" ? "already" : "ask");
   const [ref, setRef] = useState(ref_);
-  const sent = useRef(false);
 
-  useEffect(() => {
-    if (initial === "already" || sent.current) return;
-    sent.current = true;
-    (async () => {
-      try {
-        const res = await fetch("/api/order-confirm", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }), cache: "no-store" });
-        const out = (await res.json()) as { kind?: string; ref?: string };
-        if (out.ref) setRef(out.ref);
-        setView(out.kind === "confirmed" ? "confirmed" : out.kind === "already" ? "already" : out.kind === "closed" ? "closed" : "error");
-      } catch { setView("error"); }
-    })();
-  }, [initial, token]);
+  const confirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (view === "working") return;
+    setView("working");
+    try {
+      const res = await fetch("/api/order-confirm", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }), cache: "no-store" });
+      const out = (await res.json()) as { kind?: string; ref?: string };
+      if (out.ref) setRef(out.ref);
+      setView(out.kind === "confirmed" ? "confirmed" : out.kind === "already" ? "already" : out.kind === "closed" ? "closed" : "error");
+    } catch { setView("error"); }
+  };
 
-  if (view === "working") return (
+  if (view === "ask" || view === "working") return (
     <Shell>
-      <div role="status" aria-live="polite">
-        <div className="w-9 h-9 mx-auto mb-6 border-2 border-navy/15 border-t-navy rounded-full animate-spin" />
-        <h1 className="font-serif text-display-sm text-charcoal">Потвърждаваме поръчката Ви…</h1>
-        <noscript>
-          <form method="post" action="/api/order-confirm" className="mt-6">
-            <input type="hidden" name="token" value={token} />
-            <button type="submit" className="btn-primary w-full">Потвърждавам поръчката</button>
-          </form>
-        </noscript>
-      </div>
+      <p className="section-tag mb-3">Поръчка №{ref}</p>
+      <h1 className="font-serif text-display-sm text-charcoal">Потвърдете поръчката си</h1>
+      <div className="gold-divider" />
+      {summary && (
+        <div data-testid="confirm-summary" className="border border-border bg-ivory-warm px-5 py-4 flex flex-col gap-2.5 text-left">
+          {summary.items.map((i, n) => (
+            <div key={n} className="flex justify-between gap-4 text-sm">
+              <span className="font-sans text-charcoal">{i.name}{i.color ? <span className="text-ink-muted"> · {i.color}</span> : null}</span>
+              <span className="font-sans text-ink-muted whitespace-nowrap">×{i.qty}</span>
+            </div>
+          ))}
+          <div className="border-t border-border pt-2.5 flex justify-between gap-4 text-sm">
+            <span className="font-sans text-ink-muted">Обща сума</span>
+            <span className="font-sans text-charcoal"><span className="font-serif text-base">{summary.total}</span> ({summary.payment})</span>
+          </div>
+          <div className="flex justify-between gap-4 text-sm">
+            <span className="font-sans text-ink-muted whitespace-nowrap">Доставка до</span>
+            <span className="font-sans text-charcoal text-right">{summary.delivery}</span>
+          </div>
+        </div>
+      )}
+      <form method="post" action="/api/order-confirm" onSubmit={confirm} className="mt-8">
+        <input type="hidden" name="token" value={token} />
+        <button
+          type="submit"
+          data-testid="confirm-button"
+          disabled={view === "working"}
+          className="w-full font-sans font-bold uppercase whitespace-nowrap disabled:opacity-70"
+          style={{ background: GOLD, color: "#111111", border: `1px solid ${GOLD}`, borderRadius: 2, padding: "16px 12px", fontSize: 12, letterSpacing: ".18em" }}
+        >
+          {view === "working" ? "Потвърждаваме…" : "Потвърждавам поръчката"}
+        </button>
+      </form>
+      <Help />
     </Shell>
   );
 
