@@ -152,16 +152,14 @@ export function SalesNotification() {
           role="status"
         >
           {thumb("w-10 h-10")}
-          {/* One line: the name / city part shortens first, so the product and the time stay readable. */}
-          <p className="flex-1 min-w-0 flex items-baseline whitespace-nowrap font-sans text-[11.5px] font-light text-white/85">
-            {/* 375 px holds no more than this: the city, the product and the time (the first name is desktop-only). */}
-            <span className="min-w-[4.5rem] truncate">Купено в <span className="font-medium text-white">{p.city}</span>:</span>
-            <span className="shrink-0 max-w-[75%] truncate">
-              &nbsp;<span className="text-navy-pale">{p.product.replace(/\s+[–-]\s+(Злато|Сребро)$/, "")}</span>
-              <span className="text-white/45"> · {timeAgo(p.at, new Date(), true)}</span>
-            </span>
+          {/* One line. 375 px holds no more than the city, the product (without the colour) and the time - the first name is
+              desktop-only. When even that is too long, the time shortens first, then a very long city name. */}
+          <p className="flex-1 min-w-0 flex items-baseline whitespace-nowrap font-sans text-[11px] font-light text-white/85">
+            <span className="shrink-0 max-w-[48%] truncate">Купено в <span className="font-medium text-white">{p.city}</span>:&nbsp;</span>
+            <span className="shrink-0 max-w-[48%] truncate text-navy-pale">{p.product.replace(/\s+[–-]\s+(Злато|Сребро)$/, "")}</span>
+            <span className="min-w-0 truncate text-white/45">&nbsp;· {timeAgo(p.at, new Date(), true)}</span>
           </p>
-          <button onClick={close} aria-label="Затвори" className="w-7 h-8 flex items-center justify-center text-white/40 hover:text-white text-base leading-none flex-shrink-0">×</button>
+          <button onClick={close} aria-label="Затвори" className="w-6 h-8 flex items-center justify-center text-white/40 hover:text-white text-base leading-none flex-shrink-0">×</button>
         </Link>
       </div>
     );
