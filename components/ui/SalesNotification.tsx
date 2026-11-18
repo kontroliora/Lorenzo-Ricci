@@ -148,7 +148,7 @@ export function SalesNotification() {
         <Link
           href={`/products/${p.slug}`}
           key={p.id}
-          className={`pointer-events-auto w-[92vw] max-w-[420px] bg-charcoal-deep border border-[#B89B5E]/40 shadow-xl flex items-center gap-2 pl-1.5 pr-0 py-1.5 ${anim}`}
+          className={`pointer-events-auto w-[92vw] max-w-[420px] bg-charcoal-deep border border-[#B89B5E]/40 shadow-xl flex items-center gap-1.5 pl-1.5 pr-0 py-1.5 ${anim}`}
           role="status"
         >
           {thumb("w-10 h-10")}
