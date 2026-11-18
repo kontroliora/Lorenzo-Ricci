@@ -1,179 +1,190 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-const NOTIFICATIONS = [
-  {
-    city: "София",
-    product: "Chrono Black",
-    minutes: 2,
-    imageSrc: "/Products/watches/Chrono Black/chrono-black-hronograf-preden-izgled.webp",
-  },
-  {
-    city: "Пловдив",
-    product: "Golden Eclipse",
-    minutes: 5,
-    imageSrc: "/Products/watches/Golden Eclipse/golden-eclipse-hronograf-preden-izgled.webp",
-  },
-  {
-    city: "Варна",
-    product: "Гривна Diamante Cross",
-    minutes: 3,
-    imageSrc: "/Products/jewellery/bracelet Diamante Cross/grivna-diamante-cross-18k-pvd-preden-izgled.webp",
-  },
-  {
-    city: "Бургас",
-    product: "Колие Grande Imperiale",
-    minutes: 7,
-    imageSrc: "/Products/jewellery/Necklace Grande Imperiale /kolie-grande-imperiale-18k-pvd-preden-izgled.webp",
-  },
-  {
-    city: "Стара Загора",
-    product: "Polar Frost",
-    minutes: 4,
-    imageSrc: "/Products/watches/Polar Frost/polar-frost-hronograf-preden-izgled.webp",
-  },
-  {
-    city: "Велико Търново",
-    product: "Гривна Milano Forte",
-    minutes: 11,
-    imageSrc: "/Products/jewellery/Bracelet Milano Forte/grivna-milano-forte-18k-pvd-preden-izgled.webp",
-  },
-  {
-    city: "Русе",
-    product: "Golden Eclipse",
-    minutes: 6,
-    imageSrc: "/Products/watches/Golden Eclipse/golden-eclipse-hronograf-preden-izgled.webp",
-  },
-  {
-    city: "Плевен",
-    product: "Колие Aurelius Cross",
-    minutes: 9,
-    imageSrc: "/Products/jewellery/Necklace Aurelius Cross/kolie-aurelius-cross-18k-pvd-preden-izgled.webp",
-  },
-  {
-    city: "Благоевград",
-    product: "Chrono Black",
-    minutes: 3,
-    imageSrc: "/Products/watches/Chrono Black/chrono-black-hronograf-preden-izgled.webp",
-  },
-  {
-    city: "Добрич",
-    product: "Гривна Signature",
-    minutes: 14,
-    imageSrc: "/Products/jewellery/Bracelet Signature/grivna-signature-18k-pvd-preden-izgled.webp",
-  },
-  {
-    city: "Шумен",
-    product: "Polar Frost",
-    minutes: 8,
-    imageSrc: "/Products/watches/Polar Frost/polar-frost-hronograf-preden-izgled.webp",
-  },
-  {
-    city: "Монтана",
-    product: "Колие Milano Twist",
-    minutes: 12,
-    imageSrc: "/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-18k-pvd-preden-izgled.webp",
-  },
-];
+// "Мария от Пловдив закупи …" - REAL orders only (/api/recent-purchases: last 7 days, not cancelled / refused / fake, product in
+// stock now). Owner, 18.11.2026:
+//   - each order is shown at most ONCE per visitor (ids kept in localStorage), no loop; when the list runs out, nothing more shows;
+//   - at most one every 35-40 s (the gap also holds across page loads), never on the checkout / cart (HideOnCart in the layout +
+//     the paths below), never on /ro (Bulgarian copy);
+//   - the time is the order's real time ("преди 2 часа", "вчера");
+//   - desktop (lg+): bottom-left above the sticky bar, ~340 px, fades in 8 px up, stays 6 s;
+//   - mobile: at the top under the header, one line, 40 px photo, up to 92% of the width; goes on scroll down or after 5 s;
+//   - ✕ stops them until the end of the session (sessionStorage).
 
-interface NotificationState {
-  city: string;
-  product: string;
-  minutes: number;
-  imageSrc: string;
-  visible: boolean;
-  key: number;
+type Purchase = { id: string; at: string; firstName: string | null; city: string; product: string; slug: string; image: string };
+
+const GAP_MS = 35_000;          // + 0-5 s jitter -> one every 35-40 s
+const FIRST_DELAY_MS = 8_000;
+const DESKTOP_MS = 6_000;
+const MOBILE_MS = 5_000;
+const OUT_MS = 400;
+const SEEN_KEY = "lr_sp_seen";  // { [id]: shownAt }
+const LAST_KEY = "lr_sp_last";
+const OFF_KEY = "lr_sp_off";
+const BLOCKED_PATHS = ["/poruchka", "/vazstanovi", "/track", "/ro", "/lr-panel", "/partner"];
+
+const store = {
+  get(s: "local" | "session", k: string): string | null { try { return (s === "local" ? localStorage : sessionStorage).getItem(k); } catch { return null; } },
+  set(s: "local" | "session", k: string, v: string) { try { (s === "local" ? localStorage : sessionStorage).setItem(k, v); } catch { /* private mode */ } },
+};
+const readSeen = (): Record<string, number> => { try { return JSON.parse(store.get("local", SEEN_KEY) ?? "{}") ?? {}; } catch { return {}; } };
+
+const sofiaDay = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Sofia" }).format(d);
+
+/** The order's real time: "преди 5 минути", "преди 2 часа", "вчера", "преди 3 дни" (short: "преди 5 мин.", "преди 2 ч."). */
+export function timeAgo(iso: string, now = new Date(), short = false): string {
+  const at = new Date(iso);
+  const min = Math.max(0, Math.floor((now.getTime() - at.getTime()) / 60_000));
+  if (min < 2) return "току-що";
+  if (min < 60) return short ? `преди ${min} мин.` : `преди ${min} минути`;
+  const h = Math.floor(min / 60);
+  const today = sofiaDay(now) === sofiaDay(at);
+  if (today || h < 6) return short ? `преди ${h} ч.` : h === 1 ? "преди 1 час" : `преди ${h} часа`;
+  const days = Math.round((Date.parse(sofiaDay(now)) - Date.parse(sofiaDay(at))) / 86400_000);
+  if (days <= 1) return "вчера";
+  return `преди ${days} дни`;
 }
 
-const SHOW_INTERVAL_MS  = 15_000;
-const DISPLAY_DURATION_MS = 6_000;
-
 export function SalesNotification() {
-  const [notification, setNotification] = useState<NotificationState | null>(null);
-  const [index, setIndex] = useState(() => Math.floor(Math.random() * NOTIFICATIONS.length));
+  const pathname = usePathname() ?? "/";
+  const blocked = BLOCKED_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const [queue, setQueue] = useState<Purchase[] | null>(null);
+  const [current, setCurrent] = useState<{ p: Purchase; visible: boolean } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [top, setTop] = useState(96);
+  const blockedRef = useRef(blocked);
+  blockedRef.current = blocked;
 
-  const show = useCallback(() => {
-    const n = NOTIFICATIONS[index % NOTIFICATIONS.length];
-    setIndex((i) => i + 1);
-    setNotification({ ...n, visible: true, key: Date.now() });
-
-    setTimeout(() => {
-      setNotification((prev) => (prev ? { ...prev, visible: false } : null));
-      setTimeout(() => setNotification(null), 600);
-    }, DISPLAY_DURATION_MS);
-  }, [index]);
-
+  // Real purchases, minus the ones this visitor has already seen.
   useEffect(() => {
-    const firstTimer = setTimeout(show, 6_000);
-    return () => clearTimeout(firstTimer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (store.get("session", OFF_KEY)) return;
+    let alive = true;
+    fetch("/api/recent-purchases")
+      .then((r) => (r.ok ? r.json() : { purchases: [] }))
+      .then((d: { purchases?: Purchase[] }) => {
+        if (!alive) return;
+        const seen = readSeen();
+        setQueue((d.purchases ?? []).filter((p) => !seen[p.id]));
+      })
+      .catch(() => alive && setQueue([]));
+    return () => { alive = false; };
   }, []);
 
   useEffect(() => {
-    if (!notification) return;
-    const interval = setInterval(show, SHOW_INTERVAL_MS);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notification]);
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const on = () => setIsMobile(!mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
 
-  if (!notification) return null;
+  const hide = useCallback(() => {
+    setCurrent((c) => (c ? { ...c, visible: false } : null));
+    setTimeout(() => setCurrent(null), OUT_MS);
+  }, []);
+
+  // Scheduler: the next one no sooner than 35-40 s after the last one shown (on any page of the site).
+  useEffect(() => {
+    if (!queue || queue.length === 0 || current) return;
+    const last = Number(store.get("local", LAST_KEY) ?? 0);
+    const wait = Math.max(FIRST_DELAY_MS, last + GAP_MS + Math.random() * 5000 - Date.now());
+    const t = setTimeout(() => {
+      if (store.get("session", OFF_KEY)) { setQueue([]); return; }
+      if (blockedRef.current || document.hidden) { setQueue((q) => (q ? [...q] : q)); return; } // try again later
+      const [next, ...rest] = queue;
+      const seen = readSeen();
+      const weekAgo = Date.now() - 8 * 86400_000;
+      for (const k of Object.keys(seen)) if (seen[k] < weekAgo) delete seen[k];
+      seen[next.id] = Date.now();
+      store.set("local", SEEN_KEY, JSON.stringify(seen));
+      store.set("local", LAST_KEY, String(Date.now()));
+      const header = document.querySelector("header");
+      setTop(Math.max(8, (header?.getBoundingClientRect().bottom ?? 88) + 8));
+      setQueue(rest);
+      setCurrent({ p: next, visible: true });
+    }, Math.min(wait, GAP_MS + 5000));
+    return () => clearTimeout(t);
+  }, [queue, current]);
+
+  // Auto-hide: 6 s on desktop, 5 s on mobile (or the first scroll down there).
+  useEffect(() => {
+    if (!current?.visible) return;
+    const t = setTimeout(hide, isMobile ? MOBILE_MS : DESKTOP_MS);
+    let onScroll: (() => void) | undefined;
+    if (isMobile) {
+      const y0 = window.scrollY;
+      onScroll = () => { if (window.scrollY - y0 > 16) hide(); };
+      window.addEventListener("scroll", onScroll, { passive: true });
+    }
+    return () => { clearTimeout(t); if (onScroll) window.removeEventListener("scroll", onScroll); };
+  }, [current?.visible, current?.p.id, isMobile, hide]);
+
+  if (!current || blocked) return null;
+  const { p, visible } = current;
+  const who = p.firstName ? `${p.firstName} от ${p.city}` : `Клиент от ${p.city}`;
+  const when = timeAgo(p.at);
+
+  const close = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    store.set("session", OFF_KEY, "1");
+    setQueue([]);
+    hide();
+  };
+
+  const thumb = (size: string) => (
+    <div className={`relative ${size} flex-shrink-0 overflow-hidden border border-[#B89B5E]/40 bg-white/5`}>
+      <Image src={p.image} alt={p.product} fill quality={70} sizes="48px" className="object-contain object-center p-0.5" />
+    </div>
+  );
+  const anim = visible ? "animate-notification-in" : "animate-notification-out";
+
+  if (isMobile) {
+    return (
+      <div className="fixed inset-x-0 z-[45] flex justify-center pointer-events-none" style={{ top }}>
+        <Link
+          href={`/products/${p.slug}`}
+          key={p.id}
+          className={`pointer-events-auto w-[92vw] max-w-[420px] bg-charcoal-deep border border-[#B89B5E]/40 shadow-xl flex items-center gap-2 pl-1.5 pr-0 py-1.5 ${anim}`}
+          role="status"
+        >
+          {thumb("w-10 h-10")}
+          {/* One line: the name / city part shortens first, so the product and the time stay readable. */}
+          <p className="flex-1 min-w-0 flex items-baseline whitespace-nowrap font-sans text-[11.5px] font-light text-white/85">
+            {/* 375 px holds no more than this: the city, the product and the time (the first name is desktop-only). */}
+            <span className="min-w-[4.5rem] truncate">Купено в <span className="font-medium text-white">{p.city}</span>:</span>
+            <span className="shrink-0 max-w-[75%] truncate">
+              &nbsp;<span className="text-navy-pale">{p.product}</span>
+              <span className="text-white/45"> · {timeAgo(p.at, new Date(), true)}</span>
+            </span>
+          </p>
+          <button onClick={close} aria-label="Затвори" className="w-7 h-8 flex items-center justify-center text-white/40 hover:text-white text-base leading-none flex-shrink-0">×</button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    // HARD CONSTRAINT: hidden on mobile, only on lg+ screens
-    <div
-      className="hidden lg:block fixed left-6 z-[60] transition-[bottom] duration-300 ease-out"
-      style={{ bottom: "calc(1.5rem + var(--sticky-bar-h, 0px))" }}
-    >
-      <div
-        key={notification.key}
-        className={`bg-charcoal-deep border border-navy/20 shadow-xl flex items-center gap-3 pl-3 pr-4 py-3 max-w-[320px] ${
-          notification.visible
-            ? "animate-notification-in"
-            : "animate-notification-out"
-        }`}
+    <div className="fixed left-6 z-[60] transition-[bottom] duration-300 ease-out" style={{ bottom: "calc(1.5rem + var(--sticky-bar-h, 0px))" }}>
+      <Link
+        href={`/products/${p.slug}`}
+        key={p.id}
+        className={`bg-charcoal-deep border border-[#B89B5E]/40 shadow-xl flex items-center gap-3 pl-3 pr-3 py-3 w-[340px] ${anim}`}
+        role="status"
       >
-        {/* Product thumbnail */}
-        <div className="relative w-12 h-12 flex-shrink-0 rounded-md overflow-hidden border border-white/8 bg-white/5">
-          <Image
-            src={notification.imageSrc}
-            alt={notification.product}
-            fill
-            quality={70}
-            sizes="48px"
-            className="object-contain object-center p-1"
-          />
-          {/* Live pulse dot - bottom-right corner of image */}
-          <div className="absolute bottom-0.5 right-0.5">
-            <div className="relative w-2 h-2">
-              <div className="w-2 h-2 bg-navy rounded-full" />
-              <div className="absolute inset-0 w-2 h-2 bg-navy rounded-full animate-ping opacity-75" />
-            </div>
-          </div>
-        </div>
-
-        {/* Text */}
+        {thumb("w-12 h-12")}
         <div className="flex-1 min-w-0">
-          <p className="font-sans text-[11px] font-light text-white/90 leading-snug">
-            <span className="font-medium text-white">{notification.city}</span>
-            {" "}- някой купи{" "}
-            <span className="text-navy-pale font-normal">{notification.product}</span>
+          <p className="font-sans text-[12px] font-light text-white/85 leading-snug">
+            <span className="font-medium text-white">{who}</span> закупи{" "}
+            <span className="text-navy-pale">{p.product}</span>
           </p>
-          <p className="font-sans text-[10px] text-white/40 mt-0.5 tracking-wide">
-            преди {notification.minutes}{" "}
-            {notification.minutes === 1 ? "минута" : "минути"}
-          </p>
+          <p className="font-sans text-[10px] text-white/45 mt-0.5 tracking-wide">{when}</p>
         </div>
-
-        {/* Close */}
-        <button
-          onClick={() => setNotification(null)}
-          aria-label="Затвори"
-          className="text-white/30 hover:text-white transition-colors text-lg leading-none flex-shrink-0 ml-1"
-        >
-          ×
-        </button>
-      </div>
+        <button onClick={close} aria-label="Затвори" className="self-start text-white/30 hover:text-white transition-colors text-lg leading-none flex-shrink-0 ml-1">×</button>
+      </Link>
     </div>
   );
 }
