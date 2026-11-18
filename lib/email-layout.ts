@@ -1,6 +1,7 @@
 // Shared pieces for the customer HTML e-mails. Every e-mail is LIGHT (ivory page, white card, navy text), like the marketing e-mails,
 // and looks the same in every mail app:
-//   - color-scheme "light" only: Apple Mail (macOS/iOS) then keeps the e-mail light in dark mode instead of re-colouring it;
+//   - color-scheme "light dark" (owner, 18.11.2026; was "light" only): every block carries its own inline background and text colour,
+//     so a client that honours the meta keeps the e-mail as designed; body has a default dark text colour for anything uncoloured;
 //   - the header is a white block with the logo as a PNG (public/email-logo-navy.png, 400x96 = 200 px at 2x) whose white plate is
 //     baked in: Gmail iOS/Android and Zoho invert the page in dark mode but never an image, so the navy wordmark always sits on
 //     white and never blends into a dark background;
@@ -8,7 +9,7 @@
 //     turns navy and the logo swaps to public/email-logo-white.png (white wordmark on navy).
 //     No @media (prefers-color-scheme: dark) swap on purpose: Apple Mail matches that query but (thanks to the meta) keeps the e-mail
 //     light, so a swap there would put a navy bar on a light e-mail - the opposite of "the same everywhere";
-//   - dark buttons carry background-image:linear-gradient(c,c) next to their colour (Gmail does not invert gradients).
+//   - buttons are goldButton() (gold + near-black text, gradient + border: see below); darkBg() stays for other dark blocks.
 // The logos are made by scripts/make-email-logos.mjs.
 export const EMAIL_SITE = "https://lorenzo-ricci.com";
 export const EMAIL_NAVY = "#0a0e1f";
@@ -18,11 +19,41 @@ const EMAIL_ASSETS = "https://www.lorenzo-ricci.com";
 export const EMAIL_LOGO_NAVY = `${EMAIL_ASSETS}/email-logo-navy.png`;
 export const EMAIL_LOGO_WHITE = `${EMAIL_ASSETS}/email-logo-white.png`;
 
+const escAttr = (s: string) => String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+
+/**
+ * The bulletproof gold button: a one-cell table (bgcolor + inline background), the link inside it, one line (nowrap).
+ * `label` is plain text (escaped here). `align` places the button; `margin` is the table's outer margin.
+ */
+export function goldButton(href: string, label: string, opts: { align?: "center" | "left"; margin?: string; fontSize?: number } = {}): string {
+  const g = EMAIL_GOLD, t = EMAIL_BTN_TEXT, fs = opts.fontSize ?? 12;
+  const text = escAttr(label).replace(/>/g, "&gt;");
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" ${opts.align === "left" ? "" : 'align="center" '}style="margin:${opts.margin ?? "22px auto 10px"};border-collapse:separate">
+  <tr><td align="center" bgcolor="${g}" class="lr-gold" style="background:${g};background-color:${g};background-image:linear-gradient(${g},${g});border:1px solid ${g};border-radius:2px;mso-padding-alt:14px 16px">
+    <a href="${escAttr(href)}" class="lr-gold-t" style="display:inline-block;padding:14px 16px;font-family:Arial,Helvetica,sans-serif;font-size:${fs}px;line-height:1.2;font-weight:bold;letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;color:${t};-webkit-text-fill-color:${t};text-decoration:none">${text}</a>
+  </td></tr></table>`;
+}
+
 /** Background for a dark block (a button): the colour plus a gradient of the same colour. */
 export const darkBg = (hex = EMAIL_NAVY): string => `background:${hex};background-color:${hex};background-image:linear-gradient(${hex},${hex})`;
 
+// Call-to-action buttons (owner, 18.11.2026): solid gold with near-black bold text - the navy button nearly vanished on a dark mail
+// background. Kept gold with dark text in every mode: inline bgcolor + background-color + same-colour gradient (Gmail does not invert
+// gradients), a 1px border of the same gold (still outlined if colours are inverted), and dark-mode / Outlook rules below.
+export const EMAIL_GOLD = "#C9A961";
+export const EMAIL_BTN_TEXT = "#111111";
+
 export const EMAIL_DARK_CSS = `
-  :root{color-scheme:light;supported-color-schemes:light}
+  :root{color-scheme:light dark;supported-color-schemes:light dark}
+  body{color:#1a1a1a}
+  .lr-gold{background-color:${EMAIL_GOLD} !important;background-image:linear-gradient(${EMAIL_GOLD},${EMAIL_GOLD}) !important;border-color:${EMAIL_GOLD} !important}
+  .lr-gold-t{color:${EMAIL_BTN_TEXT} !important;-webkit-text-fill-color:${EMAIL_BTN_TEXT} !important}
+  @media (prefers-color-scheme: dark){
+    .lr-gold{background-color:${EMAIL_GOLD} !important;background-image:linear-gradient(${EMAIL_GOLD},${EMAIL_GOLD}) !important;border-color:${EMAIL_GOLD} !important}
+    .lr-gold-t{color:${EMAIL_BTN_TEXT} !important;-webkit-text-fill-color:${EMAIL_BTN_TEXT} !important}
+  }
+  [data-ogsb] .lr-gold{background-color:${EMAIL_GOLD} !important;background-image:linear-gradient(${EMAIL_GOLD},${EMAIL_GOLD}) !important}
+  [data-ogsc] .lr-gold-t{color:${EMAIL_BTN_TEXT} !important}
   .lr-dark{background-color:${EMAIL_NAVY} !important;background-image:linear-gradient(${EMAIL_NAVY},${EMAIL_NAVY}) !important}
   .lr-light{color:#ffffff !important}
   [data-ogsb] .lr-dark,[data-ogsb] .lr-head{background-color:${EMAIL_NAVY} !important;background-image:linear-gradient(${EMAIL_NAVY},${EMAIL_NAVY}) !important}
@@ -35,8 +66,8 @@ export function emailHead(title: string): string {
   return `<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light">
-<meta name="supported-color-schemes" content="light">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
 <title>${title}</title>
 <style>${EMAIL_DARK_CSS}
 </style>

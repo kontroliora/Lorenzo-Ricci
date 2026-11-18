@@ -5,7 +5,7 @@
 // mail-policy: confirm_request
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
-import { emailHead, emailHeaderRow, emailOrderRefRow, ORDER_REPLY_TO, darkBg } from "@/lib/email-layout";
+import { emailHead, emailHeaderRow, emailOrderRefRow, ORDER_REPLY_TO, goldButton } from "@/lib/email-layout";
 import { langOf, mayEmail } from "@/lib/mail-policy";
 import { hasCardMoney } from "@/lib/payments";
 import { getCatalogProductBySlug } from "@/lib/products";
@@ -107,9 +107,7 @@ export function buildConfirmRequestEmail(o: ConfirmRow, url: string): string {
         <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Здравейте, ${firstName},</p>
         <p style="${P}">Благодарим Ви за поръчката! Опитахме да се свържем с Вас по телефона, за да я потвърдим, но не успяхме да се чуем.</p>
         <p style="${P}">За да изпратим пратката Ви, моля, потвърдете поръчката с бутона по-долу:</p>
-        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px auto 10px"><tr><td align="center" class="lr-dark" bgcolor="${NAVY}" style="${darkBg()}">
-          <a href="${esc(url)}" class="lr-light" style="display:inline-block;color:#ffffff;font-size:13px;font-weight:bold;letter-spacing:.18em;text-transform:uppercase;text-decoration:none;padding:16px 36px">Потвърждавам поръчката</a>
-        </td></tr></table>
+        ${goldButton(url, "Потвърждавам поръчката", { fontSize: 11 })}
         <p style="margin:0 0 8px;color:#555;font-size:13px;line-height:1.6;text-align:center">След като потвърдите, няма да Ви търсим повече по телефона – директно ще изпратим пратката.</p>
         <div style="border-top:1px solid #e8dfc8;margin:26px 0"></div>
         <p style="${LABEL}">Детайли на поръчката</p>

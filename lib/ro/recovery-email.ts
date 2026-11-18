@@ -1,4 +1,4 @@
-import { EMAIL_SITE, EMAIL_NAVY, darkBg, emailHead, emailHeaderRow } from "@/lib/email-layout";
+import { EMAIL_SITE, EMAIL_NAVY, darkBg, emailHead, emailHeaderRow, goldButton } from "@/lib/email-layout";
 import { fmtRON, RO_DELIVERY_DAYS, RO_FREE_SHIPPING_RON, RO_RETURN_DAYS } from "./config";
 
 // Abandoned-cart reminder for the Romanian site: Romanian text, prices in lei, the restore link goes to /ro/restabilire.
@@ -48,7 +48,7 @@ ${emailHead("Coșul dumneavoastră vă așteaptă - Lorenzo Ricci")}
           </table>
           <div style="height:1px;background:#ede8de;margin:32px 0"></div>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:0 0 40px">
-            <a href="${restoreUrl}" class="lr-dark lr-light" style="display:inline-block;${darkBg()};color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:400;letter-spacing:.3em;text-transform:uppercase;text-decoration:none;padding:18px 44px">Finalizați comanda</a>
+            ${goldButton(restoreUrl, "Finalizați comanda", { margin: "0 auto" })}
           </td></tr></table>
         </td></tr>
         <tr><td style="padding:0 48px 0">

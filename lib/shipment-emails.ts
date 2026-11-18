@@ -1,7 +1,7 @@
 // Transactional shipment / uncollected-parcel emails (Resend). Plain, personal,
 // premium - designed to land in the inbox, not read as marketing. No caps for
 // emphasis, no exclamation, no "buy". One CTA (own /track page), one logo.
-import { emailHead, emailHeaderRow, emailOrderRefRow } from "@/lib/email-layout";
+import { emailHead, emailHeaderRow, emailOrderRefRow, goldButton } from "@/lib/email-layout";
 
 export interface ShipmentItem {
   name: string;
@@ -65,10 +65,7 @@ const LABEL = (t: string) => `<p style="margin:0 0 14px;font-size:11px;letter-sp
 const DIV = `<div style="border-top:1px solid #e8dfc8;margin:26px 0"></div>`;
 
 function trackButton(d: ShipmentEmailData): string {
-  return `
-  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 4px"><tr><td align="center" class="lr-dark" bgcolor="${NAVY}" style="background:${NAVY};background-color:${NAVY};background-image:linear-gradient(${NAVY},${NAVY})">
-    <a href="${d.trackUrl}" class="lr-light" style="display:inline-block;color:#ffffff;font-size:11px;letter-spacing:.22em;text-transform:uppercase;text-decoration:none;padding:14px 40px">Проследете пратката</a>
-  </td></tr></table>`;
+  return goldButton(d.trackUrl, "Проследете пратката", { align: "left", margin: "22px 0 4px" });
 }
 
 // Small "Поръчка / Тракинг / Сума" line block, shared by the reminders.

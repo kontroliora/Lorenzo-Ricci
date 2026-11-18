@@ -1,6 +1,6 @@
 // mail-policy: internal
 import { Resend } from "resend";
-import { EMAIL_IVORY, EMAIL_NAVY, emailHead, emailHeaderRow } from "../email-layout";
+import { EMAIL_IVORY, EMAIL_NAVY, emailHead, emailHeaderRow, goldButton } from "../email-layout";
 import { SITE_ORIGIN } from "../meta-capi";
 import { sendTelegram } from "../telegram";
 import { supabaseAdmin } from "../supabase-admin";
@@ -61,7 +61,7 @@ export function buildPartnerOrderEmail(v: PartnerOrderView): string {
     <tbody>${lines}</tbody>
     <tfoot>${v.discount > 0 ? sum("Отстъпки (1+1, код ...)", `-${esc(money(v.discount, v.market))}`, "color:#047857") : ""}${v.shipping > 0 ? sum("Доставка", esc(money(v.shipping, v.market))) : ""}${sum("Общо поръчка", esc(money(v.total, v.market)))}${sum(card ? "Платено с карта - за събиране" : "За събиране", esc(money(v.payment.collect, v.market)), "background:#faf7f1;font-weight:700")}</tfoot>
    </table>
-   <p style="margin:24px 0 0;text-align:center"><a href="${esc(url)}" style="display:inline-block;background:${EMAIL_NAVY};color:#ffffff;text-decoration:none;padding:14px 26px;font-weight:700;letter-spacing:.06em">ОТВОРИ ПОРЪЧКАТА</a></p>
+   ${goldButton(url, "Отвори поръчката", { margin: "24px auto 0" })}
   </div>
  </div>
 </body></html>`;
@@ -161,7 +161,7 @@ export function buildPartnerLoginEmail(link: string, invite: boolean): string {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${emailHeaderRow(520)}</table>
   <div style="padding:8px 24px 28px;font-size:15px;line-height:1.6">
    <p style="margin:0 0 14px">${invite ? "Поканени сте в партньорския панел на Lorenzo Ricci: поръчките на дамската колекция бижута и наличностите им." : "Ето линка за вход в партньорския панел."}</p>
-   <p style="margin:22px 0;text-align:center"><a href="${esc(link)}" style="display:inline-block;background:${EMAIL_NAVY};color:#ffffff;text-decoration:none;padding:14px 26px;font-weight:700;letter-spacing:.06em">ВЛЕЗ В ПАНЕЛА</a></p>
+   ${goldButton(link, "Влез в панела", { margin: "22px auto" })}
    <p style="margin:0;color:#6b6456;font-size:13px">Линкът важи ${invite ? "7 дни" : "15 минути"} и само веднъж. След вход оставате вписан 30 дни на това устройство. Нов линк по всяко време: ${esc(SITE_ORIGIN)}/partner/login (въведете този имейл).</p>
   </div>
  </div>

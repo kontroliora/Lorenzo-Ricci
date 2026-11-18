@@ -1,5 +1,5 @@
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
-import { emailHead, emailHeaderRow } from "@/lib/email-layout";
+import { emailHead, emailHeaderRow, goldButton } from "@/lib/email-layout";
 export interface RecoveryCartItem {
   name:        string;
   sku?:        string;
@@ -120,12 +120,7 @@ ${emailHead("Вашата количка ви очаква. Lorenzo Ricci")}
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center" style="padding:0 0 40px">
-                    <a href="${recoverUrl}" class="lr-dark lr-light"
-                       style="display:inline-block;background:#0a0e1f;background-color:#0a0e1f;background-image:linear-gradient(#0a0e1f,#0a0e1f);color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:400;letter-spacing:.3em;text-transform:uppercase;text-decoration:none;padding:16px 52px;border:none;mso-padding-alt:0">
-                      <!--[if mso]><i style="letter-spacing:.3em;mso-font-width:-100%">&nbsp;</i><![endif]-->
-                      Завърши поръчката
-                      <!--[if mso]><i style="letter-spacing:.3em;mso-font-width:-100%">&nbsp;</i><![endif]-->
-                    </a>
+                    ${goldButton(recoverUrl, "Завърши поръчката", { margin: "0 auto" })}
                   </td>
                 </tr>
               </table>

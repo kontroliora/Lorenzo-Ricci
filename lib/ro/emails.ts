@@ -1,7 +1,7 @@
 // Romania market: e-mails. Customer mails are in Romanian, the team mail stays in Bulgarian (the team reads it).
 // Pure builders: no sending here (app/api/order-ro/route.ts and the panel action send them).
 import { fmtRON, RO_DELIVERY_DAYS, RO_COURIER_LABEL, RO_RETURN_DAYS } from "./config";
-import { emailHead, emailHeaderRow, emailOrderRefRow } from "@/lib/email-layout";
+import { emailHead, emailHeaderRow, emailOrderRefRow, goldButton } from "@/lib/email-layout";
 
 export type RoOrderLine = { name?: string; sku?: string; quantity?: number; price?: number };
 export type RoOrderEmailData = {
@@ -98,7 +98,7 @@ const paymentRow = (total: number, payment: RoPayment, labelWidth: number) =>
 export function buildRoShippedEmail(d: { orderRef: string; firstName: string; items: RoOrderLine[]; total: number; payment: RoPayment; awb: string; courierLabel?: string; trackUrl?: string }): string {
   const courier = d.courierLabel || RO_COURIER_LABEL;
   const track = d.trackUrl
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 4px"><tr><td align="center" class="lr-dark" bgcolor="${NAVY}" style="background:${NAVY};background-color:${NAVY};background-image:linear-gradient(${NAVY},${NAVY})"><a href="${esc(d.trackUrl)}" class="lr-light" style="display:inline-block;color:#fff;font-size:11px;letter-spacing:.22em;text-transform:uppercase;text-decoration:none;padding:14px 40px">Urmăriți coletul</a></td></tr></table>`
+    ? goldButton(d.trackUrl, "Urmăriți coletul", { align: "left", margin: "22px 0 4px" })
     : "";
   return shell("Comanda a fost expediată", `
     <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Bună ziua, ${esc(d.firstName || "client")},</p>

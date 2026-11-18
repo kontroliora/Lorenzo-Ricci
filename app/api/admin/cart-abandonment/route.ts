@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
-import { darkBg, emailHead, emailHeaderRow } from "@/lib/email-layout";
+import { darkBg, emailHead, emailHeaderRow, goldButton } from "@/lib/email-layout";
 import { langOf, mayEmail } from "@/lib/mail-policy";
 import { getSuppressedEmails } from "@/lib/marketing-suppression";
 
@@ -109,10 +109,7 @@ ${emailHead("Продуктът ви чака. Lorenzo Ricci")}
             <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
               <tr>
                 <td align="center" style="padding-bottom:40px;">
-                  <a href="https://www.lorenzo-ricci.com" class="lr-dark lr-light"
-                     style="display:inline-block;${darkBg()};color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;text-decoration:none;padding:16px 44px;border:1px solid #0a1628;">
-                    Завърши поръчката &nbsp;&rarr;
-                  </a>
+                  ${goldButton("https://www.lorenzo-ricci.com", "Завърши поръчката →", { margin: "0 auto" })}
                 </td>
               </tr>
             </table>
