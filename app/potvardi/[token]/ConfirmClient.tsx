@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { OrderSummary } from "@/lib/confirm-by-email";
 
 // Nothing happens on load: the order is confirmed ONLY when the customer presses the button (a POST with the token). Without
@@ -38,9 +38,12 @@ export function ConfirmClient({ token, ref_, initial, summary }: { token: string
   const [view, setView] = useState<View>(initial === "already" ? "already" : "ask");
   const [ref, setRef] = useState(ref_);
 
+  // One POST per page, however often the button is tapped (a double tap sent two: the second answered "already" and hid the thanks).
+  const busy = useRef(false);
   const confirm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (view === "working") return;
+    if (busy.current) return;
+    busy.current = true;
     setView("working");
     try {
       const res = await fetch("/api/order-confirm", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }), cache: "no-store" });
