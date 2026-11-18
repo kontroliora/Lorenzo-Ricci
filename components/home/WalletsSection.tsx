@@ -1,4 +1,5 @@
 "use client";
+import { Fragment } from "react";
 import Image from "next/image";
 import { soldOutLast } from "@/lib/sold-out-order";
 import Link from "next/link";
@@ -12,6 +13,11 @@ import { lowStockCount, savingsEur, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS, CA
 import { bgShipsFree } from "@/lib/shipping-rules";
 import { FreeShippingBadge, OnePlusOneLine, OnePlusOneBanner } from "@/components/product/PriceExtras";
 import { opoGroupOf, opoPriceLineBg, cardholderOpo, opoPriceBg } from "@/lib/one-plus-one";
+
+/** Home "Кожени изделия": the order of its rows, top to bottom. Clutches above the cardholders while the clutches are on
+ *  promotion (17.11.2026 owner); when it ends, swap "clutches" and "cardholders" back. BG home only (RO: RoLeatherSection). */
+export const LEATHER_ROW_ORDER = ["wallets", "clutches", "cardholders"] as const;
+type LeatherRow = (typeof LEATHER_ROW_ORDER)[number];
 
 type LeatherItem = { id: string; slug: string; name: string; sub: string; src: string };
 
@@ -135,22 +141,10 @@ export function WalletsSection({ soldOut = [] }: { soldOut?: string[] }) {
   const clutches = soldOutLast(CLUTCHES, soldSlug);
   const chOpo = cardholders.some((c) => !isSold(c)) ? cardholderOpo() : undefined; // the 1+1 banner, while one is buyable
 
-  return (
-    <section className="py-28 sm:py-40 bg-white border-y border-border">
-      <div className="max-w-7xl mx-auto px-5 sm:px-8">
-
-        {/* Header */}
-        <div className="text-center mb-8 sm:mb-16">
-          <p className="section-tag mb-4">Crocodylus Siamensis</p>
-          <h2 className="section-title mb-4">Кожени изделия</h2>
-          <div className="gold-divider" />
-          <p className="font-sans text-sm font-light text-ink-muted max-w-md mx-auto mt-6 tracking-wide leading-relaxed">
-            100% Естествена Крокодилска Кожа · CITES Сертифициран · Ръчна Изработка
-          </p>
-        </div>
-
-        {/* Wallets row */}
-        {wallets.length > 0 && <div className="mb-6 sm:mb-10">
+  // One renderer per row; LEATHER_ROW_ORDER (top of the file) decides the order.
+  const rows: Record<LeatherRow, React.ReactNode> = {
+    wallets: (
+        wallets.length > 0 && <div className="mb-6 sm:mb-10">
           <div className="flex items-center gap-4 mb-3 sm:mb-5">
             <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Портфейли</p>
             <div className="flex-1 h-px bg-border" />
@@ -160,10 +154,10 @@ export function WalletsSection({ soldOut = [] }: { soldOut?: string[] }) {
               <LeatherCard key={w.id} item={w} sold={isSold(w)} sizes="(max-width: 640px) 50vw, 33vw" />
             ))}
           </div>
-        </div>}
-
-        {/* Cardholders row */}
-        {cardholders.length > 0 && <div className="mb-8 sm:mb-16">
+        </div>
+    ),
+    cardholders: (
+        cardholders.length > 0 && <div className="mb-8 sm:mb-16">
           <div className="flex items-center gap-4 mb-3 sm:mb-5">
             <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Кардхолдъри</p>
             <div className="flex-1 h-px bg-border" />
@@ -181,10 +175,10 @@ export function WalletsSection({ soldOut = [] }: { soldOut?: string[] }) {
               <LeatherCard key={c.id} item={c} sold={isSold(c)} sizes="(max-width: 640px) 50vw, 33vw" />
             ))}
           </div>
-        </div>}
-
-        {/* Clutches row */}
-        {clutches.length > 0 && <div className="mb-8 sm:mb-16">
+        </div>
+    ),
+    clutches: (
+        clutches.length > 0 && <div className="mb-8 sm:mb-16">
           <div className="flex items-center gap-4 mb-3 sm:mb-5">
             <p className="font-sans text-[10px] tracking-[0.28em] uppercase text-ink-faint">Клъчове</p>
             <div className="flex-1 h-px bg-border" />
@@ -194,7 +188,26 @@ export function WalletsSection({ soldOut = [] }: { soldOut?: string[] }) {
               <LeatherCard key={c.id} item={c} sold={isSold(c)} sizes="(max-width: 640px) 50vw, 20vw" />
             ))}
           </div>
-        </div>}
+        </div>
+    ),
+  };
+
+  return (
+    <section className="py-28 sm:py-40 bg-white border-y border-border">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8">
+
+        {/* Header */}
+        <div className="text-center mb-8 sm:mb-16">
+          <p className="section-tag mb-4">Crocodylus Siamensis</p>
+          <h2 className="section-title mb-4">Кожени изделия</h2>
+          <div className="gold-divider" />
+          <p className="font-sans text-sm font-light text-ink-muted max-w-md mx-auto mt-6 tracking-wide leading-relaxed">
+            100% Естествена Крокодилска Кожа · CITES Сертифициран · Ръчна Изработка
+          </p>
+        </div>
+
+        {/* Product rows, in LEATHER_ROW_ORDER (the rows with "mb-6"/"mb-8" keep their own spacing) */}
+        {LEATHER_ROW_ORDER.map((r) => <Fragment key={r}>{rows[r]}</Fragment>)}
 
         {/* Certificate feature strip */}
         {/* Section-wide strip: it sits under products that don't all share one species
