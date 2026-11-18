@@ -14,10 +14,10 @@ import { confirmToken } from "@/lib/order-confirm-token";
 import { SITE_URL } from "@/lib/site";
 
 /**
- * AUTOMATIC sending when staff press "Не вдига" (1st or 2nd attempt). OFF until the owner has seen the list and the test
- * e-mail and said "пращай" (18.11.2026). The backlog is sent from the panel page /lr-panel-v8m3q/orders/confirm-emails.
+ * AUTOMATIC sending when staff press "Не вдига" (1st or 2nd attempt). ON since the owner's "пращай" (18.11.2026), after he saw
+ * the list and the test e-mail. The backlog page is /lr-panel-v8m3q/orders/confirm-emails.
  */
-export const CONFIRM_REQUEST_AUTO = false;
+export const CONFIRM_REQUEST_AUTO = true;
 
 const FROM = "Lorenzo Ricci <info@lorenzo-ricci.com>";
 const NAVY = "#0a0e1f";
