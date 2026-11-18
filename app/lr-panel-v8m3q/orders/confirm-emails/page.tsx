@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { getAdminSession, adminDb } from "@/lib/supabase/admin-db";
-import { CONFIRM_REQUEST_AUTO, hasEmail, isNoAnswerTarget, type ConfirmRow } from "@/lib/confirm-request";
+import { CONFIRM_REQUEST_AUTO, confirmUrl, hasEmail, isNoAnswerTarget, type ConfirmRow } from "@/lib/confirm-request";
 import { ConfirmEmailButtons } from "./Buttons";
+import { TestOrderButtons } from "./TestButtons";
+
+const TEST_NOTE = "ТЕСТ имейл потвърждение – изтрий";   // same as ./actions.ts
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +43,9 @@ export default async function ConfirmEmailsPage() {
   const migrated = !sentRes.error;
   const toSend = rows.filter((o) => hasEmail(o) && !o.confirm_email_sent_at);
   const noEmail = rows.filter((o) => !hasEmail(o));
-  const sent = (sentRes.data ?? []) as ConfirmRow[];
+  const sent = ((sentRes.data ?? []) as (ConfirmRow & { notes?: string | null })[]).filter((o) => o.notes !== TEST_NOTE);
+  const testRes = await sb.from("orders").select("*").eq("notes", TEST_NOTE).eq("is_manual", true).order("created_at", { ascending: false });
+  const tests = (testRes.data ?? []) as ConfirmRow[];
 
   const H = ({ children }: { children: React.ReactNode }) => <h2 style={{ fontSize: 14, letterSpacing: ".12em", textTransform: "uppercase", color: "rgba(255,255,255,0.6)", margin: "28px 0 10px" }}>{children}</h2>;
   return (
@@ -65,6 +70,16 @@ export default async function ConfirmEmailsPage() {
 
         <H>Вече изпратени: {sent.length}</H>
         <Table rows={sent} showSent />
+
+        <H>Тест (само собственикът)</H>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>Тестова поръчка с твоя имейл: натисни „Не вдига“ на картата ѝ в „Поръчки“ – имейлът трябва да тръгне сам. Без наличност, партньорът не я вижда.</p>
+        {tests.map((o) => (
+          <div key={o.id} data-testid="test-order" style={{ fontSize: 13, margin: "8px 0", lineHeight: 1.7 }}>
+            <span style={{ fontFamily: "monospace" }}>{o.order_ref}</span> · статус <b>{o.status}</b> / {o.call_state} · опити {o.call_attempts} · ✉ {fmt(o.confirm_email_sent_at)} · ✓ {fmt(o.email_confirmed_at)}
+            {o.status === "new" && o.confirm_email_sent_at && <> · <a data-testid="test-confirm-link" href={confirmUrl(o.id) ?? "#"} target="_blank" style={{ color: "#85B7EB" }}>линк за потвърждение</a></>}
+          </div>
+        ))}
+        <TestOrderButtons hasTest={tests.length > 0} />
       </main>
     </div>
   );

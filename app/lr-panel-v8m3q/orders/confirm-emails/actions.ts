@@ -33,3 +33,36 @@ export async function sendAllConfirmEmails(expectedCount: number): Promise<strin
   revalidatePath("/lr-panel-v8m3q/orders");
   return `Изпратени: ${sent} от ${targets.length}.${failed.length ? ` Неизпратени: ${failed.join("; ")}` : ""}`;
 }
+
+// ── End-to-end test (owner, 18.11.2026): a TEST order with the owner's own e-mail, so "Не вдига" on its card sends the real e-mail
+// to him. No product slug -> no stock reserved, not a women's-collection order -> the partner never sees it. Marked by TEST_NOTE;
+// deleteTestOrders() removes ONLY such orders (the audit rows go with them: ON DELETE CASCADE).
+const TEST_NOTE = "ТЕСТ имейл потвърждение – изтрий";
+
+export async function createTestOrder(): Promise<string> {
+  const me = await getAdminSession();
+  if (me?.role !== "owner" || !me.email) return "Само собственикът.";
+  const sb = await adminDb();
+  const ref = `LR-T${Date.now().toString(36).slice(-5).toUpperCase()}`;
+  const { error } = await sb.from("orders").insert({
+    order_ref: ref, name: "ТЕСТ Тестов", phone: "0888000000", email: me.email, city: "София", address: "Офис Еконт (тест)",
+    shipping_method: "Доставка чрез Еконт до офис", courier: "office",
+    items: [{ name: "ТЕСТОВ АРТИКУЛ (не изпращай)", sku: "TEST", price: 1, currency: "€", quantity: 1, qty: 1 }],
+    subtotal: 1, shipping_cost: 0, total: 1, notes: TEST_NOTE, status: "new", call_state: "pending", is_manual: true,
+  });
+  if (error) return `Грешка: ${error.message}`;
+  revalidatePath(PATH);
+  revalidatePath("/lr-panel-v8m3q/orders");
+  return `Създадена тестова поръчка ${ref}.`;
+}
+
+export async function deleteTestOrders(): Promise<string> {
+  const me = await getAdminSession();
+  if (me?.role !== "owner" || !me.email) return "Само собственикът.";
+  const sb = await adminDb();
+  const { data, error } = await sb.from("orders").delete().eq("notes", TEST_NOTE).eq("is_manual", true).eq("email", me.email).eq("total", 1).select("order_ref");
+  if (error) return `Грешка: ${error.message}`;
+  revalidatePath(PATH);
+  revalidatePath("/lr-panel-v8m3q/orders");
+  return `Изтрити: ${(data ?? []).map((r) => r.order_ref).join(", ") || "няма"}.`;
+}
