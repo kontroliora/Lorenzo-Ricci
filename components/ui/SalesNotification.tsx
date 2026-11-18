@@ -157,7 +157,7 @@ export function SalesNotification() {
             {/* 375 px holds no more than this: the city, the product and the time (the first name is desktop-only). */}
             <span className="min-w-[4.5rem] truncate">Купено в <span className="font-medium text-white">{p.city}</span>:</span>
             <span className="shrink-0 max-w-[75%] truncate">
-              &nbsp;<span className="text-navy-pale">{p.product}</span>
+              &nbsp;<span className="text-navy-pale">{p.product.replace(/\s+[–-]\s+(Злато|Сребро)$/, "")}</span>
               <span className="text-white/45"> · {timeAgo(p.at, new Date(), true)}</span>
             </span>
           </p>
