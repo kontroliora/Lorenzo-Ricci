@@ -164,8 +164,10 @@ function WatchCoverFlow({ watches, soldOut }: { watches: Product[]; soldOut: str
   const active = watches[activeIndex];
   const activePrice = displayPrice(active, useCountry());
   const stockMap = useLeatherStock(true);
-  // Sold out (switched off, in the server list or at 0 live): neither the savings nor the low-stock line.
-  const activeSoldOut = !active.inStock || soldOut.includes(active.slug) || stockMap?.[active.slug] === 0;
+  // Sold out (switched off, in the server list or at 0 live). The phone carousel shows it like the desktop cards (ProductCard):
+  // grey photo, "Изчерпан" on it, muted price, the word under the name - and neither the savings nor the low-stock line.
+  const isSold = (w: Product) => !w.inStock || soldOut.includes(w.slug) || (stockMap?.[w.slug] ?? 1) <= 0;
+  const activeSoldOut = isSold(active);
   const activeSaved = !activeSoldOut && (activePrice.original || watchGiftActive()) ? savingsWithWatchGiftEur(active) : null; // + the free cardholder during the offer
   const activeLeft = !activeSoldOut ? lowStockCount(stockMap?.[active.slug]) : null;
   const activeShipsFree = !activeSoldOut && bgShipsFree(active);
@@ -216,7 +218,7 @@ function WatchCoverFlow({ watches, soldOut }: { watches: Product[]; soldOut: str
                   zIndex: isActive ? 10 : 5,
                 }}
               >
-                <div className="relative aspect-square overflow-hidden">
+                <div className={`relative aspect-square overflow-hidden ${isSold(watch) ? "grayscale [&_img]:opacity-60" : ""}`}>
                   {/* Day image */}
                   <Image
                     src={watch.coverImage.src}
@@ -237,10 +239,17 @@ function WatchCoverFlow({ watches, soldOut }: { watches: Product[]; soldOut: str
                     className={`object-contain transition-[opacity,filter] duration-500${!isActive ? " blur-[2px]" : ""}${isNight ? " opacity-100" : " opacity-0"}`}
                   />
                   {/* Watch + free cardholder (lib/watch-gift.ts): the cards' small red badge, top-left (the day/night switch is top-right) */}
-                  {isActive && watchGiftActive() && !soldOut.includes(watch.slug) && (
+                  {isActive && watchGiftActive() && !isSold(watch) && (
                     <span data-testid="card-watch-gift-badge" className="absolute top-2.5 left-2.5 z-30 pointer-events-none bg-[#B3121F] text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
                       {WATCH_GIFT_TEXT.badge}
                     </span>
+                  )}
+                  {isSold(watch) && (
+                    <div className="absolute inset-0 z-[15] flex items-center justify-center pointer-events-none">
+                      <span data-testid="sold-out-badge" className="font-sans text-[10px] tracking-[0.22em] uppercase bg-charcoal/90 text-white px-3 py-1.5">
+                        Изчерпан
+                      </span>
+                    </div>
                   )}
                   {/* Tap active card to navigate to product page (won't fire if user swiped) */}
                   {isActive && (
@@ -288,9 +297,10 @@ function WatchCoverFlow({ watches, soldOut }: { watches: Product[]; soldOut: str
 
         {/* Active watch info */}
         <div className="text-center px-6 mt-5">
-          <h3 className="font-serif text-xl text-charcoal mb-1">{active.name}</h3>
+          <h3 className={`font-serif text-xl mb-1 ${activeSoldOut ? "text-ink-muted" : "text-charcoal"}`}>{active.name}</h3>
+          {activeSoldOut && <p className="font-sans text-xs text-ink-muted tracking-wide mb-1">Изчерпан</p>}
           <div className={`flex items-baseline justify-center gap-3 ${activeSaved !== null || activeShipsFree || activeLeft !== null ? "mb-1.5" : "mb-5"}`}>
-            <span className="font-serif text-lg text-navy">
+            <span className={`font-serif text-lg ${activeSoldOut ? "text-ink-muted" : "text-navy"}`}>
               {activePrice.text}
             </span>
             {activePrice.original && (

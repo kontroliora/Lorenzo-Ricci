@@ -10,8 +10,8 @@ import { usePathname } from "next/navigation";
 //   - at most one every 35-40 s (the gap also holds across page loads), never on the checkout / cart (HideOnCart in the layout +
 //     the paths below), never on /ro (Bulgarian copy);
 //   - the time is the order's real time ("преди 2 часа", "вчера");
-//   - desktop (lg+): bottom-left above the sticky bar, ~340 px, fades in 8 px up, stays 6 s;
-//   - mobile: at the top under the header, one line, 40 px photo, up to 92% of the width; goes on scroll down or after 5 s;
+//   - DESKTOP ONLY (lg+): bottom-left above the sticky bar, ~340 px, fades in 8 px up, stays 6 s. Phones get none (owner,
+//     19.11.2026: at the top of the screen it was distracting) - an order is not even marked as seen on a phone;
 //   - ✕ stops them until the end of the session (sessionStorage).
 
 type Purchase = { id: string; at: string; firstName: string | null; city: string; product: string; slug: string; image: string };
@@ -19,7 +19,6 @@ type Purchase = { id: string; at: string; firstName: string | null; city: string
 const GAP_MS = 35_000;          // + 0-5 s jitter -> one every 35-40 s
 const FIRST_DELAY_MS = 8_000;
 const DESKTOP_MS = 6_000;
-const MOBILE_MS = 5_000;
 const OUT_MS = 400;
 const SEEN_KEY = "lr_sp_seen";  // { [id]: shownAt }
 const LAST_KEY = "lr_sp_last";
@@ -53,8 +52,7 @@ export function SalesNotification() {
   const blocked = BLOCKED_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const [queue, setQueue] = useState<Purchase[] | null>(null);
   const [current, setCurrent] = useState<{ p: Purchase; visible: boolean } | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const [top, setTop] = useState(96);
+  const [isDesktop, setIsDesktop] = useState(false);
   const blockedRef = useRef(blocked);
   blockedRef.current = blocked;
 
@@ -75,7 +73,7 @@ export function SalesNotification() {
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
-    const on = () => setIsMobile(!mq.matches);
+    const on = () => setIsDesktop(mq.matches);
     on();
     mq.addEventListener("change", on);
     return () => mq.removeEventListener("change", on);
@@ -93,7 +91,7 @@ export function SalesNotification() {
     const wait = Math.max(FIRST_DELAY_MS, last + GAP_MS + Math.random() * 5000 - Date.now());
     const t = setTimeout(() => {
       if (store.get("session", OFF_KEY)) { setQueue([]); return; }
-      if (blockedRef.current || document.hidden) { setQueue((q) => (q ? [...q] : q)); return; } // try again later
+      if (blockedRef.current || document.hidden || !window.matchMedia("(min-width: 1024px)").matches) { setQueue((q) => (q ? [...q] : q)); return; } // try again later
       const [next, ...rest] = queue;
       const seen = readSeen();
       const weekAgo = Date.now() - 8 * 86400_000;
@@ -101,28 +99,20 @@ export function SalesNotification() {
       seen[next.id] = Date.now();
       store.set("local", SEEN_KEY, JSON.stringify(seen));
       store.set("local", LAST_KEY, String(Date.now()));
-      const header = document.querySelector("header");
-      setTop(Math.max(8, (header?.getBoundingClientRect().bottom ?? 88) + 8));
       setQueue(rest);
       setCurrent({ p: next, visible: true });
     }, Math.min(wait, GAP_MS + 5000));
     return () => clearTimeout(t);
   }, [queue, current]);
 
-  // Auto-hide: 6 s on desktop, 5 s on mobile (or the first scroll down there).
+  // Auto-hide after 6 s.
   useEffect(() => {
     if (!current?.visible) return;
-    const t = setTimeout(hide, isMobile ? MOBILE_MS : DESKTOP_MS);
-    let onScroll: (() => void) | undefined;
-    if (isMobile) {
-      const y0 = window.scrollY;
-      onScroll = () => { if (window.scrollY - y0 > 16) hide(); };
-      window.addEventListener("scroll", onScroll, { passive: true });
-    }
-    return () => { clearTimeout(t); if (onScroll) window.removeEventListener("scroll", onScroll); };
-  }, [current?.visible, current?.p.id, isMobile, hide]);
+    const t = setTimeout(hide, DESKTOP_MS);
+    return () => clearTimeout(t);
+  }, [current?.visible, current?.p.id, hide]);
 
-  if (!current || blocked) return null;
+  if (!current || blocked || !isDesktop) return null;
   const { p, visible } = current;
   const who = p.firstName ? `${p.firstName} от ${p.city}` : `Клиент от ${p.city}`;
   const when = timeAgo(p.at);
@@ -141,29 +131,6 @@ export function SalesNotification() {
     </div>
   );
   const anim = visible ? "animate-notification-in" : "animate-notification-out";
-
-  if (isMobile) {
-    return (
-      <div className="fixed inset-x-0 z-[45] flex justify-center pointer-events-none" style={{ top }}>
-        <Link
-          href={`/products/${p.slug}`}
-          key={p.id}
-          className={`pointer-events-auto w-[92vw] max-w-[420px] bg-charcoal-deep border border-[#B89B5E]/40 shadow-xl flex items-center gap-1.5 pl-1.5 pr-0 py-1.5 ${anim}`}
-          role="status"
-        >
-          {thumb("w-10 h-10")}
-          {/* One line. 375 px holds no more than the city, the product (without the colour) and the time - the first name is
-              desktop-only. When even that is too long, the time shortens first, then a very long city name. */}
-          <p className="flex-1 min-w-0 flex items-baseline whitespace-nowrap font-sans text-[11px] font-light text-white/85">
-            <span className="shrink-0 max-w-[48%] truncate">Купено в <span className="font-medium text-white">{p.city}</span>:&nbsp;</span>
-            <span className="shrink-0 max-w-[48%] truncate text-navy-pale">{p.product.replace(/\s+[–-]\s+(Злато|Сребро)$/, "")}</span>
-            <span className="min-w-0 truncate text-white/45">&nbsp;· {timeAgo(p.at, new Date(), true)}</span>
-          </p>
-          <button onClick={close} aria-label="Затвори" className="w-6 h-8 flex items-center justify-center text-white/40 hover:text-white text-base leading-none flex-shrink-0">×</button>
-        </Link>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed left-6 z-[60] transition-[bottom] duration-300 ease-out" style={{ bottom: "calc(1.5rem + var(--sticky-bar-h, 0px))" }}>

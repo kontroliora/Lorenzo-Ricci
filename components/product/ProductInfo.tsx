@@ -208,7 +208,7 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
   const clutchGiftOn = isGiftClutch(product.slug) && SHELF.leather; // clutch + free cardholder of the customer's choice (lib/gifts.ts)
   const giftOn = watchGiftOn || clutchGiftOn;
   const giftStock = useLeatherStock(giftOn); // the cardholders' live stock (same batched call)
-  const swatchStock = useLeatherStock(product.category === "watches"); // the other watch colours' live stock (sold out = grey swatch)
+  const swatchStock = useLeatherStock(true); // the other colours' live stock (sold out = grey, crossed-out swatch) - one cached batched call
   // A product with no description content (e.g. the Yachting watches until they're
   // measured) gets no Описание tab and opens on the specs instead of an empty tab.
   const hasDescription = Boolean(
@@ -498,10 +498,11 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
 
   // The colour row (also used inside box 1 of the women's collection's two boxes).
   const shownLabel = variants?.find((v) => v.slug === shownVariant)?.label;
-  // Watches (owner, 14.11.2026): a colour sold out in LIVE stock (not only switched off in the catalog) is greyed, crossed out and
-  // not clickable - another watch's page can't be opened from a sold-out swatch.
+  // Every product with colours (watches since 14.11.2026, all others since 19.11.2026 - e.g. Zaffiro under the other cardholders
+  // looked available on phones): a colour sold out in LIVE stock (not only switched off in the catalog) is greyed, crossed out and
+  // not clickable, with "Изчерпан" in its label - another colour's page can't be opened from a sold-out swatch.
   const watchSwatchOff = (v: { slug: string; inStock: boolean }) =>
-    product.category === "watches" && v.slug !== product.slug && (variantOff(v) || (swatchStock?.[v.slug] ?? 1) <= 0);
+    v.slug !== product.slug && (variantOff(v) || (swatchStock?.[v.slug] ?? 1) <= 0);
   const swatchOff = (v: { slug: string; inStock: boolean }) => variantOff(v) || watchSwatchOff(v);
   const swatchDot = (v: { slug: string; inStock: boolean; color: string }) => (
                   <span
