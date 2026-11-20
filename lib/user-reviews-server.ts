@@ -18,6 +18,8 @@
 // 20.11.2026 (6th pass): owner refined the Цветелина П. review's final wording again (still 1st in the pool).
 // 20.11.2026 (7th pass): added a new 1★ text review (Радина С. / bracelet-noctis-gold, late-delivery complaint), slotted
 // between Ваня Н. and Катя П. so it lands 3rd among that text-only run (owner request).
+// 20.11.2026 (8th pass): the owner typed the Калина Т. and Радина С. reviews in shlyokavitsa (Latin-script Bulgarian) on
+// purpose - reverted them from the auto-corrected literate Cyrillic back to the exact text as given.
 
 import { createHash } from "node:crypto";
 import { unstable_cache } from "next/cache";
