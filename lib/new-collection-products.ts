@@ -150,8 +150,12 @@ const TEXT: Record<CollectionKey, DesignText> = {
   },
 };
 
-// Material rows: the gold version uses the existing gold jewellery's wording word for word; the silver version claims only the steel.
+// The "Материал" row is hidden in "Спецификации" on the women's pieces, code kept (owner, 20.11.2026). Set to true to show it again.
+const SHOW_MATERIAL_ROW = false;
 const materialSpecs = (metal: Metal, lang: "bg" | "ro"): ProductSpec[] =>
+  allMaterialSpecs(metal, lang).filter((r) => SHOW_MATERIAL_ROW || (r.label !== "Материал" && r.label !== "Material"));
+// Material rows: the gold version uses the existing gold jewellery's wording word for word; the silver version claims only the steel.
+const allMaterialSpecs = (metal: Metal, lang: "bg" | "ro"): ProductSpec[] =>
   metal === "gold"
     ? lang === "bg"
       ? [{ label: "Материал", value: "316L неръждаема стомана с 18K PVD покритие" }, { label: "Покритие", value: "4-слойно 18K PVD златно" }]
