@@ -238,8 +238,8 @@ const catalog: Product[] = [
     sku: "LR-MIDNIGHT-ECL",
     name: "Golden Eclipse",
     category: "watches",
-    // 17.11.2026 (owner): back to the plain €279 - no sale, no struck price, no sale badge (same as Chrono Black / Polar Frost).
-    price: 279,
+    // 21.11.2026 (owner): price cut to €119 - no sale badge, no struck price.
+    price: 119,
     currency: "€",
     inStock: true,
     warranty: "Търговска гаранция 5 години",
@@ -296,8 +296,8 @@ const catalog: Product[] = [
     sku: "LR-POLAR-FROST",
     name: "Polar Frost",
     category: "watches",
-    // 14.11.2026 (owner): sold out, back to the plain €279 - no sale, no struck price, no sale badge.
-    price: 279,
+    // 21.11.2026 (owner): price cut to €119 - no sale badge, no struck price.
+    price: 119,
     currency: "€",
     inStock: true,
     warranty: "Търговска гаранция 5 години",
