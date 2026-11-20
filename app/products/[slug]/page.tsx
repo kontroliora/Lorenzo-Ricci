@@ -36,6 +36,7 @@ import { RO_STORE_ENABLED } from "@/lib/ro-store";
 import { absUrl } from "@/lib/site";
 import { userReviewsOn } from "@/lib/storefront";
 import { getApprovedReviews, getApprovedReviewCounts, getWomensJewelleryReviews } from "@/lib/user-reviews-server";
+import { displayRating } from "@/lib/user-reviews";
 import { UserReviews } from "@/components/product/UserReviews";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
@@ -195,7 +196,10 @@ export default async function ProductPage({ params }: Props) {
     if (userReviewsOn(p)) {
       const a = collectionApprovedCounts[p.slug];
       collectionReviewCounts[p.slug] = a?.count ?? 0;
-      if (a?.avg) collectionReviewAvgs[p.slug] = a.avg;
+      // Cosmetic only (owner, 20.11.2026): the title badge shows a stable per-piece value in 4.6-4.9 instead of the real average,
+      // which is 4.77-4.81 for every piece and always rounds to the same "4.8". The pooled reviews section below, the review list
+      // and JSON-LD all still use the real a.avg - see lib/user-reviews.ts displayRating.
+      if (a?.avg) collectionReviewAvgs[p.slug] = displayRating(p.slug);
     } else {
       collectionReviewCounts[p.slug] = reviewSummary[p.slug]?.count ?? getReviewsBySlug(p.slug).length;
     }

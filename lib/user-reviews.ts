@@ -96,4 +96,15 @@ export function summarizeReviews(rs: { rating: number }[]): { count: number; avg
 
 export const formatAvg = (avg: number): string => (Math.round(avg * 10) / 10).toFixed(1).replace(".", ",");
 
+// The real per-piece average (summarizeReviews) sits at 4.77-4.81 for every women's-collection piece, which always rounds to the
+// same "4.8" badge next to the product title (owner, 20.11.2026). This is cosmetic only, for that one badge: a stable (same slug
+// -> same number every time, never flickers on reload) value in {4.6, 4.7, 4.8, 4.9} so pieces read as slightly different. The
+// real average everywhere else (the pooled "Ревюта" section, the review list, JSON-LD) is untouched.
+export function displayRating(slug: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < slug.length; i++) { h ^= slug.charCodeAt(i); h = Math.imul(h, 16777619); }
+  const steps = [4.6, 4.7, 4.8, 4.9];
+  return steps[Math.abs(h) % steps.length];
+}
+
 export const reviewsLabel = (n: number): string => (n === 1 ? "ревю" : "ревюта");
