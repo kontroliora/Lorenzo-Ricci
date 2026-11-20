@@ -51,6 +51,9 @@ type Row = { id: string; name: string; rating: number; body: string | null; imag
  * PostgREST caps a single response at its configured max rows (1000 on this project) regardless of a client-side
  * `.limit()` above that - a query for "all reviews" silently came back truncated once the table passed 1000 rows.
  * Pages through `.range()` until a page comes back short, so counts/averages reflect every row, not just the first 1000.
+ * The caller's query MUST end in a deterministic `.order()` (e.g. `.order("id")`): without one, Postgres gives no
+ * guarantee that two `.range()` calls partition the table the same way, especially with rows being inserted/updated
+ * between calls - that showed up as the same review appearing twice (and others missing) in the pooled list.
  */
 async function fetchAllPages<T>(
   page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
@@ -119,7 +122,7 @@ export async function getApprovedReviewCounts(slugs: string[]): Promise<Record<s
   try {
     const client = publicClient();
     const rows = await fetchAllPages<{ product_slug: string; rating: number }>((from, to) =>
-      client.from("reviews").select("product_slug, rating").in("product_slug", slugs).eq("status", "approved").range(from, to),
+      client.from("reviews").select("product_slug, rating").in("product_slug", slugs).eq("status", "approved").order("id").range(from, to),
     );
     const result: Record<string, { count: number; avg: number }> = {};
     for (const row of rows) {
@@ -168,6 +171,7 @@ export async function getWomensJewelleryReviews(): Promise<{ reviews: PublicRevi
           .select("id, name, rating, body, images, is_partnership, created_at, product_slug")
           .in("product_slug", WOMENS_SLUGS)
           .eq("status", "approved")
+          .order("id")
           .range(from, to),
       );
       const reviews = sortPooled(rows.map((r) => toPublic(r, true)));
