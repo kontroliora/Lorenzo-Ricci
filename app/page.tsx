@@ -1,4 +1,5 @@
 import { Hero } from "@/components/home/Hero";
+import { TrustBar } from "@/components/home/TrustBar";
 import { heroJewel } from "@/lib/hero";
 import { FeaturedWatches } from "@/components/home/FeaturedWatches";
 import { WalletsSection } from "@/components/home/WalletsSection";
@@ -57,6 +58,7 @@ export default async function HomePage() {
   return (
     <>
       <Hero jewel={jewel} />
+      <TrustBar />
       {saleLabel && salePct >= 5 && <SaleBanner label={saleLabel} pct={salePct} />}
       {/* The new collection is the main campaign: right under the hero and the sale bar, above the watches and leather */}
       <NewCollectionSection pieces={newPieces} />
