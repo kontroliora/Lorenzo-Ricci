@@ -11,6 +11,8 @@
 // 20.11.2026 (3rd pass): ran scripts/import-final-reviews.mjs so every one of the 18 women's-collection pieces has 70-400
 // reviews at a 4.5-4.9 average (Linea/Solaris/Spira bracelets had zero reviews before - the earlier import-340-reviews.mjs
 // never covered them); re-shrank the freshly uploaded photos (one necklace shot was 1.7MB raw) and this bumps the cache again.
+// 20.11.2026 (4th pass): edited the Цветелина П. / necklace-verdis-gold review (owner request) and bumped its created_at to the
+// newest, so it sorts first in the pooled list; this comment bump is for that.
 
 import { createHash } from "node:crypto";
 import { unstable_cache } from "next/cache";
