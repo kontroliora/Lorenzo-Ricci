@@ -1,5 +1,5 @@
 "use client";
-import type { RevenueData, RevenuePeriod } from "@/lib/revenue";
+import type { RevenueData, RevenuePeriod, ComplaintPeriod } from "@/lib/revenue";
 import { EUR_RON } from "@/lib/ro/config";
 import type { ProductRevenue } from "@/lib/revenue-products";
 import { ProductRevenueBlock } from "./ProductRevenueBlock";
@@ -27,6 +27,15 @@ export function RevenueBoard({ data, products, spend }: { data: RevenueData; pro
   const shipPct = 100 - goodsPct;
   const top = data.top_products ?? [];
   const maxTop = Math.max(1, ...top.map((p) => p.revenue));
+  // Рекламации — already taken OFF the figures above (lib/revenue.ts). Shown here so
+  // the gross number and the deduction stay visible. Romanian claims are in lei and
+  // come in at the owner's rate, same as the turnover itself.
+  const claims = (k: "current_month" | "last_month" | "all_time"): ComplaintPeriod => ({
+    amount: (data.complaints?.[k].amount ?? 0) + (data.complaints_ro?.[k].amount ?? 0) / EUR_RON,
+    count: (data.complaints?.[k].count ?? 0) + (data.complaints_ro?.[k].count ?? 0),
+  });
+  const curClaims = claims("current_month");
+  const allClaims = claims("all_time");
 
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col gap-4">
@@ -47,6 +56,12 @@ export function RevenueBoard({ data, products, spend }: { data: RevenueData; pro
           {cur.count > 0 && <> · средно {eur2(avg)} / поръчка</>}
           {" · "}<span style={{ color: "rgba(255,255,255,0.35)" }}>без доставката (тя отива към куриера)</span>
         </div>
+        {curClaims.amount > 0 && (
+          <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 4 }}>
+            брутно {eur2(cur.revenue + curClaims.amount)} · <span style={{ color: "#C9A7F5" }}>рекламации −{eur2(curClaims.amount)}</span>{" "}
+            <span style={{ color: "rgba(255,255,255,0.35)" }}>({curClaims.count} {curClaims.count === 1 ? "върната пратка" : "върнати пратки"}) · сумата горе е вече без тях</span>
+          </div>
+        )}
         {data.ro && (
           <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 4 }}>
             🇧🇬 България <b style={{ color: "#fff" }}>{eur2(data.current_month.revenue)}</b> · 🇷🇴 Румъния <b style={{ color: "#fff" }}>{lei0(data.ro.current_month.revenue)}</b> ≈ {eur2(data.ro.current_month.revenue / EUR_RON)}
@@ -60,6 +75,35 @@ export function RevenueBoard({ data, products, spend }: { data: RevenueData; pro
         <PeriodCard label="Минал месец" p={last} roEur={data.ro ? data.ro.last_month.revenue / EUR_RON : undefined} />
         <PeriodCard label="От началото" p={all} roEur={data.ro ? data.ro.all_time.revenue / EUR_RON : undefined} />
       </div>
+
+      {/* Рекламации — доставени пратки, върнати от клиента (supabase/orders_complaints.sql).
+          Сумите вече са извадени от оборота по-горе; тук се вижда колко са. */}
+      {allClaims.amount > 0 && (
+        <div style={{ background: "rgba(201,167,245,0.08)", border: "0.5px solid rgba(201,167,245,0.3)", borderRadius: 10, padding: "13px 16px" }}>
+          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 10 }}>Рекламации · извадени от оборота</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+            {(["current_month", "last_month", "all_time"] as const).map((k, i) => {
+              const c = claims(k);
+              const gross = [cur, last, all][i].revenue + c.amount;
+              return (
+                <div key={k} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "12px 14px" }}>
+                  <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>{["Текущ месец", "Минал месец", "От началото"][i]}</div>
+                  <div style={{ color: "#C9A7F5", fontSize: 20, fontWeight: 500, marginTop: 3 }}>{c.amount > 0 ? `−${eur2(c.amount)}` : "€0.00"}</div>
+                  <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 11 }}>
+                    {c.count} {c.count === 1 ? "рекламация" : "рекламации"}
+                    {gross > 0 && <> · {Math.round((c.amount / gross) * 1000) / 10}% от брутния оборот</>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 8, lineHeight: 1.5 }}>
+            Завеждат се от поръчката в <a href="/lr-panel-v8m3q/orders" style={{ color: "#C9A7F5" }}>Поръчки → Рекламации</a>. Периодът е по датата на рекламацията (не на доставката),
+            затова една върната пратка от минал месец пада от оборота на текущия. Неприетите рекламации не вадят нищо.
+            <b style={{ color: "rgba(255,255,255,0.55)" }}> По продукти и Топ продукти по-долу са брутни</b> — рекламациите не са извадени от тях.
+          </div>
+        </div>
+      )}
 
       {/* Profit after ads (owner, 12.11.2026): goods revenue of delivered parcels minus the ad spend of the same period (Meta's daily
           spend, manual entries only for days without Meta data - same source as the ROAS tab). No cost of goods in the data. */}

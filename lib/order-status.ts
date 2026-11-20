@@ -24,6 +24,54 @@ export const RESERVING_STATUSES_LEGACY = ["new", "confirmed", "shipped", "comple
 export const RETURN_STATUSES = ["returning", "restocked", "returned"] as const;
 export const isReturn = (status: string): boolean => (RETURN_STATUSES as readonly string[]).includes(status);
 
+// ── Рекламации (supabase/orders_complaints.sql) ──────────────────────────────
+// A DELIVERED parcel the customer sent back and got the money for. Not a status:
+// the order stays `completed` (it really was delivered), and the claim lives in
+// its own columns on top of it. `returning`/`restocked` stay what they always
+// were - a parcel nobody ever collected, where no money changed hands.
+type ComplaintFields = {
+  complaint_at?: string | null;
+  complaint_state?: string | null;
+  complaint_amount?: number | null;
+  total?: number | null;
+  shipping_cost?: number | null;
+};
+
+/** Does this order carry a рекламация? */
+export const hasComplaint = (o: ComplaintFields): boolean => !!o.complaint_at;
+
+/** Still being sorted out (money not yet given back / goods not yet here). */
+export const isOpenComplaint = (o: ComplaintFields): boolean =>
+  hasComplaint(o) && (o.complaint_state ?? "open") === "open";
+
+/** The рекламация was refused - the money stayed with us, so turnover keeps it. */
+export const isRejectedComplaint = (o: ComplaintFields): boolean =>
+  hasComplaint(o) && o.complaint_state === "rejected";
+
+/** Goods part of an order (what turnover counts): the total without the courier's delivery. */
+export const goodsOf = (o: ComplaintFields): number =>
+  Math.max(0, (Number(o.total) || 0) - (Number(o.shipping_cost) || 0));
+
+/**
+ * Money this рекламация takes OUT of turnover, in the order's own currency.
+ * The typed amount when there is one, else the goods part of the order. A
+ * rejected claim takes out nothing.
+ */
+export function complaintAmountOf(o: ComplaintFields): number {
+  if (!hasComplaint(o) || isRejectedComplaint(o)) return 0;
+  const typed = Number(o.complaint_amount);
+  return Number.isFinite(typed) && typed > 0 ? typed : goodsOf(o);
+}
+
+/** Label for the рекламация's state, as the panel shows it. */
+export const COMPLAINT_STATES: { key: string; label: string }[] = [
+  { key: "open",     label: "Отворена" },
+  { key: "resolved", label: "Приключена · върнати пари" },
+  { key: "rejected", label: "Неприета · парите остават" },
+];
+export const complaintStateLabel = (state?: string | null): string =>
+  COMPLAINT_STATES.find((s) => s.key === (state ?? "open"))?.label ?? "Отворена";
+
 // ── Card payments (Stripe) ───────────────────────────────────────────────────
 type PayFields = { status: string; payment_method?: string | null; payment_status?: string | null };
 

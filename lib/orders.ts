@@ -55,6 +55,15 @@ export type AdminOrder = {
   returning_at?: string | null;        // when the parcel started coming back (set by cron/manual, going forward)
   restocked_at?: string | null;        // when we received it back — leather +1 done; idempotency key
   restocked_source?: string | null;    // 'cron' | 'button'
+  // Рекламация — a delivered parcel the customer sent back and got the money for
+  // (supabase/orders_complaints.sql). The order itself stays `completed`; these
+  // fields carry the claim. Undefined until that migration runs.
+  complaint_at?: string | null;           // NOT NULL = this order has a рекламация
+  complaint_reason?: string | null;
+  complaint_amount?: number | null;       // money given back, in the order's own currency (EUR / RON)
+  complaint_state?: string | null;        // 'open' | 'resolved' | 'rejected'
+  complaint_resolved_at?: string | null;
+  complaint_restocked_at?: string | null; // the goods were physically put back in stock (once)
   // Card payments (supabase/stripe_payments.sql) — undefined until that migration runs (= cash on delivery).
   payment_method?: string | null;      // 'cod' | 'card'
   payment_status?: string | null;      // 'unpaid' | 'pending' | 'paid' | 'expired' | 'failed' | 'refunded'

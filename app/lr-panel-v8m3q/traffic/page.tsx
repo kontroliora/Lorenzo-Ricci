@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { ResultsNav } from "@/components/admin/ResultsNav";
 import { logout } from "../actions";
 import { isOwner } from "@/lib/admin-auth";
 import { getTraffic } from "../marketing-actions";
@@ -26,6 +27,7 @@ export default async function TrafficPage() {
         </div>
       </header>
       <AdminNav />
+      <ResultsNav />
       {initial ? <TrafficBoard initial={initial} /> : <p className="text-white/40 text-sm text-center py-20">Няма достъп.</p>}
     </div>
   );

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { ResultsNav } from "@/components/admin/ResultsNav";
 import { logout } from "../actions";
 import { isOwner } from "@/lib/admin-auth";
 import { computeRoas } from "@/lib/roas";
@@ -36,6 +37,7 @@ export default async function RoasPage() {
       </header>
 
       <AdminNav />
+      <ResultsNav />
       {initial
         ? <RoasBoard initial={initial} metaAds={<MetaAdsBlock initial={ads} initialPeriod="7d" />} />
         : <p className="text-white/40 text-sm text-center py-20">Няма достъп.</p>}

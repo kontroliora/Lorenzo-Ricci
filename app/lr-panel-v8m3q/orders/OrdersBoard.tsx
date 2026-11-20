@@ -10,12 +10,12 @@ import type { StuckSummary } from "@/lib/checkout-events";
 import { PaymentFilters } from "./PaymentUi";
 import { checkEcontStatuses } from "./actions";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
-import { boardStatus, isReturn, isPendingPayment, isUnpaidCardAttempt, matchesPayment, type PayMethodFilter, type PayStateFilter } from "@/lib/order-status";
+import { boardStatus, isReturn, isPendingPayment, isUnpaidCardAttempt, matchesPayment, hasComplaint, complaintAmountOf, isOpenComplaint, type PayMethodFilter, type PayStateFilter } from "@/lib/order-status";
 import { isCard } from "@/lib/payments";
 import { isRoOrder, marketOf, type Market } from "@/lib/market";
 import { activeWindow, nextWindow, callTimer } from "@/lib/callSchedule";
 
-type Tab = "new" | "confirmed" | "shipped" | "completed" | "returned" | "cancelled";
+type Tab = "new" | "confirmed" | "shipped" | "completed" | "returned" | "complaints" | "cancelled";
 
 const TABS: { key: Tab; label: string; accent: string; fg: string; bg: string }[] = [
   { key: "new",       label: "За обаждане",   accent: "#FAC775", fg: "#FAC775", bg: "rgba(250,199,117,0.14)" },
@@ -23,6 +23,7 @@ const TABS: { key: Tab; label: string; accent: string; fg: string; bg: string }[
   { key: "shipped",   label: "Изпратени",     accent: "#5DCAA5", fg: "#5DCAA5", bg: "rgba(93,202,165,0.14)" },
   { key: "completed", label: "Завършени",     accent: "#85B7EB", fg: "#85B7EB", bg: "rgba(133,183,235,0.14)" },
   { key: "returned",  label: "Върнати",       accent: "#F0997B", fg: "#F0997B", bg: "rgba(240,153,123,0.14)" },
+  { key: "complaints", label: "Рекламации",   accent: "#C9A7F5", fg: "#C9A7F5", bg: "rgba(201,167,245,0.14)" },
   { key: "cancelled", label: "Отказани",      accent: "#F09595", fg: "#F09595", bg: "rgba(240,149,149,0.14)" },
 ];
 
@@ -30,6 +31,10 @@ function inTab(o: AdminOrder, tab: Tab): boolean {
   // The "Върнати" tab holds both return sub-statuses (returning / restocked) +
   // the legacy value, so returns never vanish after the split.
   if (tab === "returned") return isReturn(o.status);
+  // Рекламации: a DELIVERED parcel the customer sent back. Not a status of its
+  // own — the order keeps the one it had (normally `completed`) and shows here
+  // as well, so "Завършени" never silently loses a parcel.
+  if (tab === "complaints") return hasComplaint(o);
   return o.status === tab;
 }
 
@@ -483,6 +488,13 @@ export function OrdersBoard({
                   ? <Empty text="Няма върнати пратки." />
                   : tabOrders.map(card)}
               </>
+            ) : tab === "complaints" ? (
+              <>
+                <ComplaintsSummary orders={tabOrders} delivered={count("completed")} />
+                {tabOrders.length === 0
+                  ? <Empty text="Няма рекламации. Завеждат се от бутона „⚠ Рекламация“ върху завършена поръчка." />
+                  : tabOrders.map(card)}
+              </>
             ) : (
               <>
                 {tabOrders.length === 0
@@ -614,6 +626,30 @@ function ReturnsSummary({ orders, dispatched }: { orders: AdminOrder[]; dispatch
       {awaiting > 0 && <span style={{ color: "#FAC775" }}>⏳ чакат взимане: <b>{awaiting}</b></span>}
       {restocked > 0 && <span style={{ color: "#97C459" }}>✓ в наличност: <b>{restocked}</b></span>}
       <span style={{ color: "rgba(255,255,255,0.5)" }}>общо връщания ~{rate}% <span style={{ color: "rgba(255,255,255,0.3)" }}>от изпратените</span></span>
+    </div>
+  );
+}
+
+// Рекламации (supabase/orders_complaints.sql): how many delivered parcels came
+// back and how much money left the turnover with them. Bulgarian orders are in
+// euro and Romanian ones in lei, so the sums are kept apart — never added up.
+function ComplaintsSummary({ orders, delivered }: { orders: AdminOrder[]; delivered: number }) {
+  const total = orders.length;
+  const open = orders.filter(isOpenComplaint).length;
+  const rejected = orders.filter((o) => o.complaint_state === "rejected").length;
+  const awaitingGoods = orders.filter((o) => !o.complaint_restocked_at && o.complaint_state !== "rejected").length;
+  const bgMoney = orders.filter((o) => !isRoOrder(o)).reduce((s, o) => s + complaintAmountOf(o), 0);
+  const roMoney = orders.filter((o) => isRoOrder(o)).reduce((s, o) => s + complaintAmountOf(o), 0);
+  const rate = delivered > 0 ? Math.round((total / delivered) * 1000) / 10 : 0;
+  return (
+    <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center", background: "rgba(201,167,245,0.08)", border: "0.5px solid rgba(201,167,245,0.3)", borderRadius: 10, padding: "12px 16px", fontSize: 13 }}>
+      <span style={{ color: "rgba(255,255,255,0.75)" }}>Рекламации: <b style={{ color: "#C9A7F5" }}>{total}</b></span>
+      {open > 0 && <span style={{ color: "#FAC775" }}>⏳ отворени: <b>{open}</b></span>}
+      {awaitingGoods > 0 && <span style={{ color: "rgba(255,255,255,0.6)" }}>чакат стоката: <b>{awaitingGoods}</b></span>}
+      {rejected > 0 && <span style={{ color: "rgba(255,255,255,0.45)" }}>неприети: <b>{rejected}</b></span>}
+      {bgMoney > 0 && <span style={{ color: "#C9A7F5" }}>извадени от оборота: <b>€{bgMoney.toFixed(2)}</b></span>}
+      {roMoney > 0 && <span style={{ color: "#C9A7F5" }}>🇷🇴 <b>{Math.round(roMoney).toLocaleString("ro-RO")} lei</b></span>}
+      {delivered > 0 && <span style={{ color: "rgba(255,255,255,0.5)" }}>~{rate}% <span style={{ color: "rgba(255,255,255,0.3)" }}>от доставените</span></span>}
     </div>
   );
 }

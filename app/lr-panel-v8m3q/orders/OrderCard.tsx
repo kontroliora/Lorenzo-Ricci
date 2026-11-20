@@ -2,7 +2,7 @@
 import { useState, useEffect, useTransition } from "react";
 import { isRoOfficeMethod } from "@/lib/ro/config";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
-import { isReturn, isPendingPayment, isDeadCardAttempt } from "@/lib/order-status";
+import { isReturn, isPendingPayment, isDeadCardAttempt, hasComplaint, complaintAmountOf, complaintStateLabel, goodsOf, COMPLAINT_STATES } from "@/lib/order-status";
 import { isPaidCard, hasCardMoney, cardMoneyMissing } from "@/lib/payments";
 import {
   confirmOrder,
@@ -16,6 +16,9 @@ import {
   setFake,
   restoreFake,
   addOrderNote,
+  openComplaint,
+  setComplaintState,
+  clearComplaint,
 } from "./actions";
 import { callTimer, sofiaHHMM, formatAttemptList, formatAttemptAudit } from "@/lib/callSchedule";
 import { OrderItemsList } from "./OrderItemsList";
@@ -93,6 +96,13 @@ export function OrderCard({
   const [cancelStep, setCancelStep] = useState<"closed" | "category" | "refuse" | "other">("closed");
   const [cancelText, setCancelText] = useState("");
 
+  // Рекламация — a delivered parcel that came back. Its own little form, so a
+  // click can never register one by accident.
+  const [complaintStep, setComplaintStep] = useState<"closed" | "form">("closed");
+  const [complaintAmt, setComplaintAmt] = useState("");
+  const [complaintReason, setComplaintReason] = useState("");
+  const [complaintRestock, setComplaintRestock] = useState(true);
+
   // Age is a visual warning only — it never touches the reservation.
   useEffect(() => {
     setHoursOpen((Date.now() - new Date(order.created_at).getTime()) / 3_600_000);
@@ -162,6 +172,13 @@ export function OrderCard({
   // Money: euro for Bulgaria, lei for Romania (with the euro equivalent next to the total).
   const money = (n: number) => (ro ? fmtLei(n) : `€${n.toFixed(2)}`);
   const totalLabel = ro ? fmtLeiWithEuro(cod) : `€${cod.toFixed(2)}`;
+
+  // Рекламация (supabase/orders_complaints.sql): a DELIVERED parcel the customer
+  // sent back. The order stays "Завършена" — this rides on top of it, and its
+  // amount is what the Оборот tab takes out of the turnover.
+  const complaint = hasComplaint(order);
+  const complaintMoney = complaintAmountOf(order);
+  const complaintGoods = goodsOf(order);
 
   // Notes shown on every card, every status, to owner AND employee. Two sources:
   // the note from "Създай поръчка" (order.notes) + appended call comments
@@ -293,6 +310,27 @@ export function OrderCard({
               <span style={{ color: "rgba(255,255,255,0.6)" }}>↩ Върната след преглед{order.return_dwell_days != null ? ` · след ${order.return_dwell_days} дни` : ""}</span>
             ) : (
               <span style={{ color: "rgba(255,255,255,0.5)" }}>↩ Върната{order.return_dwell_days != null ? ` · след ${order.return_dwell_days} дни` : " · класифицира се на следващия Econt синх."}</span>
+            )}
+          </div>
+        )}
+        {complaint && (
+          <div style={{ fontSize: 12, marginTop: 5, background: "rgba(240,153,123,0.1)", border: "0.5px solid rgba(240,153,123,0.4)", borderRadius: 8, padding: "7px 10px", lineHeight: 1.6 }}>
+            <span style={{ color: "#F0997B" }}>
+              ⚠ Рекламация · {complaintStateLabel(order.complaint_state)}
+              {order.complaint_at ? ` · ${fmtDate(order.complaint_at)}` : ""}
+            </span>
+            <br />
+            <span style={{ color: "rgba(255,255,255,0.6)" }}>
+              {complaintMoney > 0
+                ? <>върнати пари <b style={{ color: "#fff" }}>{money(complaintMoney)}</b> · извадени от оборота</>
+                : <>парите остават при нас · оборотът не се променя</>}
+              {order.complaint_restocked_at ? " · стоката е в наличност" : " · стоката още не е върната в склад"}
+            </span>
+            {order.complaint_reason && (
+              <>
+                <br />
+                <span style={{ color: "rgba(255,255,255,0.75)" }}>„{order.complaint_reason}“</span>
+              </>
             )}
           </div>
         )}
@@ -438,6 +476,83 @@ export function OrderCard({
               {order.restocked_at ? ` · ${fmtDate(order.restocked_at)}` : ""}
               {order.restocked_source ? ` · ${order.restocked_source === "cron" ? "авто от Еконт" : "ръчно"}` : ""}
             </span>
+          )}
+
+          {/* Рекламация — доставена поръчка, която клиентът връща. Статусът остава
+              „Завършена“ (пратката наистина е доставена); сумата излиза от оборота. */}
+          {cancelStep === "closed" && (order.status === "completed" || complaint) && (
+            complaintStep === "form" ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 9, background: "rgba(240,153,123,0.07)", border: "0.5px solid rgba(240,153,123,0.35)", borderRadius: 10, padding: "12px 14px" }}>
+                <span style={{ color: "#F0997B", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>{complaint ? "Поправи рекламацията" : "Нова рекламация · върната пратка"}</span>
+                <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 11 }}>Върната сума {ro ? "(лей)" : "(евро)"} · празно = стоката без доставката ({money(complaintGoods)})</span>
+                  <input
+                    value={complaintAmt}
+                    onChange={(e) => setComplaintAmt(e.target.value)}
+                    inputMode="decimal"
+                    placeholder={complaintGoods.toFixed(2)}
+                    style={{ background: "rgba(0,0,0,0.3)", border: "0.5px solid rgba(255,255,255,0.18)", borderRadius: 8, color: "#fff", fontSize: 13, padding: "8px 10px", maxWidth: 180 }}
+                  />
+                </label>
+                <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 11 }}>Причина (по желание)</span>
+                  <textarea
+                    value={complaintReason}
+                    onChange={(e) => setComplaintReason(e.target.value)}
+                    rows={2}
+                    placeholder="дефект, не му стана, отказ в 14 дни…"
+                    style={{ background: "rgba(0,0,0,0.3)", border: "0.5px solid rgba(255,255,255,0.18)", borderRadius: 8, color: "#fff", fontSize: 13, padding: "8px 10px", resize: "vertical" }}
+                  />
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, color: "rgba(255,255,255,0.7)", fontSize: 12, cursor: "pointer" }}>
+                  <input type="checkbox" checked={complaintRestock} onChange={(e) => setComplaintRestock(e.target.checked)} />
+                  Стоката е при мен — върни я в наличност (+1){order.complaint_restocked_at ? " · вече е върната, не се вдига втори път" : ""}
+                </label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <button
+                    disabled={pending}
+                    onClick={() => run(async () => {
+                      const raw = complaintAmt.trim().replace(",", ".");
+                      const amt = raw === "" ? null : Number(raw);
+                      if (amt != null && (!Number.isFinite(amt) || amt < 0)) return "Сумата не е валидна.";
+                      const err = await openComplaint(order.id, amt, complaintReason, complaintRestock);
+                      if (!err) { setComplaintStep("closed"); setComplaintAmt(""); setComplaintReason(""); }
+                      return err;
+                    })}
+                    style={primaryBtn}
+                  >Запази рекламацията</button>
+                  <button onClick={() => setComplaintStep("closed")} style={backLink}>← назад</button>
+                </div>
+                <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, lineHeight: 1.5 }}>
+                  Поръчката остава „Завършена“ (пратката е доставена) · сумата се изважда от оборота по датата на рекламацията
+                  {cardMoney ? " · парите по карта се връщат ръчно в Stripe" : ""}
+                </span>
+              </div>
+            ) : complaint ? (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {COMPLAINT_STATES.filter((st) => st.key !== (order.complaint_state ?? "open")).map((st) => (
+                    <button key={st.key} disabled={pending} onClick={() => run(() => setComplaintState(order.id, st.key as "open" | "resolved" | "rejected"))} style={pillBtn}>{st.label}</button>
+                  ))}
+                </span>
+                <span style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                  <button onClick={() => { setComplaintAmt(order.complaint_amount != null ? String(order.complaint_amount) : ""); setComplaintReason(order.complaint_reason ?? ""); setComplaintRestock(!!order.complaint_restocked_at); setComplaintStep("form"); }} style={backLink}>поправи</button>
+                  <button
+                    disabled={pending}
+                    onClick={() => {
+                      if (!window.confirm("Да махна рекламацията? Сумата се връща в оборота.")) return;
+                      run(() => clearComplaint(order.id));
+                    }}
+                    style={backLink}
+                  >махни рекламацията</button>
+                </span>
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 12 }}>Доставена · ако клиентът я върне, заведи рекламация</span>
+                <button onClick={() => { setComplaintAmt(""); setComplaintReason(""); setComplaintRestock(true); setComplaintStep("form"); }} style={outlineBtn("#A32D2D", "#F09595")}>⚠ Рекламация</button>
+              </div>
+            )
           )}
 
           {cancelStep !== "closed" && (

@@ -384,6 +384,101 @@ export async function markReturnReviewed(id: number): Promise<string | null> {
   return patchOrder(id, { return_reviewed: true });
 }
 
+// ── Рекламации (supabase/orders_complaints.sql) ──────────────────────────────
+// A parcel that WAS delivered and comes back afterwards (defect / 14 days). The
+// order's status is deliberately left alone - it was delivered, and Econt/Stripe
+// say so - and the claim is written on top of it. The amount is what leaves the
+// turnover (lib/revenue.ts subtracts it by complaint_at).
+
+const COMPLAINT_MIGRATION_MISSING =
+  "Рекламациите още не са включени в базата: пусни supabase/orders_complaints.sql в Supabase → SQL Editor.";
+
+// True when the update failed only because the complaint columns do not exist yet.
+const isMissingComplaintColumn = (msg: string): boolean =>
+  /complaint/i.test(msg) && /column|schema cache|does not exist/i.test(msg);
+
+/**
+ * Open (or correct) a рекламация. `amount` is the money given back in the
+ * order's own currency - left empty it becomes the goods part of the order
+ * (total − доставка), which is exactly what the turnover had counted.
+ */
+export async function openComplaint(
+  id: number,
+  amount: number | null,
+  reason: string,
+  restock: boolean,
+): Promise<string | null> {
+  const supabase = await adminDb();
+  const [before] = await snapshot(supabase, [id]);
+  if (!before) return "Поръчката не е намерена.";
+
+  const goods = Math.max(0, (Number(before.total) || 0) - (Number((before as { shipping_cost?: number | null }).shipping_cost) || 0));
+  const amt = amount != null && Number.isFinite(amount) && amount > 0 ? Math.round(amount * 100) / 100 : goods;
+  const nowIso = new Date().toISOString();
+  const already = (before as { complaint_at?: string | null }).complaint_at ?? null;
+  const alreadyRestocked = (before as { complaint_restocked_at?: string | null }).complaint_restocked_at ?? null;
+
+  const patch: Record<string, unknown> = {
+    complaint_at: already ?? nowIso,        // keep the original date when only correcting
+    complaint_amount: amt,
+    complaint_reason: reason.trim() || null,
+    complaint_state: (before as { complaint_state?: string | null }).complaint_state ?? "open",
+  };
+  // Stock goes back up only once, the first time we are told the goods are here.
+  if (restock && !alreadyRestocked) patch.complaint_restocked_at = nowIso;
+
+  const { error } = await supabase.from("orders").update(patch).eq("id", id);
+  if (error) {
+    console.error("[orders] complaint error:", error.message);
+    return isMissingComplaintColumn(error.message) ? COMPLAINT_MIGRATION_MISSING : error.message;
+  }
+  // wallet_inventory +1 — only on the transition that just set complaint_restocked_at,
+  // so a repeated press (or a later edit of the claim) can never double-count.
+  if (patch.complaint_restocked_at) await restockOrderItems(supabase, before.items);
+  revalidatePath(ORDERS_PATH);
+
+  // A card order is refunded by hand in Stripe, exactly like a returned parcel.
+  const paid = hasCardMoney(before) && before.payment_status !== "refunded";
+  return paid ? "Платена с карта: върни сумата в Stripe (Payments → плащането → Refund)." : null;
+}
+
+/** Close a рекламация: 'resolved' (money given back) or 'rejected' (not accepted - turnover keeps it). */
+export async function setComplaintState(id: number, state: "open" | "resolved" | "rejected"): Promise<string | null> {
+  const supabase = await adminDb();
+  const { error } = await supabase
+    .from("orders")
+    .update({ complaint_state: state, complaint_resolved_at: state === "open" ? null : new Date().toISOString() })
+    .eq("id", id);
+  if (error) {
+    console.error("[orders] complaint state error:", error.message);
+    return isMissingComplaintColumn(error.message) ? COMPLAINT_MIGRATION_MISSING : error.message;
+  }
+  revalidatePath(ORDERS_PATH);
+  return null;
+}
+
+/**
+ * Entered by mistake → wipe the claim. The turnover gets the money back on the
+ * next load. Stock is NOT taken down again: if the goods were restocked they are
+ * physically on the shelf, and correcting the count there is the inventory tab's job.
+ */
+export async function clearComplaint(id: number): Promise<string | null> {
+  const supabase = await adminDb();
+  const [before] = await snapshot(supabase, [id]);
+  const { error } = await supabase
+    .from("orders")
+    .update({ complaint_at: null, complaint_amount: null, complaint_reason: null, complaint_state: null, complaint_resolved_at: null })
+    .eq("id", id);
+  if (error) {
+    console.error("[orders] complaint clear error:", error.message);
+    return isMissingComplaintColumn(error.message) ? COMPLAINT_MIGRATION_MISSING : error.message;
+  }
+  revalidatePath(ORDERS_PATH);
+  return (before as { complaint_restocked_at?: string | null } | undefined)?.complaint_restocked_at
+    ? "Рекламацията е махната. Наличността НЕ е върната назад — стоката беше вкарана в склад, оправи броя от Инвентар, ако трябва."
+    : null;
+}
+
 // Manual "check for new tracking numbers" — pulls getMyAWB and matches confirmed
 // orders. Sure matches (unique phone + amount + date) are auto-filled; uncertain
 // ones are returned for one-click confirmation. Uses the admin's own session.

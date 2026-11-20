@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { ResultsNav } from "@/components/admin/ResultsNav";
 import { logout } from "../actions";
 import { isOwner } from "@/lib/admin-auth";
 import { getRevenue } from "@/lib/revenue";
@@ -31,6 +32,7 @@ export default async function RevenuePage() {
       </header>
 
       <AdminNav />
+      <ResultsNav />
       {data
         ? <RevenueBoard data={data} products={products} spend={spend} />
         : <p className="text-white/40 text-sm text-center py-20">Няма достъп или все още няма завършени поръчки.</p>}

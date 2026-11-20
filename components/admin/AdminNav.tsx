@@ -3,8 +3,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { RESULTS_PATHS } from "./ResultsNav";
 
-const TABS = [
+const TABS: { href: string; label: string; match?: string[] }[] = [
   { href: "/lr-panel-v8m3q/inventory", label: "Инвентар" },
   { href: "/lr-panel-v8m3q/orders",    label: "Поръчки" },
   { href: "/lr-panel-v8m3q/reviews",   label: "Ревюта" },
@@ -12,10 +13,11 @@ const TABS = [
 
 // Owner-only tabs. Hidden from the employee — each page also re-checks
 // server-side, so hiding the tab is UX, not the security boundary.
-const OWNER_TABS = [
-  { href: "/lr-panel-v8m3q/revenue", label: "Оборот" },
-  { href: "/lr-panel-v8m3q/traffic", label: "Трафик" },
-  { href: "/lr-panel-v8m3q/roas", label: "ROAS" },
+// Оборот · Трафик · ROAS are ONE tab (owner, 21.11.2026): the tab opens Оборот and the
+// three switch between each other inside the page (components/admin/ResultsNav.tsx), so the
+// nav stays short. `match` keeps the tab highlighted on all three routes.
+const OWNER_TABS: { href: string; label: string; match?: string[] }[] = [
+  { href: "/lr-panel-v8m3q/revenue", label: "Оборот · Трафик · ROAS", match: RESULTS_PATHS },
   { href: "/lr-panel-v8m3q/waitlist", label: "Международни" },
   { href: "/lr-panel-v8m3q/partner", label: "Партньор" },
   { href: "/lr-panel-v8m3q/orders/confirm-emails", label: "Имейл потвърждения" },
@@ -58,7 +60,7 @@ export function AdminNav() {
       <div className="relative max-w-5xl mx-auto">
       <div ref={row} className="px-2 sm:px-6 flex items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map((t) => {
-          const active = pathname.startsWith(t.href);
+          const active = (t.match ?? [t.href]).some((h) => pathname.startsWith(h));
           return (
             <Link
               key={t.href}
