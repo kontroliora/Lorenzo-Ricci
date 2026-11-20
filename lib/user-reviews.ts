@@ -108,3 +108,19 @@ export function displayRating(slug: string): number {
 }
 
 export const reviewsLabel = (n: number): string => (n === 1 ? "ревю" : "ревюта");
+
+// Cosmetic-only (owner, 21.11.2026): a few per-piece counts in that same title badge sat too close together (e.g. the three
+// gold clover bracelets all around 210-220, reading as near-identical) or just looked better a bit lower. Overrides the badge
+// number only, for the listed slugs; every other slug, and the real count everywhere else (pooled "Ревюта" section, review
+// list, JSON-LD), is untouched - same scope as displayRating above.
+const REVIEW_COUNT_OVERRIDES: Record<string, number> = {
+  "bracelet-verdis-gold": 184,
+  "bracelet-lumen-gold": 208,
+  "bracelet-noctis-gold": 235,
+  "necklace-verdis-gold": 107,
+  "bracelet-spira-gold": 64,
+  "bracelet-solaris-silver": 47,
+};
+export function displayReviewCount(slug: string, real: number): number {
+  return REVIEW_COUNT_OVERRIDES[slug] ?? real;
+}
