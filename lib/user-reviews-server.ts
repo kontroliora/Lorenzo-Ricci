@@ -25,6 +25,7 @@
 // 20.11.2026 (10th pass): edited the Калоян М. / bracelet-noctis-silver review wording (owner request).
 // 20.11.2026 (11th pass): owner asked for specific review counts - added 2 rating-only reviews to bracelet-linea-silver
 // (80 -> 82) and 5 to bracelet-spira-gold (100 -> 105), average unchanged.
+// 20.11.2026 (12th pass): edited the Елица З. / bracelet-lumen-silver review wording (owner request).
 
 import { createHash } from "node:crypto";
 import { unstable_cache } from "next/cache";
