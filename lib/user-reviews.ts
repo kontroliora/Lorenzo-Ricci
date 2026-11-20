@@ -97,7 +97,3 @@ export function summarizeReviews(rs: { rating: number }[]): { count: number; avg
 export const formatAvg = (avg: number): string => (Math.round(avg * 10) / 10).toFixed(1).replace(".", ",");
 
 export const reviewsLabel = (n: number): string => (n === 1 ? "ревю" : "ревюта");
-
-/** "17 ноември 2026" */
-export const reviewDate = (iso: string): string =>
-  new Date(iso).toLocaleDateString("bg-BG", { timeZone: "Europe/Sofia", day: "numeric", month: "long", year: "numeric" });

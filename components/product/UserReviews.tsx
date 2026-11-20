@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import {
-  REVIEW_IMAGE_TYPES, REVIEW_LIMITS, THANKS_TEXT, formatAvg, reviewDate, reviewsLabel, validateReviewInput,
+  REVIEW_IMAGE_TYPES, REVIEW_LIMITS, THANKS_TEXT, formatAvg, reviewsLabel, validateReviewInput,
   type PublicReview, type ReviewErrors, type UserReviewProductInfo,
 } from "@/lib/user-reviews";
 
@@ -259,10 +259,7 @@ export function UserReviews({ productSlug, reviews, count, avg, productInfo }: P
             <div className="pt-2 border-t border-border">
               <div className="flex items-center justify-between gap-3">
                 <p className="font-sans text-xs font-medium text-charcoal">{r.name}</p>
-                <div className="flex items-center gap-2">
-                  {r.isPartnership && <span className="font-sans text-[10px] tracking-wide text-navy border border-navy/40 px-1.5 py-0.5">Партньорство</span>}
-                  <time dateTime={r.createdAt} className="font-sans text-[10px] text-ink-faint">{reviewDate(r.createdAt)}</time>
-                </div>
+                {r.isPartnership && <span className="font-sans text-[10px] tracking-wide text-navy border border-navy/40 px-1.5 py-0.5">Партньорство</span>}
               </div>
               {productInfo && r.productSlug && productInfo[r.productSlug] && (() => {
                 const info = productInfo[r.productSlug!]!;
