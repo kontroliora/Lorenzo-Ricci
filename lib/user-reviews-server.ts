@@ -5,6 +5,9 @@
 // 20.11.2026: deploy-triggered cache bust after a direct DB fix (wrong watch/crocodile photos pooled under women's jewellery
 // reviews, plus several oversized raw-camera photos that failed to load on mobile) — this comment forces a redeploy so the
 // Data Cache tagged USER_REVIEWS_TAG picks up the corrected rows without needing a panel moderation action.
+// 20.11.2026 (2nd pass): the first pass misjudged a few thumbnails from a dense contact-sheet grid - 3 legit bracelet/necklace
+// photos got cleared by mistake and 4 more watch photos were missed. Re-checked all 47 one by one against the storage files
+// directly (not the grid) and fixed the DB again; this second comment bust is for that correction.
 
 import { createHash } from "node:crypto";
 import { unstable_cache } from "next/cache";
