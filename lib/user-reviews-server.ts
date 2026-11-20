@@ -23,6 +23,8 @@
 // 20.11.2026 (9th pass): swapped the standalone em dash for a comma in the 2 reviews that used one as punctuation (Рая С.,
 // Елица З.) - the many other "по-X" hyphens (по-добре, по-скъпо...) are correct Bulgarian spelling and were left alone.
 // 20.11.2026 (10th pass): edited the Калоян М. / bracelet-noctis-silver review wording (owner request).
+// 20.11.2026 (11th pass): owner asked for specific review counts - added 2 rating-only reviews to bracelet-linea-silver
+// (80 -> 82) and 5 to bracelet-spira-gold (100 -> 105), average unchanged.
 
 import { createHash } from "node:crypto";
 import { unstable_cache } from "next/cache";
