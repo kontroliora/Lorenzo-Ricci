@@ -33,6 +33,28 @@ function publicClient() {
 
 type Row = { id: string; name: string; rating: number; body: string | null; images: string[] | null; is_partnership: boolean; created_at: string; product_slug?: string };
 
+/**
+ * PostgREST caps a single response at its configured max rows (1000 on this project) regardless of a client-side
+ * `.limit()` above that - a query for "all reviews" silently came back truncated once the table passed 1000 rows.
+ * Pages through `.range()` until a page comes back short, so counts/averages reflect every row, not just the first 1000.
+ */
+async function fetchAllPages<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+  pageSize = 1000,
+): Promise<T[]> {
+  const all: T[] = [];
+  let from = 0;
+  for (;;) {
+    const { data, error } = await page(from, from + pageSize - 1);
+    if (error) throw new Error(error.message);
+    const rows = data ?? [];
+    all.push(...rows);
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
+}
+
 const toPublic = (r: Row, includeSlug?: boolean): PublicReview => ({
   id: r.id,
   name: r.name,
@@ -81,14 +103,12 @@ export async function getApprovedReviews(slug: string): Promise<{ reviews: Publi
 export async function getApprovedReviewCounts(slugs: string[]): Promise<Record<string, { count: number; avg: number }>> {
   if (!slugs.length) return {};
   try {
-    const { data, error } = await publicClient()
-      .from("reviews")
-      .select("product_slug, rating")
-      .in("product_slug", slugs)
-      .eq("status", "approved");
-    if (error) throw new Error(error.message);
+    const client = publicClient();
+    const rows = await fetchAllPages<{ product_slug: string; rating: number }>((from, to) =>
+      client.from("reviews").select("product_slug, rating").in("product_slug", slugs).eq("status", "approved").range(from, to),
+    );
     const result: Record<string, { count: number; avg: number }> = {};
-    for (const row of (data ?? []) as { product_slug: string; rating: number }[]) {
+    for (const row of rows) {
       const s = row.product_slug;
       if (!result[s]) result[s] = { count: 0, avg: 0 };
       result[s].count++;
@@ -127,14 +147,16 @@ function sortPooled(reviews: PublicReview[]): PublicReview[] {
 export async function getWomensJewelleryReviews(): Promise<{ reviews: PublicReview[]; count: number; avg: number }> {
   return unstable_cache(
     async (): Promise<{ reviews: PublicReview[]; count: number; avg: number }> => {
-      const { data, error } = await publicClient()
-        .from("reviews")
-        .select("id, name, rating, body, images, is_partnership, created_at, product_slug")
-        .in("product_slug", WOMENS_SLUGS)
-        .eq("status", "approved")
-        .limit(2000);
-      if (error) throw new Error(error.message);
-      const reviews = sortPooled(((data ?? []) as Row[]).map((r) => toPublic(r, true)));
+      const client = publicClient();
+      const rows = await fetchAllPages<Row>((from, to) =>
+        client
+          .from("reviews")
+          .select("id, name, rating, body, images, is_partnership, created_at, product_slug")
+          .in("product_slug", WOMENS_SLUGS)
+          .eq("status", "approved")
+          .range(from, to),
+      );
+      const reviews = sortPooled(rows.map((r) => toPublic(r, true)));
       return { reviews, ...summarizeReviews(reviews) };
     },
     [USER_REVIEWS_TAG, "womens-pool"],
