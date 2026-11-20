@@ -15,6 +15,7 @@
 // newest, so it sorts first in the pooled list; this comment bump is for that.
 // 20.11.2026 (5th pass): edited the Калина Т. / bracelet-noctis-gold review (owner request) and placed it 2nd (created_at one
 // minute behind the Цветелина П. review above).
+// 20.11.2026 (6th pass): owner refined the Цветелина П. review's final wording again (still 1st in the pool).
 
 import { createHash } from "node:crypto";
 import { unstable_cache } from "next/cache";
