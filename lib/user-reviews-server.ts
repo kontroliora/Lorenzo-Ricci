@@ -1,6 +1,10 @@
 // Customer reviews with moderation - server side (owner, 17.11.2026). Rules and wording: lib/user-reviews.ts; table, RLS and bucket:
 // supabase/reviews.sql; which products take reviews: lib/storefront.ts (USER_REVIEWS).
 // Never import this into a client component.
+//
+// 20.11.2026: deploy-triggered cache bust after a direct DB fix (wrong watch/crocodile photos pooled under women's jewellery
+// reviews, plus several oversized raw-camera photos that failed to load on mobile) — this comment forces a redeploy so the
+// Data Cache tagged USER_REVIEWS_TAG picks up the corrected rows without needing a panel moderation action.
 
 import { createHash } from "node:crypto";
 import { unstable_cache } from "next/cache";
