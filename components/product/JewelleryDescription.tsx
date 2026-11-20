@@ -4,6 +4,10 @@ import { ComparisonSlider } from "./ComparisonSlider";
 const DESC1 = "/Products/jewellery/description/desc1.webp";
 const DESC2 = "/Products/jewellery/description/desc2.webp";
 
+// Hidden on all gold jewellery pages, code kept (owner, 20.11.2026). Set to true to show again.
+const SHOW_PVD_BLOCK = false; // "4-layer 18K PVD vs standard plating" block (DESC1)
+const SHOW_VS_BLOCK = false; // "Lorenzo Ricci vs other brands" two-column block
+
 const LR_POINTS = [
   "4-слойно 18K PVD покритие - Вакуумно нанасяне на истинско злато за максимална дълготрайност",
   "Устойчивост на пот и парфюм - Формула, проектирана за ежедневно носене без загуба на блясък",
@@ -141,11 +145,14 @@ function ComparisonBlock() {
 // ── Main export ───────────────────────────────────────────────────────────
 /** `stamp` = false: leave out the ITALY / 750 stamp block (pieces without the stamp). */
 export function JewelleryDescription({ stamp = true , comparison = true }: { stamp?: boolean; comparison?: boolean } = {}) {
+  if (!SHOW_PVD_BLOCK && !stamp && !comparison && !SHOW_VS_BLOCK) return null;
   return (
     <div className="w-full mt-16">
 
       {/* Zig-zag storytelling blocks */}
+      {(SHOW_PVD_BLOCK || stamp) && (
       <div className="border border-border overflow-hidden">
+        {SHOW_PVD_BLOCK && (
         <FeatureBlock
           imageSrc={DESC1}
           imageAlt="Lorenzo Ricci 4-слойно 18K PVD покритие срещу стандартна позлата"
@@ -153,6 +160,7 @@ export function JewelleryDescription({ stamp = true , comparison = true }: { sta
           heading="4-Слойно 18K PVD Покритие срещу Стандартна Позлата"
           body="Нашите изделия се изработват по иновативна PVD (Physical Vapor Deposition) технология във вакуумна среда. Процесът включва нанасянето на 4 плътни слоя истинско 18-каратово злато върху висок клас медицинска стомана (316L). Това гарантира до 10 пъти по-висока устойчивост от обикновената галванична позлата, предпазвайки бижуто от избледняване, износване и потъмняване при ежедневен контакт с вода, пот или парфюм."
         />
+        )}
         {/* The ITALY / 750 stamp: only on pieces that carry it (the 2026 collection has none - owner, 06.11.2026) */}
         {stamp && (
           <FeatureBlock
@@ -165,6 +173,7 @@ export function JewelleryDescription({ stamp = true , comparison = true }: { sta
           />
         )}
       </div>
+      )}
 
       {/* Image comparison slider - not on the women's collection (owner, 08.11.2026) */}
       {comparison && (
@@ -174,6 +183,7 @@ export function JewelleryDescription({ stamp = true , comparison = true }: { sta
       )}
 
       {/* Comparison block */}
+      {SHOW_VS_BLOCK && (
       <div className="mt-4">
         <div className="flex items-center gap-4 mb-5">
           <div className="w-4 h-px bg-navy/30" />
@@ -184,6 +194,7 @@ export function JewelleryDescription({ stamp = true , comparison = true }: { sta
         </div>
         <ComparisonBlock />
       </div>
+      )}
 
     </div>
   );

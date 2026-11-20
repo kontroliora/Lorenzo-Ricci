@@ -6,6 +6,10 @@ import { RoComparisonSlider } from "./RoComparisonSlider";
 const DESC1 = "/Products/jewellery/description/desc1.webp";
 const DESC2 = "/Products/jewellery/description/desc2.webp";
 
+// Hidden on all gold jewellery pages, code kept (owner, 20.11.2026). Set to true to show again.
+const SHOW_PVD_BLOCK = false; // "4-layer 18K PVD vs standard plating" block (DESC1)
+const SHOW_VS_BLOCK = false; // "Lorenzo Ricci vs other brands" two-column block
+
 // "Title - description" (the first " - " splits the two).
 const LR_POINTS = [
   "Acoperire PVD 18K în 4 straturi - Depunere în vid a aurului autentic, pentru o durabilitate maximă",
@@ -146,11 +150,14 @@ function ComparisonBlock() {
 // ── Main export ───────────────────────────────────────────────────────────
 /** `stamp` = false: leave out the ITALY / 750 stamp block (pieces without the stamp). */
 export function RoJewelleryDescription({ stamp = true , comparison = true }: { stamp?: boolean; comparison?: boolean } = {}) {
+  if (!SHOW_PVD_BLOCK && !stamp && !comparison && !SHOW_VS_BLOCK) return null;
   return (
     <div className="w-full mt-16">
 
       {/* Zig-zag storytelling blocks */}
+      {(SHOW_PVD_BLOCK || stamp) && (
       <div className="border border-border overflow-hidden">
+        {SHOW_PVD_BLOCK && (
         <FeatureBlock
           imageSrc={DESC1}
           imageAlt="Lorenzo Ricci - acoperire PVD 18K în 4 straturi, comparată cu placarea standard"
@@ -158,6 +165,7 @@ export function RoJewelleryDescription({ stamp = true , comparison = true }: { s
           heading="Acoperire PVD 18K în 4 straturi, față de placarea standard"
           body="Produsele noastre sunt realizate prin tehnologia inovatoare PVD (Physical Vapor Deposition), într-un mediu de vid. Procesul constă în depunerea a 4 straturi dense de aur autentic de 18 karate pe oțel medical de înaltă calitate (316L). Aceasta asigură o rezistență de până la 10 ori mai mare decât cea a placării galvanice obișnuite și protejează bijuteria de decolorare, uzură și întunecare în contactul zilnic cu apa, transpirația sau parfumul."
         />
+        )}
         {/* The ITALY / 750 stamp: only on pieces that carry it (the 2026 collection has none - owner, 06.11.2026) */}
         {stamp && (
           <FeatureBlock
@@ -170,6 +178,7 @@ export function RoJewelleryDescription({ stamp = true , comparison = true }: { s
           />
         )}
       </div>
+      )}
 
       {/* Image comparison slider - not on the women's collection (owner, 08.11.2026) */}
       {comparison && (
@@ -179,6 +188,7 @@ export function RoJewelleryDescription({ stamp = true , comparison = true }: { s
       )}
 
       {/* Comparison block */}
+      {SHOW_VS_BLOCK && (
       <div className="mt-4">
         <div className="flex items-center gap-4 mb-5">
           <div className="w-4 h-px bg-navy/30" />
@@ -189,6 +199,7 @@ export function RoJewelleryDescription({ stamp = true , comparison = true }: { s
         </div>
         <ComparisonBlock />
       </div>
+      )}
 
     </div>
   );
