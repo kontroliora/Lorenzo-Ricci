@@ -47,7 +47,7 @@ function cachedApproved(slug: string) {
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw new Error(error.message);
-      return ((data ?? []) as Row[]).map(toPublic);
+      return ((data ?? []) as Row[]).map((r) => toPublic(r));
     },
     [USER_REVIEWS_TAG, slug],
     { tags: [USER_REVIEWS_TAG, `${USER_REVIEWS_TAG}:${slug}`] },
@@ -93,12 +93,15 @@ export async function getApprovedReviewCounts(slugs: string[]): Promise<Record<s
 }
 
 const WOMENS_SLUGS = [
-  "bracelet-verdis-gold", "bracelet-verdis-silver",
-  "bracelet-lumen-gold",  "bracelet-lumen-silver",
-  "bracelet-noctis-gold", "bracelet-noctis-silver",
-  "necklace-verdis-gold", "necklace-verdis-silver",
-  "necklace-lumen-gold",  "necklace-lumen-silver",
-  "necklace-noctis-gold", "necklace-noctis-silver",
+  "bracelet-verdis-gold",  "bracelet-verdis-silver",
+  "bracelet-lumen-gold",   "bracelet-lumen-silver",
+  "bracelet-noctis-gold",  "bracelet-noctis-silver",
+  "bracelet-linea-gold",   "bracelet-linea-silver",
+  "bracelet-solaris-gold", "bracelet-solaris-silver",
+  "bracelet-spira-gold",   "bracelet-spira-silver",
+  "necklace-verdis-gold",  "necklace-verdis-silver",
+  "necklace-lumen-gold",   "necklace-lumen-silver",
+  "necklace-noctis-gold",  "necklace-noctis-silver",
 ];
 
 function sortPooled(reviews: PublicReview[]): PublicReview[] {
