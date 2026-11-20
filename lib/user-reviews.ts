@@ -24,6 +24,13 @@ export interface PublicReview {
   images: string[];          // full public URLs
   isPartnership: boolean;
   createdAt: string;
+  productSlug?: string;      // set when reviews from multiple products are pooled together
+}
+
+export interface UserReviewProductInfo {
+  shortName: string;
+  href: string;
+  coverSrc: string;
 }
 
 export const THANKS_TEXT = "Благодарим. Ревюто ще се публикува след преглед.";

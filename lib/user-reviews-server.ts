@@ -5,7 +5,7 @@
 import { createHash } from "node:crypto";
 import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
-import { REVIEW_BUCKET, summarizeReviews, type PublicReview } from "./user-reviews";
+import { REVIEW_BUCKET, summarizeReviews, type PublicReview, type UserReviewProductInfo } from "./user-reviews";
 
 export const USER_REVIEWS_TAG = "user-reviews";
 
@@ -21,9 +21,9 @@ function publicClient() {
   return createClient(supabaseUrl(), key, { auth: { persistSession: false } });
 }
 
-type Row = { id: string; name: string; rating: number; body: string | null; images: string[] | null; is_partnership: boolean; created_at: string };
+type Row = { id: string; name: string; rating: number; body: string | null; images: string[] | null; is_partnership: boolean; created_at: string; product_slug?: string };
 
-const toPublic = (r: Row): PublicReview => ({
+const toPublic = (r: Row, includeSlug?: boolean): PublicReview => ({
   id: r.id,
   name: r.name,
   rating: r.rating,
@@ -31,6 +31,7 @@ const toPublic = (r: Row): PublicReview => ({
   images: (r.images ?? []).map(reviewImageUrl),
   isPartnership: !!r.is_partnership,
   createdAt: r.created_at,
+  ...(includeSlug && r.product_slug ? { productSlug: r.product_slug } : {}),
 });
 
 // Cached with Next's Data Cache so the product pages stay static; the admin actions revalidate the tag (and the page) on every
@@ -90,6 +91,48 @@ export async function getApprovedReviewCounts(slugs: string[]): Promise<Record<s
     return {};
   }
 }
+
+const WOMENS_SLUGS = [
+  "bracelet-verdis-gold", "bracelet-verdis-silver",
+  "bracelet-lumen-gold",  "bracelet-lumen-silver",
+  "bracelet-noctis-gold", "bracelet-noctis-silver",
+  "necklace-verdis-gold", "necklace-verdis-silver",
+  "necklace-lumen-gold",  "necklace-lumen-silver",
+  "necklace-noctis-gold", "necklace-noctis-silver",
+];
+
+function sortPooled(reviews: PublicReview[]): PublicReview[] {
+  return [...reviews].sort((a, b) => {
+    const tier = (r: PublicReview) => r.images.length > 0 ? 0 : r.body ? 1 : 2;
+    const t = tier(a) - tier(b);
+    if (t !== 0) return t;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
+
+/** All approved women's-collection reviews (bracelets + necklaces) pooled, sorted photos → text → rating-only. */
+export async function getWomensJewelleryReviews(): Promise<{ reviews: PublicReview[]; count: number; avg: number }> {
+  return unstable_cache(
+    async (): Promise<{ reviews: PublicReview[]; count: number; avg: number }> => {
+      const { data, error } = await publicClient()
+        .from("reviews")
+        .select("id, name, rating, body, images, is_partnership, created_at, product_slug")
+        .in("product_slug", WOMENS_SLUGS)
+        .eq("status", "approved")
+        .limit(2000);
+      if (error) throw new Error(error.message);
+      const reviews = sortPooled(((data ?? []) as Row[]).map((r) => toPublic(r, true)));
+      return { reviews, ...summarizeReviews(reviews) };
+    },
+    [USER_REVIEWS_TAG, "womens-pool"],
+    { tags: [USER_REVIEWS_TAG] },
+  )().catch((e) => {
+    console.error("[user-reviews] could not read pooled reviews:", e instanceof Error ? e.message : e);
+    return { reviews: [], count: 0, avg: 0 };
+  });
+}
+
+export type { UserReviewProductInfo };
 
 // ─── Sender IP (rate limit) ─────────────────────────────────────────────────────────────────────────────────────────────────────
 

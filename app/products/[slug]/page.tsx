@@ -35,7 +35,7 @@ import { CollectionReviews } from "@/components/product/CollectionReviews";
 import { RO_STORE_ENABLED } from "@/lib/ro-store";
 import { absUrl } from "@/lib/site";
 import { userReviewsOn } from "@/lib/storefront";
-import { getApprovedReviews, getApprovedReviewCounts } from "@/lib/user-reviews-server";
+import { getApprovedReviews, getApprovedReviewCounts, getWomensJewelleryReviews } from "@/lib/user-reviews-server";
 import { UserReviews } from "@/components/product/UserReviews";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
@@ -108,10 +108,13 @@ export default async function ProductPage({ params }: Props) {
   const overrides = await getPriceOverrides();
   const product = applyOverride(rawProduct, overrides);
 
-  // Moderated customer reviews (lib/storefront.ts USER_REVIEWS, currently the women's bracelets): only the APPROVED ones ever get here.
-  // Such a product ignores the older Shopify reviews of lib/reviews.ts (none of them belongs to the collection anyway).
+  // Moderated customer reviews (lib/storefront.ts USER_REVIEWS, currently the women's bracelets + necklaces): only APPROVED ones.
+  // Such a product ignores the older Shopify reviews of lib/reviews.ts.
   const userReviews = userReviewsOn(product);
-  const approved = userReviews ? await getApprovedReviews(slug) : null;
+  const [approved, womensPool] = await Promise.all([
+    userReviews ? getApprovedReviews(slug) : Promise.resolve(null),
+    isCollectionSlug(slug) ? getWomensJewelleryReviews() : Promise.resolve(null),
+  ]);
   const reviews = userReviews ? [] : getReviewsBySlug(slug);
   const liveStock = await getLiveStock(slug);
   const summary = reviewSummary[slug];
@@ -197,6 +200,10 @@ export default async function ProductPage({ params }: Props) {
       collectionReviewCounts[p.slug] = reviewSummary[p.slug]?.count ?? getReviewsBySlug(p.slug).length;
     }
   }
+  // Product info map for the pooled reviews: covers bracelet + necklace product names and cover images.
+  const womensProductInfo: Record<string, { shortName: string; href: string; coverSrc: string }> = {};
+  for (const p of collectionPieces) womensProductInfo[p.slug] = { shortName: p.name, href: `/products/${p.slug}`, coverSrc: p.coverImage.src };
+  const womensPoolForReviews = womensPool && womensPool.count > 0 ? { ...womensPool, productInfo: womensProductInfo } : undefined;
   const collectionSoldOut = collectionPieces.filter((p) => soldOut.has(p.slug)).map((p) => p.slug);
   const collectionNames: Record<string, string> = Object.fromEntries(collectionPieces.map((p) => [p.slug, p.name]));
   const Shell = ({ children }: { children: React.ReactNode }) =>
@@ -266,7 +273,7 @@ export default async function ProductPage({ params }: Props) {
             review. Cardholders / wallets show their category pool, so they always have some. Same rule as the Romanian page. */}
         {/* Women's collection: the section follows the piece step 1 shows (the page's own from the server, another one read from
             GET /api/product-review), and its form sends the review to that piece */}
-        {inCollection && <CollectionReviews pageSlug={slug} initial={approved ? { reviews: approved.reviews, count: approved.count, avg: approved.avg } : null} />}
+        {inCollection && <CollectionReviews pageSlug={slug} initial={approved ? { reviews: approved.reviews, count: approved.count, avg: approved.avg } : null} pool={womensPoolForReviews} />}
         {!inCollection && approved && (
           <div className="mt-20">
             <UserReviews productSlug={slug} reviews={approved.reviews} count={approved.count} avg={approved.avg} />

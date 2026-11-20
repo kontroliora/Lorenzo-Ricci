@@ -1,8 +1,9 @@
 "use client";
 import { useRef, useState } from "react";
+import Link from "next/link";
 import {
   REVIEW_IMAGE_TYPES, REVIEW_LIMITS, THANKS_TEXT, formatAvg, reviewDate, reviewsLabel, validateReviewInput,
-  type PublicReview, type ReviewErrors,
+  type PublicReview, type ReviewErrors, type UserReviewProductInfo,
 } from "@/lib/user-reviews";
 
 // "Ревюта" under a product of the Bulgarian shop (owner, 17.11.2026): the average, the count and the list of the APPROVED reviews, plus
@@ -14,9 +15,10 @@ interface Props {
   reviews: PublicReview[];
   count: number;
   avg: number;
+  productInfo?: Record<string, UserReviewProductInfo>;
 }
 
-const FIRST_SHOWN = 6;
+const FIRST_SHOWN = 50;
 const MAX_REQUEST_BYTES = 4_000_000; // hosting limit for a request body is 4.5 MB: photos are shrunk in the browser first
 
 function Stars({ value, className = "" }: { value: number; className?: string }) {
@@ -205,7 +207,7 @@ function ReviewForm({ productSlug, onClose }: { productSlug: string; onClose: ()
   );
 }
 
-export function UserReviews({ productSlug, reviews, count, avg }: Props) {
+export function UserReviews({ productSlug, reviews, count, avg, productInfo }: Props) {
   const [open, setOpen] = useState(false);
   const [all, setAll] = useState(false);
   const [zoom, setZoom] = useState<string | null>(null);
@@ -254,12 +256,24 @@ export function UserReviews({ productSlug, reviews, count, avg }: Props) {
                 ))}
               </div>
             )}
-            <div className="pt-2 border-t border-border flex items-center justify-between gap-3">
-              <p className="font-sans text-xs font-medium text-charcoal">{r.name}</p>
-              <div className="flex items-center gap-2">
-                {r.isPartnership && <span className="font-sans text-[10px] tracking-wide text-navy border border-navy/40 px-1.5 py-0.5">Партньорство</span>}
-                <time dateTime={r.createdAt} className="font-sans text-[10px] text-ink-faint">{reviewDate(r.createdAt)}</time>
+            <div className="pt-2 border-t border-border">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-sans text-xs font-medium text-charcoal">{r.name}</p>
+                <div className="flex items-center gap-2">
+                  {r.isPartnership && <span className="font-sans text-[10px] tracking-wide text-navy border border-navy/40 px-1.5 py-0.5">Партньорство</span>}
+                  <time dateTime={r.createdAt} className="font-sans text-[10px] text-ink-faint">{reviewDate(r.createdAt)}</time>
+                </div>
               </div>
+              {productInfo && r.productSlug && productInfo[r.productSlug] && (() => {
+                const info = productInfo[r.productSlug!]!;
+                return (
+                  <Link href={info.href} className="flex items-center gap-1.5 mt-1 group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={info.coverSrc} alt={info.shortName} width={16} height={16} className="w-4 h-4 object-cover rounded-sm flex-shrink-0" />
+                    <span className="font-sans text-[10px] text-ink-muted group-hover:text-navy transition-colors">за {info.shortName}</span>
+                  </Link>
+                );
+              })()}
             </div>
           </article>
         ))}
