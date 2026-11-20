@@ -717,8 +717,9 @@ export function ProductInfo({ product, reviewCount = 0, reviewAvg, soldOut = [],
         {inCollection && <BoxLine text="Луксозна велурена кутия LORENZO RICCI" />}
         {velvetBox && <BoxLine text="Луксозна кутия LORENZO RICCI" />}
         {inCollection && <WarrantyLine text="Доживотна гаранция" href={"/warranty/jewelry"} />}
-        {/* Order (owner, 12.11.2026): box -> lifetime warranty -> 30-day exchange (all products) */}
-        <ExchangeLine text="30 дни лесна замяна" href="/policies/returns" first={!inCollection && !velvetBox} />
+        {product.category === "watches" && <WarrantyLine text="5 години гаранция" href={"/warranty/jewelry#chasovnici"} />}
+        {/* Order (owner, 12.11.2026): box -> lifetime/watch warranty -> 30-day exchange (all products) */}
+        <ExchangeLine text="30 дни лесна замяна" href="/policies/returns" first={!inCollection && !velvetBox && product.category !== "watches"} />
         {/* Gold jewellery only (Product.metal unset = gold); follows step 1's piece when it is switched in place */}
         {product.category === "jewellery" && (product.metal ?? "gold") === "gold" && <GoldLine text="18 карата PVD" />}
         {/* Watches, 01.12-21.12 only (lib/christmas-delivery.ts) */}
