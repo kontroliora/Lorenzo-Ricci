@@ -31,7 +31,7 @@ import { savingsWithWatchGiftEur, watchGiftActive, WATCH_GIFT_CHOICES, WATCH_GIF
 import { CLUTCH_GIFT_CHOICES, defaultClutchGift, giftDisplayName, isGiftClutch, matchingCardholder } from "@/lib/gifts";
 import { SHELF } from "@/lib/storefront";
 import { ChristmasDeliveryLine } from "@/components/ui/ChristmasDeliveryLine";
-import { readJewelUrgency, decrementJewelUrgency, type JewelUrgency } from "@/lib/jewel-urgency";
+import { readJewelUrgency, decrementJewelUrgency, isJewelUrgencyEligible, type JewelUrgency } from "@/lib/jewel-urgency";
 
 // A colour swatch reads as sold out when its product is switched off in
 // lib/products.ts (inStock: false - the owner's single on/off switch); the
@@ -224,13 +224,14 @@ export function ProductInfo({ product, reviewCount = 0, reviewAvg, soldOut = [],
   const [walletStock, setWalletStock] = useState<number | null>(null);
   const [stockLoaded, setStockLoaded] = useState(false);
   const [viewerCount, setViewerCount] = useState<number | null>(null);
-  // Women's jewellery only: fake "останали" / "разглеждат" pair, lib/jewel-urgency.ts - re-read per
-  // slug, so switching the piece via the Вид/Камък selectors gets its own fresh number.
+  // Gold jewellery only, and only half of those (lib/jewel-urgency.ts - isJewelUrgencyEligible):
+  // fake "останали" / "разглеждат" pair, re-read per slug, so switching the piece via the
+  // Вид/Камък selectors gets its own fresh number (or none, for silver / the other half).
   const [jewelUrgency, setJewelUrgency] = useState<JewelUrgency | null>(null);
   useEffect(() => {
-    if (product.category !== "jewellery") { setJewelUrgency(null); return; }
+    if (!isJewelUrgencyEligible(product)) { setJewelUrgency(null); return; }
     setJewelUrgency(readJewelUrgency(product.slug));
-  }, [product.slug, product.category]);
+  }, [product.slug, product.category, product.metal]);
 
   const variants =
     product.category === "watches"
@@ -322,7 +323,7 @@ export function ProductInfo({ product, reviewCount = 0, reviewAvg, soldOut = [],
   // Women's jewellery, genuinely in stock: the fake urgency pair stands in for the real low-stock
   // line below (effectiveInStock already covers product.inStock + liveCount from the real API above -
   // a genuinely sold-out piece still falls through to the real "Изчерпан" block, not this one).
-  const showFakeJewelUrgency = product.category === "jewellery" && effectiveInStock && jewelUrgency !== null;
+  const showFakeJewelUrgency = isJewelUrgencyEligible(product) && effectiveInStock && jewelUrgency !== null;
 
   // Cap the cart quantity at the LIVE stock (not the static products.ts value)
   // for leather goods, so the +/− stepper and re-adds can't exceed what we hold.
@@ -426,7 +427,7 @@ export function ProductInfo({ product, reviewCount = 0, reviewAvg, soldOut = [],
   const clutchMatchShown = clutchMatch && giftAvailable(clutchMatch) ? clutchMatch : null;
 
   const handleAdd = () => {
-    if (product.category === "jewellery") {
+    if (isJewelUrgencyEligible(product)) {
       setJewelUrgency((prev) => (prev ? decrementJewelUrgency(product.slug, prev) : prev));
     }
     if (giftBoxes || clutchGift) {
