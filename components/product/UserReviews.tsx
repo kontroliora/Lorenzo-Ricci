@@ -275,22 +275,24 @@ export function UserReviews({ productSlug, reviews, count, avg, productInfo }: P
                 <p className="font-sans text-xs font-medium text-charcoal">{r.name}</p>
                 {r.isPartnership && <span className="font-sans text-[10px] tracking-wide text-navy border border-navy/40 px-1.5 py-0.5">Партньорство</span>}
               </div>
-              <p className="flex items-center gap-1 mt-1 font-sans text-[10px] text-ink-muted">
-                <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-navy flex-shrink-0">
-                  <path fillRule="evenodd" clipRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" />
-                </svg>
-                Верифицирана покупка
-              </p>
-              {productInfo && r.productSlug && productInfo[r.productSlug] && (() => {
-                const info = productInfo[r.productSlug!]!;
-                return (
-                  <Link href={info.href} className="flex items-center gap-1.5 mt-1 group">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={info.coverSrc} alt={info.shortName} width={16} height={16} className="w-4 h-4 object-cover rounded-sm flex-shrink-0" />
-                    <span className="font-sans text-[10px] text-ink-muted group-hover:text-navy transition-colors">за {info.shortName}</span>
-                  </Link>
-                );
-              })()}
+              <div className={`flex items-center gap-3 mt-1 ${productInfo && r.productSlug && productInfo[r.productSlug] ? "justify-between" : "justify-end"}`}>
+                {productInfo && r.productSlug && productInfo[r.productSlug] && (() => {
+                  const info = productInfo[r.productSlug!]!;
+                  return (
+                    <Link href={info.href} className="flex items-center gap-1.5 group min-w-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={info.coverSrc} alt={info.shortName} width={16} height={16} className="w-4 h-4 object-cover rounded-sm flex-shrink-0" />
+                      <span className="font-sans text-[10px] text-ink-muted group-hover:text-navy transition-colors truncate">за {info.shortName}</span>
+                    </Link>
+                  );
+                })()}
+                <span className="flex items-center gap-1 font-sans text-[10px] text-ink-muted flex-shrink-0">
+                  <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-navy flex-shrink-0">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" />
+                  </svg>
+                  Верифицирана покупка
+                </span>
+              </div>
             </div>
           </article>
         ))}
