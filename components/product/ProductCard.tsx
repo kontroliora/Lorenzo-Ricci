@@ -17,6 +17,7 @@ import { FreeShippingBadge, OnePlusOneLine, CardWarrantyLine } from "@/component
 import { isCollectionSlug } from "@/lib/new-collection";
 import { opoGroupOf, opoPriceLineBg } from "@/lib/one-plus-one";
 import { savingsWithWatchGiftEur, watchGiftActive, WATCH_GIFT_TEXT } from "@/lib/watch-gift";
+import { discountPct } from "@/lib/sale-campaign";
 
 interface ProductCardProps {
   /** `sizes` of the card photos: the default fits 2-4 cards per row; one-per-row listings pass LISTING_CARD_SIZES. */
@@ -24,9 +25,11 @@ interface ProductCardProps {
   product: Product;
   priority?: boolean;
   learnMore?: boolean;
+  reviewCount?: number;
+  reviewAvg?: number;
 }
 
-export function ProductCard({ product, priority = false, learnMore = false, sizes = GRID_CARD_SIZES }: ProductCardProps) {
+export function ProductCard({ product, priority = false, learnMore = false, sizes = GRID_CARD_SIZES, reviewCount: reviewCountProp, reviewAvg: reviewAvgProp }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const canHover = useCanHover();
   const [added, setAdded] = useState(false);
@@ -55,8 +58,8 @@ export function ProductCard({ product, priority = false, learnMore = false, size
   const opo = isSoldOut ? undefined : opoGroupOf(product.slug); // 1+1 group: badge on the photo + line under the price
 
   const productSummary = reviewSummary[product.slug];
-  const reviewCount = productSummary?.count ?? 0;
-  const avgRating = productSummary?.avg ?? 0;
+  const reviewCount = reviewCountProp ?? productSummary?.count ?? 0;
+  const avgRating = reviewAvgProp ?? productSummary?.avg ?? 0;
 
   // Night image for watches is always images[1]
   const nightImage = isWatch ? (product.images[1] ?? product.coverImage) : null;
@@ -167,25 +170,30 @@ export function ProductCard({ product, priority = false, learnMore = false, size
         )}
 
         {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+        <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 z-10">
+          {price.original && !isSoldOut && (
+            <span data-testid="card-discount-pct-badge" className="bg-[#CC0000] text-white font-sans text-xs font-bold tracking-[0.5px] px-2 py-1 rounded whitespace-nowrap">
+              -{Math.round(discountPct(product))}%
+            </span>
+          )}
           {product.badge && !isSoldOut && (
-            <span className="bg-white/95 text-navy border border-navy/20 font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
+            <span className="bg-white/95 text-navy border border-navy/20 font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1 whitespace-nowrap">
               {product.badge}
             </span>
           )}
           {hasGift && !isSoldOut && (
-            <span className="bg-navy text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
+            <span className="bg-navy text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1 whitespace-nowrap">
               + Подарък кардхолдър
             </span>
           )}
           {/* Watch + free cardholder (lib/watch-gift.ts): same red badge as the 1+1 */}
           {isWatch && !isSoldOut && watchGiftActive() && (
-            <span data-testid="card-watch-gift-badge" className="bg-[#B3121F] text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
+            <span data-testid="card-watch-gift-badge" className="bg-[#B3121F] text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1 whitespace-nowrap">
               {WATCH_GIFT_TEXT.badge}
             </span>
           )}
           {opo && (
-            <span data-testid="card-opo-badge" className="bg-[#B3121F] text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
+            <span data-testid="card-opo-badge" className="bg-[#B3121F] text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1 whitespace-nowrap">
               {opo.text.bg.badge}
             </span>
           )}
@@ -255,7 +263,7 @@ export function ProductCard({ product, priority = false, learnMore = false, size
             {price.text}
           </span>
           {price.original && (
-            <span className="font-sans text-xs text-ink-muted line-through">
+            <span className="font-sans text-sm text-ink-soft line-through">
               {price.original}
             </span>
           )}

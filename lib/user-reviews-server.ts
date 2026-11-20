@@ -21,7 +21,7 @@ function publicClient() {
   return createClient(supabaseUrl(), key, { auth: { persistSession: false } });
 }
 
-type Row = { id: string; name: string; rating: number; body: string; images: string[] | null; is_partnership: boolean; created_at: string };
+type Row = { id: string; name: string; rating: number; body: string | null; images: string[] | null; is_partnership: boolean; created_at: string };
 
 const toPublic = (r: Row): PublicReview => ({
   id: r.id,
@@ -56,11 +56,38 @@ function cachedApproved(slug: string) {
 /** The approved reviews of one product, newest first. Never throws: a problem with the table (not created yet, network) shows no reviews. */
 export async function getApprovedReviews(slug: string): Promise<{ reviews: PublicReview[]; count: number; avg: number }> {
   try {
-    const reviews = await cachedApproved(slug)();
+    const raw = await cachedApproved(slug)();
+    // Reviews with photos appear first, then the rest (newest first within each group).
+    const reviews = [...raw].sort((a, b) => (b.images.length > 0 ? 1 : 0) - (a.images.length > 0 ? 1 : 0));
     return { reviews, ...summarizeReviews(reviews) };
   } catch (e) {
     console.error("[user-reviews] could not read approved reviews:", e instanceof Error ? e.message : e);
     return { reviews: [], count: 0, avg: 0 };
+  }
+}
+
+/** Approved review counts and averages for multiple slugs in one query. */
+export async function getApprovedReviewCounts(slugs: string[]): Promise<Record<string, { count: number; avg: number }>> {
+  if (!slugs.length) return {};
+  try {
+    const { data, error } = await publicClient()
+      .from("reviews")
+      .select("product_slug, rating")
+      .in("product_slug", slugs)
+      .eq("status", "approved");
+    if (error) throw new Error(error.message);
+    const result: Record<string, { count: number; avg: number }> = {};
+    for (const row of (data ?? []) as { product_slug: string; rating: number }[]) {
+      const s = row.product_slug;
+      if (!result[s]) result[s] = { count: 0, avg: 0 };
+      result[s].count++;
+      result[s].avg += row.rating;
+    }
+    for (const s of Object.keys(result)) result[s].avg = result[s].avg / result[s].count;
+    return result;
+  } catch (e) {
+    console.error("[user-reviews] could not read approved counts:", e instanceof Error ? e.message : e);
+    return {};
   }
 }
 

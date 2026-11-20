@@ -20,7 +20,7 @@ export interface PublicReview {
   id: string;
   name: string;
   rating: number;
-  body: string;
+  body: string | null;       // null for rating-only reviews (no written text)
   images: string[];          // full public URLs
   isPartnership: boolean;
   createdAt: string;

@@ -9,6 +9,7 @@ import { ProductCard } from "@/components/product/ProductCard";
 interface Props {
   bracelets: Product[];
   necklaces: Product[];
+  reviewCounts?: Record<string, { count: number; avg: number }>;
 }
 
 /** Reads ?category= (tabs). Needs a <Suspense> around it; its fallback is JewelleryPageView with category null - the full page, drawn on the
@@ -19,7 +20,7 @@ export function JewelleryPageClient(props: Props) {
   return <JewelleryPageView {...props} category={category} />;
 }
 
-export function JewelleryPageView({ bracelets, necklaces, category }: Props & { category: string | null }) {
+export function JewelleryPageView({ bracelets, necklaces, reviewCounts, category }: Props & { category: string | null }) {
   // category: "bracelets" | "necklaces" | null
 
   const showBracelets = !category || category === "bracelets";
@@ -149,7 +150,7 @@ export function JewelleryPageView({ bracelets, necklaces, category }: Props & { 
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-8">
               {newPieces.map((p, i) => (
-                <ProductCard key={p.id} product={p} priority={i < 2} />
+                <ProductCard key={p.id} product={p} priority={i < 2} reviewCount={reviewCounts?.[p.slug]?.count} reviewAvg={reviewCounts?.[p.slug]?.avg} />
               ))}
             </div>
           </div>

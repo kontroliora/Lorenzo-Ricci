@@ -8,7 +8,7 @@ import { absUrl } from "./site";
 //     same numbers the page shows next to the stars) - never invented for a product without.
 //   - review: the individual reviews, when the caller passes them (moderated customer reviews, supabase/reviews.sql: the page
 //     passes APPROVED ones only). Same rule: nothing is written without at least one.
-export interface JsonLdReview { name: string; rating: number; body: string; date: string }
+export interface JsonLdReview { name: string; rating: number; body: string | null; date: string }
 export function productJsonLd(
   product: Product,
   opts: { liveStock: number | null; reviews?: { count: number; avg: number; items?: JsonLdReview[] } | null },
@@ -46,13 +46,16 @@ export function productJsonLd(
       worstRating: 1,
     };
     if (opts.reviews.items && opts.reviews.items.length > 0) {
-      ld.review = opts.reviews.items.slice(0, 20).map((r) => ({
-        "@type": "Review",
-        author: { "@type": "Person", name: r.name },
-        datePublished: r.date.slice(0, 10),
-        reviewBody: r.body,
-        reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5, worstRating: 1 },
-      }));
+      const withBody = opts.reviews.items.filter((r) => r.body);
+      if (withBody.length > 0) {
+        ld.review = withBody.slice(0, 20).map((r) => ({
+          "@type": "Review",
+          author: { "@type": "Person", name: r.name },
+          datePublished: r.date.slice(0, 10),
+          reviewBody: r.body,
+          reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5, worstRating: 1 },
+        }));
+      }
     }
   }
   return ld;

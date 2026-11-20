@@ -5,6 +5,8 @@ import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { soldOutLast } from "@/lib/sold-out-order";
 import { JewelleryPageClient, JewelleryPageView } from "./JewelleryPageClient";
+import { getApprovedReviewCounts } from "@/lib/user-reviews-server";
+import { isCollectionSlug } from "@/lib/new-collection";
 
 export const metadata: Metadata = {
   title: "Дамска колекция бижута",
@@ -30,10 +32,12 @@ export default async function JewelleryPage() {
   const soldOut = new Set(await getSoldOutSlugs());
   const bracelets = soldOutLast(applyOverrides(getBracelets(), overrides), (s) => soldOut.has(s));
   const necklaces = soldOutLast(applyOverrides(getNecklaces(), overrides), (s) => soldOut.has(s));
+  const collectionSlugs = [...bracelets, ...necklaces].filter((p) => isCollectionSlug(p.slug)).map((p) => p.slug);
+  const reviewCounts = await getApprovedReviewCounts(collectionSlugs);
 
   return (
-    <Suspense fallback={<JewelleryPageView bracelets={bracelets} necklaces={necklaces} category={null} />}>
-      <JewelleryPageClient bracelets={bracelets} necklaces={necklaces} />
+    <Suspense fallback={<JewelleryPageView bracelets={bracelets} necklaces={necklaces} reviewCounts={reviewCounts} category={null} />}>
+      <JewelleryPageClient bracelets={bracelets} necklaces={necklaces} reviewCounts={reviewCounts} />
     </Suspense>
   );
 }

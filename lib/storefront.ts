@@ -56,8 +56,8 @@ export const WOMENS_LANDING = { bg: { path: "/jewellery", hash: "damska-kolekcia
 export type ReviewGroup = "bracelets" | "necklaces" | "other";
 
 export const USER_REVIEWS: Record<ReviewGroup, boolean> = {
-  bracelets: false,
-  necklaces: false,
+  bracelets: true,
+  necklaces: true,
   other: false,
 };
 

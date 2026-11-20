@@ -14,6 +14,7 @@ import { opoPriceLineRo } from "@/lib/ro/config";
 import { useLeatherStock } from "@/lib/use-gifts";
 import { lowStockCount, savingsRon, CARD_SAVINGS_CLASS, CARD_LOW_STOCK_CLASS } from "@/lib/home-card-hints";
 import { hasCyrillic, roDisplayName, roSafeText } from "@/components/ro/listing/ro-display";
+import { discountPct } from "@/lib/sale-campaign";
 
 // Romanian counterpart of components/product/ProductCard.tsx, shared by the home sections and the listings.
 // Expects a product already passed through localizeProduct() (Romanian text; price and sale kept as on the Bulgarian site).
@@ -181,16 +182,21 @@ export function RoProductCard({ product, priority = false, learnMore = false, si
           </>
         )}
 
-        {/* Badges: the product's own badge, including the sale badge (same as the Bulgarian card) */}
-        {((badge && !isSoldOut) || opo) && (
-          <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
-            {badge && !isSoldOut && (
-              <span className="bg-white/95 text-navy border border-navy/20 font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
+        {/* Badges */}
+        {!isSoldOut && (ronOriginalOf(product) || badge || opo) && (
+          <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 z-10">
+            {ronOriginalOf(product) && (
+              <span data-testid="card-discount-pct-badge" className="bg-[#CC0000] text-white font-sans text-xs font-bold tracking-[0.5px] px-2 py-1 rounded whitespace-nowrap">
+                -{Math.round(discountPct(product))}%
+              </span>
+            )}
+            {badge && (
+              <span className="bg-white/95 text-navy border border-navy/20 font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1 whitespace-nowrap">
                 {badge}
               </span>
             )}
             {opo && (
-              <span data-testid="card-opo-badge" className="bg-[#B3121F] text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1">
+              <span data-testid="card-opo-badge" className="bg-[#B3121F] text-white font-sans text-[9px] font-medium tracking-[0.18em] uppercase px-2.5 py-1 whitespace-nowrap">
                 {opo.text.ro.badge}
               </span>
             )}
@@ -246,7 +252,7 @@ export function RoProductCard({ product, priority = false, learnMore = false, si
             {fmtRON(ron)}
           </span>
           {ronOriginal !== undefined && (
-            <span className="font-sans text-xs text-ink-muted line-through">
+            <span className="font-sans text-sm text-ink-soft line-through">
               <span className="sr-only">Preț inițial: </span>
               {fmtRON(ronOriginal)}
             </span>

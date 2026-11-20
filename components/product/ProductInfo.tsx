@@ -176,6 +176,7 @@ const CLUTCH_SOLO_BG = "Безплатните кардхолдъри към к�
 interface ProductInfoProps {
   product: Product;
   reviewCount?: number;
+  reviewAvg?: number;
   // Women's collection (components/product/CollectionProductView.tsx): the pieces that cannot be bought (the "Вид" / "Камък" rows leave
   // them out), a lookup of every piece as the page sees it (price overrides applied), and the in-place switch of step 1.
   soldOut?: string[];
@@ -184,7 +185,7 @@ interface ProductInfoProps {
   onPickChange?: (slug: string | null) => void; // the free second piece picked in step 2 (null = none), for blocks that depend on it
 }
 
-export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, onSwitch, onPickChange }: ProductInfoProps) {
+export function ProductInfo({ product, reviewCount = 0, reviewAvg, soldOut = [], pieceOf, onSwitch, onPickChange }: ProductInfoProps) {
   const { addItem, items: cartItems } = useCartStore();
   const [added, setAdded] = useState(false);
   // 1+1 group: the free second item picked on the page (null = none; may be this same model)
@@ -599,7 +600,7 @@ export function ProductInfo({ product, reviewCount = 0, soldOut = [], pieceOf, o
             href="#reviews"
             className="font-sans text-xs text-ink-muted tracking-wide hover:text-navy transition-colors [@media(pointer:coarse)]:py-3.5 [@media(pointer:coarse)]:-my-3.5"
           >
-            {(reviewSummary[product.slug]?.avg ?? 4.8).toFixed(1)} · {reviewCount} {reviewCount === 1 ? "ревю" : "ревюта"}
+            {(reviewAvg ?? reviewSummary[product.slug]?.avg ?? 4.8).toFixed(1)} · {reviewCount} {reviewCount === 1 ? "ревю" : "ревюта"}
           </a>
         </div>
       )}

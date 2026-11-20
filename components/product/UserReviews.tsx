@@ -243,7 +243,7 @@ export function UserReviews({ productSlug, reviews, count, avg }: Props) {
         {shown.map((r) => (
           <article key={r.id} className="review-card break-inside-avoid mb-5 inline-block w-full flex flex-col gap-3 p-5">
             <Stars value={r.rating} />
-            <p className="font-sans text-sm font-light text-ink-soft leading-relaxed whitespace-pre-line break-words">{r.body}</p>
+            {r.body && <p className="font-sans text-sm font-light text-ink-soft leading-relaxed whitespace-pre-line break-words">{r.body}</p>}
             {r.images.length > 0 && (
               <div className="flex gap-2">
                 {r.images.map((src, i) => (

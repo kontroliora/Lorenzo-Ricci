@@ -11,11 +11,12 @@ import { ProductInfo } from "@/components/product/ProductInfo";
 // (the same merge as app/products/[slug]/page.tsx; not for a 1+1 group's fixed price).
 type PriceOverride = { price: number; originalPrice: number };
 
-export function CollectionViewBg({ pageSlug, priceOverrides, soldOut, reviewCounts }: {
+export function CollectionViewBg({ pageSlug, priceOverrides, soldOut, reviewCounts, reviewAvgs }: {
   pageSlug: string;
   priceOverrides: Record<string, PriceOverride>; // the collection's pieces only (lib/price-overrides.ts)
   soldOut: string[];                             // the collection's pieces that cannot be bought (lib/sold-out.ts)
   reviewCounts: Record<string, number>;
+  reviewAvgs?: Record<string, number>;
 }) {
   const setSecond = useSetSecondPiece();
   const pieceOf = useCallback((s: string): Product | undefined => {
@@ -31,7 +32,7 @@ export function CollectionViewBg({ pageSlug, priceOverrides, soldOut, reviewCoun
       hrefPrefix="/products/"
       pieceOf={pieceOf}
       renderGallery={(p) => <ProductGallery images={p.images} productName={p.name} />}
-      renderInfo={(p, switchTo) => <ProductInfo product={p} reviewCount={reviewCounts[p.slug] ?? 0} soldOut={soldOut} pieceOf={pieceOf} onSwitch={switchTo} onPickChange={setSecond} />}
+      renderInfo={(p, switchTo) => <ProductInfo product={p} reviewCount={reviewCounts[p.slug] ?? 0} reviewAvg={reviewAvgs?.[p.slug]} soldOut={soldOut} pieceOf={pieceOf} onSwitch={switchTo} onPickChange={setSecond} />}
     />
   );
 }

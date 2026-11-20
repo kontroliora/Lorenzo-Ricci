@@ -35,7 +35,7 @@ import { CollectionReviews } from "@/components/product/CollectionReviews";
 import { RO_STORE_ENABLED } from "@/lib/ro-store";
 import { absUrl } from "@/lib/site";
 import { userReviewsOn } from "@/lib/storefront";
-import { getApprovedReviews } from "@/lib/user-reviews-server";
+import { getApprovedReviews, getApprovedReviewCounts } from "@/lib/user-reviews-server";
 import { UserReviews } from "@/components/product/UserReviews";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
@@ -182,12 +182,20 @@ export default async function ProductPage({ params }: Props) {
   // Women's collection: step 1 of the 1+1 boxes switches the piece in place - the server sends only what it alone knows about the pieces
   // (price overrides, sold out, review counts); the catalogue is already in the browser.
   const collectionPieces = inCollection ? products.filter((p) => NEW_COLLECTION_SLUGS.has(p.slug)) : [];
+  const collectionApprovedCounts = await getApprovedReviewCounts(collectionPieces.filter(userReviewsOn).map((p) => p.slug));
   const collectionOverrides: Record<string, { price: number; originalPrice: number }> = {};
   const collectionReviewCounts: Record<string, number> = {};
+  const collectionReviewAvgs: Record<string, number> = {};
   for (const p of collectionPieces) {
     const ov = overrides.get(p.slug);
     if (ov) collectionOverrides[p.slug] = ov;
-    collectionReviewCounts[p.slug] = reviewSummary[p.slug]?.count ?? (userReviewsOn(p) ? 0 : getReviewsBySlug(p.slug).length);
+    if (userReviewsOn(p)) {
+      const a = collectionApprovedCounts[p.slug];
+      collectionReviewCounts[p.slug] = a?.count ?? 0;
+      if (a?.avg) collectionReviewAvgs[p.slug] = a.avg;
+    } else {
+      collectionReviewCounts[p.slug] = reviewSummary[p.slug]?.count ?? getReviewsBySlug(p.slug).length;
+    }
   }
   const collectionSoldOut = collectionPieces.filter((p) => soldOut.has(p.slug)).map((p) => p.slug);
   const collectionNames: Record<string, string> = Object.fromEntries(collectionPieces.map((p) => [p.slug, p.name]));
@@ -226,12 +234,12 @@ export default async function ProductPage({ params }: Props) {
           {inCollection ? (
             // Women's collection: gallery + info switch pieces in place with step 1 (no "Завърши визията" block: the 1+1 picker already
             // offers the matching piece; sets stay in /bundles)
-            <CollectionViewBg pageSlug={slug} priceOverrides={collectionOverrides} soldOut={collectionSoldOut} reviewCounts={collectionReviewCounts} />
+            <CollectionViewBg pageSlug={slug} priceOverrides={collectionOverrides} soldOut={collectionSoldOut} reviewCounts={collectionReviewCounts} reviewAvgs={collectionReviewAvgs} />
           ) : (
             <>
               <ProductGallery images={galleryImages} productName={product.name} />
               <div>
-                <ProductInfo product={product} reviewCount={reviewSummary[slug]?.count ?? reviews.length} />
+                <ProductInfo product={product} reviewCount={approved?.count ?? reviewSummary[slug]?.count ?? reviews.length} reviewAvg={approved?.avg} />
                 <BundleUpsell product={product} />
               </div>
             </>
