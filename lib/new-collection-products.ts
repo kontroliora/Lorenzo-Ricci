@@ -152,8 +152,14 @@ const TEXT: Record<CollectionKey, DesignText> = {
 
 // The "Материал" row is hidden in "Спецификации" on the women's pieces, code kept (owner, 20.11.2026). Set to true to show it again.
 const SHOW_MATERIAL_ROW = false;
+// The "Покритие" row (gold pieces) is hidden the same way, code kept (owner, 21.11.2026). Set to true to show it again.
+const SHOW_PLATING_ROW = false;
 const materialSpecs = (metal: Metal, lang: "bg" | "ro"): ProductSpec[] =>
-  allMaterialSpecs(metal, lang).filter((r) => SHOW_MATERIAL_ROW || (r.label !== "Материал" && r.label !== "Material"));
+  allMaterialSpecs(metal, lang).filter(
+    (r) =>
+      (SHOW_MATERIAL_ROW || (r.label !== "Материал" && r.label !== "Material")) &&
+      (SHOW_PLATING_ROW || (r.label !== "Покритие" && r.label !== "Placare")),
+  );
 // Material rows: the gold version uses the existing gold jewellery's wording word for word; the silver version claims only the steel.
 const allMaterialSpecs = (metal: Metal, lang: "bg" | "ro"): ProductSpec[] =>
   metal === "gold"
