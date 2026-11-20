@@ -197,7 +197,7 @@ export function TestimonialsSection() {
           <div className="gold-divider" />
           <div className="flex items-center justify-center gap-3 mt-6">
             <span className="text-navy text-sm">★★★★★</span>
-            <span className="font-sans text-sm font-light text-ink-muted">4.8 от 5</span>
+            <span className="font-sans text-sm font-light text-ink-muted">4.8 от 5 · 3178 ревюта</span>
           </div>
         </div>
 
