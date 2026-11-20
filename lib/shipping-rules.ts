@@ -10,5 +10,5 @@ export const BG_SHIPPING_HOME_EUR = 5.45;
 export const bgShippingCost = (goodsBeforePromo: number, courier: unknown): number =>
   goodsBeforePromo >= BG_FREE_SHIPPING_EUR ? 0 : courier === "home" ? BG_SHIPPING_HOME_EUR : BG_SHIPPING_OFFICE_EUR;
 
-/** The "Безплатна доставка" badge (product page and cards): the product alone - its current price, after the sale, before the card discount - reaches the threshold. */
-export const bgShipsFree = (p: { price: number }): boolean => p.price >= BG_FREE_SHIPPING_EUR;
+/** The "Безплатна доставка" badge (product page and cards): the product alone - its current price, after the sale, before the card discount - reaches the threshold. The one-of-one crocodile bag (owner, 21.11.2026) never shows it, regardless of price. */
+export const bgShipsFree = (p: { price: number; slug?: string }): boolean => p.slug !== "bag-milano-avorio" && p.price >= BG_FREE_SHIPPING_EUR;

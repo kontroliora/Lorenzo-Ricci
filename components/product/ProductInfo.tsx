@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Award, Truck, Eye } from "lucide-react";
+import { Award, Truck, Eye, Flame, PackageX, Gem } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { useCartStore } from "@/lib/store";
 import { reviewSummary } from "@/lib/reviews";
@@ -31,6 +31,7 @@ import { savingsWithWatchGiftEur, watchGiftActive, WATCH_GIFT_CHOICES, WATCH_GIF
 import { CLUTCH_GIFT_CHOICES, defaultClutchGift, giftDisplayName, isGiftClutch, matchingCardholder } from "@/lib/gifts";
 import { SHELF } from "@/lib/storefront";
 import { ChristmasDeliveryLine } from "@/components/ui/ChristmasDeliveryLine";
+import { readJewelUrgency, decrementJewelUrgency, type JewelUrgency } from "@/lib/jewel-urgency";
 
 // A colour swatch reads as sold out when its product is switched off in
 // lib/products.ts (inStock: false - the owner's single on/off switch); the
@@ -223,6 +224,13 @@ export function ProductInfo({ product, reviewCount = 0, reviewAvg, soldOut = [],
   const [walletStock, setWalletStock] = useState<number | null>(null);
   const [stockLoaded, setStockLoaded] = useState(false);
   const [viewerCount, setViewerCount] = useState<number | null>(null);
+  // Women's jewellery only: fake "останали" / "разглеждат" pair, lib/jewel-urgency.ts - re-read per
+  // slug, so switching the piece via the Вид/Камък selectors gets its own fresh number.
+  const [jewelUrgency, setJewelUrgency] = useState<JewelUrgency | null>(null);
+  useEffect(() => {
+    if (product.category !== "jewellery") { setJewelUrgency(null); return; }
+    setJewelUrgency(readJewelUrgency(product.slug));
+  }, [product.slug, product.category]);
 
   const variants =
     product.category === "watches"
@@ -311,6 +319,10 @@ export function ProductInfo({ product, reviewCount = 0, reviewAvg, soldOut = [],
   const effectiveInStock = product.inStock && (liveCount === null || liveCount > 0);
   // What the stock hint shows: a switched-off product reads as 0 ("Изчерпан").
   const shownCount = product.inStock ? liveCount : 0;
+  // Women's jewellery, genuinely in stock: the fake urgency pair stands in for the real low-stock
+  // line below (effectiveInStock already covers product.inStock + liveCount from the real API above -
+  // a genuinely sold-out piece still falls through to the real "Изчерпан" block, not this one).
+  const showFakeJewelUrgency = product.category === "jewellery" && effectiveInStock && jewelUrgency !== null;
 
   // Cap the cart quantity at the LIVE stock (not the static products.ts value)
   // for leather goods, so the +/− stepper and re-adds can't exceed what we hold.
@@ -414,6 +426,9 @@ export function ProductInfo({ product, reviewCount = 0, reviewAvg, soldOut = [],
   const clutchMatchShown = clutchMatch && giftAvailable(clutchMatch) ? clutchMatch : null;
 
   const handleAdd = () => {
+    if (product.category === "jewellery") {
+      setJewelUrgency((prev) => (prev ? decrementJewelUrgency(product.slug, prev) : prev));
+    }
     if (giftBoxes || clutchGift) {
       addItem({ ...product, stock: effectiveStock }, pickedGift?.slug);
       setAdded(true);
@@ -630,42 +645,75 @@ export function ProductInfo({ product, reviewCount = 0, reviewAvg, soldOut = [],
             Безплатна доставка при поръчка над €{BG_FREE_SHIPPING_EUR} (още {eurComma(BG_FREE_SHIPPING_EUR - cardGoods).replace(/,00$/, "")})
           </p>
         )}
-        {/* Stock + live viewers (owner, 15.11.2026): right under the price row, above the box / warranty / exchange lines.
-            Stock = the number AVAILABLE from live inventory (/api/stock), only below the low-stock threshold. Viewers = only next to the
-            low-stock line. Stacked on mobile, one line on desktop. */}
-        <div data-testid="stock-viewers" className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-x-5 gap-y-1 empty:hidden">
-          {shownCount !== null && shownCount <= PAGE_LOW_STOCK_MAX && (
+        {/* Women's jewellery only (owner, 21.11.2026): fake "останали" / "разглеждат" pair, independent
+            of the real stock - lib/jewel-urgency.ts. Replaces the real low-stock block below while the
+            piece is genuinely in stock; a genuinely sold-out piece still shows the real block (not this one). */}
+        {showFakeJewelUrgency && jewelUrgency && (
+          <div data-testid="stock-viewers" className="mt-3 border border-[#B3121F]/20 bg-[#B3121F]/[0.035] px-3.5 py-2.5 flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <Flame aria-hidden className="h-3.5 w-3.5 shrink-0 text-[#B3121F]" strokeWidth={1.75} />
+              <p className="font-sans text-[12.5px] leading-snug text-charcoal">
+                <span className="font-medium text-[#B3121F]">
+                  {jewelUrgency.stock === 1 ? "Остава последният брой" : `Остават само ${jewelUrgency.stock} броя`}
+                </span>
+                {" · поръчайте, преди да се "}
+                {jewelUrgency.stock === 1 ? "изчерпи" : "изчерпат"}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Eye aria-hidden className="h-3.5 w-3.5 shrink-0 text-ink-muted" strokeWidth={1.75} />
+              <p className="font-sans text-[12.5px] leading-snug text-ink-soft">
+                {jewelUrgency.viewers} души разглеждат този продукт в момента
+              </p>
+            </div>
+          </div>
+        )}
+        {/* Stock + live viewers (owner, 15.11.2026; restyled 21.11.2026 to match the jewellery urgency box below -
+            same bordered-box language, real numbers/logic untouched): right under the price row, above the box /
+            warranty / exchange lines. Stock = the number AVAILABLE from live inventory (/api/stock), only below the
+            low-stock threshold. Viewers = only next to the low-stock line. */}
+        {!showFakeJewelUrgency && shownCount !== null && shownCount <= PAGE_LOW_STOCK_MAX && (
+          <div
+            data-testid="stock-viewers"
+            className={`mt-3 border px-3.5 py-2.5 flex flex-col gap-1.5 ${
+              shownCount === 0
+                ? "border-ink-faint/40 bg-ink-faint/[0.06]"
+                : product.slug === "bag-milano-avorio"
+                ? "border-navy/20 bg-navy/[0.035]"
+                : "border-[#B3121F]/20 bg-[#B3121F]/[0.035]"
+            }`}
+          >
             <div className="flex items-center gap-2">
               {shownCount === 0 ? (
                 <>
-                  <span className="text-ink-muted text-xs">◈</span>
-                  <span className="font-sans text-[11px] text-ink-muted tracking-wide">Изчерпан</span>
+                  <PackageX aria-hidden className="h-3.5 w-3.5 shrink-0 text-ink-muted" strokeWidth={1.75} />
+                  <p className="font-sans text-[12.5px] leading-snug text-ink-muted">Изчерпан</p>
                 </>
               ) : product.slug === "bag-milano-avorio" ? (
                 // A one-of-one is limited, not "running out".
                 <>
-                  <span className="text-navy/70 text-xs">◈</span>
-                  <span className="font-sans text-[11px] text-navy tracking-wide font-medium">Лимитиран до 1 брой</span>
+                  <Gem aria-hidden className="h-3.5 w-3.5 shrink-0 text-navy" strokeWidth={1.75} />
+                  <p className="font-sans text-[12.5px] leading-snug text-navy font-medium">Лимитиран до 1 брой</p>
                 </>
               ) : (
                 <>
-                  <span className="text-amber-600/80 text-xs">◈</span>
-                  <span className="font-sans text-[11px] text-amber-700 tracking-wide font-medium">
+                  <Flame aria-hidden className="h-3.5 w-3.5 shrink-0 text-[#B3121F]" strokeWidth={1.75} />
+                  <p className="font-sans text-[12.5px] leading-snug font-medium text-[#B3121F]">
                     {shownCount === 1 ? "Остава последният брой" : `Остават само ${shownCount} броя`}
-                  </span>
+                  </p>
                 </>
               )}
             </div>
-          )}
-          {viewerCount !== null && shownCount !== null && shownCount > 0 && shownCount <= PAGE_LOW_STOCK_MAX && (
-            <div className="flex items-center gap-1.5">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#B5451B] animate-pulse flex-shrink-0" />
-              <span className="font-sans text-[11px] text-[#B5451B] tracking-wide">
-                {viewerCount} души разглеждат този продукт в момента
-              </span>
-            </div>
-          )}
-        </div>
+            {viewerCount !== null && shownCount > 0 && (
+              <div className="flex items-center gap-2">
+                <Eye aria-hidden className="h-3.5 w-3.5 shrink-0 text-ink-muted" strokeWidth={1.75} />
+                <p className="font-sans text-[12.5px] leading-snug text-ink-soft">
+                  {viewerCount} души разглеждат този продукт в момента
+                </p>
+              </div>
+            )}
+          </div>
+        )}
         {inCollection && <BoxLine text="Луксозна велурена кутия LORENZO RICCI" />}
         {velvetBox && <BoxLine text="Луксозна кутия LORENZO RICCI" />}
         {inCollection && <WarrantyLine text="Доживотна гаранция" href={"/warranty/jewelry"} />}
