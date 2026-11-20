@@ -22,6 +22,7 @@
 // purpose - reverted them from the auto-corrected literate Cyrillic back to the exact text as given.
 // 20.11.2026 (9th pass): swapped the standalone em dash for a comma in the 2 reviews that used one as punctuation (Рая С.,
 // Елица З.) - the many other "по-X" hyphens (по-добре, по-скъпо...) are correct Bulgarian spelling and were left alone.
+// 20.11.2026 (10th pass): edited the Калоян М. / bracelet-noctis-silver review wording (owner request).
 
 import { createHash } from "node:crypto";
 import { unstable_cache } from "next/cache";
