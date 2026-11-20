@@ -52,7 +52,7 @@ async function shrinkImage(file: File): Promise<File> {
   }
 }
 
-function ReviewForm({ productSlug, onClose }: { productSlug: string; onClose: () => void }) {
+function ReviewForm({ productSlug, productOptions, onClose }: { productSlug: string; productOptions?: { slug: string; shortName: string }[]; onClose: () => void }) {
   const [name, setName] = useState("");
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
@@ -60,6 +60,9 @@ function ReviewForm({ productSlug, onClose }: { productSlug: string; onClose: ()
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
   const [files, setFiles] = useState<File[]>([]);
+  // Pooled mode (all women's-collection pieces share this form): which piece the review is actually about, so "за <модел>"
+  // under the published review is correct even when it's not the piece whose page the form was opened from.
+  const [forSlug, setForSlug] = useState(productSlug);
   const [errors, setErrors] = useState<ReviewErrors & { images?: string; form?: string }>({});
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
@@ -98,7 +101,7 @@ function ReviewForm({ productSlug, onClose }: { productSlug: string; onClose: ()
         return;
       }
       const fd = new FormData();
-      fd.set("productSlug", productSlug);
+      fd.set("productSlug", productOptions ? forSlug : productSlug);
       fd.set("name", checked.value.name);
       fd.set("rating", String(checked.value.rating));
       fd.set("body", checked.value.body);
@@ -133,6 +136,15 @@ function ReviewForm({ productSlug, onClose }: { productSlug: string; onClose: ()
   return (
     <form onSubmit={submit} noValidate className="border border-border bg-ivory-warm p-6 sm:p-8 flex flex-col gap-5">
       <h3 className="font-serif text-xl text-charcoal">Напиши ревю</h3>
+
+      {productOptions && productOptions.length > 1 && (
+        <div>
+          <label className={label} htmlFor="rv-product">За кой продукт е ревюто? *</label>
+          <select id="rv-product" value={forSlug} onChange={(e) => setForSlug(e.target.value)} className={`${input} appearance-none`}>
+            {productOptions.map((p) => <option key={p.slug} value={p.slug}>{p.shortName}</option>)}
+          </select>
+        </div>
+      )}
 
       <div>
         <p className={label} id="rv-rating-label">Оценка *</p>
@@ -215,13 +227,15 @@ export function UserReviews({ productSlug, reviews, count, avg, productInfo }: P
   const writeBtn = !open && (
     <button type="button" onClick={() => setOpen(true)} className="btn-outline text-xs">Напиши ревю</button>
   );
+  // Pooled mode only (productInfo is set): let the customer say which of the pieces the review is actually about.
+  const productOptions = productInfo && Object.entries(productInfo).map(([slug, info]) => ({ slug, shortName: info.shortName }));
 
   // No approved review: no section, only the button (and the form when it is opened).
   if (count === 0) {
     return (
       <section id="reviews" className="flex flex-col items-center gap-6">
         {writeBtn}
-        {open && <div className="w-full max-w-2xl"><ReviewForm productSlug={productSlug} onClose={() => setOpen(false)} /></div>}
+        {open && <div className="w-full max-w-2xl"><ReviewForm productSlug={productSlug} productOptions={productOptions} onClose={() => setOpen(false)} /></div>}
       </section>
     );
   }
@@ -239,7 +253,7 @@ export function UserReviews({ productSlug, reviews, count, avg, productInfo }: P
         {writeBtn}
       </div>
 
-      {open && <div className="mb-12"><ReviewForm productSlug={productSlug} onClose={() => setOpen(false)} /></div>}
+      {open && <div className="mb-12"><ReviewForm productSlug={productSlug} productOptions={productOptions} onClose={() => setOpen(false)} /></div>}
 
       <div className="columns-1 sm:columns-2 gap-5">
         {shown.map((r) => (
