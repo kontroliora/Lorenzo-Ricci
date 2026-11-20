@@ -20,6 +20,8 @@
 // between Ваня Н. and Катя П. so it lands 3rd among that text-only run (owner request).
 // 20.11.2026 (8th pass): the owner typed the Калина Т. and Радина С. reviews in shlyokavitsa (Latin-script Bulgarian) on
 // purpose - reverted them from the auto-corrected literate Cyrillic back to the exact text as given.
+// 20.11.2026 (9th pass): swapped the standalone em dash for a comma in the 2 reviews that used one as punctuation (Рая С.,
+// Елица З.) - the many other "по-X" hyphens (по-добре, по-скъпо...) are correct Bulgarian spelling and were left alone.
 
 import { createHash } from "node:crypto";
 import { unstable_cache } from "next/cache";
