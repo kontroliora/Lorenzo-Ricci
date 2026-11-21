@@ -72,6 +72,7 @@ export type AdminOrder = {
   stripe_session_id?: string | null;   // cs_test_... / cs_live_...: tells a test payment from a live one (lib/stripe-mode.ts)
   confirm_email_sent_at?: string | null;   // "Потвърдете поръчката си" e-mail sent (supabase/orders_email_confirm.sql)
   email_confirmed_at?: string | null;      // the customer confirmed with the e-mail's button
+  duplicate_dismissed_at?: string | null; // owner pressed "Не е дубликат" (supabase/orders_duplicates.sql); undefined until that migration runs
   created_at: string;
   partner_mark?: import("./partner/marks").PartnerMark | null;   // the partner's latest mark (partner_order_state), read-only here
 };

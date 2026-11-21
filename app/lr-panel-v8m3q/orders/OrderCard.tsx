@@ -27,6 +27,8 @@ import { isRoOrder, fmtLei, fmtLeiWithEuro } from "@/lib/market";
 import { PaymentBadge, PaidCardCollectLine, CardMoneyMissingLine, RoPaymentLine } from "./PaymentUi";
 import { refundPlan } from "@/lib/stripe-mode";
 import { onePlusOneOfOrder } from "@/lib/one-plus-one";
+import type { DupGroup } from "@/lib/duplicate-orders";
+import { DuplicateStrip, DUP_BG, DUP_BORDER } from "./DuplicateStrip";
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
   new:       { label: "Нова · за обаждане", bg: "#412402", fg: "#FAC775" },
@@ -76,7 +78,7 @@ const sofiaDateTime = (iso: string) =>
   new Date(iso).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 export function OrderCard({
-  order, history, log, now, onNotice, stripeKey = "none",
+  order, history, log, now, onNotice, stripeKey = "none", dup, onFocusOrder,
 }: {
   order: AdminOrder;
   history?: CustomerHistory;
@@ -84,6 +86,8 @@ export function OrderCard({
   now: number;
   onNotice?: (msg: string) => void; // board-level banner: the card may leave the tab (and unmount) right after the action
   stripeKey?: "live" | "test" | "none"; // mode of the site's Stripe key: decides whether cancelling a card order refunds it
+  dup?: DupGroup;                        // repeat orders of the same customer within 72 h (lib/duplicate-orders.ts): yellow card + badge
+  onFocusOrder?: (ref: string) => void;  // jump to another order of that group
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
@@ -221,8 +225,9 @@ export function OrderCard({
     </button>
   );
 
+  const dupHere = !!dup && !excluded && !readOnly;
   return (
-    <div style={{ background: isDue ? "rgba(151,196,89,0.06)" : "rgba(255,255,255,0.03)", border: `${isDue ? "1px" : "0.5px"} solid ${excluded ? "rgba(255,255,255,0.06)" : isDue ? "#97C459" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "16px 18px", opacity: excluded ? 0.55 : 1 }}>
+    <div data-dup={dupHere ? "1" : undefined} style={{ background: dupHere ? DUP_BG : isDue ? "rgba(151,196,89,0.06)" : "rgba(255,255,255,0.03)", border: `${isDue || dupHere ? "1px" : "0.5px"} solid ${excluded ? "rgba(255,255,255,0.06)" : dupHere ? DUP_BORDER : isDue ? "#97C459" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "16px 18px", opacity: excluded ? 0.55 : 1 }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
@@ -243,6 +248,9 @@ export function OrderCard({
           <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 12 }}>{fmtDate(order.created_at)}</span>
         </div>
       </div>
+
+      {/* Repeat orders of this customer (badge + banner + group) */}
+      {dupHere && dup && <DuplicateStrip group={dup} currentIds={[order.id]} onFocusOrder={onFocusOrder ?? (() => {})} onNotice={onNotice} />}
 
       {/* Phone */}
       <a href={`tel:${digits}`} style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "#85B7EB", fontSize: 18, fontWeight: 500, textDecoration: "none", margin: "12px 0 4px" }}>☎ {order.phone || "—"}</a>

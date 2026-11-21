@@ -7,6 +7,7 @@ import { buildAdminEmail, buildCustomerEmail, customerSubjects, sendAdminEmail, 
 import { ORDER_REPLY_TO } from "./email-layout";
 import { onePlusOneOfOrder } from "./one-plus-one";
 import { notifyPartnerOnce } from "./partner/email";
+import { notifyDuplicateOrder } from "./duplicate-server";
 import { buildRoAdminEmail, buildRoCustomerEmail, roPaidSubject, type RoOrderEmailData } from "./ro/emails";
 import { RO_ADMIN_RECIPIENTS, sendMail, sendCapiPurchase as sendRoCapiPurchase } from "./ro/order-notify";
 import { RO_SHIPPING_HOME, RO_SHIPPING_OFFICE, isRoOfficeMethod } from "./ro/config";
@@ -115,6 +116,7 @@ export async function notifyPaidOnce(sb: SupabaseClient, ref: string, meta: Reco
   const order = claimed.data?.[0] as OrderRow | undefined;
   if (!order) return "skipped";
   const failed = await notifyPaid(order, meta);
+  await notifyDuplicateOrder(ref);   // a PAID card order that repeats another one of the same customer: Telegram / e-mail to the team (never throws)
   const done = await sb.from("orders").update({ notified_at: new Date().toISOString() }).eq("order_ref", ref);
   if (done.error) console.error("[payment-notify] could not mark notified:", done.error.message);
   if (failed.length) await alertTeam(`Платено, но не всичко излезе - ${ref}`, `Не се изпратиха: ${failed.join(", ")}. Поръчката е платена и записана: прати ги ръчно (клиентски имейл, Meta).`);

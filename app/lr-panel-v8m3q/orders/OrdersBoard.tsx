@@ -14,6 +14,7 @@ import { boardStatus, isReturn, isPendingPayment, isUnpaidCardAttempt, matchesPa
 import { isCard } from "@/lib/payments";
 import { isRoOrder, marketOf, type Market } from "@/lib/market";
 import { activeWindow, nextWindow, callTimer } from "@/lib/callSchedule";
+import { buildDuplicateGroups, countsForDuplicates } from "@/lib/duplicate-orders";
 
 type Tab = "new" | "confirmed" | "shipped" | "completed" | "returned" | "complaints" | "cancelled";
 
@@ -148,6 +149,7 @@ export function OrdersBoard({
   const [showDead, setShowDead] = useState(false);
   const [payMethod, setPayMethod] = useState<PayMethodFilter>("all");
   const [payState, setPayState] = useState<PayStateFilter>("all");
+  const [dupOnly, setDupOnly] = useState(false);          // "Само повторни": only orders that have a repeat order of the same customer within 72 h
   const [partnerOnly, setPartnerOnly] = useState(false);   // "С отметка от партньора": only orders the partner marked on /partner
   const [notice, setNotice] = useState(""); // an action's warning (e.g. the Romanian e-mail did not go out) must outlive the card that raised it
   const [showFake, setShowFake] = useState(false);
@@ -179,8 +181,12 @@ export function OrdersBoard({
   const openAttempts = live.filter(isPendingPayment);
   const deadAttempts = live.filter((o) => isUnpaidCardAttempt(o) && !isPendingPayment(o));
   const salesOrders = live.filter((o) => !isUnpaidCardAttempt(o));
+  // Repeat orders (lib/duplicate-orders.ts): computed from every loaded order of every market (the market filter only hides cards, it never
+  // changes who counts as a repeat). Cancelled, "не е дубликат", fake and unpaid card attempts do not count.
+  const dup = buildDuplicateGroups(orders as never, { eligible: (o) => countsForDuplicates(o) && notLead(o as AdminOrder) && !isUnpaidCardAttempt(o as AdminOrder) });
+  const dupCount = salesOrders.filter((o) => dup.byId.has(o.id)).length;
   // The payment filters combine with the tabs, the summary counters and the search.
-  const real = salesOrders.filter((o) => matchesPayment(o, payMethod, payState) && (!partnerOnly || !!o.partner_mark));
+  const real = salesOrders.filter((o) => matchesPayment(o, payMethod, payState) && (!partnerOnly || !!o.partner_mark) && (!dupOnly || dup.byId.has(o.id)));
   const markedCount = salesOrders.filter((o) => !!o.partner_mark).length;
   // "Фалшиви": every order marked fake/test, newest mark first (the time comes from order_status_log; without it, the order date).
   const markedAtMs = (o: AdminOrder) => {
@@ -215,7 +221,7 @@ export function OrdersBoard({
   const matches = searching ? real.filter((o) => orderMatches(o, query)) : [];
 
   const card = (o: AdminOrder) => (
-    <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} now={now} onNotice={setNotice} stripeKey={stripeKey} />
+    <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} now={now} onNotice={setNotice} stripeKey={stripeKey} dup={dup.byId.get(o.id)} onFocusOrder={setQuery} />
   );
 
   // Render a same-customer cluster: single → normal card; 2+ identical address →
@@ -247,6 +253,8 @@ export function OrdersBoard({
         orders={g}
         history={last.phone ? histories[last.phone] : undefined}
         onNotice={setNotice}
+        dup={g.map((o) => dup.byId.get(o.id)).find(Boolean)}
+        onFocusOrder={setQuery}
         onSplit={() => setSplitGroups((s) => { const next = new Set(s); next.add(key); return next; })}
       />
     );
@@ -317,6 +325,11 @@ export function OrdersBoard({
           <button type="button" onClick={() => setPartnerOnly((v) => !v)} aria-pressed={partnerOnly}
             style={{ fontSize: 12, padding: "5px 12px", borderRadius: 999, border: `1px solid ${partnerOnly ? "#97C459" : "rgba(255,255,255,0.2)"}`, color: partnerOnly ? "#97C459" : "rgba(255,255,255,0.65)", background: partnerOnly ? "rgba(151,196,89,0.12)" : "transparent" }}>
             С отметка от партньора · {markedCount}
+          </button>
+          {" "}
+          <button type="button" onClick={() => setDupOnly((v) => !v)} aria-pressed={dupOnly} data-testid="dup-only"
+            style={{ fontSize: 12, padding: "5px 12px", borderRadius: 999, border: `1px solid ${dupOnly ? "#FAC775" : "rgba(255,255,255,0.2)"}`, color: dupOnly ? "#FAC775" : "rgba(255,255,255,0.65)", background: dupOnly ? "rgba(250,199,117,0.14)" : "transparent" }}>
+            ⚠ Само повторни · {dupCount}
           </button>
         </div>
 

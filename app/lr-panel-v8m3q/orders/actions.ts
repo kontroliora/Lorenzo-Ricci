@@ -229,6 +229,42 @@ export async function cancelOrders(ids: number[], category: string, reason: stri
   return notifyRo(supabase, before, (st) => st === "cancelled", { kind: "order_cancelled", category });
 }
 
+// ── Повторни поръчки (lib/duplicate-orders.ts) ─────────────────────────────────────────────────────────────────────────────────
+// "Отмени като дубликат": cancelled, cancel_category/cancel_reason "duplicate", the stock goes back, and NO e-mail to the customer
+// (the customer meant one order; a cancellation mail would only confuse - not even a Romanian one, so notifyRo is deliberately not called).
+// call_state is left alone, so the customer's "отказал" history is not touched. Only an order still holding stock and not yet shipped.
+export async function cancelAsDuplicate(id: number): Promise<string | null> {
+  const supabase = await adminDb();
+  const [b] = await snapshot(supabase, [id]);
+  if (!b) return "Поръчката не е намерена.";
+  if (b.status === "cancelled") return null;
+  if (isPaidCard(b)) return "Платена с карта: откажи я от „Откажи“ (връща се и сумата през Stripe), не като дубликат.";
+  if (b.status !== "new" && b.status !== "confirmed") return "Поръчката вече е изпратена или приключена: не може да се откаже като дубликат.";
+  // ONE conditional UPDATE: only while it is still new/confirmed, and the stock is put back only if THIS call did the cancelling.
+  const done = await supabase.from("orders")
+    .update({ status: "cancelled", cancel_category: "duplicate", cancel_reason: "duplicate" })
+    .eq("id", id).in("status", ["new", "confirmed"]).select("id, items");
+  if (done.error) { console.error("[orders] cancel-as-duplicate error:", done.error.message); return done.error.message; }
+  if (done.data?.length) await restockOrderItems(supabase, (done.data[0] as { items: OrderItem[] }).items);
+  revalidatePath(ORDERS_PATH);
+  return null;
+}
+
+// "Не е дубликат": the owner says these orders are legitimate. They stop counting for duplicate detection (also for any later order).
+export async function dismissDuplicateGroup(ids: number[]): Promise<string | null> {
+  if (!ids.length) return null;
+  const supabase = await adminDb();
+  const { error } = await supabase.from("orders").update({ duplicate_dismissed_at: new Date().toISOString() }).in("id", ids);
+  if (error) {
+    console.error("[orders] dismiss-duplicate error:", error.message);
+    return /duplicate_dismissed_at|schema cache|column/i.test(error.message)
+      ? "Липсва колоната в базата: пусни supabase/orders_duplicates.sql в Supabase и опитай пак."
+      : error.message;
+  }
+  revalidatePath(ORDERS_PATH);
+  return null;
+}
+
 export async function markNoAnswerOrders(ids: number[]): Promise<string | null> {
   if (!ids.length) return null;
   try {

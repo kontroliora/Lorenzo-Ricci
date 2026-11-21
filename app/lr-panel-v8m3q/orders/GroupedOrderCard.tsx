@@ -2,11 +2,13 @@
 import { useState, useTransition } from "react";
 import { isRoOfficeMethod } from "@/lib/ro/config";
 import type { AdminOrder, CustomerHistory } from "@/lib/orders";
-import { confirmOrders, cancelOrders, markNoAnswerOrders } from "./actions";
+import { confirmOrders, cancelOrders, markNoAnswerOrders, cancelAsDuplicate } from "./actions";
 import { PartnerMarkBadge } from "./PartnerMarkBadge";
 import { OrderItemsList } from "./OrderItemsList";
 import { isRoOrder, fmtLei, fmtLeiWithEuro } from "@/lib/market";
 import { PaymentBadge } from "./PaymentUi";
+import type { DupGroup } from "@/lib/duplicate-orders";
+import { DuplicateStrip, DUP_BG, DUP_BORDER } from "./DuplicateStrip";
 
 function fmtDT(iso: string): string {
   try {
@@ -35,12 +37,14 @@ const backLink: React.CSSProperties = {
 // Merged view of 2+ NEW orders from the same customer with an IDENTICAL address.
 // Actions apply to every order in the group at once. Nothing is merged in the DB.
 export function GroupedOrderCard({
-  orders, history, onSplit, onNotice,
+  orders, history, onSplit, onNotice, dup, onFocusOrder,
 }: {
   orders: AdminOrder[];
   history?: CustomerHistory;
   onSplit: () => void;
   onNotice?: (msg: string) => void;
+  dup?: DupGroup;                        // repeat orders (lib/duplicate-orders.ts): yellow card + badge + the group with its actions
+  onFocusOrder?: (ref: string) => void;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
@@ -54,7 +58,6 @@ export function GroupedOrderCard({
   const ids = sorted.map((o) => o.id);
   const n = sorted.length;
   const total = sorted.reduce((s, o) => s + Number(o.total ?? 0), 0);
-  const allItems = sorted.flatMap((o) => o.items ?? []);
   const promoCodes = Array.from(new Set(sorted.map((o) => o.promo_code).filter(Boolean))) as string[];
   const digits = (last.phone ?? "").replace(/[^\d+]/g, "");
   const groupEmails = [...new Set(orders.map((o) => (o.email ?? "").trim()).filter(Boolean))];
@@ -82,6 +85,12 @@ export function GroupedOrderCard({
       return err;
     });
 
+  // ✕ on ONE order of the merged card: cancelled as a duplicate (stock goes back, no e-mail to the customer); the card keeps the rest.
+  const removeOne = (o: AdminOrder) => {
+    if (!window.confirm(`Да махна ли поръчка #${o.order_ref ?? o.id} (${fmtDT(o.created_at)}) като дубликат?\n\nНаличността се връща. Клиентът НЕ получава имейл.`)) return;
+    run(() => cancelAsDuplicate(o.id));
+  };
+
   let histBadge: { text: string; bg: string; fg: string };
   if (history && (history.confirmed || history.refused || history.notTaken)) {
     const risky = history.notTaken >= 2 || (history.notTaken > 0 && history.notTaken >= history.confirmed);
@@ -94,7 +103,7 @@ export function GroupedOrderCard({
   }
 
   return (
-    <div style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(93,202,165,0.4)", borderRadius: 12, padding: "16px 18px", boxShadow: "5px 5px 0 -2px rgba(255,255,255,0.03), 3px 3px 0 -1px rgba(93,202,165,0.15)" }}>
+    <div data-dup={dup ? "1" : undefined} style={{ background: dup ? DUP_BG : "rgba(255,255,255,0.03)", border: `0.5px solid ${dup ? DUP_BORDER : "rgba(93,202,165,0.4)"}`, borderRadius: 12, padding: "16px 18px", boxShadow: "5px 5px 0 -2px rgba(255,255,255,0.03), 3px 3px 0 -1px rgba(93,202,165,0.15)" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
@@ -112,6 +121,8 @@ export function GroupedOrderCard({
         <span style={{ background: "#412402", color: "#FAC775", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>Нова · за обаждане</span>
       </div>
 
+      {dup && <DuplicateStrip group={dup} currentIds={ids} onFocusOrder={onFocusOrder ?? (() => {})} onNotice={onNotice} />}
+
       {/* Phone */}
       <a href={`tel:${digits}`} style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "#85B7EB", fontSize: 18, fontWeight: 500, textDecoration: "none", margin: "12px 0 4px" }}>☎ {last.phone || "—"}</a>
       {/* E-mail(s) of the grouped orders (owner + employee only) */}
@@ -123,7 +134,24 @@ export function GroupedOrderCard({
 
       {/* Details */}
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
-        <OrderItemsList items={allItems} />
+        {/* Merged card, but every order stays its own block with its own ✕ (remove just that one as a duplicate) */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 6 }}>
+          {sorted.map((o, i) => (
+            <div key={o.id} data-testid="grouped-order" style={{ border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "8px 10px 4px", background: "rgba(0,0,0,0.15)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 12 }}>
+                <span style={{ color: "rgba(255,255,255,0.5)" }}>Поръчка {i + 1}</span>
+                <span style={{ fontFamily: "monospace", color: "#fff" }}>{o.order_ref ?? o.id}</span>
+                <span style={{ color: "rgba(255,255,255,0.45)" }}>{fmtDT(o.created_at)}</span>
+                <span style={{ color: "#fff", fontWeight: 500 }}>{ro ? fmtLeiWithEuro(Number(o.total ?? 0)) : `€${Number(o.total ?? 0).toFixed(2)}`}</span>
+                <button type="button" disabled={pending} onClick={() => removeOne(o)} data-testid="grouped-remove" title="Махни тази поръчка като дубликат"
+                  style={{ marginLeft: "auto", border: "0.5px solid #A32D2D", color: "#F09595", background: "transparent", fontSize: 12, padding: "4px 11px", borderRadius: 8, cursor: "pointer", opacity: pending ? 0.6 : 1 }}>
+                  ✕ Махни
+                </button>
+              </div>
+              <OrderItemsList items={o.items ?? []} />
+            </div>
+          ))}
+        </div>
         <div style={{ color: "#fff" }}>{ro ? (isRoOfficeMethod(last.shipping_method) ? "Locker / офис на Speedy (Румъния)" : "Куриер до адрес (Румъния)") : (last.shipping_method || (last.courier === "home" ? "Еконт до адрес" : "Еконт до офис"))} — {last.address || "—"}{last.city ? `, ${last.city}` : ""}</div>
         {groupSub != null && (
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2, display: "flex", gap: 14, flexWrap: "wrap" }}>

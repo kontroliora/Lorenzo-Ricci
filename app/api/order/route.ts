@@ -6,6 +6,7 @@ import { langOf, mayEmail } from "@/lib/mail-policy";
 import { supabase } from "@/lib/supabase";
 import { buildAdminEmail, buildCustomerEmail, customerSubjects, sendAdminEmail, sendCustomerEmail, sendCapiPurchase, type CapiContext } from "@/lib/order-notify";
 import { notifyPartnerOnce } from "@/lib/partner/email";
+import { checkCheckoutDuplicate, notifyDuplicateOrder } from "@/lib/duplicate-server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { CARD_PAYMENTS_ENABLED, PENDING_PAYMENT } from "@/lib/payments";
 import { refreshStockPages } from "@/lib/stock-pages";
@@ -186,6 +187,18 @@ export async function POST(req: NextRequest) {
         ? stockErrorMessage(gate.names.map((name) => ({ name, available: 0 })))
         : `${gate.names.join(", ")} се поръчва с предплащане - наложен платеж не е наличен. Свържете се с нас, за да уредим поръчката.`;
       return NextResponse.json({ success: false, code: gate.code, error }, { status: 409 });
+    }
+
+    // ── DOUBLE-ORDER GUARD - the same e-mail or phone already has a (not cancelled) order with one of these products from the last 24 h:
+    //    ask the customer first (the checkout shows "Вече имате поръчка #… Искате ли да направите втора?"). Runs before the stock is
+    //    reserved, so nothing is held for an order that may not happen. The customer's "Да, нова поръчка" resends with confirmDuplicate.
+    //    A failed lookup never blocks the order (lib/duplicate-server.ts).
+    if (order.confirmDuplicate !== true) {
+      const slugs = ((order.items ?? []) as ItemPayload[]).map((i) => String(i.slug ?? "")).filter(Boolean);
+      const prior = await checkCheckoutDuplicate({ email: customer.email, phone: customer.phone }, slugs);
+      if (prior) {
+        return NextResponse.json({ success: false, code: "possible_duplicate", existing: { ref: prior.ref, at: prior.at, total: prior.total, names: prior.names } }, { status: 409 });
+      }
     }
 
     // ── STOCK GUARD - final defence against overselling. Runs BEFORE emails and
@@ -458,6 +471,8 @@ export async function POST(req: NextRequest) {
       // response, so the customer never waits for it.
       const savedRef = String(order.orderRef ?? "");
       after(() => notifyPartnerOnce(savedRef));
+      // Repeat order (same e-mail / phone / name+address within 72 h): tell the team right away (Telegram, else e-mail).
+      after(() => notifyDuplicateOrder(savedRef));
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       console.error("[Supabase] Failed to save order:", reason);

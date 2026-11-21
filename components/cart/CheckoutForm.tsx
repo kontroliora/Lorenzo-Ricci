@@ -99,6 +99,13 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   const [submitting, setSubmitting]         = useState(false);
   const [submitted, setSubmitted]           = useState(false);
   const purchaseFired  = useRef(false);
+  // Double-submit protection: a synchronous lock (a second click in the same tick sees the state still "not submitting") and ONE order
+  // reference per attempt (the idempotency key: /api/order treats the same reference twice as the same order, never a second row).
+  const submitLock     = useRef(false);
+  const attemptRef     = useRef<{ fp: string; ref: string } | null>(null);
+  // "Вече имате поръчка…": the server found an order of this e-mail / phone with the same product in the last 24 h (409 possible_duplicate).
+  const [dupPrompt, setDupPrompt] = useState<{ ref: string; at: string } | null>(null);
+  const [noNewOrder, setNoNewOrder] = useState(false);   // the customer answered "Не, имам само тази": thank-you screen, no new order
   const sessionIdRef   = useRef("");
   const saveTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const phoneTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -113,7 +120,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   // Coming back from Stripe with the browser's Back button can restore this page frozen mid-redirect
   // (bfcache) - give the customer a working button again.
   useEffect(() => {
-    const onShow = (e: PageTransitionEvent) => { if (e.persisted) setSubmitting(false); };
+    const onShow = (e: PageTransitionEvent) => { if (e.persisted) { submitLock.current = false; setSubmitting(false); } };
     window.addEventListener("pageshow", onShow);
     return () => window.removeEventListener("pageshow", onShow);
   }, []);
@@ -252,8 +259,9 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   };
 
   // ── Submit ──────────────────────────────────────────────────────────────────
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent | null, confirmDuplicate = false) => {
+    e?.preventDefault();
+    if (submitLock.current) return;   // double click / double tap / Enter + click: the first submit is still running
     const errs = validate();
     if (Object.keys(errs).length > 0) {
       const keys = Object.keys(errs);
@@ -277,9 +285,16 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     setErrors({});
     setFormSummary("");
     setSubmitError("");
+    submitLock.current = true;
     setSubmitting(true);
+    setDupPrompt(null);
+    const releaseSubmit = () => { submitLock.current = false; setSubmitting(false); };
 
-    const ref = newOrderRef("LR");
+    // One reference per attempt: the same cart + customer + payment method keeps the reference of the previous attempt, so a retry after
+    // a timeout can never create a second order. A different cart / customer gets a new one.
+    const fp = JSON.stringify([items.map((i) => [i.product.slug, i.quantity]), form.email.trim().toLowerCase(), form.phone.replace(/\D/g, ""), isCardPay, grandTotal]);
+    if (attemptRef.current?.fp !== fp) attemptRef.current = { fp, ref: newOrderRef("LR") };
+    const ref = attemptRef.current.ref;
     const capturedTotal = grandTotal;
 
     const orderSummary = {
@@ -310,6 +325,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
       shipping:     { method: selectedOption.label, courier: selectedOption.courier, cost: shippingCost },
       total:        grandTotal,
       paymentMethod: isCardPay ? "card" : "cod",
+      ...(confirmDuplicate ? { confirmDuplicate: true } : {}),   // the customer said "Да, нова поръчка" to the double-order question
       timestamp:    new Date().toISOString(),
     };
 
@@ -323,12 +339,22 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         let msg = "Възникна грешка при изпращането на поръчката. Моля, опитайте отново.";
         let errCode = "";
         let soldOut: { forSlug?: unknown; giftSlug?: unknown }[] = [];
+        let existing: { ref?: unknown; at?: unknown } | null = null;
         try {
           const body = await res.json();
+          if (body?.existing && typeof body.existing === "object") existing = body.existing;
           if (body?.error) msg = body.error;
           if (typeof body?.code === "string") errCode = body.code;
           if (Array.isArray(body?.giftSoldOut)) soldOut = body.giftSoldOut;
         } catch { /* ignore parse error */ }
+        // The server answered and created nothing: the next attempt starts with a fresh reference.
+        attemptRef.current = null;
+        if (errCode === "possible_duplicate" && existing && typeof existing.ref === "string") {
+          // Not a failure: ask the customer (modal below). Nothing is logged as a checkout failure.
+          setDupPrompt({ ref: existing.ref, at: typeof existing.at === "string" ? existing.at : "" });
+          releaseSubmit();
+          return;
+        }
         logCheckoutFailure({ market: "bg", kind: "server", code: errCode || undefined, status: res.status, delivery: isHomeAddress ? "home" : pickerActive ? "office" : "office-manual", picker: offices.status, sessionId: sessionIdRef.current || undefined });
         if (errCode === "gift_sold_out" && soldOut.length) {
           // Back to the choice: the sold-out cardholder leaves the clutch line, the cart asks for another one (no silent swap).
@@ -336,11 +362,11 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
             const line = items.find((i) => i.product.slug === g.forSlug);
             if (line && typeof g.giftSlug === "string") dropLineGift(line.product.id, g.giftSlug);
           }
-          setSubmitting(false);
+          releaseSubmit();
           if (onGiftSoldOut) { onGiftSoldOut(msg); return; }
         }
         setSubmitError(msg);
-        setSubmitting(false);
+        releaseSubmit();
         return;
       }
       let cardCheckout: { url: string; ref: string } | null = null;
@@ -362,8 +388,9 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         // Card: the order is only a reservation until Stripe confirms the payment - keep the cart, no Purchase,
         // no success screen. Remember the order for the return page and send the customer to Stripe.
         if (!cardCheckout) {
+          attemptRef.current = null;
           setSubmitError("Не успяхме да отворим страницата за плащане. Моля, опитайте отново или изберете наложен платеж.");
-          setSubmitting(false);
+          releaseSubmit();
           return;
         }
         try { sessionStorage.setItem(PENDING_ORDER_KEY, cardCheckout.ref); } catch { /* private mode: the return page still has ?ref= */ }
@@ -375,13 +402,17 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     } catch {
       logCheckoutFailure({ market: "bg", kind: "network", sessionId: sessionIdRef.current || undefined });
       setSubmitError("Възникна грешка при свързването. Моля, опитайте отново.");
-      setSubmitting(false);
+      // Outcome unknown (the order may have been saved): a cash-on-delivery retry keeps the same reference, so the server answers "already
+      // received" instead of creating a second order. A card attempt starts over (an unpaid card attempt is not an order).
+      if (isCardPay) attemptRef.current = null;
+      releaseSubmit();
       return;
     }
 
+    attemptRef.current = null;
     setOrderRef(ref);
     setSubmittedTotal(capturedTotal);
-    setSubmitting(false);
+    releaseSubmit();
     setSubmitted(true);
     clearCart();
 
@@ -401,6 +432,29 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
     setTimeout(() => onSuccess(), 4000);
   };
 
+  // "Не, имам само тази": the customer already has the order: thank-you screen with ITS number, nothing is created, no Purchase event.
+  const keepOnlyExisting = () => {
+    if (!dupPrompt) return;
+    attemptRef.current = null;
+    setOrderRef(dupPrompt.ref);
+    setSubmittedTotal(0);
+    setNoNewOrder(true);
+    setDupPrompt(null);
+    setSubmitted(true);
+    clearCart();
+    setTimeout(() => onSuccess(), 4000);
+  };
+  const dupWhen = (() => {
+    if (!dupPrompt?.at) return "";
+    try {
+      const d = new Date(dupPrompt.at);
+      const tz = "Europe/Sofia";
+      const sameDay = d.toLocaleDateString("bg-BG", { timeZone: tz }) === new Date().toLocaleDateString("bg-BG", { timeZone: tz });
+      const time = d.toLocaleTimeString("bg-BG", { timeZone: tz, hour: "2-digit", minute: "2-digit" });
+      return sameDay ? `${time} часа` : `${d.toLocaleDateString("bg-BG", { timeZone: tz, day: "numeric", month: "long" })}, ${time} часа`;
+    } catch { return ""; }
+  })();
+
   // ── Success screen ──────────────────────────────────────────────────────────
   if (submitted) {
     return (
@@ -412,14 +466,14 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
         </div>
 
         <div>
-          <h3 className="font-serif text-2xl text-navy">Поръчката е получена!</h3>
-          <p className="mt-1 font-sans text-sm text-ink-muted">Номер: {orderRef}</p>
+          <h3 className="font-serif text-2xl text-navy">{noNewOrder ? "Благодарим ви!" : "Поръчката е получена!"}</h3>
+          <p className="mt-1 font-sans text-sm text-ink-muted">{noNewOrder ? "Вашата поръчка вече е при нас. Не създадохме нова." : null}{noNewOrder ? " " : ""}Номер: {orderRef}</p>
         </div>
 
         <div className="flex w-full flex-col gap-2.5 rounded-[8px] border border-border bg-[#FAFAF8] p-4 text-left">
           <div className="flex justify-between font-sans text-sm">
             <span className="text-ink-muted">Сума за плащане</span>
-            <span className="font-semibold text-navy">{eurBg(submittedTotal)}</span>
+            <span className="font-semibold text-navy">{submittedTotal > 0 ? eurBg(submittedTotal) : "-"}</span>
           </div>
           <div className="flex justify-between font-sans text-sm">
             <span className="text-ink-muted">Начин на плащане</span>
@@ -743,6 +797,24 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
               { href: "/policies/privacy", label: "Поверителност" },
             ]}
           />
+        </div>
+      )}
+      {dupPrompt && (
+        <div role="dialog" aria-modal="true" aria-labelledby="bg-dup-title" className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-[420px] rounded-[10px] bg-white p-6 shadow-xl">
+            <h3 id="bg-dup-title" className="font-serif text-xl text-navy">Вече имате поръчка</h3>
+            <p className="mt-3 font-sans text-sm leading-relaxed text-ink-soft">
+              Вече имате поръчка <span className="font-semibold text-navy">#{dupPrompt.ref}</span> за този продукт{dupWhen ? <> от <span className="font-semibold text-navy">{dupWhen}</span></> : null}. Искате ли да направите втора поръчка?
+            </p>
+            <div className="mt-5 flex flex-col gap-2.5">
+              <button type="button" onClick={keepOnlyExisting} className="h-12 w-full bg-navy px-4 font-sans text-[13px] font-semibold uppercase tracking-[0.12em] text-white hover:bg-[#1A3A6B]">
+                Не, имам само тази
+              </button>
+              <button type="button" disabled={submitting} onClick={() => handleSubmit(null, true)} className="h-12 w-full border border-border bg-white px-4 font-sans text-[13px] font-semibold uppercase tracking-[0.12em] text-navy hover:bg-[#FAFAF8] disabled:opacity-60">
+                {submitting ? "Обработване..." : "Да, нова поръчка"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </form>
