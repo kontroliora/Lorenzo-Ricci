@@ -10,8 +10,8 @@ export interface RecoveryPrefill {
   phone?: string;
 }
 
-/** The cart reservation (the drawer's countdown): 15 minutes from the first item. A saved cart older than this is dropped on load. */
-export const CART_RESERVATION_MS = 15 * 60 * 1000;
+/** The cart reservation (the drawer's countdown): 5 minutes from the first item. A saved cart older than this is dropped on load. */
+export const CART_RESERVATION_MS = 5 * 60 * 1000;
 
 interface CartStore {
   items: CartItem[];

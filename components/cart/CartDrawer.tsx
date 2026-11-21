@@ -25,7 +25,7 @@ import type { CartItem } from "@/lib/types";
 import { ChristmasDeliveryLine } from "@/components/ui/ChristmasDeliveryLine";
 
 
-const CART_TIMEOUT = 15 * 60; // 900 seconds
+const CART_TIMEOUT = 5 * 60; // 300 seconds
 
 export function CartDrawer() {
   const { isOpen, closeCart, items, removeItem, updateQuantity, totalPrice, totalItems, bundleDiscount,
@@ -207,7 +207,7 @@ export function CartDrawer() {
           <DrawerTop title={count > 0 ? `Количка · ${count} ${count === 1 ? "продукт" : "продукта"}` : "Количка"} onClose={closeCart} closeLabel="Затвори" />
           {items.length > 0 ? (
             <ReserveLine expired={timeLeft === 0}>
-              {timeLeft > 0 ? <>Резервирано за <span className="font-semibold text-navy tabular-nums">{timerMM}:{timerSS}</span></> : "Времето за резервация изтече."}
+              {timeLeft > 0 ? <>Резервирано за <span className="font-bold text-red-600 tabular-nums">{timerMM}:{timerSS}</span></> : "Времето за резервация изтече."}
             </ReserveLine>
           ) : <div className="border-b border-border" />}
         </>
@@ -225,7 +225,7 @@ export function CartDrawer() {
         {items.length > 0 && showCheckout && (
           <div className="pt-3">
             <ReserveLine expired={timeLeft === 0}>
-              {timeLeft > 0 ? <>Резервирано за <span className="font-semibold text-navy tabular-nums">{timerMM}:{timerSS}</span></> : "Времето за резервация изтече."}
+              {timeLeft > 0 ? <>Резервирано за <span className="font-bold text-red-600 tabular-nums">{timerMM}:{timerSS}</span></> : "Времето за резервация изтече."}
             </ReserveLine>
           </div>
         )}
