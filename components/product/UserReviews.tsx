@@ -19,6 +19,7 @@ interface Props {
 }
 
 const FIRST_SHOWN = 50;
+const MORE_STEP = 20;
 const MAX_REQUEST_BYTES = 4_000_000; // hosting limit for a request body is 4.5 MB: photos are shrunk in the browser first
 
 function Stars({ value, className = "" }: { value: number; className?: string }) {
@@ -221,9 +222,9 @@ function ReviewForm({ productSlug, productOptions, onClose }: { productSlug: str
 
 export function UserReviews({ productSlug, reviews, count, avg, productInfo }: Props) {
   const [open, setOpen] = useState(false);
-  const [all, setAll] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(FIRST_SHOWN);
   const [zoom, setZoom] = useState<string | null>(null);
-  const shown = all ? reviews : reviews.slice(0, FIRST_SHOWN);
+  const shown = reviews.slice(0, visibleCount);
   const writeBtn = !open && (
     <button type="button" onClick={() => setOpen(true)} className="btn-outline text-xs">Напиши ревю</button>
   );
@@ -298,9 +299,9 @@ export function UserReviews({ productSlug, reviews, count, avg, productInfo }: P
         ))}
       </div>
 
-      {!all && reviews.length > FIRST_SHOWN && (
+      {visibleCount < reviews.length && (
         <div className="text-center mt-2">
-          <button type="button" onClick={() => setAll(true)} className="btn-outline text-xs">Покажи всички ({reviews.length})</button>
+          <button type="button" onClick={() => setVisibleCount((c) => c + MORE_STEP)} className="btn-outline text-xs">Покажи още</button>
         </div>
       )}
 
