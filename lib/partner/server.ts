@@ -8,7 +8,7 @@ import { analyzeShipment, getRawStatuses } from "../econt";
 import { PARTNER_COOKIE, partnerFromCookie, type Partner } from "./access";
 import { pickupInfoOf, type PickupFacts } from "./pickup";
 import {
-  PARTNER_FILTERS, PARTNER_ORDER_COLUMNS, PARTNER_SINCE, matchesFilter, partnerView, partnerVisible, pieceInfo,
+  PARTNER_FILTERS, PARTNER_ORDER_COLUMNS, PARTNER_SINCE, matchesFilter, partnerDuplicates, partnerView, partnerVisible, pieceInfo,
   type PartnerFilter, type PartnerOrderView,
 } from "./orders";
 
@@ -36,12 +36,19 @@ export async function listPartnerOrders(filter: PartnerFilter): Promise<{ orders
   const sb = supabaseAdmin();
   const rows: Row[] = [];
   for (let from = 0; from < 5000; from += 1000) {
-    const { data, error } = await sb.from("orders").select(PARTNER_ORDER_COLUMNS)
+    // id + email + excluded_from_stock are read ONLY to find repeat orders (partnerDuplicates); partnerView never copies them
+    const { data, error } = await sb.from("orders").select(`${PARTNER_ORDER_COLUMNS}, id, email, excluded_from_stock`)
       .gte("created_at", PARTNER_SINCE).order("created_at", { ascending: false }).range(from, from + 999);
     if (error) throw new Error(error.message);
     rows.push(...((data ?? []) as Row[]));
     if (!data || data.length < 1000) break;
   }
+  // orders the owner marked "не е дубликат" (column from supabase/orders_duplicates.sql: a missing column just means none)
+  try {
+    const dis = await sb.from("orders").select("order_ref").not("duplicate_dismissed_at", "is", null).gte("created_at", PARTNER_SINCE);
+    if (!dis.error) { const ds = new Set((dis.data ?? []).map((d) => String((d as Row).order_ref))); for (const r of rows) if (ds.has(String(r.order_ref))) r.duplicate_dismissed_at = "x"; }
+  } catch { /* optional */ }
+  const dups = partnerDuplicates(rows);
   const mine = rows.filter(partnerVisible);
   const refs = mine.map((r) => String(r.order_ref));
   const states = new Map<string, Row>();
@@ -52,7 +59,7 @@ export async function listPartnerOrders(filter: PartnerFilter): Promise<{ orders
   }
   const facts = await econtFacts(mine.filter((r) => r.status === "shipped" && r.tracking_number).map((r) => String(r.tracking_number)));
   const all = mine.map((r) => {
-    const v = partnerView(r, states.get(String(r.order_ref)) as never);
+    const v = partnerView(r, states.get(String(r.order_ref)) as never, dups.get(String(r.order_ref)));
     if (r.status === "shipped" && r.tracking_number) v.pickup = pickupInfoOf(facts.get(awbOf(r.tracking_number)));
     return v;
   });

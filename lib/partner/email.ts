@@ -4,7 +4,8 @@ import { EMAIL_IVORY, EMAIL_NAVY, emailHead, emailHeaderRow, goldButton } from "
 import { SITE_ORIGIN } from "../meta-capi";
 import { sendTelegram } from "../telegram";
 import { supabaseAdmin } from "../supabase-admin";
-import { PARTNER_ORDER_COLUMNS, money, partnerView, partnerVisible, type PartnerOrderView } from "./orders";
+import { partnerDuplicateText } from "./dup-text";
+import { PARTNER_ORDER_COLUMNS, money, partnerDuplicates, partnerView, partnerVisible, type PartnerDuplicate, type PartnerOrderView } from "./orders";
 
 // The partner's order e-mail (owner, 09.11.2026). Not a customer e-mail: Bulgarian text, to the ENABLED partners with notify on
 // (table `partners`). Same as the /partner panel: built from partnerView() only - only orders that contain women's-collection
@@ -22,9 +23,24 @@ const fmtDate = (d: string) => new Date(d).toLocaleString("bg-BG", { timeZone: "
 export const partnerOrderUrl = (ref: string) => `${SITE_ORIGIN}/partner?order=${encodeURIComponent(ref)}`;
 
 export function partnerSubject(v: PartnerOrderView): string {
-  return v.payment.kind === "card"
+  const base = v.payment.kind === "card"
     ? `Нова поръчка #${v.ref} — ПЛАТЕНА С КАРТА`
     : `Нова поръчка #${v.ref} — НАЛОЖЕН ПЛАТЕЖ ${money(v.total, v.market)}`;
+  return v.duplicate ? `⚠ ДУБЛИРАЩА ПОРЪЧКА · ${base}` : base;
+}
+
+/** Repeat-order info of one saved order, for its e-mail. Never throws (null = no warning; the e-mail must still go out). */
+async function duplicateOf(ref: string): Promise<PartnerDuplicate | null> {
+  try {
+    const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    const { data, error } = await supabaseAdmin().from("orders").select("*").gte("created_at", since).limit(1000);
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []).map((r) => ({ ...(r as Record<string, unknown>), id: Number((r as Record<string, unknown>).id) }));
+    return partnerDuplicates(rows).get(ref) ?? null;
+  } catch (e) {
+    console.error("[partner] duplicate check failed (e-mail goes out without it):", e instanceof Error ? e.message : e);
+    return null;
+  }
 }
 
 export function buildPartnerOrderEmail(v: PartnerOrderView): string {
@@ -48,6 +64,7 @@ export function buildPartnerOrderEmail(v: PartnerOrderView): string {
  <div style="max-width:600px;margin:0 auto;background:#ffffff;overflow:hidden">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${emailHeaderRow(600)}</table>
   <div style="padding:8px 20px 24px">
+   ${v.duplicate ? `<div style="background:#fdecec;border:2px solid #b42318;color:#7a1410;padding:14px 18px;font-size:15px;font-weight:700;margin-bottom:10px">⚠ ДУБЛИРАЩА ПОРЪЧКА<br><span style="font-weight:400;font-size:14px">${esc(partnerDuplicateText(v.duplicate))}</span></div>` : ""}
    ${badge}
    <p style="margin:18px 0 6px;font-size:13px;color:#6b6456">Поръчка <strong style="color:${EMAIL_NAVY}">#${esc(v.ref)}</strong> · ${esc(fmtDate(v.createdAt))}</p>
    <table style="width:100%;border-collapse:collapse;font-size:15px;margin:8px 0 20px">
@@ -135,7 +152,7 @@ export async function notifyPartnerOnce(ref: string, opts: { to?: string[] } = {
     if (claim.error) throw new Error(`claim: ${claim.error.message}`);
     if (!claim.data?.length) return "already-sent";
 
-    const v = partnerView(r);
+    const v = partnerView(r, undefined, await duplicateOf(ref));
     try {
       await sendWithRetry({ to, subject: partnerSubject(v), html: buildPartnerOrderEmail(v) });
       return "sent";

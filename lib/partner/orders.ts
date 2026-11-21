@@ -10,6 +10,7 @@ import { NEW_COLLECTION_SLUGS, COLLECTION_PIECES } from "../new-collection";
 import { NEW_COLLECTION_PRODUCTS } from "../new-collection-products";
 import { isRoOfficeMethod } from "../ro/config";
 import type { PickupInfo } from "./pickup";
+import { buildDuplicateGroups, type DupOrder } from "../duplicate-orders";
 
 /** Orders of the collection start here (it went on sale in November 2026). */
 export const PARTNER_SINCE = "2026-11-01T00:00:00.000Z";
@@ -123,6 +124,9 @@ export const pieceInfo = (slug: string): PieceInfo | undefined => PIECES.get(slu
 // ── the view ─────────────────────────────────────────────────────────────────
 /** One line of the order. collection = a women's-collection piece (his); gift = a free line (price 0). */
 export type PartnerItem = { model: string; color: string; stone: string; qty: number; price: number; sku: string; collection: boolean; gift: boolean };
+/** A repeat order (lib/duplicate-orders.ts): the same customer ordered again within 72 h. Only orders HE may see are counted or named. */
+export type PartnerDuplicate = { count: number; others: string[]; sameProducts: boolean };
+
 export type PartnerOrderView = {
   ref: string;
   createdAt: string;
@@ -140,6 +144,7 @@ export type PartnerOrderView = {
   real: { key: RealStatusKey; label: string };   // the shop's status (admin panel), read-only for him
   pickup: PickupInfo | null;   // waiting at the Econt office since day 3+ (set by the server from Econt), else null
   state: { status: PartnerStatus; label: string; note: string; updatedAt: string | null };   // HIS mark ("new" = none yet)
+  duplicate: PartnerDuplicate | null;   // "ДУБЛИРАЩА ПОРЪЧКА": set by the server, which sees e-mail / address (he never does); null = not a repeat
 };
 
 export type PartnerState = { status?: string | null; note?: string | null; updated_at?: string | null } | null | undefined;
@@ -148,7 +153,27 @@ export function money(n: number, market: "bg" | "ro"): string {
   return market === "ro" ? `${Math.round(n)} lei` : `€${n.toFixed(2)}`;
 }
 
-export function partnerView(row: Row, state?: PartnerState): PartnerOrderView {
+/**
+ * Repeat orders among the orders he may see: order_ref -> who else is in the group. Needs `id` and `email` on the rows (the SERVER reads
+ * them; partnerView never copies them, so the customer's e-mail still never reaches him). Cancelled, "не е дубликат" and fake orders do not count.
+ */
+export function partnerDuplicates(rows: Row[]): Map<string, PartnerDuplicate> {
+  const mine = rows.filter((r) => partnerVisible(r) && typeof r.id === "number");
+  const { groups } = buildDuplicateGroups(mine as unknown as DupOrder[]);
+  const out = new Map<string, PartnerDuplicate>();
+  for (const g of groups) {
+    for (const o of g.orders) {
+      out.set(String(o.order_ref ?? ""), {
+        count: g.orders.length,
+        others: g.orders.filter((x) => x.id !== o.id).map((x) => String(x.order_ref ?? "")).filter(Boolean),
+        sameProducts: g.sameProducts,
+      });
+    }
+  }
+  return out;
+}
+
+export function partnerView(row: Row, state?: PartnerState, duplicate?: PartnerDuplicate | null): PartnerOrderView {
   const market: "bg" | "ro" = isRoRow(row) ? "ro" : "bg";
   const lines = linesOf(row);
   const goods = round2(lines.filter((l) => !l.gift).reduce((s, l) => s + Number(l.price ?? 0) * qty(l), 0));
@@ -190,8 +215,9 @@ export function partnerView(row: Row, state?: PartnerState): PartnerOrderView {
     real: { key: realStatusOf(row), label: REAL_STATUS_LABEL[realStatusOf(row)] },
     pickup: null,
     state: { status, label: PARTNER_STATUS_LABEL[status], note: String(state?.note ?? ""), updatedAt: state?.updated_at ?? null },
+    duplicate: duplicate ?? null,
   };
 }
 
 /** Keys a view may hold: the self-test checks every record against this list (and that no e-mail address appears anywhere). */
-export const PARTNER_VIEW_KEYS = ["ref", "createdAt", "market", "currency", "name", "phone", "delivery", "items", "goods", "discount", "shipping", "total", "payment", "real", "pickup", "state"];
+export const PARTNER_VIEW_KEYS = ["ref", "createdAt", "market", "currency", "name", "phone", "delivery", "items", "goods", "discount", "shipping", "total", "payment", "real", "pickup", "state", "duplicate"];
