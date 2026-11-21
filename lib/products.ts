@@ -2,6 +2,7 @@ import type { Product } from "./types";
 import { withOnePlusOnePrice } from "./one-plus-one";
 import { NEW_COLLECTION_PRODUCTS } from "./new-collection-products";
 import { CARDHOLDER_BOX_PHOTO } from "./velvet-box";
+import { CROCODILE_CERTIFICATE_PHOTO } from "./certificate-photo";
 import { onShelf } from "./storefront";
 
 // Confirmed crocodile species (per CITES permit) - single source for both the
@@ -751,6 +752,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Alabastro/portfeil-alabastro-otvoren-vatreshnost.webp`,              alt: 'Lorenzo Ricci Alabastro - отворен портфейл, вътрешност с джобове за карти' },
       { src: `/Products/wallets/Alabastro/portfeil-alabastro-rachna-izrabotka.webp`,                 alt: 'Lorenzo Ricci Alabastro - детайл на ръчната изработка, прецизни шевове' },
       { src: `/Products/wallets/Alabastro/portfeil-alabastro-kutiya-sertifikat.webp`,                alt: 'Lorenzo Ricci Alabastro в луксозна кутия с Сертификат за автентичност CITES' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   {
@@ -791,6 +793,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Rubino/portfeil-rubino-otvoren-vatreshnost.webp`,                alt: 'Lorenzo Ricci Rubino - отворен портфейл, вътрешност с джобове за карти' },
       { src: `/Products/wallets/Rubino/portfeil-rubino-rachna-izrabotka.webp`,                   alt: 'Lorenzo Ricci Rubino - детайл на ръчната изработка, прецизни шевове' },
       { src: `/Products/wallets/Rubino/portfeil-rubino-kutiya-sertifikat.webp`,                  alt: 'Lorenzo Ricci Rubino в луксозна кутия с Сертификат за автентичност CITES' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   {
@@ -829,6 +832,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Smeraldo/portfeil-smeraldo-otvoren-vatreshnost.webp`,              alt: 'Lorenzo Ricci Smeraldo - отворен портфейл, вътрешност с джобове за карти' },
       { src: `/Products/wallets/Smeraldo/portfeil-smeraldo-rachna-izrabotka.webp`,                 alt: 'Lorenzo Ricci Smeraldo - детайл на ръчната изработка, прецизни шевове' },
       { src: `/Products/wallets/Smeraldo/portfeil-smeraldo-kutiya-sertifikat.webp`,                alt: 'Lorenzo Ricci Smeraldo в луксозна кутия с Сертификат за автентичност CITES' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
 
@@ -870,6 +874,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Ambra/kardholder-ambra-detal-krokodiilska-tekstura.webp`,     alt: 'Lorenzo Ricci Ambra - детайл на крокодилската текстура, кехлибарено оранжево' },
       { src: `/Products/wallets/Ambra/kardholder-ambra-lifestyle.webp`,                       alt: 'Lorenzo Ricci Ambra кардхолдър - лайфстайл снимка, ежедневна употреба' },
       { src: `/Products/wallets/Ambra/kardholder-ambra-kutiya-sertifikat.webp`,               alt: 'Lorenzo Ricci Ambra в луксозна кутия с Сертификат за автентичност CITES' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   {
@@ -909,6 +914,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Bianco/kardholder-bianco-lifestyle-marble.webp`,               alt: 'Lorenzo Ricci Bianco бял кардхолдър крокодилска кожа - мраморна повърхност' },
       { src: `/Products/wallets/Bianco/kardholder-bianco-lifestyle.webp`,                      alt: 'Lorenzo Ricci Bianco кардхолдър - лайфстайл снимка, ежедневна употреба' },
       { src: `/Products/wallets/Bianco/kardholder-bianco-kutiya-sertifikat.webp`,              alt: 'Lorenzo Ricci Bianco в луксозна кутия с Сертификат за автентичност CITES' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   {
@@ -948,6 +954,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Valentina/kardholder-valentina-detal-krokodiilska-tekstura.webp`,    alt: 'Lorenzo Ricci Valentina - детайл на крокодилската текстура, розов цвят' },
       { src: `/Products/wallets/Valentina/kardholder-valentina-lifestyle.webp`,                      alt: 'Lorenzo Ricci Valentina кардхолдър - лайфстайл снимка, ежедневна употреба' },
       { src: `/Products/wallets/Valentina/kardholder-valentina-kutiya-sertifikat.webp`,              alt: 'Lorenzo Ricci Valentina в луксозна кутия с Сертификат за автентичност CITES' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   {
@@ -987,6 +994,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Zaffiro/kardholder-zaffiro-detal-krokodiilska-tekstura.webp`,     alt: 'Lorenzo Ricci Zaffiro - детайл на крокодилската текстура, сапфирено синьо' },
       { src: `/Products/wallets/Zaffiro/kardholder-zaffiro-lifestyle.webp`,                       alt: 'Lorenzo Ricci Zaffiro кардхолдър - лайфстайл снимка, ежедневна употреба' },
       { src: `/Products/wallets/Zaffiro/kardholder-zaffiro-kutiya-sertifikat.webp`,               alt: 'Lorenzo Ricci Zaffiro в луксозна кутия с Сертификат за автентичност CITES' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
 
@@ -1029,6 +1037,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Onice/kardholder-onice-cheren-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Onice черен кардхолдър крокодилска кожа - преден изглед' },
       { src: `/Products/wallets/Onice/kardholder-onice-zaden-izgled.webp`, alt: 'Lorenzo Ricci Onice - заден изглед, отделения за карти' },
       { src: CARDHOLDER_BOX_PHOTO, alt: 'Lorenzo Ricci Onice - луксозна кутия LORENZO RICCI' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   {
@@ -1065,6 +1074,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Giada/kardholder-giada-zelen-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Giada тъмнозелен кардхолдър крокодилска кожа - преден изглед' },
       { src: `/Products/wallets/Giada/kardholder-giada-zaden-izgled.webp`, alt: 'Lorenzo Ricci Giada - заден изглед, отделения за карти' },
       { src: CARDHOLDER_BOX_PHOTO, alt: 'Lorenzo Ricci Giada - луксозна кутия LORENZO RICCI' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   {
@@ -1103,6 +1113,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Cremisi/kardholder-cremisi-zaden-izgled-v2.webp`, alt: 'Lorenzo Ricci Cremisi - заден изглед, отделения за карти' },
       { src: `/Products/wallets/Cremisi/kardholder-cremisi-lifestyle-v2.webp`, alt: 'Lorenzo Ricci Cremisi червен кардхолдър - лайфстайл снимка' },
       { src: CARDHOLDER_BOX_PHOTO, alt: 'Lorenzo Ricci Cremisi - луксозна кутия LORENZO RICCI' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   {
@@ -1139,6 +1150,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Perla/kardholder-perla-siv-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Perla сив кардхолдър крокодилска кожа - преден изглед' },
       { src: `/Products/wallets/Perla/kardholder-perla-zaden-izgled.webp`, alt: 'Lorenzo Ricci Perla - заден изглед, отделения за карти' },
       { src: CARDHOLDER_BOX_PHOTO, alt: 'Lorenzo Ricci Perla - луксозна кутия LORENZO RICCI' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   {
@@ -1175,6 +1187,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Topazio/kardholder-topazio-zhalt-krokodilska-kozha.webp`, alt: 'Lorenzo Ricci Topazio жълт кардхолдър крокодилска кожа - преден изглед' },
       { src: `/Products/wallets/Topazio/kardholder-topazio-zaden-izgled.webp`, alt: 'Lorenzo Ricci Topazio - заден изглед, отделения за карти' },
       { src: CARDHOLDER_BOX_PHOTO, alt: 'Lorenzo Ricci Topazio - луксозна кутия LORENZO RICCI' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   // Added 2026-11-03. Same rules as the 2026-09-27 batch: NO CITES permit number, no AED price, gallery front first.
@@ -1213,6 +1226,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Marina/kardholder-marina-zaden-izgled.webp`, alt: 'Lorenzo Ricci Marina - заден изглед, отделения за карти' },
       { src: `/Products/wallets/Marina/kardholder-marina-lifestyle.webp`, alt: 'Lorenzo Ricci Marina син кардхолдър - лайфстайл снимка' },
       { src: CARDHOLDER_BOX_PHOTO, alt: 'Lorenzo Ricci Marina - луксозна кутия LORENZO RICCI' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   // Added 2026-11-03. Creamy white, large belly scales - a separate model from Bianco. Same rules as Marina:
@@ -1252,6 +1266,7 @@ const catalog: Product[] = [
       { src: `/Products/wallets/Panna/kardholder-panna-zaden-izgled.webp`, alt: 'Lorenzo Ricci Panna - заден изглед, отделения за карти' },
       { src: `/Products/wallets/Panna/kardholder-panna-lifestyle.webp`, alt: 'Lorenzo Ricci Panna кремаво бял кардхолдър - лайфстайл снимка' },
       { src: CARDHOLDER_BOX_PHOTO, alt: 'Lorenzo Ricci Panna - луксозна кутия LORENZO RICCI' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   // ─── BAGS ───────────────────────────────────────────────────────────────────
@@ -1429,6 +1444,7 @@ const catalog: Product[] = [
       { src: `/Products/bags/Torino/klych-torino-otvoren-vatreshnost-etiket.webp`,                alt: 'Lorenzo Ricci Torino - отворен клъч, вътрешност с марков етикет' },
       { src: `/Products/bags/Torino/klych-torino-vatreshnost-zakopchalka.webp`,                   alt: 'Lorenzo Ricci Torino - вътрешност, детайл на закопчалката' },
       { src: `/Products/bags/Torino/klych-torino-detal-tekstura.webp`,                            alt: 'Lorenzo Ricci Torino - детайл на крокодилската текстура' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   {
@@ -1472,6 +1488,7 @@ const catalog: Product[] = [
       { src: `/Products/bags/Verona/klych-verona-otvoren-vatreshnost-etiket.webp`,                 alt: 'Lorenzo Ricci Verona - отворен клъч, вътрешност с марков етикет' },
       { src: `/Products/bags/Verona/klych-verona-vatreshnost-detal.webp`,                          alt: 'Lorenzo Ricci Verona - детайл на вътрешността' },
       { src: `/Products/bags/Verona/klych-verona-detal-logo.webp`,                                 alt: 'Lorenzo Ricci Verona - детайл на логото' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   {
@@ -1518,6 +1535,7 @@ const catalog: Product[] = [
       { src: `/Products/bags/Toscana/klych-toscana-detal-predna-strana.webp`,                      alt: 'Lorenzo Ricci Toscana - детайл на лицевата част' },
       { src: `/Products/bags/Toscana/klych-toscana-zakopchalka-detal.webp`,                        alt: 'Lorenzo Ricci Toscana - детайл на закопчалката' },
       { src: `/Products/bags/Toscana/klych-toscana-otvoren-vatreshnost-etiket.webp`,               alt: 'Lorenzo Ricci Toscana - отворен клъч, вътрешност с марков етикет' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   {
@@ -1564,6 +1582,7 @@ const catalog: Product[] = [
       { src: `/Products/bags/Portofino/klych-portofino-drazhka-detal.webp`,                           alt: 'Lorenzo Ricci Portofino - детайл на дръжката' },
       { src: `/Products/bags/Portofino/klych-portofino-otvoren-vatreshnost.webp`,                     alt: 'Lorenzo Ricci Portofino - отворен клъч, вътрешност' },
       { src: `/Products/bags/Portofino/klych-portofino-otvoren-vatreshnost-etiket.webp`,              alt: 'Lorenzo Ricci Portofino - вътрешност с марков етикет' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
   {
@@ -1606,6 +1625,7 @@ const catalog: Product[] = [
       { src: `/Products/bags/Capri/klych-capri-zaden-izgled.webp`,                        alt: 'Lorenzo Ricci Capri - заден изглед, релефни костни плочки' },
       { src: `/Products/bags/Capri/klych-capri-otvoren-vatreshnost-etiket.webp`,          alt: 'Lorenzo Ricci Capri - отворен клъч, вътрешност с марков етикет' },
       { src: `/Products/bags/Capri/klych-capri-etiket-siamski-krokodil.webp`,             alt: 'Lorenzo Ricci Capri - етикет Genuine Crocodile Leather, Crocodylus siamensis' },
+      CROCODILE_CERTIFICATE_PHOTO, // always last (owner, 2026-11-22)
     ],
   },
 ];

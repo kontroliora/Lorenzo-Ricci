@@ -2,6 +2,7 @@
 // The Bulgarian catalog (lib/products.ts) stays the single source of truth for everything that is not text or price;
 // lib/ro/products-ro.ts only overlays the Romanian wording.
 import { products } from "@/lib/products";
+import { CROCODILE_CERTIFICATE_PHOTO } from "@/lib/certificate-photo";
 import type { Product } from "@/lib/types";
 import { roEligible } from "./config";
 import { RO_PRODUCTS } from "./products-ro";
@@ -24,7 +25,10 @@ export function localizeProduct(p: Product): Product {
     name: roName(p),
     // a running 1+1 group with a fixed price drops the sale badge (the 1+1 badge is drawn by the cards and pages)
     badge: opoFixesPrice(p.slug) ? undefined : (text.badge ?? p.badge),
-    images: p.images.map((img, i) => ({ ...img, alt: imageAlts?.[i] ?? img.alt })),
+    images: p.images.map((img, i) =>
+      img.src === CROCODILE_CERTIFICATE_PHOTO.src
+        ? { ...img, alt: "Certificat de autenticitate – piele naturală de crocodil" }
+        : { ...img, alt: imageAlts?.[i] ?? img.alt }),
     coverImage: { ...p.coverImage, alt: coverAlt ?? p.coverImage.alt },
   };
 }

@@ -1,5 +1,6 @@
 import type { Product } from "@/lib/types";
 import { absUrl } from "@/lib/site";
+import { CROCODILE_CERTIFICATE_PHOTO } from "@/lib/certificate-photo";
 import { RO_CURRENCY, ronOf } from "./config";
 
 // schema.org Product markup for a Romanian product page (copy of lib/product-jsonld.ts, priced in lei).
@@ -17,7 +18,8 @@ export function roProductJsonLd(
   const url = absUrl(`/ro/produse/${product.slug}`);
   const inStock = product.inStock && (opts.liveStock === null || opts.liveStock > 0);
   // File names carry spaces ("Yachting Black/..."), so the URLs are percent-encoded.
-  const images = [...new Set([product.coverImage, ...product.images].map((i) => encodeURI(absUrl(i.src))))].slice(0, 8);
+  // The certificate card is not a product photo: kept out of the Meta catalogue / Google image list.
+  const images = [...new Set([product.coverImage, ...product.images].filter((i) => i.src !== CROCODILE_CERTIFICATE_PHOTO.src).map((i) => encodeURI(absUrl(i.src))))].slice(0, 8);
 
   const ld: Record<string, unknown> = {
     "@context": "https://schema.org",

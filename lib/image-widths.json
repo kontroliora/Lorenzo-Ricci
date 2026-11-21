@@ -1,5 +1,5 @@
 {
  "widths": [192, 400, 600, 800, 1200],
- "dirs": ["Products", "reviews", "beautiful", "covers", "story", "instagram"],
+ "dirs": ["Products", "reviews", "beautiful", "covers", "story", "instagram", "images"],
  "quality": { "photo": 97, "thumb": 90 }
 }
