@@ -7,6 +7,7 @@ import { soldOutLast } from "@/lib/sold-out-order";
 import { JewelleryPageClient, JewelleryPageView } from "./JewelleryPageClient";
 import { getApprovedReviewCounts } from "@/lib/user-reviews-server";
 import { isCollectionSlug } from "@/lib/new-collection";
+import { displayRating, displayReviewCount } from "@/lib/user-reviews";
 
 export const metadata: Metadata = {
   title: "Дамска колекция бижута",
@@ -33,7 +34,14 @@ export default async function JewelleryPage() {
   const bracelets = soldOutLast(applyOverrides(getBracelets(), overrides), (s) => soldOut.has(s));
   const necklaces = soldOutLast(applyOverrides(getNecklaces(), overrides), (s) => soldOut.has(s));
   const collectionSlugs = [...bracelets, ...necklaces].filter((p) => isCollectionSlug(p.slug)).map((p) => p.slug);
-  const reviewCounts = await getApprovedReviewCounts(collectionSlugs);
+  const realReviewCounts = await getApprovedReviewCounts(collectionSlugs);
+  // Card badge here mirrors the product page's own title badge, not the real count/average (owner, 21.11.2026): without
+  // this every card showed the same real average, which rounds to "4.8" for every piece - see lib/user-reviews.ts.
+  const reviewCounts: Record<string, { count: number; avg: number }> = {};
+  for (const slug of collectionSlugs) {
+    const r = realReviewCounts[slug];
+    if (r) reviewCounts[slug] = { count: displayReviewCount(slug, r.count), avg: displayRating(slug) };
+  }
 
   return (
     <Suspense fallback={<JewelleryPageView bracelets={bracelets} necklaces={necklaces} reviewCounts={reviewCounts} category={null} />}>

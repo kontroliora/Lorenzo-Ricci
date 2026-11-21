@@ -16,6 +16,8 @@ import { campaignLabel, maxDiscountRounded } from "@/lib/sale-campaign";
 import { getPriceOverrides, applyOverride, applyOverrides } from "@/lib/price-overrides";
 import { SHELF } from "@/lib/storefront";
 import { getSoldOutSlugs } from "@/lib/sold-out";
+import { getApprovedReviewCounts } from "@/lib/user-reviews-server";
+import { displayRating, displayReviewCount } from "@/lib/user-reviews";
 // import { InstagramSection } from "@/components/home/InstagramSection";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
@@ -51,6 +53,14 @@ export default async function HomePage() {
 
   // "Дамска колекция" (the 2026 collection): one row of 4 in the shop and in stock, showcase order (lib/new-collection.ts).
   const newPieces = homeCollectionPicks(applyOverrides(products, overrides), new Set(soldOut));
+  // Card badge here mirrors each piece's own title badge (owner, 21.11.2026), not the real average (always "4.8") - see
+  // lib/user-reviews.ts displayRating / displayReviewCount.
+  const realNewPiecesReviewCounts = await getApprovedReviewCounts(newPieces.map((p) => p.slug));
+  const newPiecesReviewCounts: Record<string, { count: number; avg: number }> = {};
+  for (const p of newPieces) {
+    const r = realNewPiecesReviewCounts[p.slug];
+    if (r) newPiecesReviewCounts[p.slug] = { count: displayReviewCount(p.slug, r.count), avg: displayRating(p.slug) };
+  }
 
   // Hero: one slide, "Дамска колекция", with the photos of a necklace + bracelet pair that is in stock (lib/hero.ts).
   const jewel = heroJewel(soldOutSet);
@@ -61,7 +71,7 @@ export default async function HomePage() {
       <TrustBar />
       {saleLabel && salePct >= 5 && <SaleBanner label={saleLabel} pct={salePct} />}
       {/* The new collection is the main campaign: right under the hero and the sale bar, above the watches and leather */}
-      <NewCollectionSection pieces={newPieces} />
+      <NewCollectionSection pieces={newPieces} reviewCounts={newPiecesReviewCounts} />
       {/* Hidden collections (lib/storefront.ts SHELF): their home sections are not drawn; switch the flag back on to restore them */}
       {SHELF.watches && <FeaturedWatches soldOut={soldOut} />}
       {SHELF.leather && <WalletsSection soldOut={soldOut} />}

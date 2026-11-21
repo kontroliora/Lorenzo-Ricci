@@ -8,7 +8,7 @@ import model from "@/public/covers/damska-kolekcia-model.webp";
 // Home page (BG): the 2026 women's collection, right under the hero. Title, the 1+1 line, two images (public/covers/damska-kolekcia-cover.webp + -model.webp)
 // both linking to its section on /jewellery, then one row of 4 pieces (in the shop, in stock, white photo no. 1 - app/page.tsx
 // picks them with homeCollectionPicks) and "Виж цялата колекция". Renders nothing when no piece is on sale.
-export function NewCollectionSection({ pieces }: { pieces: Product[] }) {
+export function NewCollectionSection({ pieces, reviewCounts }: { pieces: Product[]; reviewCounts?: Record<string, { count: number; avg: number }> }) {
   if (pieces.length === 0) return null;
   return (
     <section data-testid="home-new-collection" className="py-14 sm:py-20 bg-white border-t border-border">
@@ -46,7 +46,7 @@ export function NewCollectionSection({ pieces }: { pieces: Product[] }) {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-8">
           {pieces.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard key={p.id} product={p} reviewCount={reviewCounts?.[p.slug]?.count} reviewAvg={reviewCounts?.[p.slug]?.avg} />
           ))}
         </div>
         <div className="mt-10 sm:mt-12 flex justify-center">
