@@ -26,6 +26,10 @@
 // 20.11.2026 (11th pass): owner asked for specific review counts - added 2 rating-only reviews to bracelet-linea-silver
 // (80 -> 82) and 5 to bracelet-spira-gold (100 -> 105), average unchanged.
 // 20.11.2026 (12th pass): edited the Елица З. / bracelet-lumen-silver review wording (owner request).
+// 21.11.2026 (13th pass): rejected 4 reviews that read as unnatural/implausible on review (owner request): Стефани Д. /
+// bracelet-noctis-silver ("по-фина от очакваното"), Елена Б. / bracelet-lumen-gold ("детелинките по-ситни"), Катя П. /
+// bracelet-noctis-gold ("кутийката дойде смачкана" - the box is velvet, doesn't crush that way), Борис Н. / bracelet-verdis-gold
+// (Christmas-gift phrasing). Status flipped to rejected (reversible), not deleted.
 
 import { createHash } from "node:crypto";
 import { unstable_cache } from "next/cache";
