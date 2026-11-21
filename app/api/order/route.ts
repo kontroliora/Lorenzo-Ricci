@@ -414,9 +414,66 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, paymentMethod: "card", orderRef, checkoutUrl: started.url }, { status: 200 });
     }
 
-    // Send emails and await them - without await they are killed by Vercel before sending
-    const subject = `✅ Нова поръчка - ${customerName}`;
+    // 3. Save to Supabase FIRST — the thank-you page, the team e-mail, the customer e-mail and the Meta Purchase event must
+    //    only happen once the order actually exists; showing "success" first and saving after (the old order) let a DB
+    //    failure put a paying customer on the thank-you screen for an order nobody could ever find in the panel.
+    const shipping = (order.shipping ?? {}) as Record<string, unknown>;
+    const promoCodeForRow = typeof order.promoCode === "string" ? order.promoCode.trim() : "";
+    const orderRow: Record<string, unknown> = {
+      ...attributionFromCookie(req.cookies.get(ATTR_COOKIE)?.value),   // utm_* / fbclid of the landing (lib/attribution.ts)
+      order_ref:               String(order.orderRef ?? ""),
+      name:                    String(customer.name          ?? ""),
+      phone:                   String(customer.phone         ?? ""),
+      email:                   String(customer.email         ?? "") || null,
+      city:                    String(customer.city          ?? ""),
+      post_code:               String(customer.postCode      ?? ""),
+      address:                 String(customer.officeAddress ?? ""),
+      shipping_method:         String(customer.shippingMethod ?? ""),
+      courier:                 String(customer.courier       ?? ""),
+      items:                   savedOrder.items ?? [],
+      subtotal:                Number(order.subtotal         ?? 0),
+      shipping_cost:           Number(shipping.cost          ?? 0),
+      total:                   Number(order.total            ?? 0),
+      sms_marketing_consent:   Boolean(customer.smsMarketingConsent),
+      email_marketing_consent: Boolean(customer.emailMarketingConsent),
+      notes:                   previewMarked(String(customer.notes         ?? "")),
+      promo_code:              promoCodeForRow || null,
+      promo_discount:          Number(order.promoDiscount ?? 0) || null,
+      ...(econtOfficeCode ? { econt_office_code: econtOfficeCode } : {}),
+    };
+    let dbError: { message: string } | null = null;
+    try {
+      dbError = (await insertOrderRow(supabaseAdmin(), orderRow)).error;
+      // If the promo columns aren't migrated yet, save the order WITHOUT them
+      // rather than losing the whole order.
+      if (dbError && /promo_(code|discount)|schema cache|column/i.test(dbError.message)) {
+        const rowNoPromo: Record<string, unknown> = { ...orderRow };
+        delete rowNoPromo.promo_code;
+        delete rowNoPromo.promo_discount;
+        dbError = (await insertOrderRow(supabaseAdmin(), rowNoPromo)).error;
+      }
+    } catch (err) {
+      dbError = { message: err instanceof Error ? err.message : String(err) };
+    }
+    if (dbError) {
+      const reason = dbError.message;
+      console.error("[Supabase] Failed to save order:", reason);
+      // Nothing was actually sold — give the reserved stock back so a retry (or the next customer) can have it.
+      await restockLines(supabaseAdmin(), savedOrder.items, "поръчка в брой").catch((e) => console.error("[Order] restock after failed save also failed:", e));
+      // The order exists nowhere but this e-mail now — send it with every detail so it can be entered manually if the customer doesn't retry.
+      await sendAdminEmail(
+        `🚨 [ПОРЪЧКАТА НЕ СЕ ЗАПИСА] ${customerName} - ${String(order.orderRef ?? "")}`,
+        buildAdminEmail(savedOrder, `Поръчката НЕ успя да се запише в базата (${reason}). Клиентът видя грешка, а не "успешна поръчка" - може да опита отново, или добави я РЪЧНО в панела.`),
+      ).catch((e) => console.error("[Supabase] alert email also failed:", e));
+      return NextResponse.json(
+        { success: false, code: "save_failed", error: "Възникна грешка при запазването на поръчката. Моля, опитайте отново или се свържете с нас." },
+        { status: 503 },
+      );
+    }
+    console.log("[Supabase] Order saved");
 
+    // Send emails and the Meta event now that the order really exists - without await they are killed by Vercel before sending
+    const subject = `✅ Нова поръчка - ${customerName}`;
     await Promise.allSettled([
       sendAdminEmail(subject, buildAdminEmail(savedOrder)),
       // The customer's confirmation is the BULGARIAN template: it only goes to a Bulgarian recipient (a Romanian order has its own
@@ -427,61 +484,12 @@ export async function POST(req: NextRequest) {
       // Meta's Purchase value is the server-validated amount, not the browser's number.
       sendCapiPurchase(order, String(order.orderRef ?? ""), pricing.total, capiCtx),
     ]);
-
-    // 3. Save to Supabase. If this fails the order is NOT in the admin panel -
-    //    the customer already saw success, so make failure LOUD (alert email)
-    //    instead of silently swallowing it.
-    try {
-      const shipping = (order.shipping ?? {}) as Record<string, unknown>;
-      const promoCode = typeof order.promoCode === "string" ? order.promoCode.trim() : "";
-      const orderRow: Record<string, unknown> = {
-        ...attributionFromCookie(req.cookies.get(ATTR_COOKIE)?.value),   // utm_* / fbclid of the landing (lib/attribution.ts)
-        order_ref:               String(order.orderRef ?? ""),
-        name:                    String(customer.name          ?? ""),
-        phone:                   String(customer.phone         ?? ""),
-        email:                   String(customer.email         ?? "") || null,
-        city:                    String(customer.city          ?? ""),
-        post_code:               String(customer.postCode      ?? ""),
-        address:                 String(customer.officeAddress ?? ""),
-        shipping_method:         String(customer.shippingMethod ?? ""),
-        courier:                 String(customer.courier       ?? ""),
-        items:                   savedOrder.items ?? [],
-        subtotal:                Number(order.subtotal         ?? 0),
-        shipping_cost:           Number(shipping.cost          ?? 0),
-        total:                   Number(order.total            ?? 0),
-        sms_marketing_consent:   Boolean(customer.smsMarketingConsent),
-        email_marketing_consent: Boolean(customer.emailMarketingConsent),
-        notes:                   previewMarked(String(customer.notes         ?? "")),
-        promo_code:              promoCode || null,
-        promo_discount:          Number(order.promoDiscount ?? 0) || null,
-        ...(econtOfficeCode ? { econt_office_code: econtOfficeCode } : {}),
-      };
-      let dbError = (await insertOrderRow(supabaseAdmin(), orderRow)).error;
-      // If the promo columns aren't migrated yet, save the order WITHOUT them
-      // rather than losing the whole order (it's already shown as success).
-      if (dbError && /promo_(code|discount)|schema cache|column/i.test(dbError.message)) {
-        const rowNoPromo: Record<string, unknown> = { ...orderRow };
-        delete rowNoPromo.promo_code;
-        delete rowNoPromo.promo_discount;
-        dbError = (await insertOrderRow(supabaseAdmin(), rowNoPromo)).error;
-      }
-      if (dbError) throw dbError;
-      console.log("[Supabase] Order saved");
-      // Partner e-mail (women's jewellery only, lib/partner/email.ts): right after the order is SAVED, at most once; after the
-      // response, so the customer never waits for it.
-      const savedRef = String(order.orderRef ?? "");
-      after(() => notifyPartnerOnce(savedRef));
-      // Repeat order (same e-mail / phone / name+address within 72 h): tell the team right away (Telegram, else e-mail).
-      after(() => notifyDuplicateOrder(savedRef));
-    } catch (err) {
-      const reason = err instanceof Error ? err.message : String(err);
-      console.error("[Supabase] Failed to save order:", reason);
-      // Order won't appear in the panel - send a distinct alert so it isn't lost.
-      await sendAdminEmail(
-        `🚨 [НЕ Е ЗАПИСАНА В ПАНЕЛА] ${customerName} - ${String(order.orderRef ?? "")}`,
-        buildAdminEmail(savedOrder, `Поръчката НЕ се записа в базата (${reason}). Добави я РЪЧНО в панела.`),
-      ).catch((e) => console.error("[Supabase] alert email also failed:", e));
-    }
+    // Partner e-mail (women's jewellery only, lib/partner/email.ts): right after the order is SAVED, at most once; after the
+    // response, so the customer never waits for it.
+    const savedRef = String(order.orderRef ?? "");
+    after(() => notifyPartnerOnce(savedRef));
+    // Repeat order (same e-mail / phone / name+address within 72 h): tell the team right away (Telegram, else e-mail).
+    after(() => notifyDuplicateOrder(savedRef));
 
     // 4. Mark cart session as converted (best-effort). Uses the service key -
     //    anon can't UPDATE cart_sessions under RLS, so this silently no-op'd

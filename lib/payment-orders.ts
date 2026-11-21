@@ -46,8 +46,8 @@ async function restock(sb: SupabaseClient, items: Reserve, what: string): Promis
 }
 
 /** Put reserved units back (all lines of the order, gifts included). Never throws: the caller already moved the order. */
-export async function restockLines(sb: SupabaseClient, items: unknown): Promise<void> {
-  await restock(sb, reserveItems((Array.isArray(items) ? items : []) as Line[]), "поръчка с карта");
+export async function restockLines(sb: SupabaseClient, items: unknown, what = "поръчка с карта"): Promise<void> {
+  await restock(sb, reserveItems((Array.isArray(items) ? items : []) as Line[]), what);
 }
 
 /** Single-use promo code of an open card order: true only for the ONE caller that flips it (atomic in the database). */

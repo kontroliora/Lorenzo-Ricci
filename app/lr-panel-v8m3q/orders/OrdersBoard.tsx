@@ -61,6 +61,9 @@ function orderMatches(o: AdminOrder, rawQuery: string): boolean {
   if ((o.name ?? "").toLowerCase().includes(q)) return true;
   // e-mail (full or partial, case-insensitive)
   if ((o.email ?? "").toLowerCase().includes(q)) return true;
+  // address / city (office name, street, Econt code - whatever the customer was found by)
+  if ((o.address ?? "").toLowerCase().includes(q)) return true;
+  if ((o.city ?? "").toLowerCase().includes(q)) return true;
   // product name / slug
   if ((o.items ?? []).some((it) =>
     (it.name ?? "").toLowerCase().includes(q) || (it.slug ?? "").toLowerCase().includes(q)
@@ -216,9 +219,12 @@ export function OrdersBoard({
   const fresh  = tabOrders.filter((o) => (o.call_attempts ?? 0) === 0);
   const recall = tabOrders.filter((o) => (o.call_attempts ?? 0) > 0);
 
-  // Search overrides the tab view — a flat, all-status result list.
+  // Search overrides the tab view — a flat, all-status result list over EVERY loaded order (lib/orders.ts getOrders, up to 1000),
+  // never the already-filtered `real`: a search must never be silently narrowed by whatever market / payment / "С отметка от
+  // партньора" / "Само повторни" chip happens to still be active from earlier in the session (found 22.11.2026 - a women's
+  // jewellery order existed in the DB but was invisible to both name and address search because "partnerOnly" was on).
   const searching = query.trim().length > 0;
-  const matches = searching ? real.filter((o) => orderMatches(o, query)) : [];
+  const matches = searching ? orders.filter((o) => orderMatches(o, query)) : [];
 
   const card = (o: AdminOrder) => (
     <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} now={now} onNotice={setNotice} stripeKey={stripeKey} dup={dup.byId.get(o.id)} onFocusOrder={setQuery} />
