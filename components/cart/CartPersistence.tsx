@@ -9,7 +9,8 @@ import { isClutchGiftChoice, isGiftClutch } from "@/lib/gifts";
 import { safeRehydrate } from "@/lib/safe-rehydrate";
 
 // Restores the Bulgarian cart saved in the browser (lib/store.ts, "lr-cart") once after mount (owner, 08.11.2026):
-//   1. a saved cart whose reservation ran out (15 min from the first item, the drawer's countdown) is dropped;
+//   1. the countdown is only ever an urgency nudge - the cart is NEVER actually emptied because it ran out (owner, 21.11.2026);
+//      a saved cart found past its reservation just gets a fresh one so the drawer counts down again instead of sitting at 00:00;
 //   2. every line is rebuilt from the catalog (a line saved with an old price or old data never survives a reload), with the
 //      current price overrides applied exactly like the rest of the client (lib/use-price-overrides.ts);
 //   3. live stock (/api/leather-stock): a sold-out or unknown product is dropped, a quantity above the stock is capped.
@@ -18,8 +19,7 @@ async function revalidate(): Promise<void> {
   const { items, reservedAt } = useCartStore.getState();
   if (items.length === 0) return;
   if (reservedAt !== null && Date.now() - reservedAt > CART_RESERVATION_MS) {
-    useCartStore.getState().clearCart();
-    return;
+    useCartStore.setState({ reservedAt: Date.now() });
   }
   const [overrides, stock] = await Promise.all([
     fetch("/api/price-overrides", { cache: "no-store" }).then((r) => (r.ok ? r.json() : {})).catch(() => ({})) as Promise<Record<string, { price: number; originalPrice: number }>>,
