@@ -8,7 +8,7 @@ import { isOnSale } from "./price";
 // `labelRo` is the same phase in Romanian (the /ro hero; formal Romanian, proper diacritics).
 export const CAMPAIGN_PHASES: { from: string; to: string; label: string; labelRo: string }[] = [
   { from: "23.10", to: "29.10", label: "Есенно намаление", labelRo: "Reducere de toamnă" },
-  { from: "30.10", to: "14.11", label: "Ранен Черен петък", labelRo: "Black Friday timpuriu" },
+  { from: "30.10", to: "14.11", label: "Черен петък", labelRo: "Black Friday timpuriu" },
   { from: "15.11", to: "26.11", label: "Черен петък", labelRo: "Black Friday" },
   { from: "27.11", to: "30.11", label: "Черен петък · финал", labelRo: "Black Friday · ultimele zile" },
   { from: "01.12", to: "15.12", label: "Коледно намаление", labelRo: "Reduceri de Crăciun" },

@@ -184,3 +184,11 @@ html.dark .border-border { border-color: rgba(255, 255, 255, 0.08) !important; }
 html.dark .divide-border > * + * { border-color: rgba(255, 255, 255, 0.08) !important; }
 
 html.dark .logo-invert { filter: none; }
+
+/* ─── Black Friday countdown (components/layout/BlackFridayBar.tsx, lib/black-friday-countdown.ts) ───
+   --bf-h is the strip's height while it is on the page; the Header sits that much lower and a spacer of the same height pushes
+   <main> down, so every page keeps its own offsets. Off (0) when the strip is not rendered (/ro, panel, after the end) or when
+   the pre-paint check marked the page as past the end (html.bf-off). */
+:root { --bf-h: 0px; }
+html:has(#bf-bar):not(.bf-off) { --bf-h: 28px; }
+html.bf-off #bf-bar, html.bf-off .bf-spacer { display: none; }
