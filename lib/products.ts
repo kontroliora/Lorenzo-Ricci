@@ -1410,7 +1410,7 @@ const catalog: Product[] = [
     name: 'Lorenzo Ricci "Torino"',
     category: "bags",
     // Early Black Friday 2026-10-30: €749 → €299. originalPrice = €749.
-    price: 299,
+    price: 249, // 22.11.2026 (owner): €299 → €249, struck €749 unchanged.
     originalPrice: 749,
     currency: "€",
     inStock: true,
@@ -1454,7 +1454,7 @@ const catalog: Product[] = [
     name: 'Lorenzo Ricci "Verona"',
     category: "bags",
     // Early Black Friday 2026-10-30: €749 → €299. originalPrice = €749.
-    price: 299,
+    price: 249, // 22.11.2026 (owner): €299 → €249, struck €749 unchanged.
     originalPrice: 749,
     currency: "€",
     inStock: true,
@@ -1498,7 +1498,7 @@ const catalog: Product[] = [
     name: 'Lorenzo Ricci "Toscana"',
     category: "bags",
     // 2026-10-31: raised to €349; 2026-11-15 (owner): back to €299 like every evening clutch.
-    price: 299,
+    price: 249, // 22.11.2026 (owner): €299 → €249, struck €749 unchanged.
     originalPrice: 749,
     currency: "€",
     badge: "ЧЕРЕН ПЕТЪК",
@@ -1545,7 +1545,7 @@ const catalog: Product[] = [
     name: 'Lorenzo Ricci "Portofino"',
     category: "bags",
     // Early Black Friday 2026-10-30: €749 → €299. originalPrice = €749.
-    price: 299,
+    price: 249, // 22.11.2026 (owner): €299 → €249, struck €749 unchanged.
     originalPrice: 749,
     currency: "€",
     inStock: true,
@@ -1592,7 +1592,7 @@ const catalog: Product[] = [
     name: 'Lorenzo Ricci "Capri"',
     category: "bags",
     // 2026-10-31: raised to €349; 2026-11-15 (owner): back to €299 like every evening clutch.
-    price: 299,
+    price: 249, // 22.11.2026 (owner): €299 → €249, struck €749 unchanged.
     originalPrice: 749,
     currency: "€",
     badge: "ЧЕРЕН ПЕТЪК",
