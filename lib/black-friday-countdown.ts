@@ -24,6 +24,8 @@ export const BLACK_FRIDAY_COUNTDOWN = {
     short: "ИЗТИЧА СЛЕД",
     /** /namalenia hero, under the subtitle (components/product/SaleCountdown.tsx). */
     salePage: "Офертите изтичат след",
+    /** Home hero (components/home/BlackFridayHero.tsx). */
+    hero: "Изтича след",
   },
 } as const;
 

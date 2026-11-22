@@ -9,7 +9,12 @@ import { BLACK_FRIDAY_COUNTDOWN as BF, BLACK_FRIDAY_END_MS, countdownParts } fro
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-export function SaleCountdown() {
+export function SaleCountdown({ label = BF.label.salePage, className = "mt-4 justify-center" }: {
+  /** Text before the digits (default: the /namalenia wording). */
+  label?: string;
+  /** Margin / alignment (default: centred, as in the /namalenia hero). */
+  className?: string;
+} = {}) {
   const [left, setLeft] = useState<number | null>(null);
   const [over, setOver] = useState(false);
 
@@ -38,9 +43,9 @@ export function SaleCountdown() {
     <p
       data-testid="sale-countdown"
       role="timer"
-      className="bf-sale mt-4 flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1 font-sans text-[13px] sm:text-sm font-light text-white/80"
+      className={`bf-sale ${className} flex flex-wrap items-baseline gap-x-3 gap-y-1 font-sans text-[13px] sm:text-sm font-light text-white/80`}
     >
-      <span className="whitespace-nowrap">{BF.label.salePage}</span>
+      <span className="whitespace-nowrap">{label}</span>
       <span className="flex items-baseline gap-2 sm:gap-2.5">
         {cell(t?.d, "д")}
         {cell(t?.h, "ч")}

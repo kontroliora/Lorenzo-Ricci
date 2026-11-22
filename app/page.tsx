@@ -1,4 +1,6 @@
 import { Hero } from "@/components/home/Hero";
+import { BlackFridayHero } from "@/components/home/BlackFridayHero";
+import { blackFridayCountdownActive } from "@/lib/black-friday-countdown";
 import { TrustBar } from "@/components/home/TrustBar";
 import { heroJewel } from "@/lib/hero";
 import { FeaturedWatches } from "@/components/home/FeaturedWatches";
@@ -67,7 +69,8 @@ export default async function HomePage() {
 
   return (
     <>
-      <Hero jewel={jewel} />
+      {/* Black Friday (lib/black-friday-countdown.ts): its own hero until the end, then the usual "Дамска колекция" one again */}
+      {blackFridayCountdownActive() ? <BlackFridayHero fallback={<Hero jewel={jewel} />} /> : <Hero jewel={jewel} />}
       <TrustBar />
       {saleLabel && salePct >= 5 && <SaleBanner label={saleLabel} pct={salePct} />}
       {/* The new collection is the main campaign: right under the hero and the sale bar, above the watches and leather */}

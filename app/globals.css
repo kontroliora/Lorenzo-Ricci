@@ -191,7 +191,7 @@ html.dark .logo-invert { filter: none; }
    the pre-paint check marked the page as past the end (html.bf-off). */
 :root { --bf-h: 0px; }
 html:has(#bf-bar):not(.bf-off) { --bf-h: 28px; }
-html.bf-off #bf-bar, html.bf-off .bf-spacer, html.bf-off .bf-sale { display: none; }
+html.bf-off #bf-bar, html.bf-off .bf-spacer, html.bf-off .bf-sale, html.bf-off .bf-hero { display: none; }
 /* Phases: html.bf-day (29.11 from 00:00) / html.bf-hours (from 18:00), set before first paint and by the bar's timer. */
 .bf-l-day, .bf-l-hours { display: none; }
 html.bf-day .bf-l-normal { display: none; }
@@ -203,3 +203,29 @@ html.bf-day #bf-bar, html.bf-hours #bf-bar { background-color: #5A0F14; }
 @keyframes bf-pulse { 0% { opacity: 0.45; transform: translateY(-1px) scale(1.06); } 100% { opacity: 1; transform: none; } }
 .bf-pulse { animation: bf-pulse 650ms cubic-bezier(0.22, 1, 0.36, 1); }
 @media (prefers-reduced-motion: reduce) { .bf-pulse { animation: none; } }
+
+/* Home Black Friday hero (components/home/BlackFridayHero.tsx). The box has the photo's own proportions (1920x1072), so the
+   gradient is placed on the photo itself: it hides the edge at ~45% of its width (black -> lighter backdrop).
+   Desktop/tablet: the box covers the hero (like object-cover), anchored right - only black on the left is cut.
+   Phones: the box is sized so the part with the box and the bracelet (x 900-1720 of 1920) fills the width, at the bottom;
+   the text sits above it on black, and the spotlight at the photo's top fades in from black. */
+.bf-hero-img {
+  right: 0; top: 50%; transform: translateY(-50%);
+  width: max(100cqw, 100cqh * 1.7910); height: max(100cqh, 100cqw * 0.5583);
+}
+/* Two layers: a short fade over the whole height, and a long one over the top, where the spotlight makes the edge brightest
+   (kept off the bottom, so the bracelet clasp at ~49% / 71% of the photo stays bright). */
+.bf-hero-fade {
+  background: linear-gradient(to right, #000 0%, #000 41%, rgba(0,0,0,.85) 44%, rgba(0,0,0,.5) 47%, rgba(0,0,0,.18) 50.5%, rgba(0,0,0,0) 54%);
+}
+.bf-hero-fade::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to right, #000 0%, #000 40%, rgba(0,0,0,.8) 46%, rgba(0,0,0,.45) 52%, rgba(0,0,0,.15) 58%, rgba(0,0,0,0) 64%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 40%, transparent 66%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 40%, transparent 66%);
+}
+@media (max-width: 639px) {
+  .bf-hero-img { right: auto; top: auto; transform: none; left: -110cqw; bottom: 0; width: 234cqw; height: 130.6cqw; }
+  .bf-hero-fade { background: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.75) 14%, rgba(0,0,0,.25) 28%, rgba(0,0,0,0) 40%); }
+  .bf-hero-fade::before { display: none; }
+}
