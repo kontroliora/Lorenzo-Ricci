@@ -22,12 +22,20 @@ export const BLACK_FRIDAY_COUNTDOWN = {
     lastDay: "ПОСЛЕДЕН ДЕН · ОФЕРТИТЕ ИЗТИЧАТ СЛЕД",
     lastHours: "ПОСЛЕДНИ ЧАСОВЕ · ИЗТИЧА СЛЕД",
     short: "ИЗТИЧА СЛЕД",
+    /** /namalenia hero, under the subtitle (components/product/SaleCountdown.tsx). */
+    salePage: "Офертите изтичат след",
   },
 } as const;
 
 export const BLACK_FRIDAY_END_MS = Date.parse(BLACK_FRIDAY_COUNTDOWN.endsAt);
 export const BLACK_FRIDAY_LAST_DAY_MS = Date.parse(BLACK_FRIDAY_COUNTDOWN.lastDayAt);
 export const BLACK_FRIDAY_LAST_HOURS_MS = Date.parse(BLACK_FRIDAY_COUNTDOWN.lastHoursAt);
+
+/** Days / hours / minutes / seconds in `msLeft` (never negative). */
+export function countdownParts(msLeft: number) {
+  const s = Math.max(0, Math.floor(msLeft / 1000));
+  return { d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 };
+}
 
 export const blackFridayCountdownActive = (now: number = Date.now()): boolean =>
   BLACK_FRIDAY_COUNTDOWN.enabled && now <= BLACK_FRIDAY_END_MS;

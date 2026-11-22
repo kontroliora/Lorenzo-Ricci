@@ -191,7 +191,7 @@ html.dark .logo-invert { filter: none; }
    the pre-paint check marked the page as past the end (html.bf-off). */
 :root { --bf-h: 0px; }
 html:has(#bf-bar):not(.bf-off) { --bf-h: 28px; }
-html.bf-off #bf-bar, html.bf-off .bf-spacer { display: none; }
+html.bf-off #bf-bar, html.bf-off .bf-spacer, html.bf-off .bf-sale { display: none; }
 /* Phases: html.bf-day (29.11 from 00:00) / html.bf-hours (from 18:00), set before first paint and by the bar's timer. */
 .bf-l-day, .bf-l-hours { display: none; }
 html.bf-day .bf-l-normal { display: none; }

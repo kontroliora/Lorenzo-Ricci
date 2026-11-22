@@ -4,6 +4,7 @@ import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { discountedProducts, discountPct } from "@/lib/sale-campaign";
 import { ProductCard } from "@/components/product/ProductCard";
+import { SaleCountdown } from "@/components/product/SaleCountdown";
 
 export const metadata: Metadata = {
   title: "Намаления",
@@ -24,9 +25,10 @@ export default async function SalePage() {
         <p className="font-sans text-[10px] font-light tracking-[0.32em] uppercase text-white/70 mb-5">Lorenzo Ricci</p>
         <h1 className="font-serif text-display-lg text-white mb-5">Намаления</h1>
         <div className="w-10 h-px bg-white/40 mx-auto my-5" />
-        <p className="font-sans text-xs font-light text-white/80 max-w-md mx-auto leading-relaxed tracking-widest uppercase">
-          {list.length ? `${list.length} ${list.length === 1 ? "продукт" : "продукта"} · подредени по отстъпка` : "В момента няма намалени продукти"}
+        <p className="font-sans text-xs font-light text-white/80 max-w-md mx-auto leading-relaxed tracking-widest uppercase [text-wrap:balance]">
+          {list.length ? "Последни бройки · поръчайте, преди да се изчерпат" : "В момента няма намалени продукти"}
         </p>
+        {list.length > 0 && <SaleCountdown />}
       </div>
       <div className="max-w-7xl mx-auto px-5 sm:px-8 mt-12">
         {list.length ? (
