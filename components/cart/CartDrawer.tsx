@@ -5,6 +5,7 @@ import { useCartStore, CART_RESERVATION_MS } from "@/lib/store";
 import { useGiftLines } from "@/lib/use-gifts";
 import { CheckoutForm } from "./CheckoutForm";
 import { CartCrossSell } from "./CartCrossSell";
+import { watchJewelDiscounts } from "@/lib/watch-jewel";
 import { CartGiftRow } from "./GiftRow";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 import { opoLines } from "@/lib/bundles";
@@ -56,6 +57,9 @@ export function CartDrawer() {
   // the watches' free cardholders). Shared with the checkout summary so both always show the same number (lib/cart-savings.ts).
   const allSavings = cartSavingsEur(items, giftLines, totalDiscount, promoDiscount);
   const freeUnits = opoFreeUnits(opoLines(items));
+  // A watch in the cart: one unit of each "Допълнете визията" piece shows at €19 (lib/watch-jewel.ts; display only, the saving is
+  // already in totalDiscount).
+  const watchJewel = watchJewelDiscounts(items);
   const eur = (n: number) => `€${Number.isInteger(Math.round(n * 100) / 100) ? Math.round(n) : n.toFixed(2).replace(".", ",")}`;
   const freeShippingThreshold = 60;
   // Free-shipping qualification is checked on the pre-promo amount (after bundle,
@@ -270,7 +274,7 @@ export function CartDrawer() {
                       onDec={() => updateQuantity(product.id, quantity - 1)}
                       onInc={() => updateQuantity(product.id, quantity + 1)}
                       onRemove={() => removeItem(product.id)}
-                      priceText={paid > 0 ? eur(product.price * paid) : null}
+                      priceText={paid > 0 ? eur(product.price * paid - (watchJewel.get(product.slug) ?? 0)) : null}
                       originalText={paid > 0 && isOnSale(product) ? eur((product.originalPrice as number) * paid) : null}
                       free={free > 0 ? { count: free, unitText: eur(product.price) } : null}
                       freeText="Безплатно"

@@ -2,6 +2,7 @@ import type { CartItem, Product } from "./types";
 import { isOnSale } from "./price";
 import { onePlusOne, opoLineId, isOpoLineId, opoExcludedFromPromo, opoGroupOf, type OpoLine } from "./one-plus-one";
 import { COLLECTION_SETS } from "./new-collection";
+import { WATCH_JEWEL, watchJewelTotal } from "./watch-jewel";
 
 export interface Bundle {
   id: string;
@@ -76,7 +77,7 @@ export const opoLines = (items: CartItem[]): OpoLine[] =>
 
 /** How a discount line reads in the cart and the checkout: "Milano Twist Комплект -10%" / "1+1". */
 export const bundleLineText = (b: { id: string; label: string; pct?: number }): string =>
-  isOpoLineId(b.id) ? "1+1" : `${b.label} -${b.pct ?? 10}%`;
+  isOpoLineId(b.id) ? "1+1" : b.id === WATCH_JEWEL.lineId ? b.label : `${b.label} -${b.pct ?? 10}%`;
 
 export function calcBundleDiscount(items: CartItem[]): BundleResult {
   const inCart = new Set(items.map((i) => i.product.id));
@@ -110,6 +111,13 @@ export function calcBundleDiscount(items: CartItem[]): BundleResult {
   for (const g of onePlusOne(opoLines(items)).groups) {
     totalDiscount += g.discount;
     active.push({ id: opoLineId(g.id), label: "1+1", discount: g.discount });
+  }
+  // A watch in the cart: one unit of each "Допълнете визията" piece at €19 (lib/watch-jewel.ts). Same field again, so every
+  // place above re-derives it from the lines; no watch = no line.
+  const wj = watchJewelTotal(items);
+  if (wj > 0) {
+    totalDiscount += wj;
+    active.push({ id: WATCH_JEWEL.lineId, label: WATCH_JEWEL.label, discount: wj });
   }
   totalDiscount = Math.round(totalDiscount * 100) / 100;
 
