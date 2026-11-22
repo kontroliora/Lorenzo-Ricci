@@ -15,6 +15,9 @@ import { refundPlan, isMissingStripeObject } from "@/lib/stripe-mode";
 import { fmtRON, roTrackUrl } from "@/lib/ro/config";
 import { refreshStockPages } from "@/lib/stock-pages";
 import { CONFIRM_REQUEST_AUTO, sendConfirmRequest } from "@/lib/confirm-request";
+import { allProducts } from "@/lib/products";
+import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
+import { calcBundleDiscount } from "@/lib/bundles";
 
 const ORDERS_PATH = "/lr-panel-v8m3q/orders";
 
@@ -438,18 +441,23 @@ const isMissingComplaintColumn = (msg: string): boolean =>
  * order's own currency - left empty it becomes the goods part of the order
  * (total − доставка), which is exactly what the turnover had counted.
  */
+export type ComplaintOutcome = "open" | "resolved" | "replaced" | "rejected";
+
 export async function openComplaint(
   id: number,
   amount: number | null,
   reason: string,
   restock: boolean,
+  outcome?: ComplaintOutcome,
 ): Promise<string | null> {
   const supabase = await adminDb();
   const [before] = await snapshot(supabase, [id]);
   if (!before) return "Поръчката не е намерена.";
 
   const goods = Math.max(0, (Number(before.total) || 0) - (Number((before as { shipping_cost?: number | null }).shipping_cost) || 0));
-  const amt = amount != null && Number.isFinite(amount) && amount > 0 ? Math.round(amount * 100) / 100 : goods;
+  // A typed 0 is a real answer ("нищо не връщаме" - замяна, жест): keep it. Only an
+  // empty field means "the goods part of the order".
+  const amt = amount != null && Number.isFinite(amount) && amount >= 0 ? Math.round(Math.max(0, amount) * 100) / 100 : goods;
   const nowIso = new Date().toISOString();
   const already = (before as { complaint_at?: string | null }).complaint_at ?? null;
   const alreadyRestocked = (before as { complaint_restocked_at?: string | null }).complaint_restocked_at ?? null;
@@ -458,8 +466,10 @@ export async function openComplaint(
     complaint_at: already ?? nowIso,        // keep the original date when only correcting
     complaint_amount: amt,
     complaint_reason: reason.trim() || null,
-    complaint_state: (before as { complaint_state?: string | null }).complaint_state ?? "open",
+    complaint_state: outcome ?? (before as { complaint_state?: string | null }).complaint_state ?? "open",
   };
+  if (outcome && outcome !== "open") patch.complaint_resolved_at = nowIso;
+  if (outcome === "open") patch.complaint_resolved_at = null;
   // Stock goes back up only once, the first time we are told the goods are here.
   if (restock && !alreadyRestocked) patch.complaint_restocked_at = nowIso;
 
@@ -474,12 +484,16 @@ export async function openComplaint(
   revalidatePath(ORDERS_PATH);
 
   // A card order is refunded by hand in Stripe, exactly like a returned parcel.
-  const paid = hasCardMoney(before) && before.payment_status !== "refunded";
+  const givingMoneyBack = (patch.complaint_state as string) !== "rejected" && (patch.complaint_state as string) !== "replaced" && (amt as number) > 0;
+  const paid = givingMoneyBack && hasCardMoney(before) && before.payment_status !== "refunded";
   return paid ? "Платена с карта: върни сумата в Stripe (Payments → плащането → Refund)." : null;
 }
 
-/** Close a рекламация: 'resolved' (money given back) or 'rejected' (not accepted - turnover keeps it). */
-export async function setComplaintState(id: number, state: "open" | "resolved" | "rejected"): Promise<string | null> {
+/**
+ * Close a рекламация: 'resolved' (money given back), 'replaced' (a new piece sent
+ * instead - the money stays with us) or 'rejected' (not accepted - turnover keeps it).
+ */
+export async function setComplaintState(id: number, state: "open" | "resolved" | "replaced" | "rejected"): Promise<string | null> {
   const supabase = await adminDb();
   const { error } = await supabase
     .from("orders")
@@ -617,7 +631,15 @@ export type ManualOrderInput = {
   courier: "econt" | "home";   // office vs personal address
   address: string;             // office name OR personal address
   items: ManualItemInput[];
-  total: number;               // COD amount (auto from items, or manually adjusted)
+  /** COD amount the owner typed, or null to let the server price the basket (catalogue + live promotions). */
+  total: number | null;
+  /**
+   * Замяна по рекламация: the order reference of the parcel this one replaces. The
+   * customer pays nothing (COD 0) and the piece still leaves the stock, because a real
+   * piece is really being shipped. Turnover is untouched: €0 adds nothing, and the
+   * рекламация on the old order is the one that decides whether money went back.
+   */
+  replacementFor?: string | null;
   notes: string;
   status: "new" | "confirmed";
 };
@@ -633,8 +655,37 @@ export async function createManualOrder(input: ManualOrderInput): Promise<{ ok: 
 
   const supabase = await adminDb();
   const ref = `LR-${Date.now().toString(36).slice(-6).toUpperCase()}`;
-  const goods = input.items.reduce((s, i) => s + i.price * i.quantity, 0);
   const shippingMethod = input.courier === "home" ? "Доставка чрез Еконт до адрес" : "Доставка чрез Еконт до офис";
+
+  // Price the basket HERE, exactly as the shop prices it: the catalogue (which already
+  // carries the 1+1 fixed prices) + the live sale overrides, then the same set / 1+1
+  // discounts the checkout takes. The browser's numbers are never trusted — a modal left
+  // open since yesterday, or a stale tab, would otherwise write last week's prices onto a
+  // real order. A line whose slug is unknown (shouldn't happen: the picker only offers
+  // catalogue products) keeps what it was sent, so nothing can silently become free.
+  const overrides = await getPriceOverrides();
+  const priced = new Map(applyOverrides(allProducts, overrides).map((p) => [p.slug, p]));
+  const lines = input.items.map((i) => {
+    const quantity = Math.max(1, Math.floor(Number(i.quantity ?? 1)) || 1);
+    const p = i.slug ? priced.get(String(i.slug)) : undefined;
+    return p
+      ? { name: p.name, sku: p.sku, slug: p.slug, price: p.price, currency: p.currency, quantity, product: p }
+      : { name: i.name, sku: i.sku, slug: i.slug, price: Number(i.price) || 0, currency: i.currency, quantity, product: undefined };
+  });
+  const gross = lines.reduce((s, l) => s + l.price * l.quantity, 0);
+  const { totalDiscount } = calcBundleDiscount(
+    lines.filter((l) => l.product).map((l) => ({ product: l.product!, quantity: l.quantity }))
+  );
+  // `goods` is the goods AFTER the discounts — that is what `subtotal` means on every
+  // other order, and what the card's breakdown (and onePlusOneOfOrder) reads back.
+  const goods = Math.round(Math.max(0, gross - totalDiscount) * 100) / 100;
+
+  // Замяна: nothing is collected. The note carries the old order's number so the two
+  // can always be read together on the card.
+  const replaces = (input.replacementFor ?? "").trim();
+  const freeReplacement = replaces.length > 0;
+  const notes = [freeReplacement ? `Замяна по рекламация · за ${replaces} · без плащане` : "", input.notes.trim()]
+    .filter(Boolean).join(" · ");
 
   // Unified model: a manual order decrements stock too. Reserve atomically BEFORE
   // insert (fail-closed — no overselling); if the insert then fails, restock to
@@ -661,18 +712,19 @@ export async function createManualOrder(input: ManualOrderInput): Promise<{ ok: 
     address:         input.address.trim(),
     shipping_method: shippingMethod,
     courier:         input.courier,
-    items:           input.items.map((i) => ({ name: i.name, sku: i.sku, slug: i.slug, price: i.price, currency: i.currency, quantity: i.quantity, qty: i.quantity })),
-    subtotal:        goods,
+    items:           lines.map((l) => ({ name: l.name, sku: l.sku, slug: l.slug, price: l.price, currency: l.currency, quantity: l.quantity, qty: l.quantity })),
+    subtotal:        freeReplacement ? 0 : goods,
     shipping_cost:   0,
-    total:           Number.isFinite(input.total) ? input.total : goods,
-    notes:           input.notes.trim() || null,
+    // null = auto (the priced basket). A number = the owner typed it in the form.
+    total:           freeReplacement ? 0 : (typeof input.total === "number" && Number.isFinite(input.total) ? input.total : goods),
+    notes:           notes || null,
     status:          input.status === "confirmed" ? "confirmed" : "new",
     call_state:      input.status === "confirmed" ? "confirmed" : "pending",
     is_manual:       true,
   });
   if (error) {
     console.error("[orders] manual create error:", error.message);
-    if (reserveItems.length) await restockOrderItems(supabase, input.items); // undo the reserve
+    if (reserveItems.length) await restockOrderItems(supabase, lines); // undo the reserve
     return { ok: false, message: error.message };
   }
   revalidatePath(ORDERS_PATH);

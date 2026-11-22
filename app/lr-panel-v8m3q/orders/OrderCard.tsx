@@ -19,6 +19,7 @@ import {
   openComplaint,
   setComplaintState,
   clearComplaint,
+  type ComplaintOutcome,
 } from "./actions";
 import { callTimer, sofiaHHMM, formatAttemptList, formatAttemptAudit } from "@/lib/callSchedule";
 import { OrderItemsList } from "./OrderItemsList";
@@ -106,6 +107,8 @@ export function OrderCard({
   const [complaintAmt, setComplaintAmt] = useState("");
   const [complaintReason, setComplaintReason] = useState("");
   const [complaintRestock, setComplaintRestock] = useState(true);
+  // Какво става с парите. „Замяна" и „не приемам" не махат нищо от оборота.
+  const [complaintOutcome, setComplaintOutcome] = useState<ComplaintOutcome>("open");
 
   // Age is a visual warning only — it never touches the reservation.
   useEffect(() => {
@@ -492,6 +495,34 @@ export function OrderCard({
             complaintStep === "form" ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 9, background: "rgba(240,153,123,0.07)", border: "0.5px solid rgba(240,153,123,0.35)", borderRadius: 10, padding: "12px 14px" }}>
                 <span style={{ color: "#F0997B", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>{complaint ? "Поправи рекламацията" : "Нова рекламация · върната пратка"}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 11 }}>Какво правим</span>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {([
+                      ["open",     "Още не е ясно"],
+                      ["resolved", "Връщам парите"],
+                      ["replaced", "Замяна · нова стока"],
+                      ["rejected", "Не приемам"],
+                    ] as [ComplaintOutcome, string][]).map(([k, lbl]) => (
+                      <button
+                        key={k}
+                        onClick={() => {
+                          setComplaintOutcome(k);
+                          // Замяна / отказ = нищо не излиза от оборота; при замяна счупената
+                          // стока не се връща в наличност.
+                          if (k === "replaced" || k === "rejected") { setComplaintAmt("0"); setComplaintRestock(false); }
+                          if (k === "resolved") setComplaintAmt("");
+                        }}
+                        style={{
+                          padding: "6px 11px", borderRadius: 7, fontSize: 12, cursor: "pointer",
+                          border: `1px solid ${complaintOutcome === k ? "#F0997B" : "rgba(255,255,255,0.14)"}`,
+                          background: complaintOutcome === k ? "rgba(240,153,123,0.15)" : "rgba(255,255,255,0.04)",
+                          color: complaintOutcome === k ? "#F0997B" : "rgba(255,255,255,0.6)",
+                        }}
+                      >{lbl}</button>
+                    ))}
+                  </div>
+                </div>
                 <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 11 }}>Върната сума {ro ? "(лей)" : "(евро)"} · празно = стоката без доставката ({money(complaintGoods)})</span>
                   <input
@@ -523,7 +554,7 @@ export function OrderCard({
                       const raw = complaintAmt.trim().replace(",", ".");
                       const amt = raw === "" ? null : Number(raw);
                       if (amt != null && (!Number.isFinite(amt) || amt < 0)) return "Сумата не е валидна.";
-                      const err = await openComplaint(order.id, amt, complaintReason, complaintRestock);
+                      const err = await openComplaint(order.id, amt, complaintReason, complaintRestock, complaintOutcome);
                       if (!err) { setComplaintStep("closed"); setComplaintAmt(""); setComplaintReason(""); }
                       return err;
                     })}
@@ -532,19 +563,22 @@ export function OrderCard({
                   <button onClick={() => setComplaintStep("closed")} style={backLink}>← назад</button>
                 </div>
                 <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, lineHeight: 1.5 }}>
-                  Поръчката остава „Завършена“ (пратката е доставена) · сумата се изважда от оборота по датата на рекламацията
-                  {cardMoney ? " · парите по карта се връщат ръчно в Stripe" : ""}
+                  Поръчката остава „Завършена“ (пратката е доставена) · {complaintOutcome === "replaced" || complaintOutcome === "rejected"
+                    ? "нищо не излиза от оборота — парите остават у нас"
+                    : "сумата се изважда от оборота по датата на рекламацията"}
+                  {cardMoney && complaintOutcome !== "replaced" && complaintOutcome !== "rejected" ? " · парите по карта се връщат ръчно в Stripe" : ""}
+                  {complaintOutcome === "replaced" ? " · новата стока се праща като отделна поръчка със сума 0" : ""}
                 </span>
               </div>
             ) : complaint ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                 <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {COMPLAINT_STATES.filter((st) => st.key !== (order.complaint_state ?? "open")).map((st) => (
-                    <button key={st.key} disabled={pending} onClick={() => run(() => setComplaintState(order.id, st.key as "open" | "resolved" | "rejected"))} style={pillBtn}>{st.label}</button>
+                    <button key={st.key} disabled={pending} onClick={() => run(() => setComplaintState(order.id, st.key as ComplaintOutcome))} style={pillBtn}>{st.label}</button>
                   ))}
                 </span>
                 <span style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                  <button onClick={() => { setComplaintAmt(order.complaint_amount != null ? String(order.complaint_amount) : ""); setComplaintReason(order.complaint_reason ?? ""); setComplaintRestock(!!order.complaint_restocked_at); setComplaintStep("form"); }} style={backLink}>поправи</button>
+                  <button onClick={() => { setComplaintAmt(order.complaint_amount != null ? String(order.complaint_amount) : ""); setComplaintReason(order.complaint_reason ?? ""); setComplaintRestock(!!order.complaint_restocked_at); setComplaintOutcome((order.complaint_state as ComplaintOutcome) ?? "open"); setComplaintStep("form"); }} style={backLink}>поправи</button>
                   <button
                     disabled={pending}
                     onClick={() => {

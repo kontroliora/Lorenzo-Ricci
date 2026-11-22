@@ -44,9 +44,12 @@ export const hasComplaint = (o: ComplaintFields): boolean => !!o.complaint_at;
 export const isOpenComplaint = (o: ComplaintFields): boolean =>
   hasComplaint(o) && (o.complaint_state ?? "open") === "open";
 
-/** The рекламация was refused - the money stayed with us, so turnover keeps it. */
+/**
+ * No money went back to the customer, so turnover keeps it: the claim was refused,
+ * or it was settled by sending a NEW piece instead of a refund (замяна).
+ */
 export const isRejectedComplaint = (o: ComplaintFields): boolean =>
-  hasComplaint(o) && o.complaint_state === "rejected";
+  hasComplaint(o) && (o.complaint_state === "rejected" || o.complaint_state === "replaced");
 
 /** Goods part of an order (what turnover counts): the total without the courier's delivery. */
 export const goodsOf = (o: ComplaintFields): number =>
@@ -54,19 +57,22 @@ export const goodsOf = (o: ComplaintFields): number =>
 
 /**
  * Money this рекламация takes OUT of turnover, in the order's own currency.
- * The typed amount when there is one, else the goods part of the order. A
- * rejected claim takes out nothing.
+ * The typed amount when one was typed - INCLUDING a deliberate 0 (a замяна, or a
+ * goodwill case where nothing was given back): only an empty field falls back to the
+ * goods part of the order. A refused claim and a замяна take out nothing.
  */
 export function complaintAmountOf(o: ComplaintFields): number {
   if (!hasComplaint(o) || isRejectedComplaint(o)) return 0;
   const typed = Number(o.complaint_amount);
-  return Number.isFinite(typed) && typed > 0 ? typed : goodsOf(o);
+  if (o.complaint_amount != null && Number.isFinite(typed) && typed >= 0) return Math.max(0, typed);
+  return goodsOf(o);
 }
 
 /** Label for the рекламация's state, as the panel shows it. */
 export const COMPLAINT_STATES: { key: string; label: string }[] = [
   { key: "open",     label: "Отворена" },
   { key: "resolved", label: "Приключена · върнати пари" },
+  { key: "replaced", label: "Заменена · нова стока, без пари" },
   { key: "rejected", label: "Неприета · парите остават" },
 ];
 export const complaintStateLabel = (state?: string | null): string =>
