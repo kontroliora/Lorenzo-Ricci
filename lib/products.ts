@@ -449,7 +449,7 @@ const catalog: Product[] = [
     category: "jewellery",
     subcategory: "bracelet",
     // Early Black Friday 2026-10-31: €44 → €29.
-    price: 29,
+    price: 24, // 22.11.2026 (owner): €29 → €24, struck price unchanged.
     originalPrice: 44,
     currency: "€",
     badge: "ЧЕРЕН ПЕТЪК",
@@ -494,7 +494,7 @@ const catalog: Product[] = [
     category: "jewellery",
     subcategory: "bracelet",
     // Early Black Friday 2026-10-31: €55 → €35.
-    price: 35,
+    price: 24, // 22.11.2026 (owner): €35 → €24, struck price unchanged.
     originalPrice: 55,
     currency: "€",
     badge: "ЧЕРЕН ПЕТЪК",
@@ -540,8 +540,9 @@ const catalog: Product[] = [
     subcategory: "necklace",
     // 08.11.2026 (owner, explicit decision after being told of the EU Omnibus 30-day rule): back to €33.60 with €42 struck,
     // like the other discounted jewellery (sale badge, "Спестявате", cart, cross-sell).
-    price: 33.6,
+    price: 29, // 22.11.2026 (owner): €33.6 → €29, struck price unchanged.
     originalPrice: 42,
+    badge: "ЧЕРЕН ПЕТЪК",
     currency: "€",
     inStock: true,
     warranty: "Доживотна гаранция",
@@ -586,7 +587,7 @@ const catalog: Product[] = [
     category: "jewellery",
     subcategory: "necklace",
     // Early Black Friday 2026-10-31: €62 → €32 (was €37 autumn sale). originalPrice = €62 (regular price; EU Omnibus note: was at €37 in the 30 days prior).
-    price: 32,
+    price: 24, // 22.11.2026 (owner): €32 → €24, struck price unchanged.
     originalPrice: 62,
     currency: "€",
     badge: "ЧЕРЕН ПЕТЪК",
@@ -675,7 +676,7 @@ const catalog: Product[] = [
     category: "jewellery",
     subcategory: "necklace",
     // Early Black Friday 2026-10-31: €51 → €29 (was €32 autumn sale). originalPrice = €51 (regular price; EU Omnibus note: was at €32 in the 30 days prior).
-    price: 29,
+    price: 24, // 22.11.2026 (owner): €29 → €24, struck price unchanged.
     originalPrice: 51,
     currency: "€",
     badge: "ЧЕРЕН ПЕТЪК",
