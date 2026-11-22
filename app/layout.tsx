@@ -28,7 +28,7 @@ const inter = localFont({
 import { Header } from "@/components/layout/Header";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { BlackFridayBar } from "@/components/layout/BlackFridayBar";
-import { blackFridayCountdownActive, BLACK_FRIDAY_END_MS } from "@/lib/black-friday-countdown";
+import { blackFridayCountdownActive, BLACK_FRIDAY_PREPAINT_JS } from "@/lib/black-friday-countdown";
 import { BgFooter } from "@/components/layout/BgFooter";
 import { LazyCartDrawer, LazySalesNotification } from "@/components/layout/DeferredChrome";
 import { CartPersistence } from "@/components/cart/CartPersistence";
@@ -109,10 +109,10 @@ export default async function RootLayout({
           <HideOnAdmin>
             <AnnouncementBar />
             {/* Black Friday countdown: only rendered while the fixed end date (lib/black-friday-countdown.ts) is ahead. The inline
-                check hides it before first paint when a page built earlier is opened after the end. */}
+                check sets the phase (last day / last hours) or hides it before first paint, so a page built earlier never flashes. */}
             {blackFridayCountdownActive() && (
               <>
-                <script dangerouslySetInnerHTML={{ __html: `if(Date.now()>${BLACK_FRIDAY_END_MS})document.documentElement.classList.add("bf-off")` }} />
+                <script dangerouslySetInnerHTML={{ __html: BLACK_FRIDAY_PREPAINT_JS }} />
                 <BlackFridayBar />
               </>
             )}

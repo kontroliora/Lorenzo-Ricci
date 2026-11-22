@@ -38,7 +38,7 @@ export function AnnouncementBar() {
     <div className="fixed top-0 left-0 right-0 z-[51] h-9 bg-charcoal flex items-center justify-center px-8 overflow-hidden">
       <p
         data-testid="announcement"
-        className={`font-sans text-[10px] tracking-[0.2em] uppercase transition-opacity duration-300 whitespace-nowrap ${index < OPO_BARS.length ? "text-white font-medium" : "text-white/55"}`}
+        className={`font-sans text-[10px] tracking-[0.2em] uppercase transition-opacity duration-300 whitespace-nowrap ${index < OPO_BARS.length ? "text-white font-medium" : "text-white"}`}
         style={{ opacity: fading ? 0 : 1 }}
       >
         <span className="hidden sm:inline">{DESKTOP[index]}</span>

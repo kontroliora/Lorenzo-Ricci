@@ -192,3 +192,14 @@ html.dark .logo-invert { filter: none; }
 :root { --bf-h: 0px; }
 html:has(#bf-bar):not(.bf-off) { --bf-h: 28px; }
 html.bf-off #bf-bar, html.bf-off .bf-spacer { display: none; }
+/* Phases: html.bf-day (29.11 from 00:00) / html.bf-hours (from 18:00), set before first paint and by the bar's timer. */
+.bf-l-day, .bf-l-hours { display: none; }
+html.bf-day .bf-l-normal { display: none; }
+html.bf-day .bf-l-day { display: inline; }
+html.bf-hours .bf-l-normal, html.bf-hours .bf-l-day { display: none; }
+html.bf-hours .bf-l-hours { display: inline; }
+html.bf-day #bf-bar, html.bf-hours #bf-bar { background-color: #5A0F14; }
+/* Seconds: a soft settle each tick (no blinking). */
+@keyframes bf-pulse { 0% { opacity: 0.45; transform: translateY(-1px) scale(1.06); } 100% { opacity: 1; transform: none; } }
+.bf-pulse { animation: bf-pulse 650ms cubic-bezier(0.22, 1, 0.36, 1); }
+@media (prefers-reduced-motion: reduce) { .bf-pulse { animation: none; } }
