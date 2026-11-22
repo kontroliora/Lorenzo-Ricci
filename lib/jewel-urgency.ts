@@ -4,12 +4,11 @@
 // still comes from lib/live-stock.ts / /api/stock and decides the real sold-out state. This is
 // cosmetic only, shown instead of the real low-stock line while the piece is genuinely in stock.
 //
-// Scope: gold is a fixed list of 6 specific pieces (owner, 21.11.2026) - the ones the viral ad
-// campaign actually sends traffic to (owner picked them by name off the live /jewellery page).
-// Silver is about half of the 9 silver pieces (owner, 22.11.2026), picked by a stable per-slug coin
-// flip (hashSlug below) rather than a named list - every silver piece showing it at once would
-// look staged. The classic line (always gold, no silver variant) and the rest of the gold catalog
-// keep the plain real-stock line instead.
+// Scope: ALL gold jewellery (owner, 22.11.2026) - the classic line (always gold, no silver variant)
+// and every gold piece of the 2026 collection, 17 pieces in all. Silver is about half of its 9
+// pieces (owner, 22.11.2026), picked by a stable per-slug coin flip (hashSlug below) rather than a
+// named list - every silver piece showing it at once would look staged. Silver's split is the only
+// thing still held back; gold shows it everywhere since that's where the ad traffic goes.
 //
 // Persisted in localStorage per slug for a couple of hours, so a customer who orders and comes
 // straight back to the same piece sees the number they just "took" off; switching to a different
@@ -24,17 +23,6 @@ export interface JewelUrgency {
   viewers: number;
   ts: number;
 }
-
-// The 6 gold pieces the owner named off the live /jewellery page (21.11.2026) - where the current
-// viral ad campaign sends traffic. Not the whole gold catalog (17 pieces): just these.
-const ELIGIBLE_SLUGS = new Set([
-  "bracelet-spira-gold",
-  "bracelet-linea-gold",
-  "bracelet-lumen-gold",
-  "necklace-lumen-gold",
-  "necklace-noctis-gold",
-  "necklace-verdis-gold",
-]);
 
 // A stable (non-random) hash of the slug, so the same silver piece always lands in the same half -
 // it never flickers between "shows it" and "doesn't" across visits or reloads. FNV-1a + a
@@ -63,7 +51,7 @@ const SILVER_SALT = "silver:0";
 export function isJewelUrgencyEligible(product: { category: string; metal?: "gold" | "silver"; slug: string }): boolean {
   if (product.category !== "jewellery") return false;
   if (product.metal === "silver") return hashSlug(product.slug + SILVER_SALT) % 2 === 0;
-  return ELIGIBLE_SLUGS.has(product.slug);
+  return true; // gold (or unset, which means gold on the classic line)
 }
 
 // Mostly 3-5 (owner, 21.11.2026: 7 read as "doesn't that defeat the point"); a 6 shows up now and
