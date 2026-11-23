@@ -10,7 +10,7 @@ import { CartGiftRow } from "./GiftRow";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 import { opoLines } from "@/lib/bundles";
 import { opoFreeUnits } from "@/lib/one-plus-one";
-import { DrawerTop, ReserveLine, ShipProgress, LineItem, SumRow, TotalRow, TrustRow } from "./drawer-ui";
+import { DrawerTop, ReserveLine, ShipProgress, LineItem, SumRow, TotalRow, TrustRow, type TrustIcon } from "./drawer-ui";
 import { isOnSale } from "@/lib/price";
 import { cartSavingsEur } from "@/lib/cart-savings";
 import { CollectionOddModal, ODD_MODAL_BG } from "./CollectionOddModal";
@@ -26,7 +26,18 @@ import type { CartItem } from "@/lib/types";
 import { ChristmasDeliveryLine } from "@/components/ui/ChristmasDeliveryLine";
 
 
-const CART_TIMEOUT = 5 * 60; // 300 seconds
+const CART_TIMEOUT = CART_RESERVATION_MS / 1000;
+
+// The third icon under the button follows the cart (owner, 23.11.2026): jewellery -> lifetime warranty, watch -> 5 years, leather
+// only -> 30-day easy exchange; a mixed cart -> the one of its dearest product.
+function cartWarranty(items: CartItem[]): { icon: TrustIcon; label: string } {
+  const kindOf = (c: string) => (c === "watches" ? "watch" : c === "jewellery" ? "jewel" : "leather");
+  const top = items.reduce<CartItem | null>((best, i) => (!best || i.product.price > best.product.price ? i : best), null);
+  const kind = top ? kindOf(top.product.category) : "jewel";
+  return kind === "watch" ? { icon: "shield", label: "5 години гаранция" }
+    : kind === "jewel" ? { icon: "shield", label: "Доживотна гаранция" }
+    : { icon: "return", label: "30 дни лесна замяна" };
+}
 
 export function CartDrawer() {
   const { isOpen, closeCart, items, removeItem, updateQuantity, totalPrice, totalItems, bundleDiscount,
@@ -210,8 +221,8 @@ export function CartDrawer() {
         <>
           <DrawerTop title={count > 0 ? `Количка · ${count} ${count === 1 ? "продукт" : "продукта"}` : "Количка"} onClose={closeCart} closeLabel="Затвори" />
           {items.length > 0 ? (
-            <ReserveLine banner expired={timeLeft === 0}>
-              {timeLeft > 0 ? <>Резервирани количества за <span className="tabular-nums">{timerMM}:{timerSS}</span></> : "Времето за резервация изтече"}
+            <ReserveLine expired={timeLeft === 0}>
+              {timeLeft > 0 ? <>Продуктите са запазени за вас <span className="font-medium text-charcoal tabular-nums">{timerMM}:{timerSS}</span> мин.</> : "Времето за резервация изтече."}
             </ReserveLine>
           ) : <div className="border-b border-border" />}
         </>
@@ -225,11 +236,11 @@ export function CartDrawer() {
         )}
 
 
-        {/* Countdown in the checkout step: the same red bar as in the cart */}
+        {/* Countdown in the checkout step: the same small line as in the cart */}
         {items.length > 0 && showCheckout && (
-          <div>
-            <ReserveLine banner expired={timeLeft === 0}>
-              {timeLeft > 0 ? <>Резервирани количества за <span className="tabular-nums">{timerMM}:{timerSS}</span></> : "Времето за резервация изтече"}
+          <div className="pt-3">
+            <ReserveLine expired={timeLeft === 0}>
+              {timeLeft > 0 ? <>Продуктите са запазени за вас <span className="font-medium text-charcoal tabular-nums">{timerMM}:{timerSS}</span> мин.</> : "Времето за резервация изтече."}
             </ReserveLine>
           </div>
         )}
@@ -290,7 +301,7 @@ export function CartDrawer() {
             {/* Footer: summary, button, 3 icons */}
             <div className="px-5 sm:px-6 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] border-t border-border bg-white">
               <div className="flex flex-col gap-1.5">
-                {allSavings > 0 && <SumRow label="Спестявате" value={`−${eur(allSavings)}`} tone="discount" testId="drawer-discount" />}
+                {allSavings > 0 && <SumRow label="Спестявате" value={`−${eur(allSavings)}`} tone="free" testId="drawer-discount" />}
                 <SumRow label="Доставка" value={reached ? "Безплатна" : "Изчислява се"} tone={reached ? "free" : undefined} testId="drawer-shipping" />
                 <TotalRow label="Общо" value={eur(total)} />
               </div>
@@ -306,8 +317,8 @@ export function CartDrawer() {
               </button>
               <TrustRow items={[
                 { icon: "cash", label: "Наложен платеж" },
-                { icon: "truck", label: "Доставка с Еконт" },
                 { icon: "eye", label: "Преглед преди плащане" },
+                cartWarranty(items),
               ]} />
             </div>
           </>

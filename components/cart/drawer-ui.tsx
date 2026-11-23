@@ -15,15 +15,8 @@ export function DrawerTop({ title, onClose, closeLabel }: { title: string; onClo
   );
 }
 
-/** One thin line under the title: "Резервирано за 14:32". `banner` (BG, owner 23.11.2026): a full-width red bar with white bold
- *  centred text, "Резервирани количества за 04:35". */
-export function ReserveLine({ children, expired, banner }: { children: ReactNode; expired?: boolean; banner?: boolean }) {
-  if (banner)
-    return (
-      <p data-testid="drawer-reserve" className="bg-[#CB3530] px-4 py-3.5 sm:py-4 text-center font-sans text-[15px] sm:text-[17px] font-bold leading-snug tracking-[0.02em] text-white">
-        {children}
-      </p>
-    );
+/** One small line under the title: "Продуктите са запазени за вас 09:41 мин." (owner, 23.11.2026: no red bar). */
+export function ReserveLine({ children, expired }: { children: ReactNode; expired?: boolean }) {
   return (
     <p data-testid="drawer-reserve" className={`px-5 sm:px-6 pb-3 border-b border-border font-sans text-[12px] leading-snug ${expired ? "text-red-700" : "text-ink-muted"}`}>
       {children}
@@ -137,6 +130,7 @@ const ICONS = {
   truck: <><rect x="1" y="5" width="14" height="11" rx="1" /><path d="M15 9h4l3 4v3h-7V9z" /><circle cx="5.5" cy="18" r="2" /><circle cx="18" cy="18" r="2" /></>,
   eye: <><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3" /></>,
   return: <><path d="M9 14 4 9l5-5" /><path d="M4 9h11a5 5 0 0 1 0 10h-3" /></>,
+  shield: <><path d="M12 2.5 4.5 5.5v5.8c0 4.6 3.2 8.6 7.5 10.2 4.3-1.6 7.5-5.6 7.5-10.2V5.5L12 2.5z" /><path d="m8.8 12 2.2 2.2 4.2-4.4" /></>,
 } as const;
 export type TrustIcon = keyof typeof ICONS;
 

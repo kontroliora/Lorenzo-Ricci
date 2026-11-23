@@ -12,9 +12,7 @@ import { isOnSale } from "@/lib/price";
 const eur = (n: number): string => `€${Number.isInteger(Math.round(n * 100) / 100) ? Math.round(n) : n.toFixed(2).replace(".", ",")}`;
 import { opoLines } from "@/lib/bundles";
 import { opoCrossSell, opoSuggestions } from "@/lib/one-plus-one";
-import { COLLECTION_PIECES, collectionCartTop3, collectionGroupOf, pieceLive } from "@/lib/new-collection";
-import { useCollectionBestSellers } from "@/lib/use-best-sellers";
-import { CartFreeJewel, FREE_JEWEL_BG, type FreeJewelItem } from "./CartFreeJewel";
+import { NEW_COLLECTION_SLUGS, pieceLive } from "@/lib/new-collection";
 import { WATCH_JEWEL, cartHasWatch } from "@/lib/watch-jewel";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 
@@ -48,6 +46,22 @@ const FALLBACK_UPSELL = [
   "bracelet-milano-forte",
 ];
 
+// What the cart suggests follows what is in it (owner, 23.11.2026), first match wins:
+//   1. a watch                          -> "Допълнете визията", men's pieces at €19 (lib/watch-jewel.ts)
+//   2. women's collection pieces (1+1)  -> "Подарък за него": one crocodile cardholder + one men's bracelet, current prices,
+//                                          no more women's pieces (the free second piece is still offered by the checkout modal)
+//   3. leather goods only               -> the women's Verdis pieces (1+1)
+//   4. anything else                    -> the usual pairings; next to a clutch / wallet, men's pieces only under "Подарък за него"
+const FOR_HIM_TITLE = "Подарък за него";
+/** Darkest colours first: the first one in stock is offered. */
+const FOR_HIM_CARDHOLDERS = ["cardholder-onice", "cardholder-zaffiro", "cardholder-perla", "cardholder-giada", "cardholder-marina"];
+const FOR_HIM_BRACELETS = ["bracelet-milano-twist", "bracelet-signature", "bracelet-milano-forte", "bracelet-diamante-cross"];
+const VERDIS_PIECES = ["necklace-verdis-gold", "bracelet-verdis-gold", "necklace-verdis-silver", "bracelet-verdis-silver"];
+const VERDIS_TITLE = "Дамски бижута Verdis · 1+1 безплатно";
+const LEATHER = new Set(["wallets", "cardholders", "bags"]);
+/** Men's pieces: the jewellery outside the women's collection. */
+const isMensJewel = (p: Product) => p.category === "jewellery" && !NEW_COLLECTION_SLUGS.has(p.slug);
+
 function computeSuggestions(cartIds: string[]): string[] {
   const inCart = new Set(cartIds);
   const candidates: string[] = [];
@@ -75,7 +89,6 @@ export function CartCrossSell() {
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const applyOverride = usePriceOverrides();
   const stock = useLeatherStock(true);   // live counts: a product at 0 is never suggested (owner, 28.10.2026)
-  const bestSellers = useCollectionBestSellers(items.length > 0); // the collection's most sold pieces (orders, last 14 days)
 
   if (items.length === 0) return null;
 
@@ -87,29 +100,8 @@ export function CartCrossSell() {
   const suggestionIds = opo ? opoSuggestions(opo.group, items.map((i) => i.product.slug), available) : computeSuggestions(cartIds);
   const title = opo ? opo.group.text.bg.crossSell[opo.odd ? "odd" : "even"] : "Често поръчвано заедно";
 
-  // Women's collection, odd count: the next piece is free - the 3 suggestions + the full grid (components/cart/CartFreeJewel.tsx).
-  if (opo && opo.group.id === "jewellery" && opo.odd) {
-    const held = (slug: string) => items.filter((i) => i.product.slug === slug).reduce((n, i) => n + i.quantity, 0);
-    const canAdd = (slug: string) => {
-      const p = getProductBySlug(slug);
-      return !!p && p.inStock && pieceLive(slug) && (stock?.[slug] ?? p.stock ?? 1) > held(slug);
-    };
-    const all: FreeJewelItem[] = COLLECTION_PIECES.flatMap(({ slug }) => {
-      const raw = getProductBySlug(slug);
-      const group = collectionGroupOf(slug);
-      if (!raw || !group || !pieceLive(slug)) return [];
-      const p = applyOverride(raw);
-      return [{ slug, name: p.name, image: p.coverImage, group, available: canAdd(slug),
-        priceText: `€${Number.isInteger(p.price) ? p.price : p.price.toFixed(2).replace(".", ",")}` }];
-    });
-    const top = collectionCartTop3(items.map((i) => i.product.slug), canAdd, bestSellers)
-      .flatMap(({ slug, tag }) => { const item = all.find((i) => i.slug === slug); return item ? [{ item, tag }] : []; });
-    const addFree = (slug: string) => { const p = getProductBySlug(slug); if (p) addItem({ ...applyOverride(p), stock: stock?.[slug] ?? p.stock }); };
-    return <CartFreeJewel title="Добавете второ бижу – безплатно" top={top} all={all} text={FREE_JEWEL_BG} onAdd={addFree} />;
-  }
-
-  // A watch in the cart: "Допълнете визията" (lib/watch-jewel.ts) replaces the usual watch pairings - men's pieces at €19, in stock
-  // and not in the cart yet. Only the women's free-piece block above comes first.
+  // 1. A watch in the cart: "Допълнете визията" (lib/watch-jewel.ts) replaces the usual watch pairings - men's pieces at €19, in
+  // stock and not in the cart yet.
   if (cartHasWatch(items)) {
     const picks = WATCH_JEWEL.slugs
       .filter((slug) => available(slug) && !items.some((i) => i.product.slug === slug))
@@ -160,18 +152,39 @@ export function CartCrossSell() {
     );
   }
 
-  // Women's collection, even count: nothing (owner, 08.11.2026 - the free-piece block simply disappears once the pair is complete).
-  if (opo && opo.group.id === "jewellery" && !opo.odd) return null;
+  const slugs = items.map((i) => i.product.slug);
+  const pick = (list: string[], n: number, ok: (slug: string) => boolean = available) =>
+    list.filter((slug) => ok(slug) && !slugs.includes(slug)).slice(0, n);
+  let heading = title;
+  let chosen: string[];
+  if (items.some((i) => NEW_COLLECTION_SLUGS.has(i.product.slug))) {
+    // 2. Women's collection pieces: a gift for him, never more women's pieces.
+    heading = FOR_HIM_TITLE;
+    chosen = [...pick(FOR_HIM_CARDHOLDERS, 1), ...pick(FOR_HIM_BRACELETS, 1)];
+  } else if (opo) {
+    // Another running 1+1 group (e.g. the cardholders, when switched on): more of that group.
+    chosen = suggestionIds;
+  } else if (items.every((i) => LEATHER.has(i.product.category))) {
+    // 3. Leather goods only: the women's Verdis pieces (1+1).
+    heading = VERDIS_TITLE;
+    chosen = pick(VERDIS_PIECES, 3, (slug) => available(slug) && pieceLive(slug));
+  } else {
+    chosen = suggestionIds;
+  }
 
-  const suggestions = suggestionIds
+  const suggestions = chosen
     .map((slug) => getProductBySlug(slug))
     .filter((p): p is Product => !!p && available(p.slug))
     .map(applyOverride);
+  // 4. Men's pieces next to a women's clutch / wallet only as a gift for him.
+  if (heading === title && items.some((i) => i.product.category === "bags" || i.product.category === "wallets") && suggestions.some(isMensJewel))
+    heading = FOR_HIM_TITLE;
+  const strong = !!opo || heading !== "Често поръчвано заедно";
 
   if (suggestions.length === 0) return null;
 
   const handleAdd = (product: Product) => {
-    addItem(product);
+    addItem({ ...product, stock: stock?.[product.slug] ?? product.stock });
     setAddedIds((prev) => {
       const next = new Set(prev);
       next.add(product.id);
@@ -188,10 +201,10 @@ export function CartCrossSell() {
 
   return (
     <div data-testid="cart-cross-sell" data-group={opo?.group.id ?? ""} className="pt-4">
-      {opo ? (
-        <p className="font-sans text-[13px] font-semibold text-navy mb-3">{title}</p>
+      {strong ? (
+        <p className="font-sans text-[13px] font-semibold text-navy mb-3">{heading}</p>
       ) : (
-        <p className="font-sans text-[10px] font-medium tracking-[0.2em] uppercase text-ink-muted mb-3">{title}</p>
+        <p className="font-sans text-[10px] font-medium tracking-[0.2em] uppercase text-ink-muted mb-3">{heading}</p>
       )}
       <div className="flex flex-col gap-3">
         {suggestions.map((product) => {
