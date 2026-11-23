@@ -78,7 +78,7 @@ export default async function HomePage() {
       {/* Black Friday (lib/black-friday-countdown.ts): its own hero until the end, then the usual "Дамска колекция" one again */}
       {blackFridayCountdownActive() ? <BlackFridayHero fallback={<Hero jewel={jewel} />} /> : <Hero jewel={jewel} />}
       <ReviewsLine stats={reviewStats} />
-      <TrustBar stats={reviewStats} />
+      <TrustBar />
       {saleLabel && salePct >= 5 && <SaleBanner label={saleLabel} pct={salePct} />}
       {/* The new collection is the main campaign: right under the hero and the sale bar, above the watches and leather */}
       <NewCollectionSection pieces={newPieces} reviewCounts={newPiecesReviewCounts} />
