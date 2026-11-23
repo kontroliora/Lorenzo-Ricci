@@ -210,8 +210,8 @@ export function CartDrawer() {
         <>
           <DrawerTop title={count > 0 ? `Количка · ${count} ${count === 1 ? "продукт" : "продукта"}` : "Количка"} onClose={closeCart} closeLabel="Затвори" />
           {items.length > 0 ? (
-            <ReserveLine expired={timeLeft === 0}>
-              {timeLeft > 0 ? <>Резервирано за <span className="font-bold text-red-600 tabular-nums">{timerMM}:{timerSS}</span></> : "Времето за резервация изтече."}
+            <ReserveLine banner expired={timeLeft === 0}>
+              {timeLeft > 0 ? <>Резервирани количества за <span className="tabular-nums">{timerMM}:{timerSS}</span></> : "Времето за резервация изтече"}
             </ReserveLine>
           ) : <div className="border-b border-border" />}
         </>
@@ -225,11 +225,11 @@ export function CartDrawer() {
         )}
 
 
-        {/* Countdown in the checkout step: the same one thin line as in the cart */}
+        {/* Countdown in the checkout step: the same red bar as in the cart */}
         {items.length > 0 && showCheckout && (
-          <div className="pt-3">
-            <ReserveLine expired={timeLeft === 0}>
-              {timeLeft > 0 ? <>Резервирано за <span className="font-bold text-red-600 tabular-nums">{timerMM}:{timerSS}</span></> : "Времето за резервация изтече."}
+          <div>
+            <ReserveLine banner expired={timeLeft === 0}>
+              {timeLeft > 0 ? <>Резервирани количества за <span className="tabular-nums">{timerMM}:{timerSS}</span></> : "Времето за резервация изтече"}
             </ReserveLine>
           </div>
         )}

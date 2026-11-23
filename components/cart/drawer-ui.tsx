@@ -15,8 +15,15 @@ export function DrawerTop({ title, onClose, closeLabel }: { title: string; onClo
   );
 }
 
-/** One thin line under the title: "Резервирано за 14:32". */
-export function ReserveLine({ children, expired }: { children: ReactNode; expired?: boolean }) {
+/** One thin line under the title: "Резервирано за 14:32". `banner` (BG, owner 23.11.2026): a full-width red bar with white bold
+ *  centred text, "Резервирани количества за 04:35". */
+export function ReserveLine({ children, expired, banner }: { children: ReactNode; expired?: boolean; banner?: boolean }) {
+  if (banner)
+    return (
+      <p data-testid="drawer-reserve" className="bg-[#CB3530] px-4 py-3.5 sm:py-4 text-center font-sans text-[15px] sm:text-[17px] font-bold leading-snug tracking-[0.02em] text-white">
+        {children}
+      </p>
+    );
   return (
     <p data-testid="drawer-reserve" className={`px-5 sm:px-6 pb-3 border-b border-border font-sans text-[12px] leading-snug ${expired ? "text-red-700" : "text-ink-muted"}`}>
       {children}
