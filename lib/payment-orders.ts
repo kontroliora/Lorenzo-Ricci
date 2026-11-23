@@ -5,6 +5,7 @@ import { cancelToken } from "./payment-token";
 import { refreshStockPages } from "./stock-pages";
 import { SITE_URL } from "./site";
 import { alertTeam, notifyPaidOnce } from "./payment-notify";
+import { normEmail, normPhone } from "./duplicate-orders";
 
 // Server-side life of a card order: start the Stripe session, move the order to paid, or expire it and give the stock
 // back. Every state change is ONE conditional UPDATE (status must still be what we expect), so a repeated webhook, a
@@ -277,4 +278,37 @@ export async function settlePending(sb: SupabaseClient, ref: string, sessionId: 
   if (session.status === "complete") return { result: "in-flight", released: false, paid: false };   // asynchronous payment pending
   const row = await expireOrder(sb, ref, "expired");
   return { result: row ? "released" : "already-handled", released: !!row, paid: false };
+}
+
+/**
+ * The customer places a NEW order (back from the Stripe page with the browser's Back button, now paying cash on delivery or starting
+ * a new card payment): their own open card attempts of the last 3 hours (same e-mail or phone) are settled right away, so the unpaid
+ * hold never blocks the new order (last unit) and never lingers for half an hour. settlePending asks Stripe first: a session that WAS
+ * paid becomes a paid order (and the double-order question then shows it), an open one is closed at Stripe and its stock goes back.
+ * Never throws: a failure only means the webhook / cron releases it later, as before.
+ */
+export async function releaseOpenCardAttempts(sb: SupabaseClient, who: { email?: unknown; phone?: unknown }, exceptRef: string): Promise<{ released: string[]; paid: string[] }> {
+  const out = { released: [] as string[], paid: [] as string[] };
+  const email = normEmail(who.email), phone = normPhone(who.phone);
+  if (!email && !phone) return out;
+  try {
+    const { data, error } = await sb.from("orders").select("order_ref, email, phone, stripe_session_id")
+      .eq("status", PENDING_PAYMENT).gte("created_at", new Date(Date.now() - 3 * 3_600_000).toISOString()).limit(50);
+    if (error) throw new Error(error.message);
+    const mine = (data ?? []).filter((o) => o.order_ref && o.order_ref !== exceptRef &&
+      ((email && normEmail(o.email) === email) || (phone && normPhone(o.phone) === phone)));
+    for (const o of mine) {
+      try {
+        const r = await settlePending(sb, String(o.order_ref), o.stripe_session_id);
+        if (r.paid) out.paid.push(String(o.order_ref));
+        else if (r.released) out.released.push(String(o.order_ref));
+      } catch (e) {
+        console.error("[payment] release of open card attempt failed:", o.order_ref, e instanceof Error ? e.message : e);
+      }
+    }
+  } catch (e) {
+    console.error("[payment] open card attempts lookup failed (order goes on):", e instanceof Error ? e.message : e);
+  }
+  if (out.released.length || out.paid.length) console.log("[payment] open card attempts settled by a new order:", JSON.stringify(out));
+  return out;
 }

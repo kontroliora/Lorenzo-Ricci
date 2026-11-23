@@ -10,7 +10,7 @@ import { checkCheckoutDuplicate, notifyDuplicateOrder } from "@/lib/duplicate-se
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { CARD_PAYMENTS_ENABLED, PENDING_PAYMENT } from "@/lib/payments";
 import { refreshStockPages } from "@/lib/stock-pages";
-import { claimPromo, releasePromo, restockLines, returnOrigin, startCardPayment } from "@/lib/payment-orders";
+import { claimPromo, releaseOpenCardAttempts, releasePromo, restockLines, returnOrigin, startCardPayment } from "@/lib/payment-orders";
 import { BG_ORDER_REF_RE } from "@/lib/order-ref";
 import { SITE_URL } from "@/lib/site";
 import { previewMarked, previewOrdersAllowed } from "@/lib/deploy-env";
@@ -188,6 +188,11 @@ export async function POST(req: NextRequest) {
         : `${gate.names.join(", ")} се поръчва с предплащане - наложен платеж не е наличен. Свържете се с нас, за да уредим поръчката.`;
       return NextResponse.json({ success: false, code: gate.code, error }, { status: 409 });
     }
+
+    // ── OPEN CARD ATTEMPTS - this customer's unpaid card payments (they went to Stripe, came back and now order again, by cash on
+    //    delivery or a new card payment): cancelled now and their stock given back, before the guard below and the reservation, so
+    //    the customer's own unpaid hold never blocks this order. One that was paid meanwhile becomes a real order and the guard asks.
+    await releaseOpenCardAttempts(supabaseAdmin(), { email: customer.email, phone: customer.phone }, orderRefIn);
 
     // ── DOUBLE-ORDER GUARD - the same e-mail or phone already has a (not cancelled) order with one of these products from the last 24 h:
     //    ask the customer first (the checkout shows "Вече имате поръчка #… Искате ли да направите втора?"). Runs before the stock is

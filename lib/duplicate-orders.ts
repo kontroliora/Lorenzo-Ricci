@@ -151,7 +151,7 @@ export function buildDuplicateGroups(
 }
 
 /**
- * Checkout guard: an order of the same e-mail or phone, not cancelled, placed in the last `hours` that contains one of `slugs`.
+ * Checkout guard: an order of the same e-mail or phone, not cancelled and not an unpaid card attempt, placed in the last `hours` that contains one of `slugs`.
  * Returns the newest such order, or null.
  */
 export function findRecentSameProduct(
@@ -166,7 +166,8 @@ export function findRecentSameProduct(
   const want = new Set(slugs.map((s) => s.trim().toLowerCase()).filter(Boolean));
   if (!want.size) return null;
   const hit = recent
-    .filter((o) => o.status !== "cancelled" && !o.excluded_from_stock && nowMs - t(o) <= hours * 3_600_000)
+    // an open card payment (pending_payment) is not an order yet: a customer back from Stripe who now picks cash on delivery is not asked
+    .filter((o) => o.status !== "cancelled" && o.status !== "pending_payment" && !o.excluded_from_stock && nowMs - t(o) <= hours * 3_600_000)
     .filter((o) => (email && normEmail(o.email) === email) || (phone && normPhone(o.phone) === phone))
     .filter((o) => paidSlugs(o.items).some((s) => want.has(s)))
     .sort((a, b) => t(b) - t(a));
