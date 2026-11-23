@@ -12,7 +12,9 @@ import { isOnSale } from "@/lib/price";
 const eur = (n: number): string => `€${Number.isInteger(Math.round(n * 100) / 100) ? Math.round(n) : n.toFixed(2).replace(".", ",")}`;
 import { opoLines } from "@/lib/bundles";
 import { opoCrossSell, opoSuggestions } from "@/lib/one-plus-one";
-import { NEW_COLLECTION_SLUGS, pieceLive } from "@/lib/new-collection";
+import { NEW_COLLECTION_SLUGS, COLLECTION_PIECES, collectionCartTop3, collectionGroupOf, pieceLive } from "@/lib/new-collection";
+import { useCollectionBestSellers } from "@/lib/use-best-sellers";
+import { CartFreeJewel, FREE_JEWEL_BG, type FreeJewelItem } from "./CartFreeJewel";
 import { WATCH_JEWEL, cartHasWatch } from "@/lib/watch-jewel";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 
@@ -47,9 +49,10 @@ const FALLBACK_UPSELL = [
 ];
 
 // What the cart suggests follows what is in it (owner, 23.11.2026), first match wins:
+//   0. exactly 1 women's collection piece -> "Добавете второ бижу – безплатно" (the 1+1 free piece, as before)
 //   1. a watch                          -> "Допълнете визията", men's pieces at €19 (lib/watch-jewel.ts)
-//   2. women's collection pieces (1+1)  -> "Подарък за него": one crocodile cardholder + one men's bracelet, current prices,
-//                                          no more women's pieces (the free second piece is still offered by the checkout modal)
+//   2. 2+ women's collection pieces     -> "Подарък за него": one crocodile cardholder + one men's bracelet, current prices,
+//                                          no more women's pieces
 //   3. leather goods only               -> the women's Verdis pieces (1+1)
 //   4. anything else                    -> the usual pairings; next to a clutch / wallet, men's pieces only under "Подарък за него"
 const FOR_HIM_TITLE = "Подарък за него";
@@ -89,6 +92,7 @@ export function CartCrossSell() {
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const applyOverride = usePriceOverrides();
   const stock = useLeatherStock(true);   // live counts: a product at 0 is never suggested (owner, 28.10.2026)
+  const bestSellers = useCollectionBestSellers(items.length > 0); // the collection's most sold pieces (orders, last 14 days)
 
   if (items.length === 0) return null;
 
@@ -97,8 +101,31 @@ export function CartCrossSell() {
   // A cart with items of a running 1+1 group (the new jewellery, the cardholders): more of that same group - the next one is free
   // (odd count) or one of the next two is (even). Anything else: the usual pairings below.
   const opo = opoCrossSell(opoLines(items));
+  const womenUnits = items.filter((i) => NEW_COLLECTION_SLUGS.has(i.product.slug)).reduce((n, i) => n + i.quantity, 0);
   const suggestionIds = opo ? opoSuggestions(opo.group, items.map((i) => i.product.slug), available) : computeSuggestions(cartIds);
   const title = opo ? opo.group.text.bg.crossSell[opo.odd ? "odd" : "even"] : "Често поръчвано заедно";
+
+  // 0. Exactly 1 women's collection piece (owner, 23.11.2026): the next piece is free - the 3 suggestions + the full grid
+  // (components/cart/CartFreeJewel.tsx). 2+ pieces (the 1+1 is taken): "Подарък за него" below.
+  if (opo && opo.group.id === "jewellery" && womenUnits === 1) {
+    const held = (slug: string) => items.filter((i) => i.product.slug === slug).reduce((n, i) => n + i.quantity, 0);
+    const canAdd = (slug: string) => {
+      const p = getProductBySlug(slug);
+      return !!p && p.inStock && pieceLive(slug) && (stock?.[slug] ?? p.stock ?? 1) > held(slug);
+    };
+    const all: FreeJewelItem[] = COLLECTION_PIECES.flatMap(({ slug }) => {
+      const raw = getProductBySlug(slug);
+      const group = collectionGroupOf(slug);
+      if (!raw || !group || !pieceLive(slug)) return [];
+      const p = applyOverride(raw);
+      return [{ slug, name: p.name, image: p.coverImage, group, available: canAdd(slug),
+        priceText: `€${Number.isInteger(p.price) ? p.price : p.price.toFixed(2).replace(".", ",")}` }];
+    });
+    const top = collectionCartTop3(items.map((i) => i.product.slug), canAdd, bestSellers)
+      .flatMap(({ slug, tag }) => { const item = all.find((i) => i.slug === slug); return item ? [{ item, tag }] : []; });
+    const addFree = (slug: string) => { const p = getProductBySlug(slug); if (p) addItem({ ...applyOverride(p), stock: stock?.[slug] ?? p.stock }); };
+    return <CartFreeJewel title="Добавете второ бижу – безплатно" top={top} all={all} text={FREE_JEWEL_BG} onAdd={addFree} />;
+  }
 
   // 1. A watch in the cart: "Допълнете визията" (lib/watch-jewel.ts) replaces the usual watch pairings - men's pieces at €19, in
   // stock and not in the cart yet.
