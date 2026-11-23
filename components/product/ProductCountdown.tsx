@@ -31,9 +31,10 @@ export function ProductCountdown({ variant = "page" }: { variant?: "page" | "bar
 
   if (variant === "bar") {
     return (
-      <p data-testid="bar-countdown" role="timer" className="bf-sale mt-1 font-sans text-[11px] leading-none text-[#B3121F] whitespace-nowrap">
-        <span className="font-medium">{BF.label.hero}</span>{" "}
-        <span className="tabular-nums font-semibold">{v(t?.d)}д {v(t?.h)}ч {v(t?.m)}м {v(t?.s)}с</span>
+      // Phones: the bar has ~90px next to the button, so only "06д 11ч 05м"; from 640px the label and the seconds too.
+      <p data-testid="bar-countdown" role="timer" className="bf-sale mt-1 font-sans text-[11px] leading-none text-[#B3121F] whitespace-nowrap overflow-hidden">
+        <span className="hidden sm:inline font-medium">{BF.label.hero} </span>
+        <span className="tabular-nums font-semibold">{v(t?.d)}д {v(t?.h)}ч {v(t?.m)}м<span className="hidden sm:inline"> {v(t?.s)}с</span></span>
       </p>
     );
   }
