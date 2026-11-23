@@ -6,6 +6,7 @@ import { useCartStore } from "@/lib/store";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
 import { useCountry } from "@/lib/country";
 import { displayPrice } from "@/lib/price";
+import { ProductCountdown } from "./ProductCountdown";
 
 interface Props {
   product: Product;
@@ -114,6 +115,7 @@ export function StickyCartBar({ product, effectiveInStock, onAdd, pairLabel = nu
                 </span>
               )}
             </div>
+            <ProductCountdown variant="bar" />
           </div>
 
           {/* CTA */}

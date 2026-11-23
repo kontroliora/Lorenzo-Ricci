@@ -17,6 +17,10 @@ import { useCollectionBestSellers } from "@/lib/use-best-sellers";
 import { CartFreeJewel, FREE_JEWEL_BG, type FreeJewelItem } from "./CartFreeJewel";
 import { WATCH_JEWEL, cartHasWatch } from "@/lib/watch-jewel";
 import { trackWithCapi, genEventId } from "@/lib/fbq";
+import { giftDisplayName } from "@/lib/gifts";
+
+// The name a suggestion shows: a cardholder as "Кардхолдър Onice" (its catalog name is 'Lorenzo Ricci "Onice"'), anything else as is.
+const suggestionName = (p: Product): string => (p.category === "cardholders" ? giftDisplayName(p.slug) : p.name);
 
 const WALLET_FOR_CARDHOLDER: Record<string, string> = {
   "cardholder-bianco":     "wallet-alabastro",
@@ -95,6 +99,9 @@ export function CartCrossSell() {
   const bestSellers = useCollectionBestSellers(items.length > 0); // the collection's most sold pieces (orders, last 14 days)
 
   if (items.length === 0) return null;
+  // No live stock numbers (still loading, or the request failed): no suggestions at all, so a sold-out product is never offered
+  // (owner, 23.11.2026). The block appears as soon as the numbers arrive.
+  if (!stock) return null;
 
   const cartIds = items.map((i) => i.product.id);
   const available = (slug: string) => { const p = getProductBySlug(slug); return !!p && p.inStock && (stock?.[slug] ?? 1) > 0; };
@@ -105,9 +112,10 @@ export function CartCrossSell() {
   const suggestionIds = opo ? opoSuggestions(opo.group, items.map((i) => i.product.slug), available) : computeSuggestions(cartIds);
   const title = opo ? opo.group.text.bg.crossSell[opo.odd ? "odd" : "even"] : "Често поръчвано заедно";
 
-  // 0. Exactly 1 women's collection piece (owner, 23.11.2026): the next piece is free - the 3 suggestions + the full grid
-  // (components/cart/CartFreeJewel.tsx). 2+ pieces (the 1+1 is taken): "Подарък за него" below.
-  if (opo && opo.group.id === "jewellery" && womenUnits === 1) {
+  // 0. An ODD number of women's collection pieces (1, 3, 5 ... - owner, 23.11.2026): the next piece is free - the 3 suggestions + the
+  // full grid (components/cart/CartFreeJewel.tsx). An even number (every 1+1 is taken): "Подарък за него" below. This rule comes
+  // before the watch's "Допълнете визията" when the cart holds both.
+  if (opo && opo.group.id === "jewellery" && womenUnits % 2 === 1) {
     const held = (slug: string) => items.filter((i) => i.product.slug === slug).reduce((n, i) => n + i.quantity, 0);
     const canAdd = (slug: string) => {
       const p = getProductBySlug(slug);
@@ -124,12 +132,12 @@ export function CartCrossSell() {
     const top = collectionCartTop3(items.map((i) => i.product.slug), canAdd, bestSellers)
       .flatMap(({ slug, tag }) => { const item = all.find((i) => i.slug === slug); return item ? [{ item, tag }] : []; });
     const addFree = (slug: string) => { const p = getProductBySlug(slug); if (p) addItem({ ...applyOverride(p), stock: stock?.[slug] ?? p.stock }); };
-    return <CartFreeJewel title="Добавете второ бижу – безплатно" top={top} all={all} text={FREE_JEWEL_BG} onAdd={addFree} />;
+    return <CartFreeJewel title={womenUnits === 1 ? "Добавете второ бижу – безплатно" : "Добавете още едно – безплатно"} top={top} all={all} text={FREE_JEWEL_BG} onAdd={addFree} />;
   }
 
   // 1. A watch in the cart: "Допълнете визията" (lib/watch-jewel.ts) replaces the usual watch pairings - men's pieces at €19, in
   // stock and not in the cart yet.
-  if (cartHasWatch(items)) {
+  if (cartHasWatch(items) && womenUnits === 0) {
     const picks = WATCH_JEWEL.slugs
       .filter((slug) => available(slug) && !items.some((i) => i.product.slug === slug))
       .slice(0, 3)
@@ -250,7 +258,7 @@ export function CartCrossSell() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-sans text-[13px] text-navy leading-snug truncate">
-                  {product.name}
+                  {suggestionName(product)}
                 </p>
                 <p data-testid="cross-price" className="font-sans text-[12px] mt-0.5 flex gap-2">
                   {isOnSale(product) && <span className="text-ink-muted line-through">{eur(product.originalPrice as number)}</span>}

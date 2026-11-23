@@ -8,6 +8,7 @@ import { reviewSummary } from "@/lib/reviews";
 import { useCountry } from "@/lib/country";
 import { displayPrice, eurText, isOnSale, requiresPrepayment } from "@/lib/price";
 import { PayLine } from "@/components/product/CodNote";
+import { ProductCountdown } from "@/components/product/ProductCountdown";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
 import { CARD_PAYMENTS_ENABLED } from "@/lib/payments";
 import { trackFbEvent, trackWithCapi, genEventId } from "@/lib/fbq";
@@ -640,6 +641,8 @@ export function ProductInfo({ product, reviewCount = 0, reviewAvg, soldOut = [],
           {opo && shipsFree && <FreeShippingBadge text="Безплатна доставка" size="page" />}
         </div>
         <SavingsLine text={saved !== null ? `Спестявате ${eurText(saved)}` : null} campaign={campaign} freeShipping={shipsFree && !opo ? "Безплатна доставка" : null} />
+        {/* Black Friday countdown under the price (lib/black-friday-countdown.ts), gone after the end */}
+        <ProductCountdown />
         {/* Under €60 (owner, 08.11.2026): how much more for free delivery, counted on what the button adds */}
         {effectiveInStock && !shipsFree && cardGoods < BG_FREE_SHIPPING_EUR && (
           <p data-testid="free-ship-line" className="font-sans text-[13px] leading-snug text-ink-soft">
