@@ -1,6 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { suppressMarketing } from "@/lib/marketing-suppression";
+import { suggestEmail } from "@/lib/email-typo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,7 +38,7 @@ export async function POST(req: NextRequest) {
   if (!verified(secret, id, req.headers.get("svix-timestamp") ?? "", body, req.headers.get("svix-signature") ?? ""))
     return NextResponse.json({ ok: false, error: "bad signature" }, { status: 401 });
   try {
-    const ev = JSON.parse(body) as { type?: string; data?: { email_id?: string; to?: string[] | string; subject?: string; bounce?: { message?: string; subType?: string }; failed?: { reason?: string } } };
+    const ev = JSON.parse(body) as { type?: string; data?: { email_id?: string; to?: string[] | string; subject?: string; bounce?: { message?: string; subType?: string; type?: string }; failed?: { reason?: string } } };
     if (!ev.type || !KEEP.has(ev.type)) return NextResponse.json({ ok: true, ignored: ev.type ?? null });
     const d = ev.data ?? {};
     const to = Array.isArray(d.to) ? d.to[0] : d.to;
@@ -48,6 +50,16 @@ export async function POST(req: NextRequest) {
     console.warn("[resend-webhook]", JSON.stringify(row));
     const { error } = await supabaseAdmin().from("email_events").upsert(row, { onConflict: "svix_id", ignoreDuplicates: true });
     if (error) console.error("[resend-webhook] insert failed:", error.message);
+    // A HARD bounce (the mailbox does not exist / permanent) or a bounce to a mistyped domain (mail.bbg, gmail.con ...): no more
+    // MARKETING e-mail to that address (owner, 23.11.2026). Transactional e-mail is not affected. A full inbox (soft) is not suppressed.
+    if (ev.type === "email.bounced" && to) {
+      const addr = (String(to).match(/<([^>]+)>/)?.[1] ?? String(to)).trim().toLowerCase();
+      const permanent = /permanent/i.test(d.bounce?.type ?? "") || /hard bounce|does not exist|doesn't exist/i.test(d.bounce?.message ?? "");
+      if (permanent || suggestEmail(addr)) {
+        const n = await suppressMarketing([addr]);
+        if (n) console.warn("[resend-webhook] marketing suppressed:", mask(addr));
+      }
+    }
   } catch (e) {
     console.error("[resend-webhook] bad body:", e instanceof Error ? e.message : e);
   }

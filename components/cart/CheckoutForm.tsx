@@ -747,7 +747,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
               )}
               right={promoDiscount > 0 || cardSaving <= 0 ? undefined : <span data-testid="card-discount-badge" className="text-[#2F6B3B]">−{eurBg(cardSaving)}</span>}
             >
-              <PaymentMarks label="Приемани карти и портфейли" />
+              <PaymentMarks label="Приемани карти и портфейли" revolutPay />
               {paymentMethod === "card" && (
                 <SecureNote>Плащането се обработва сигурно от Stripe. Не съхраняваме данни за карти.</SecureNote>
               )}

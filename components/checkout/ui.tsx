@@ -146,8 +146,8 @@ export const IconLock = ({ size = 14 }: { size?: number }) => (
 // The logo files live in /public/brand/<name>.svg (sources in public/brand/SOURCES.txt): the Econt logo exactly as published by Econt,
 // the card / wallet marks from simple-icons in their brand colour. Never redrawn here. If a file is missing the mark shows its plain
 // name as a neutral label.
-export type BrandName = "econt" | "visa" | "mastercard" | "apple-pay" | "google-pay";
-const BRAND_LABEL: Record<BrandName, string> = { econt: "Еконт", visa: "Visa", mastercard: "Mastercard", "apple-pay": "Apple Pay", "google-pay": "Google Pay" };
+export type BrandName = "econt" | "visa" | "mastercard" | "apple-pay" | "google-pay" | "revolut-pay";
+const BRAND_LABEL: Record<BrandName, string> = { econt: "Еконт", visa: "Visa", mastercard: "Mastercard", "apple-pay": "Apple Pay", "google-pay": "Google Pay", "revolut-pay": "Revolut Pay" };
 
 export function BrandMark({ name, height = 20 }: { name: BrandName; height?: number }) {
   const [missing, setMissing] = useState(false);
@@ -172,10 +172,11 @@ export function BrandMark({ name, height = 20 }: { name: BrandName; height?: num
   );
 }
 
-export function PaymentMarks({ label }: { label: string }) {
+/** `revolutPay`: the Bulgarian checkout (EUR) also shows Revolut Pay (lib/stripe.ts); the Romanian one (lei) does not claim it. */
+export function PaymentMarks({ label, revolutPay = false }: { label: string; revolutPay?: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-2" aria-label={label}>
-      {(["visa", "mastercard", "apple-pay", "google-pay"] as const).map((n) => <BrandMark key={n} name={n} />)}
+      {(["visa", "mastercard", "apple-pay", "google-pay", ...(revolutPay ? ["revolut-pay"] as const : [])] as const).map((n) => <BrandMark key={n} name={n} />)}
     </div>
   );
 }

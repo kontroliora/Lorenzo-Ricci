@@ -51,3 +51,35 @@ export async function isSuppressed(email: string): Promise<boolean> {
   const set = await getSuppressedEmails([email]);
   return set.has(email.toLowerCase().trim());
 }
+
+/**
+ * Stop all MARKETING e-mail to these addresses (owner, 23.11.2026: hard bounces). Sets newsletter_subscribers.unsubscribed_at - the
+ * one suppression source every marketing path reads (above, and loadSubscribers() of the campaign script) - inserting a row when the
+ * address is not a subscriber (e.g. an opted-in customer). Transactional e-mail never reads it, so order confirmations still go out.
+ * An address already suppressed keeps its original date. Returns how many addresses were newly suppressed. Never throws.
+ */
+export async function suppressMarketing(emails: string[]): Promise<number> {
+  const list = [...new Set(emails.map((e) => e.toLowerCase().trim()).filter((e) => e.includes("@")))];
+  if (!list.length) return 0;
+  try {
+    const sb = supabaseAdmin();
+    const { data, error } = await sb.from("newsletter_subscribers").select("email, unsubscribed_at").in("email", list);
+    if (error) throw new Error(error.message);
+    const known = new Map((data ?? []).map((r: { email: string; unsubscribed_at: string | null }) => [r.email.toLowerCase().trim(), r.unsubscribed_at]));
+    const now = new Date().toISOString();
+    const toUpdate = list.filter((e) => known.has(e) && !known.get(e));
+    const toInsert = list.filter((e) => !known.has(e));
+    if (toUpdate.length) {
+      const u = await sb.from("newsletter_subscribers").update({ unsubscribed_at: now }).in("email", toUpdate).is("unsubscribed_at", null);
+      if (u.error) throw new Error(u.error.message);
+    }
+    if (toInsert.length) {
+      const i = await sb.from("newsletter_subscribers").insert(toInsert.map((email) => ({ email, unsubscribed_at: now })));
+      if (i.error) throw new Error(i.error.message);
+    }
+    return toUpdate.length + toInsert.length;
+  } catch (e) {
+    console.error("[marketing-suppression] suppressMarketing failed:", e instanceof Error ? e.message : e);
+    return 0;
+  }
+}

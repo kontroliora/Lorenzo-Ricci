@@ -6,3 +6,5 @@ visa.svg         \
 mastercard.svg    } simple-icons 16.35.0 (CC0-1.0, https://simpleicons.org), npm package "simple-icons": the single-colour glyphs,
 apple-pay.svg     } cropped to their drawing area and filled with the brand colour from simple-icons' data
 google-pay.svg   /  (Visa #1A1F71, Mastercard #EB001B, Apple Pay #000000, Google Pay #4285F4). They are acceptance marks only.
+revolut-pay.svg  The Revolut "R" glyph from simple-icons 16.35.0 (CC0-1.0, icons/revolut.svg, brand colour #191C1F) + the word "Pay" (23.11.2026).
+                 Acceptance mark only (Revolut Pay is offered on the Stripe page, lib/stripe.ts).
