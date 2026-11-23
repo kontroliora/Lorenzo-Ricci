@@ -150,8 +150,8 @@ const TEXT: Record<CollectionKey, DesignText> = {
   },
 };
 
-// The "Материал" row is hidden in "Спецификации" on the women's pieces, code kept (owner, 20.11.2026). Set to true to show it again.
-const SHOW_MATERIAL_ROW = false;
+// The "Материал" row in "Спецификации" on the women's pieces: hidden 20.11.2026, shown again 23.11.2026 (owner). false hides it.
+const SHOW_MATERIAL_ROW = true;
 // The "Покритие" row (gold pieces) is hidden the same way, code kept (owner, 21.11.2026). Set to true to show it again.
 const SHOW_PLATING_ROW = false;
 const materialSpecs = (metal: Metal, lang: "bg" | "ro"): ProductSpec[] =>
@@ -164,10 +164,12 @@ const materialSpecs = (metal: Metal, lang: "bg" | "ro"): ProductSpec[] =>
 const allMaterialSpecs = (metal: Metal, lang: "bg" | "ro"): ProductSpec[] =>
   metal === "gold"
     ? lang === "bg"
-      ? [{ label: "Материал", value: "316L неръждаема стомана с 18K PVD покритие" }, { label: "Покритие", value: "4-слойно 18K PVD златно" }]
-      : [{ label: "Material", value: "Oțel inoxidabil 316L cu placare 18K PVD" }, { label: "Placare", value: "Aurie 18K PVD, în 4 straturi" }]
+      // owner's wording, 23.11.2026
+      ? [{ label: "Материал", value: "Неръждаема стомана 316L с 4 слоя PVD покритие 18к злато" }, { label: "Покритие", value: "4-слойно 18K PVD златно" }]
+      : [{ label: "Material", value: "Oțel inoxidabil 316L cu 4 straturi de placare PVD aur 18K" }, { label: "Placare", value: "Aurie 18K PVD, în 4 straturi" }]
+    // silver pieces: the steel only (no gold plating to claim), same word order as the gold row
     : lang === "bg"
-      ? [{ label: "Материал", value: "316L неръждаема стомана" }]
+      ? [{ label: "Материал", value: "Неръждаема стомана 316L" }]
       : [{ label: "Material", value: "Oțel inoxidabil 316L" }];
 
 // "Детайли" under the bullets (ProductDetails): Метал · Вложка / Камъни · Дължина · Закопчаване · Артикул. A row with no value is
