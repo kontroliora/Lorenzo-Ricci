@@ -15,6 +15,18 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 86400,
     dangerouslyAllowSVG: false,
   },
+  // Short link of the Black Friday SMS (owner, 23.11.2026): lorenzo-ricci.com/bf -> home page (Black Friday hero) with the SMS UTM.
+  // Temporary (307), so it can point elsewhere later without browsers having cached it.
+  async redirects() {
+    return [
+      // Every capitalisation (/bf, /BF, /Bf, /bF): phones auto-capitalise typed links.
+      ...["/bf", "/BF", "/Bf", "/bF"].map((source) => ({
+        source,
+        destination: "/?utm_source=sms&utm_medium=sms&utm_campaign=bf2026",
+        permanent: false,
+      })),
+    ];
+  },
   // The hero videos never change under the same name (versioned filenames: bump the name when replacing).
   // Product and review photos: Vercel's default (max-age=0, must-revalidate) made Cloudflare revalidate every request with the
   // origin (cf-cache-status REVALIDATED, first byte 0.1-1.9 s on the product page's main photo). s-maxage lets Cloudflare and
