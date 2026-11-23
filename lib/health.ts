@@ -85,22 +85,40 @@ async function checkStripe(): Promise<Check> {
 }
 
 // ── 4. Econt API ─────────────────────────────────────────────────────────────
-async function checkEcont(): Promise<Check> {
+// Authenticated ping: getClientProfiles is small (< 1 KB) and, unlike getShipmentStatuses (which answers 200 even with no login
+// at all), refuses to answer without valid credentials, so a green check means OUR login works. Econt reports a bad login as
+// HTTP 517 with { type: "ExAccessDenied" | "ExInvalidParam", message: "Невалидно потребителско име ..." }, not as 401/403.
+// A timeout / network error / 5xx is retried once before the check goes red; a refused login is not retried.
+const ECONT_PING = "Profile/ProfileService.getClientProfiles";
+const ECONT_TIMEOUT_MS = 20_000;
+export async function checkEcont(): Promise<Check> {
   const base = { key: "econt", title: "Econt API не работи" };
-  if (!process.env.ECONT_USER) return { ...base, ok: true, unknown: true, detail: "няма ECONT_USER" };
-  try {
-    const auth = "Basic " + Buffer.from(`${process.env.ECONT_USER ?? ""}:${process.env.ECONT_PASS ?? ""}`).toString("base64");
-    const r = await fetch("https://ee.econt.com/services/Shipments/ShipmentService.getShipmentStatuses.json", {
-      method: "POST", headers: { "Content-Type": "application/json", Authorization: auth },
-      body: JSON.stringify({ shipmentNumbers: ["1000000000"] }), cache: "no-store", signal: AbortSignal.timeout(15_000),
-    });
-    if (r.status === 401 || r.status === 403) return { ...base, ok: false, detail: `HTTP ${r.status}: грешно потребителско име / парола` };
-    if (r.status >= 500) return { ...base, ok: false, detail: `HTTP ${r.status}` };
-    const j = await r.json().catch(() => null);
-    return { ...base, ok: !!j && typeof j === "object", detail: j ? undefined : "невалиден отговор" };
-  } catch (e) {
-    return { ...base, ok: false, detail: e instanceof Error ? `${e.name}: няма отговор за 15 с` : "грешка" };
+  const user = (process.env.ECONT_USER ?? "").trim();
+  if (!user) return { ...base, ok: true, unknown: true, detail: "няма ECONT_USER" };
+  if (!(process.env.ECONT_PASS ?? "").trim()) return { ...base, ok: false, title: "Econt: липсва парола", detail: "няма ECONT_PASS" };
+  const auth = "Basic " + Buffer.from(`${user}:${process.env.ECONT_PASS ?? ""}`).toString("base64");
+  const where = `ee.econt.com ${ECONT_PING}`;
+  let last = "";
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const t = Date.now();
+    try {
+      const r = await fetch(`https://ee.econt.com/services/${ECONT_PING}.json`, {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: auth },
+        body: "{}", cache: "no-store", signal: AbortSignal.timeout(ECONT_TIMEOUT_MS),
+      });
+      const j = (await r.json().catch(() => null)) as { type?: string; message?: string; profiles?: unknown[] } | null;
+      const msg = String(j?.message ?? "").slice(0, 120);
+      if (r.status === 401 || r.status === 403 || /ExAccessDenied/.test(String(j?.type)) || /потребителско име|парола|password/i.test(msg))
+        return { ...base, ok: false, title: "Econt: логинът ни е отказан", detail: `${where} → HTTP ${r.status}: ${msg || "грешно потребителско име / парола"}` };
+      if (r.ok && j && Array.isArray(j.profiles)) return { ...base, ok: true, detail: `${where} → HTTP ${r.status}, ${Date.now() - t} ms${attempt > 1 ? " (от 2-ри опит)" : ""}` };
+      last = `${where} → HTTP ${r.status}${msg ? `: ${msg}` : j ? "" : " (невалиден отговор)"}`;
+      if (r.status < 500 && j) break; // a real answer that is not a login problem and not a server error: retrying will not help
+    } catch (e) {
+      const name = e instanceof Error ? e.name : "error";
+      last = `${where} → ${name === "TimeoutError" ? `няма отговор за ${ECONT_TIMEOUT_MS / 1000} с` : `${name}: ${e instanceof Error ? e.message.slice(0, 80) : ""}`}`;
+    }
   }
+  return { ...base, ok: false, detail: `${last} (2 опита)` };
 }
 
 // ── 5. Ads ───────────────────────────────────────────────────────────────────
