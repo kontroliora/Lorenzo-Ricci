@@ -2,13 +2,16 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { SHELF } from "@/lib/storefront";
+import { getReviewStats } from "@/lib/site-reviews";
+import { fmtAvg, fmtCount, otzivLabel } from "@/lib/site-reviews-shared";
 
 export const metadata: Metadata = {
   title: "Нашата История",
   description: "Lorenzo Ricci е основана от братя часовникари, водени от стремежа да създават изделия с характер, прецизност и изискано присъствие. Историята на марката и на дамската колекция бижута.",
 };
 
-export default function StoryPage() {
+export default async function StoryPage() {
+  const reviewStats = await getReviewStats(); // the one site-wide source (lib/site-reviews.ts)
   return (
     <div className="min-h-screen pt-[116px]">
 
@@ -160,7 +163,7 @@ export default function StoryPage() {
               // the watches' 5-year guarantee is shown only while the watches are on the shelf (lib/storefront.ts)
               ...(SHELF.watches ? [{ label: "5 г. Гаранция", sub: "Търговска, на механизма" }] : []),
               { label: "Доживотна", sub: "На бижутата" },
-              { label: "4.8 ★", sub: "1000+ ревюта" },
+              ...(reviewStats ? [{ label: `${fmtAvg(reviewStats.avg)} ★`, sub: `${fmtCount(reviewStats.count)} ${otzivLabel(reviewStats.count)}` }] : []),
               { label: "30 дни", sub: "Лесна замяна" },
             ].map(({ label, sub }) => (
               <div key={label} className="flex flex-col items-center gap-1">

@@ -24,6 +24,7 @@ import { watchGiftActive, WATCH_GIFT_CHOICES, WATCH_GIFT_TEXT } from "@/lib/watc
 import { CLUTCH_GIFT_CHOICES, isGiftClutch, matchingCardholder } from "@/lib/gifts";
 import type { CartItem } from "@/lib/types";
 import { ChristmasDeliveryLine } from "@/components/ui/ChristmasDeliveryLine";
+import { fmtAvg, fmtCount, type ReviewStats } from "@/lib/site-reviews-shared";
 
 
 const CART_TIMEOUT = CART_RESERVATION_MS / 1000;
@@ -39,7 +40,7 @@ function cartWarranty(items: CartItem[]): { icon: TrustIcon; label: string } {
     : { icon: "return", label: "30 дни лесна замяна" };
 }
 
-export function CartDrawer() {
+export function CartDrawer({ reviewStats }: { reviewStats?: ReviewStats | null }) {
   const { isOpen, closeCart, items, removeItem, updateQuantity, totalPrice, totalItems, bundleDiscount,
     pendingCheckout, clearPendingCheckout, addItem, addLineGift } =
     useCartStore();
@@ -308,10 +309,16 @@ export function CartDrawer() {
               {/* 01.12-21.12 only (lib/christmas-delivery.ts) */}
               <ChristmasDeliveryLine className="mt-2 font-sans text-[12px] font-medium text-[#2E6B3F] text-center" />
 
+              {/* Social proof right above the button (owner, 23.11.2026); the one site-wide number, lib/site-reviews.ts */}
+              {reviewStats && (
+                <p data-testid="drawer-rating" className="mt-3 font-sans text-[11px] font-light text-ink-muted text-center tracking-wide">
+                  <span className="text-navy" aria-hidden>★</span> {fmtAvg(reviewStats.avg)} от {fmtCount(reviewStats.count)} клиенти
+                </p>
+              )}
               <button
                 data-testid="drawer-checkout"
                 onClick={startCheckout}
-                className="btn-primary w-full mt-4 py-4 text-[12px] font-semibold"
+                className={`btn-primary w-full ${reviewStats ? "mt-2" : "mt-4"} py-4 text-[12px] font-semibold`}
               >
                 Продължи към плащане
               </button>

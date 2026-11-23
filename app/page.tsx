@@ -20,6 +20,8 @@ import { SHELF } from "@/lib/storefront";
 import { getSoldOutSlugs } from "@/lib/sold-out";
 import { getApprovedReviewCounts } from "@/lib/user-reviews-server";
 import { displayRating, displayReviewCount } from "@/lib/user-reviews";
+import { getSiteReviews, statsOf, homeReviews } from "@/lib/site-reviews";
+import { ReviewsLine } from "@/components/reviews/ReviewsLine";
 // import { InstagramSection } from "@/components/home/InstagramSection";
 
 // Durable price overrides (supabase/product_price_overrides.sql, read via
@@ -67,14 +69,21 @@ export default async function HomePage() {
   // Hero: one slide, "Дамска колекция", with the photos of a necklace + bracelet pair that is in stock (lib/hero.ts).
   const jewel = heroJewel(soldOutSet);
 
+  // Rating + count (hero line, trust bar, reviews section): the one site-wide source, lib/site-reviews.ts.
+  const siteReviews = await getSiteReviews();
+  const reviewStats = siteReviews && siteReviews.length ? statsOf(siteReviews) : null;
+
   return (
     <>
       {/* Black Friday (lib/black-friday-countdown.ts): its own hero until the end, then the usual "Дамска колекция" one again */}
       {blackFridayCountdownActive() ? <BlackFridayHero fallback={<Hero jewel={jewel} />} /> : <Hero jewel={jewel} />}
-      <TrustBar />
+      <ReviewsLine stats={reviewStats} />
+      <TrustBar stats={reviewStats} />
       {saleLabel && salePct >= 5 && <SaleBanner label={saleLabel} pct={salePct} />}
       {/* The new collection is the main campaign: right under the hero and the sale bar, above the watches and leather */}
       <NewCollectionSection pieces={newPieces} reviewCounts={newPiecesReviewCounts} />
+      {/* "Какво казват клиентите" right after "Дамска колекция" (owner, 23.11.2026): photos first, button to /otzivi */}
+      {siteReviews && <TestimonialsSection reviews={homeReviews(siteReviews)} stats={reviewStats} />}
       {/* Hidden collections (lib/storefront.ts SHELF): their home sections are not drawn; switch the flag back on to restore them */}
       {SHELF.watches && <FeaturedWatches soldOut={soldOut} />}
       {SHELF.leather && <WalletsSection soldOut={soldOut} />}
@@ -82,7 +91,6 @@ export default async function HomePage() {
       {SHELF.jewelleryClassic && <JewellerySection />}
       <EditorialJewellery />
       <BrandValues />
-      <TestimonialsSection />
       {/* <InstagramSection /> */}
     </>
   );

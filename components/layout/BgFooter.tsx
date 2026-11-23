@@ -5,8 +5,10 @@ import dynamic from "next/dynamic";
 // (and the panel): rendered there as a server component, its Bulgarian text (incl. "−5% при плащане с карта") still travelled in the
 // page data of every Romanian page. As a lazy client chunk it is server-rendered on the Bulgarian pages exactly as before and never
 // reaches /ro (not in the HTML, not in the page data, not downloaded).
+import type { ReviewStats } from "@/lib/site-reviews-shared";
+
 const Footer = dynamic(() => import("./Footer").then((m) => m.Footer));
 
-export function BgFooter() {
-  return <Footer />;
+export function BgFooter({ reviewStats }: { reviewStats: ReviewStats | null }) {
+  return <Footer reviewStats={reviewStats} />;
 }

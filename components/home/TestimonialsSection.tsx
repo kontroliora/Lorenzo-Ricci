@@ -1,83 +1,17 @@
 "use client";
 import Image from "next/image";
+import Link from "next/link";
 import { useRef, useState, useEffect } from "react";
-import type { Review } from "@/lib/types";
-import { getProductBySlug } from "@/lib/products";
+import { fmtAvg, fmtCount, otzivLabel, fmtDate, type ReviewStats, type SiteReview } from "@/lib/site-reviews-shared";
 
-// Curated home-page testimonials - shown in this exact order
-const FEATURED: Review[] = [
-  {
-    id: "ft-1",
-    productSlug: "golden-eclipse",
-    author: "Петър С.",
-    rating: 5,
-    title: "Класен е",
-    body: "По принцип нося марки за хиляди левове, но реших да му дам шанс. Честно казано го заглеждат повече дори и от Rolex-ите ми, които имам...",
-    imageUrl: "/reviews/golden-eclipse-ПетърС.webp",
-    date: "2025-03-11",
-  },
-  {
-    id: "ft-2",
-    productSlug: "polar-frost",
-    author: "Атила",
-    rating: 5,
-    title: "Издържа на вода",
-    body: "Воден е. Цяло лято бях на море с него и нямах проблеми. Изработен е от висококачествени материали, а не като китайските боклуци от сплав.",
-    imageUrl: "/reviews/polar-frost-АтилаСемн.webp",
-    date: "2025-03-10",
-  },
-  {
-    id: "ft-3",
-    productSlug: "polar-frost",
-    author: "Борис",
-    rating: 5,
-    body: "Синьото ми е любим цвят, затова купих синия. Не го свалям от ръката си. Засега съм доволен.",
-    imageUrl: "/reviews/boris-review.webp",
-    date: "2025-02-20",
-  },
-  {
-    id: "ft-4",
-    productSlug: "polar-frost",
-    author: "Атанас",
-    rating: 5,
-    body: "За парите си е топ! Много съм доволен.",
-    imageUrl: "/reviews/atanas-review.webp",
-    date: "2025-02-15",
-  },
-  {
-    id: "ft-5",
-    productSlug: "golden-eclipse",
-    author: "Благой",
-    rating: 5,
-    body: "Часовникът е просто уникален. Но кутията също ме впечатли - тежка, лъскав пиано лак в черно. Изглежда невероятно скъп.",
-    imageUrl: "/reviews/blagoy-review.webp",
-    date: "2025-01-18",
-  },
-  {
-    id: "ft-6",
-    productSlug: "golden-eclipse",
-    author: "Павел Дойчев",
-    rating: 5,
-    body: "Часовника е уникат!! Забелязва се от далеч и изглежда супер скъп. За тези пари е наистина страхотен.",
-    imageUrl: "/reviews/golden-eclipse-ПавелДойчев.webp",
-    date: "2025-01-10",
-  },
-  {
-    id: "ft-7",
-    productSlug: "chrono-black",
-    author: "Яна",
-    rating: 5,
-    body: "Купих го като подарък за съпруга ми. Той обича часовници. Хареса го и го носи всеки ден.",
-    imageUrl: "/reviews/chrono-black-YanaS.webp",
-    date: "2025-02-05",
-  },
-];
+// Home "Какво казват клиентите" (owner, 23.11.2026): right after "Дамска колекция"; reviews WITH photos first, then written ones
+// (picked on the server, lib/site-reviews.ts homeReviews), and a button to /otzivi. Rating and count: the one site-wide source.
 
 function StarRating({ rating }: { rating: number }) {
   return (
-    <div className="flex gap-0.5 text-navy text-xs">
+    <div className="flex gap-0.5 text-navy text-xs" aria-label={`${rating} от 5 звезди`}>
       {Array.from({ length: 5 }).map((_, i) => (
-        <span key={i} className={i < rating ? "text-navy" : "text-ink-faint"}>
+        <span key={i} aria-hidden className={i < rating ? "text-navy" : "text-ink-faint"}>
           ★
         </span>
       ))}
@@ -85,85 +19,50 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-const PRODUCT_LABELS: Record<string, string> = {
-  "chrono-black":          "Chrono Black",
-  "golden-eclipse":        "Golden Eclipse",
-  "polar-frost":           "Polar Frost",
-  "bracelet-diamante-cross": "Гривна Diamante Cross",
-  "bracelet-milano-forte":   "Гривна Milano Forte",
-  "bracelet-milano-twist":   "Гривна Milano Twist",
-  "bracelet-signature":      "Гривна Signature",
-  "necklace-aurelius":       "Колие Aurelius Cross",
-  "necklace-grande-imperiale": "Колие Grande Imperiale",
-  "necklace-milano-forte":   "Колие Milano Forte",
-  "necklace-milano-twist":   "Колие Milano Twist",
-};
-
-function ReviewCard({ review }: { review: Review }) {
-  const body = review.body?.replace(/-|-/g, "-") ?? "";
-  const productLabel = review.productSlug ? PRODUCT_LABELS[review.productSlug] : null;
-
+function ReviewCard({ review }: { review: SiteReview }) {
+  const photo = review.images[0];
+  const local = photo?.startsWith("/");
   return (
     <div className="flex-shrink-0 snap-start w-[85vw] sm:w-[calc(33.333%-14px)] review-card flex flex-col p-6">
-
-      {/* Text - sits at top, takes only its natural height */}
       <div>
         <StarRating rating={review.rating} />
-        {review.title && (
-          <h4 className="font-serif text-lg text-charcoal leading-snug mt-3">{review.title}</h4>
+        {review.body && (
+          <p className="font-sans text-sm font-light text-ink-soft leading-relaxed mt-3 line-clamp-4">{review.body}</p>
         )}
-        <p className="font-sans text-sm font-light text-ink-soft leading-relaxed mt-3 line-clamp-4">
-          {body}
-        </p>
       </div>
 
-      {/* Image + Footer anchored together to the bottom - mt-auto pushes this whole block down */}
       <div className="mt-auto pt-4">
-        {/* Fixed-height image box */}
-        <div className="relative w-full h-[280px] shrink-0 flex items-center justify-center border border-border bg-ivory-warm">
-          {review.imageUrl ? (
-            <Image
-              src={review.imageUrl}
-              alt={`Ревю от ${review.author}`}
-              fill
-              quality={80}
-              sizes="(max-width: 640px) 85vw, 33vw"
-              className="object-contain"
-            />
-          ) : (
-            <div className="w-full h-full" />
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex justify-between items-center border-t border-border pt-3 mt-4">
-          <div className="flex flex-col gap-0.5">
-            <span className="font-sans text-xs font-medium text-charcoal tracking-wide">
-              {review.author}
-            </span>
-            {productLabel && (
-              <span className="font-sans text-[10px] text-ink-faint tracking-wide">
-                {productLabel}
-              </span>
+        {photo && (
+          <div className="relative w-full h-[280px] shrink-0 flex items-center justify-center border border-border bg-ivory-warm">
+            {local ? (
+              <Image src={photo} alt={`Снимка от ${review.name}`} fill quality={80} sizes="(max-width: 640px) 85vw, 33vw" className="object-contain" />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photo} alt={`Снимка от ${review.name}`} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-contain" />
             )}
           </div>
-          <span className="font-sans text-[10px] text-navy font-medium tracking-wide shrink-0 ml-3">
-            ✓ Верифициран
-          </span>
+        )}
+
+        <div className="flex justify-between items-center border-t border-border pt-3 mt-4">
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="font-sans text-xs font-medium text-charcoal tracking-wide">{review.name}</span>
+            <Link href={`/products/${review.productSlug}`} className="font-sans text-[10px] text-ink-faint tracking-wide hover:text-navy truncate">
+              {review.productName}
+            </Link>
+          </div>
+          <span className="font-sans text-[10px] text-ink-faint tracking-wide shrink-0 ml-3">{fmtDate(review.date)}</span>
         </div>
       </div>
-
     </div>
   );
 }
 
-export function TestimonialsSection() {
+export function TestimonialsSection({ reviews, stats }: { reviews: SiteReview[]; stats: ReviewStats | null }) {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(true);
 
-  // Only reviews of products that are on the shop window (lib/storefront.ts): a review of a hidden collection is not shown.
-  const sorted = FEATURED.filter((r) => !r.productSlug || !!getProductBySlug(r.productSlug));
+  const sorted = reviews;
 
   const checkScroll = () => {
     const el = carouselRef.current;
@@ -195,10 +94,14 @@ export function TestimonialsSection() {
           <p className="section-tag mb-4">Верифицирани Ревюта</p>
           <h2 className="section-title mb-4">Какво казват клиентите</h2>
           <div className="gold-divider" />
-          <div className="flex items-center justify-center gap-3 mt-6">
-            <span className="text-navy text-sm">★★★★★</span>
-            <span className="font-sans text-sm font-light text-ink-muted">4.8 от 5 · 3178 ревюта</span>
-          </div>
+          {stats && (
+            <Link href="/otzivi" className="flex items-center justify-center gap-3 mt-6 group">
+              <span className="text-navy text-sm" aria-hidden>★★★★★</span>
+              <span className="font-sans text-sm font-light text-ink-muted group-hover:text-navy transition-colors">
+                {fmtAvg(stats.avg)} от 5 · {fmtCount(stats.count)} {otzivLabel(stats.count)}
+              </span>
+            </Link>
+          )}
         </div>
 
         {/* Carousel */}
@@ -243,6 +146,10 @@ export function TestimonialsSection() {
           {sorted.map((_, i) => (
             <div key={i} className="w-1.5 h-1.5 rounded-full bg-border" />
           ))}
+        </div>
+
+        <div className="text-center mt-12">
+          <Link href="/otzivi" className="btn-outline inline-block text-xs">Виж всички отзиви</Link>
         </div>
       </div>
     </section>

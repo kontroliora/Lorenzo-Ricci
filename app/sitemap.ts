@@ -17,6 +17,7 @@ const STATIC_PATHS = [
   "/bundles",
   "/namalenia",
   "/story",
+  "/otzivi",
   "/faq",
   ...(SHELF.watches ? ["/watch-manual"] : []),
   "/policies/shipping",

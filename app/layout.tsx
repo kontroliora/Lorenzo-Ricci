@@ -41,6 +41,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { HideOnAdmin } from "@/components/layout/HideOnAdmin";
 import { HideOnTrack } from "@/components/layout/HideOnTrack";
 import { HideOnCart } from "@/components/layout/HideOnCart";
+import { getReviewStats } from "@/lib/site-reviews";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://lorenzo-ricci.com"),
@@ -100,6 +101,9 @@ export default async function RootLayout({
   // and EN/RO are gone), so nothing opts the tree into per-request rendering and
   // the storefront pages are built once and served from the edge. lib/i18n/* and
   // lib/geo.ts stay dormant in case a market test comes back.
+  // The one site-wide rating + review count (lib/site-reviews.ts) for the footer and the cart. Cached data (tag user-reviews), so
+  // the pages stay static.
+  const reviewStats = await getReviewStats();
   return (
     <html lang="bg" className={`scroll-smooth ${playfair.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="bg-ivory text-charcoal antialiased">
@@ -120,8 +124,8 @@ export default async function RootLayout({
           </HideOnAdmin>
           <main>{children}</main>
           <HideOnAdmin>
-            <BgFooter />
-            <LazyCartDrawer />
+            <BgFooter reviewStats={reviewStats} />
+            <LazyCartDrawer reviewStats={reviewStats} />
             <HideOnTrack>
               <HideOnCart>
                 <LazySalesNotification />

@@ -2,6 +2,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useCartStore } from "@/lib/store";
+import type { ReviewStats } from "@/lib/site-reviews-shared";
 
 // Interaction- and timer-driven chrome, split out of the initial bundle and mounted
 // once the page is idle (LCP painted → window load → requestIdleCallback), so its
@@ -31,10 +32,10 @@ function useIdle(capMs = 4000): boolean {
   return idle;
 }
 
-export function LazyCartDrawer() {
+export function LazyCartDrawer({ reviewStats }: { reviewStats: ReviewStats | null }) {
   const idle = useIdle();
   const needed = useCartStore((s) => s.isOpen || s.items.length > 0 || s.pendingCheckout);
-  return idle || needed ? <CartDrawer /> : null;
+  return idle || needed ? <CartDrawer reviewStats={reviewStats} /> : null;
 }
 
 export function LazySalesNotification() {

@@ -239,3 +239,33 @@ export async function prepareReviewImage(buf: Buffer): Promise<{ data: Buffer; c
     return null; // looked like an image but cannot be decoded
   }
 }
+
+// ─── Every approved review, all products (the one site-wide source, lib/site-reviews.ts) ─────────────────────────────────────────
+
+export type ApprovedRow = { id: string; name: string; rating: number; body: string | null; images: string[]; createdAt: string; productSlug: string };
+
+/** Every approved review of every product, with public photo URLs. THROWS on a failed read (the caller decides the fallback). */
+export const getAllApprovedReviews = unstable_cache(
+  async (): Promise<ApprovedRow[]> => {
+    const client = publicClient();
+    const rows = await fetchAllPages<Row>((from, to) =>
+      client
+        .from("reviews")
+        .select("id, name, rating, body, images, is_partnership, created_at, product_slug")
+        .eq("status", "approved")
+        .order("id")
+        .range(from, to),
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      rating: r.rating,
+      body: r.body,
+      images: (r.images ?? []).map(reviewImageUrl),
+      createdAt: r.created_at,
+      productSlug: r.product_slug ?? "",
+    }));
+  },
+  [USER_REVIEWS_TAG, "all-approved"],
+  { tags: [USER_REVIEWS_TAG], revalidate: 3600 },
+);

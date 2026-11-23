@@ -4,8 +4,9 @@ import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import Image from "next/image";
 import { NewsletterStrip } from "./NewsletterStrip";
 import { SHELF } from "@/lib/storefront";
+import { fmtAvg, fmtCount, otzivLabel, type ReviewStats } from "@/lib/site-reviews-shared";
 
-export function Footer() {
+export function Footer({ reviewStats }: { reviewStats?: ReviewStats | null }) {
   return (
     <footer className="bg-white border-t border-border">
       <NewsletterStrip />
@@ -56,6 +57,7 @@ export function Footer() {
             <FooterHeading>Lorenzo Ricci</FooterHeading>
             <div className="flex flex-col gap-3 [@media(pointer:coarse)]:gap-0">
               <FooterLink href="/story">История</FooterLink>
+              <FooterLink href="/otzivi">Отзиви от клиенти</FooterLink>
               <FooterLink href="/policies/privacy">Политика за поверителност</FooterLink>
             </div>
           </div>
@@ -94,12 +96,14 @@ export function Footer() {
             © 2026 Lorenzo Ricci. Всички права запазени.
           </p>
           <LanguageSwitch current="bg" className="text-ink-muted" />
-          <div className="flex items-center gap-2">
-            <div className="flex gap-0.5 text-[9px] text-navy/60">★★★★★</div>
-            <p className="font-sans text-[10px] font-light text-ink-faint tracking-widest uppercase">
-              4.8 · 1000+ Ревюта
-            </p>
-          </div>
+          {reviewStats ? (
+            <Link href="/otzivi" className="flex items-center gap-2 group">
+              <div className="flex gap-0.5 text-[9px] text-navy/60" aria-hidden>★★★★★</div>
+              <p className="font-sans text-[10px] font-light text-ink-faint tracking-widest uppercase group-hover:text-navy transition-colors">
+                {fmtAvg(reviewStats.avg)} · {fmtCount(reviewStats.count)} {otzivLabel(reviewStats.count)}
+              </p>
+            </Link>
+          ) : <div />}
         </div>
       </div>
     </footer>
