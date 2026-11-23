@@ -7,7 +7,7 @@ import { CheckoutForm } from "./CheckoutForm";
 import { CartCrossSell } from "./CartCrossSell";
 import { watchJewelDiscounts } from "@/lib/watch-jewel";
 import { CartGiftRow } from "./GiftRow";
-import { trackWithCapi, genEventId } from "@/lib/fbq";
+import { trackWithCapi, firstInitiateCheckout, genEventId } from "@/lib/fbq";
 import { opoLines } from "@/lib/bundles";
 import { opoFreeUnits } from "@/lib/one-plus-one";
 import { DrawerTop, ReserveLine, ShipProgress, LineItem, SumRow, TotalRow, TrustRow, type TrustIcon } from "./drawer-ui";
@@ -107,7 +107,7 @@ export function CartDrawer() {
     setGiftOpen(false);
     setShowCheckout(true);
     const now = useCartStore.getState().items; // includes a free piece just added from the modal
-    trackWithCapi("InitiateCheckout", {
+    if (firstInitiateCheckout(`bg:${useCartStore.getState().reservedAt ?? "none"}`)) trackWithCapi("InitiateCheckout", {
       content_ids: now.map((i) => i.product.sku),
       num_items:   now.reduce((s, i) => s + i.quantity, 0),
       value:       total,

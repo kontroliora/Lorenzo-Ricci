@@ -13,12 +13,27 @@ export async function GET(req: NextRequest) {
   const no = () => NextResponse.json({ status: "unknown" }, { headers: { "Cache-Control": "no-store" } });
   if (!/^LR(RO)?-[A-Z0-9]{4,10}$/.test(ref) || !/^cs_[A-Za-z0-9_]{8,200}$/.test(sessionId)) return no();
 
-  const { data, error } = await supabaseAdmin()
-    .from("orders")
-    .select("status, payment_status, payment_currency, total, items, stripe_session_id")
-    .eq("order_ref", ref)
-    .maybeSingle();
-  if (error || !data || data.stripe_session_id !== sessionId) return no();
+  // A database hiccup is NOT a verdict on the payment: retry a few times, and if it still fails answer 503 - the success page then
+  // keeps waiting (it treats a failed request as "pending") instead of telling a customer who has paid that the payment failed.
+  type Row = { status: string; payment_status: string | null; payment_currency: string | null; total: number | null; items: unknown; stripe_session_id: string | null };
+  let data: Row | null = null;
+  let failed = true;
+  for (const wait of [0, 300, 900, 2000]) {
+    if (wait) await new Promise((r) => setTimeout(r, wait));
+    try {
+      const res = await supabaseAdmin()
+        .from("orders")
+        .select("status, payment_status, payment_currency, total, items, stripe_session_id")
+        .eq("order_ref", ref)
+        .maybeSingle();
+      if (!res.error) { data = res.data as Row | null; failed = false; break; }
+      console.error("[order-payment] lookup failed, retrying:", res.error.message);
+    } catch (e) {
+      console.error("[order-payment] lookup threw, retrying:", e instanceof Error ? e.message : e);
+    }
+  }
+  if (failed) return NextResponse.json({ status: "retry" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  if (!data || data.stripe_session_id !== sessionId) return no();
 
   const headers = { "Cache-Control": "no-store" };
   if (data.payment_status === "paid") {

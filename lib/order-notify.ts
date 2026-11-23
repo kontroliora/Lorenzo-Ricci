@@ -3,6 +3,8 @@ import { Resend } from "resend";
 import { buildUserData, eventSourceUrl, mayPostPurchase, sendCapiEvents, type CapiContext } from "@/lib/meta-capi";
 import { mayEmail, type MailKind, type MailLang } from "./mail-policy";
 import { onePlusOneOfOrder } from "./one-plus-one";
+import { watchJewelTotal } from "./watch-jewel";
+import { getProductBySlug } from "./products";
 import { emailHead, emailHeaderRow, emailOrderRefRow, ORDER_REPLY_TO } from "@/lib/email-layout";
 
 // The 1+1 part of the order's discounts (lib/one-plus-one.ts), read back from its own lines: lines - goods after discounts - promo.
@@ -13,6 +15,41 @@ const onePlusOneOf = (order: Record<string, unknown>): number => {
   const discount = gross - Number(order.subtotal ?? gross) - Number(order.promoDiscount ?? 0);
   return onePlusOneOfOrder(paid, discount);
 };
+
+// Every money row under the products, so the e-mail adds up visibly (owner, 23.11.2026): goods at their prices, then each discount,
+// then delivery, then the total. Read back from the saved lines and amounts only (the card-paid e-mail has nothing else):
+//   goods (Σ line price × qty) − 1+1 − "Бижу към часовник" − other set discounts − promo = subtotal;  subtotal − card −5% + delivery = total.
+type MoneyRow = { label: string; amount: number; tone: "plain" | "discount" | "free" };
+const r2 = (n: number) => Math.round(n * 100) / 100;
+export function moneyRows(order: Record<string, unknown>): MoneyRow[] {
+  const items = (Array.isArray(order.items) ? order.items : []) as Record<string, unknown>[];
+  const paid = items.filter((i) => !i.gift);
+  const qty = (i: Record<string, unknown>) => Math.max(1, Number(i.quantity ?? i.qty ?? 1));
+  const gross = r2(paid.reduce((s, i) => s + Number(i.price ?? 0) * qty(i), 0));
+  const promo = r2(Number(order.promoDiscount ?? 0) || 0);
+  const subtotal = r2(Number(order.subtotal ?? gross));
+  const setTotal = r2(Math.max(0, gross - subtotal - promo));
+  const opo = r2(Math.min(setTotal, onePlusOneOf(order)));
+  // the watch-jewel part, re-derived from the lines (one unit of each eligible piece at €19 while the order holds a watch)
+  const wj = r2(Math.min(setTotal - opo, watchJewelTotal(paid.map((i) => {
+    const slug = String(i.slug ?? "");
+    return { product: { slug, price: Number(i.price ?? 0), category: getProductBySlug(slug)?.category ?? "" }, quantity: qty(i) } as never;
+  }))));
+  const otherSet = r2(setTotal - opo - wj);
+  const card = r2(Number(order.cardDiscount ?? 0) || 0);
+  const shipping = (order.shipping ?? {}) as Record<string, unknown>;
+  const ship = r2(Number(shipping.cost ?? order.shippingCost ?? 0) || 0);
+  const rows: MoneyRow[] = [{ label: "Продукти", amount: gross, tone: "plain" }];
+  if (opo > 0) rows.push({ label: "1+1 – вторият брой е подарък", amount: -opo, tone: "discount" });
+  if (wj > 0) rows.push({ label: "Отстъпка „Бижу към часовник“", amount: -wj, tone: "discount" });
+  if (otherSet > 0.004) rows.push({ label: "Отстъпка за комплект", amount: -otherSet, tone: "discount" });
+  if (promo > 0) rows.push({ label: "Промо код", amount: -promo, tone: "discount" });
+  if (card > 0) rows.push({ label: "Отстъпка за плащане с карта (-5%)", amount: -card, tone: "discount" });
+  rows.push(ship > 0 ? { label: "Доставка", amount: ship, tone: "plain" } : { label: "Доставка", amount: 0, tone: "free" });
+  return rows;
+}
+const moneyText = (r: MoneyRow): string =>
+  r.tone === "free" ? "Безплатна" : `${r.amount < 0 ? "-" : ""}€${Math.abs(r.amount).toFixed(2)}`;
 
 // Order notifications shared by /api/order (cash on delivery) and the Stripe webhook (card orders, after payment):
 // the team e-mail, the customer confirmation e-mail and the Meta Conversions API Purchase. Moved here unchanged from
@@ -122,8 +159,7 @@ export function buildAdminEmail(order: Record<string, unknown>, alertMessage?: s
         </thead>
         <tbody>${items}</tbody>
         <tfoot>
-          ${onePlusOneOf(order) > 0 ? `<tr><td colspan="3" style="padding:10px 12px;color:#047857">1+1 (втори брой безплатно)</td><td style="padding:10px 12px;text-align:right;color:#047857">-€${onePlusOneOf(order).toFixed(2)}</td></tr>` : ""}
-          ${Number(order.cardDiscount ?? 0) > 0 ? `<tr><td colspan="3" style="padding:10px 12px;color:#047857">Отстъпка за плащане с карта (-5%)</td><td style="padding:10px 12px;text-align:right;color:#047857">-€${Number(order.cardDiscount).toFixed(2)}</td></tr>` : ""}
+          ${moneyRows(order).map((r) => `<tr><td colspan="3" style="padding:8px 12px;${r.tone === "plain" ? "" : "color:#047857"}">${r.label}</td><td style="padding:8px 12px;text-align:right;${r.tone === "plain" ? "" : "color:#047857"}">${moneyText(r)}</td></tr>`).join("")}
           <tr style="background:#f3f4f6;font-weight:700">
             <td colspan="3" style="padding:10px 12px">${opts.paidByCard ? "ОБЩО (платено с карта)" : "ОБЩО"}</td>
             <td style="padding:10px 12px;text-align:right">€${Number(order.total ?? 0).toFixed(2)}</td>
@@ -193,8 +229,7 @@ ${emailHead("Вашата поръчка от Lorenzo Ricci")}
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tbody>${items}</tbody>
                 <tfoot>
-                  ${onePlusOneOf(order) > 0 ? `<tr><td colspan="2" style="padding:12px 0 0;font-size:12px;color:#888">1+1 – вторият брой е подарък</td><td style="padding:12px 0 0;text-align:right;font-size:14px;color:#047857">-€${onePlusOneOf(order).toFixed(2)}</td></tr>` : ""}
-                  ${Number(order.cardDiscount ?? 0) > 0 ? `<tr><td colspan="2" style="padding:12px 0 0;font-size:12px;color:#888">Отстъпка за плащане с карта (-5%)</td><td style="padding:12px 0 0;text-align:right;font-size:14px;color:#047857">-€${Number(order.cardDiscount).toFixed(2)}</td></tr>` : ""}
+                  ${moneyRows(order).map((r) => `<tr><td colspan="2" style="padding:10px 0 0;font-size:13px;color:#666">${r.label}</td><td style="padding:10px 0 0;text-align:right;font-size:14px;color:${r.tone === "plain" ? "#1a1a1a" : "#047857"}">${moneyText(r)}</td></tr>`).join("")}
                   <tr>
                     <td colspan="2" style="padding:14px 0 0;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#888">${opts.paidByCard ? "Платено с карта" : "Сума за плащане при доставка"}</td>
                     <td style="padding:14px 0 0;text-align:right;font-family:'Georgia',serif;font-size:20px;color:#0a0e1f;font-weight:700">€${Number(order.total ?? 0).toFixed(2)}</td>

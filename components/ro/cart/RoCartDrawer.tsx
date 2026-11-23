@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRoCart } from "@/lib/ro/store";
 import { roAmounts } from "@/lib/ro/pricing";
 import { RO_FREE_SHIPPING_RON, fmtRON } from "@/lib/ro/config";
-import { trackWithCapi, genEventId } from "@/lib/fbq";
+import { trackWithCapi, firstInitiateCheckout, genEventId } from "@/lib/fbq";
 import { RoCheckoutForm } from "./RoCheckoutForm";
 import { opoFreeUnits } from "@/lib/one-plus-one";
 import { DrawerTop, ShipProgress, LineItem, SumRow, TotalRow, TrustRow } from "@/components/cart/drawer-ui";
@@ -97,7 +97,7 @@ export function RoCartDrawer() {
     setOddOpen(false);
     setShowCheckout(true);
     const now = useRoCart.getState().items; // includes a free piece just added from the modal
-    trackWithCapi("InitiateCheckout", {
+    if (firstInitiateCheckout("ro")) trackWithCapi("InitiateCheckout", {
       content_ids:      now.map((i) => i.sku),
       content_category: "RO",
       num_items:        now.reduce((s, i) => s + i.quantity, 0),

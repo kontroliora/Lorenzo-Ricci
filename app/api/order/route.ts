@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { ATTR_COOKIE, attributionFromCookie } from "@/lib/attribution";
 import { isValidFullName, FULL_NAME_ERROR_BG } from "@/lib/full-name";
+import { isValidPhoneBg, PHONE_ERROR_BG } from "@/lib/phone-bg";
 import { insertOrderResilient } from "@/lib/order-insert";
 import { langOf, mayEmail } from "@/lib/mail-policy";
 import { supabase } from "@/lib/supabase";
@@ -60,6 +61,21 @@ function stockErrorMessage(items: { name: string; available: number }[]): string
   return `${parts.join(". ")}. Моля, коригирайте количеството в количката.`;
 }
 
+// The same reference again (a retry after a 5xx / timeout, a double click that raced the first request): the order already exists,
+// so the customer gets the SAME success answer as the first time (with its gifts), never an error and never a second row.
+// null = there is no such order (or the lookup failed: the request goes on, the unique index on order_ref still stops a 2nd row).
+async function existingOrderReply(ref: string): Promise<NextResponse | null> {
+  const { data, error } = await supabaseAdmin().from("orders").select("id, items, status, payment_method").eq("order_ref", ref).limit(1);
+  if (error || !data?.length) return null;
+  const row = data[0] as { items?: unknown; payment_method?: string | null };
+  const lines = (Array.isArray(row.items) ? row.items : []) as { gift?: boolean; name?: string; qty?: number; quantity?: number; giftFor?: string }[];
+  const gifts = lines.filter((l) => l.gift).map((l) => ({
+    name: String(l.name ?? "").replace(/^ПОДАРЪК:\s*/, ""), qty: Number(l.quantity ?? l.qty ?? 1), forName: l.giftFor ? forNameOf(String(l.giftFor)) : "",
+  }));
+  console.log("[order] same reference again - answered with the existing order:", ref);
+  return NextResponse.json({ success: true, duplicate: true, gifts, giftNotes: [] });
+}
+
 // ─────────────────────────────────────────────────────────────
 // POST /api/order
 // ─────────────────────────────────────────────────────────────
@@ -85,6 +101,10 @@ export async function POST(req: NextRequest) {
     if (!isValidFullName(customerName)) {
       return NextResponse.json({ success: false, error: FULL_NAME_ERROR_BG, code: "bad_name" }, { status: 400 });
     }
+    // The same phone rule as the checkout form (lib/phone-bg.ts): a request that skipped the form gets no order with an unusable phone.
+    if (!isValidPhoneBg(customer.phone)) {
+      return NextResponse.json({ success: false, error: PHONE_ERROR_BG, code: "bad_phone" }, { status: 400 });
+    }
 
     // The reference is minted by the browser: check its shape, and treat the same reference twice (double click, retry after a
     // timeout) as the same order - never a second reservation or a second row.
@@ -93,8 +113,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Невалидна поръчка. Моля, презаредете страницата." }, { status: 400 });
     }
     {
-      const dup = await supabaseAdmin().from("orders").select("id").eq("order_ref", orderRefIn).limit(1);
-      if (!dup.error && dup.data && dup.data.length > 0) return NextResponse.json({ success: true, duplicate: true, gifts: [], giftNotes: [] });
+      const existing = await existingOrderReply(orderRefIn);
+      if (existing) return existing;
     }
 
     // ── ECONT OFFICE - the checkout's picker sends the office code from Econt's official list. A code that is not in the list is
@@ -461,6 +481,15 @@ export async function POST(req: NextRequest) {
       dbError = { message: err instanceof Error ? err.message : String(err) };
     }
     if (dbError) {
+      // A concurrent request with the SAME reference saved it first (unique index orders_order_ref_uidx): this is not a lost order.
+      // Give back what THIS request reserved and answer like the first one - no alarm, no error for the customer.
+      if (/duplicate key|23505|order_ref/i.test(dbError.message)) {
+        const existing = await existingOrderReply(String(order.orderRef ?? ""));
+        if (existing) {
+          await restockLines(supabaseAdmin(), savedOrder.items, "повторен опит на поръчка").catch((e) => console.error("[Order] restock after same-ref race failed:", e));
+          return existing;
+        }
+      }
       const reason = dbError.message;
       console.error("[Supabase] Failed to save order:", reason);
       // Nothing was actually sold — give the reserved stock back so a retry (or the next customer) can have it.
@@ -477,9 +506,11 @@ export async function POST(req: NextRequest) {
     }
     console.log("[Supabase] Order saved");
 
-    // Send emails and the Meta event now that the order really exists - without await they are killed by Vercel before sending
+    // Send emails and the Meta event now that the order really exists - AFTER the response (next/server after(): Vercel keeps the
+    // function alive until they finish), so a slow Resend / Meta never delays the customer's answer or turns it into a timeout
+    // (which made the browser retry and, before the same-reference guard, could create a second order).
     const subject = `✅ Нова поръчка - ${customerName}`;
-    await Promise.allSettled([
+    after(() => Promise.allSettled([
       sendAdminEmail(subject, buildAdminEmail(savedOrder)),
       // The customer's confirmation is the BULGARIAN template: it only goes to a Bulgarian recipient (a Romanian order has its own
       // route, /api/order-ro, with a Romanian e-mail). Never a Bulgarian text to a Romanian.
@@ -488,7 +519,7 @@ export async function POST(req: NextRequest) {
         : []),
       // Meta's Purchase value is the server-validated amount, not the browser's number.
       sendCapiPurchase(order, String(order.orderRef ?? ""), pricing.total, capiCtx),
-    ]);
+    ]).then((r) => r.forEach((x) => { if (x.status === "rejected") console.error("[Order] notification failed:", x.reason); })));
     // Partner e-mail (women's jewellery only, lib/partner/email.ts): right after the order is SAVED, at most once; after the
     // response, so the customer never waits for it.
     const savedRef = String(order.orderRef ?? "");

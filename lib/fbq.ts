@@ -112,3 +112,17 @@ export function trackWithCapi(
     }),
   }).catch(() => {});
 }
+
+/**
+ * InitiateCheckout ONCE per cart session (owner, 23.11.2026): opening the checkout, closing it and opening it again is one checkout
+ * start for Meta, not several. `cartKey` names the cart session (BG: the cart's reservedAt - a new one starts when the cart is emptied
+ * and refilled, e.g. after an order). Returns true when the event should fire now (and remembers it for this tab).
+ */
+export function firstInitiateCheckout(cartKey: string): boolean {
+  const KEY = "lr_ic_sent";
+  try {
+    if (sessionStorage.getItem(KEY) === cartKey) return false;
+    sessionStorage.setItem(KEY, cartKey);
+  } catch { /* storage blocked: fall back to firing (as before) */ }
+  return true;
+}

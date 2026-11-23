@@ -8,6 +8,8 @@ import { calcBundleDiscount, bundleLineText } from "@/lib/bundles";
 import { clutchGiftLabel, giftDisplayName, isGiftClutch } from "@/lib/gifts";
 import { getProductBySlug } from "@/lib/products";
 import { isValidFullName, FULL_NAME_ERROR_BG } from "@/lib/full-name";
+import { isValidPhoneBg, PHONE_ERROR_BG } from "@/lib/phone-bg";
+import { suggestEmail } from "@/lib/email-typo";
 import { useGiftLines } from "@/lib/use-gifts";
 import { trackFbEvent, rememberMatchKeys } from "@/lib/fbq";
 import { logCheckoutFailure } from "@/lib/checkout-log";
@@ -228,7 +230,7 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!isValidFullName(form.name))                      errs.name = FULL_NAME_ERROR_BG;
-    if (form.phone.replace(/\D/g, "").length < 10)        errs.phone = "Моля, въведете валиден телефонен номер.";
+    if (!isValidPhoneBg(form.phone))                      errs.phone = PHONE_ERROR_BG;
     if (!form.email.trim())                                errs.email = "Въведете имейл";
     else if (!form.email.includes("@"))                    errs.email = "Невалиден имейл";
     if (isHomeAddress) {
@@ -347,8 +349,10 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
           if (typeof body?.code === "string") errCode = body.code;
           if (Array.isArray(body?.giftSoldOut)) soldOut = body.giftSoldOut;
         } catch { /* ignore parse error */ }
-        // The server answered and created nothing: the next attempt starts with a fresh reference.
-        attemptRef.current = null;
+        // A 4xx: the server answered and created nothing, so the next attempt starts with a fresh reference. A 5xx / gateway timeout
+        // (504) may have come AFTER the order was saved: a cash-on-delivery retry keeps the SAME reference, so the server answers with
+        // the existing order instead of creating a second one. A card attempt always starts over (an unpaid card attempt is not an order).
+        if (isCardPay || res.status < 500) attemptRef.current = null;
         if (errCode === "possible_duplicate" && existing && typeof existing.ref === "string") {
           // Not a failure: ask the customer (modal below). Nothing is logged as a checkout failure.
           setDupPrompt({ ref: existing.ref, at: typeof existing.at === "string" ? existing.at : "" });
@@ -599,6 +603,16 @@ export function CheckoutForm({ items, total, promoCode, promoDiscount = 0, promo
           <input type="email" placeholder="your@email.com" value={form.email}
             onChange={(e) => { setForm((f) => ({ ...f, email: e.target.value })); clearError("email"); }}
             className={coInput(!!errors.email)} autoComplete="email" inputMode="email" {...inputProps("email")} />
+          {/* a mistyped domain (mail.bbg, gmail.con, anv.bg ...): a hint only, the customer decides (lib/email-typo.ts) */}
+          {(() => {
+            const fix = suggestEmail(form.email);
+            return fix ? (
+              <button type="button" onClick={() => { setForm((f) => ({ ...f, email: fix })); clearError("email"); }}
+                className="self-start text-left font-sans text-[13px] text-[#B45309]">
+                Имахте предвид <span className="font-semibold underline underline-offset-2">{fix}</span>?
+              </button>
+            ) : null;
+          })()}
         </CoField>
         <div className="-mt-2">
           <CoCheck checked={form.emailMarketingConsent} onChange={(v) => setForm((f) => ({ ...f, emailMarketingConsent: v }))}>

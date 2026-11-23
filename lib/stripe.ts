@@ -49,9 +49,11 @@ export async function createCardSession(args: {
 }): Promise<{ id: string; url: string }> {
   const session = await getStripe().checkout.sessions.create({
     mode: "payment",
-    // Cards only (Apple Pay and Google Pay are part of "card"): an asynchronous / offline method enabled in the Dashboard would
-    // leave orders "complete but unpaid" for days. (This API version filters with allowed_payment_method_types.)
-    allowed_payment_method_types: ["card"],
+    // Cards (Apple Pay and Google Pay are part of "card") and Revolut Pay (owner, 23.11.2026; switched on in the Stripe account).
+    // Both are confirmed instantly: an asynchronous / offline method enabled in the Dashboard would leave orders "complete but
+    // unpaid" for days, so nothing else is allowed. (This API version filters with allowed_payment_method_types; Stripe hides a
+    // method that does not fit the currency or device.)
+    allowed_payment_method_types: ["card", "revolut_pay"],
     // Prices are the shop's own (EUR for Bulgaria, lei for Romania): no "pay in your currency" switcher with Stripe's exchange rate.
     adaptive_pricing: { enabled: false },
     client_reference_id: args.orderRef,

@@ -23,7 +23,21 @@ type CAPIBody = {
   ph?:         string;
 };
 
+// Only our own pages may post here (owner, 23.11.2026): a browser always sends Origin on a POST, and Sec-Fetch-Site says whether
+// the page was ours. A request from another site, or one without Origin (a script), gets 403 and no event reaches Meta.
+const OWN_ORIGINS = new Set(["https://www.lorenzo-ricci.com", "https://lorenzo-ricci.com"]);
+function fromOwnSite(req: NextRequest): boolean {
+  const origin = req.headers.get("origin") ?? "";
+  const site = req.headers.get("sec-fetch-site");
+  if (site && site !== "same-origin") return false;
+  if (!/^application\/json\b/i.test(req.headers.get("content-type") ?? "")) return false;
+  if (OWN_ORIGINS.has(origin)) return true;
+  if (origin && origin === req.nextUrl.origin && (isPreviewDeploy() || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin))) return true;
+  return false;
+}
+
 export async function POST(req: NextRequest) {
+  if (!fromOwnSite(req)) return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   if (!process.env.META_CAPI_ACCESS_TOKEN) return NextResponse.json({ ok: false });
   const test = testEventCode();
   if (isPreviewDeploy() && !test) return NextResponse.json({ ok: false, skipped: "preview" }); // previews share the live token: no live events
