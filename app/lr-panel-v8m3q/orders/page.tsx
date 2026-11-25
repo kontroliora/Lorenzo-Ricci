@@ -9,6 +9,8 @@ import type { StuckSummary } from "@/lib/checkout-events";
 import { OrdersBoard } from "./OrdersBoard";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { reconcileBeforePanel } from "@/lib/stripe-reconcile";
+import { getAdminSession } from "@/lib/supabase/admin-db";
+import { fulfillmentVisible } from "@/lib/fulfillment-filter";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +20,13 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   // Was 150 — with >150 orders the oldest (stuck new/confirmed) fell off the
   // panel entirely. Raised so every order shows; paginate properly when it grows.
   // A card payment Stripe has but the board does not (missed webhook) is written first, so nobody ships a paid order as COD.
+  const session = await getAdminSession().catch(() => null);
+  const role = session?.role ?? "employee";
   if ((process.env.STRIPE_SECRET_KEY ?? "").trim()) await reconcileBeforePanel(supabaseAdmin());
-  const orders = await getOrders(1000);
+  const ordersRaw = await getOrders(1000);
+  // Fulfillment role: hide orders that contain ONLY women's-collection jewelry.
+  // Same classification as the partner view — lib/fulfillment-filter.ts uses isCollectionLine from lib/partner/orders.ts.
+  const orders = role === "fulfillment" ? ordersRaw.filter(fulfillmentVisible) : ordersRaw;
   const histories = await getCustomerHistories(orders.map((o) => o.phone ?? "").filter(Boolean));
   const log = await getStatusLog(orders.map((o) => o.id));
   const nowMs = Date.now();
@@ -51,7 +58,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       <AdminNav />
 
       {/* Summary counters + filterable list */}
-      <OrdersBoard orders={orders} histories={histories} log={log} nowMs={nowMs} initialMarket={initialMarket} carts={carts} stuck={stuck} stripeKey={stripeKey} />
+      <OrdersBoard orders={orders} histories={histories} log={log} nowMs={nowMs} initialMarket={initialMarket} carts={carts} stuck={stuck} stripeKey={stripeKey} role={role} />
     </div>
   );
 }

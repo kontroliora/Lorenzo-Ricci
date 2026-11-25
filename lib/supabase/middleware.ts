@@ -36,10 +36,15 @@ export async function updateSession(request: NextRequest) {
 
   // Only accounts in admin_users are panel admins (self-read policy: the user sees only their own row).
   let isAdmin = false;
+  let adminRole: "owner" | "employee" | "fulfillment" | null = null;
   if (user) {
     const { data } = await supabase.from("admin_users").select("role").eq("user_id", user.id).maybeSingle();
-    isAdmin = !!data;
+    if (data) {
+      isAdmin = true;
+      const r = (data as { role: string }).role;
+      adminRole = r === "owner" ? "owner" : r === "fulfillment" ? "fulfillment" : "employee";
+    }
   }
 
-  return { supabaseResponse, user, isAdmin };
+  return { supabaseResponse, user, isAdmin, adminRole };
 }

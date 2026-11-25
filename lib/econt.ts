@@ -4,10 +4,23 @@ import { refreshStockPages } from "./stock-pages";
 
 const BASE = "https://ee.econt.com/services/Shipments/ShipmentService";
 
-function authHeader(): string {
+// Factory: returns the right credentials per source site.
+// For 'chronobg': uses CHRONOBG_ECONT_USERNAME / CHRONOBG_ECONT_PASSWORD (never falls back to LR).
+// For everything else: uses ECONT_USER / ECONT_PASS (Lorenzo Ricci account).
+export function getEcontAuth(sourceSite?: string | null): { header: string; available: boolean } {
+  if (sourceSite === "chronobg") {
+    const user = process.env.CHRONOBG_ECONT_USERNAME ?? "";
+    const pass = process.env.CHRONOBG_ECONT_PASSWORD ?? "";
+    if (!user || !pass) return { header: "", available: false };
+    return { header: "Basic " + Buffer.from(`${user}:${pass}`).toString("base64"), available: true };
+  }
   const user = process.env.ECONT_USER ?? "";
   const pass = process.env.ECONT_PASS ?? "";
-  return "Basic " + Buffer.from(`${user}:${pass}`).toString("base64");
+  return { header: "Basic " + Buffer.from(`${user}:${pass}`).toString("base64"), available: !!(user && pass) };
+}
+
+function authHeader(): string {
+  return getEcontAuth(null).header;
 }
 
 export type EcontStatus = {

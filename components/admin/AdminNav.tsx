@@ -31,16 +31,23 @@ export function AdminNav() {
   const pathname = usePathname() ?? "";
   const [owner, setOwner] = useState(false);
 
+  const [role, setRole] = useState<string>("employee");
+
   useEffect(() => {
     // admin_users self-read RLS returns only the caller's own role row.
     createClient()
       .from("admin_users")
       .select("role")
       .maybeSingle()
-      .then(({ data }) => setOwner((data as { role?: string } | null)?.role === "owner"));
+      .then(({ data }) => {
+        const r = (data as { role?: string } | null)?.role ?? "employee";
+        setRole(r);
+        setOwner(r === "owner");
+      });
   }, []);
 
-  const tabs = owner ? [...TABS, ...OWNER_TABS] : TABS;
+  // fulfillment sees only Поръчки
+  const tabs = role === "fulfillment" ? TABS.filter((t) => t.href.includes("/orders")) : owner ? [...TABS, ...OWNER_TABS] : TABS;
 
   // Narrow screens: the row scrolls (scrollbar hidden); a fade on the right while more tabs are out of view.
   const row = useRef<HTMLDivElement>(null);

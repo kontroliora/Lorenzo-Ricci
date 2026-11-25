@@ -75,6 +75,11 @@ export type AdminOrder = {
   duplicate_dismissed_at?: string | null; // owner pressed "Не е дубликат" (supabase/orders_duplicates.sql); undefined until that migration runs
   created_at: string;
   partner_mark?: import("./partner/marks").PartnerMark | null;   // the partner's latest mark (partner_order_state), read-only here
+  // Multi-storefront fields (chronobg integration, 25.11.2026). Undefined until migration runs.
+  source_site?: string | null;          // 'lorenzo-ricci' | 'chronobg' | ...
+  external_order_id?: string | null;    // idempotency key from the source store
+  needs_review?: boolean | null;        // items could not be parsed automatically
+  raw_payload?: object | null;          // original webhook body
 };
 
 // Three-metric customer profile (our data only).

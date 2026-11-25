@@ -30,6 +30,7 @@ import { refundPlan } from "@/lib/stripe-mode";
 import { onePlusOneOfOrder } from "@/lib/one-plus-one";
 import type { DupGroup } from "@/lib/duplicate-orders";
 import { DuplicateStrip, DUP_BG, DUP_BORDER } from "./DuplicateStrip";
+import { hasJewelleryLines } from "@/lib/fulfillment-filter";
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
   new:       { label: "Нова · за обаждане", bg: "#412402", fg: "#FAC775" },
@@ -247,6 +248,9 @@ export function OrderCard({
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
           {excluded && <span style={{ background: "#2C2C2A", color: "#D3D1C7", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>Фалшива</span>}
           {order.is_manual && <span style={{ background: "#3C3489", color: "#CECBF6", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>Ръчна</span>}
+          {(order.source_site === "chronobg") && <span style={{ background: "#4C1D95", color: "#C4B5FD", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>CHRONOBG</span>}
+          {(order.needs_review) && <span title="Артикулите не са разпознати автоматично — провери" style={{ background: "#78350F", color: "#FCD34D", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>⚠ Провери</span>}
+          {hasJewelleryLines(order) && <span title="Поръчката съдържа бижута от дамската колекция" style={{ background: "#3B0764", color: "#E9D5FF", fontSize: 10, letterSpacing: "0.12em", padding: "4px 9px", borderRadius: 20 }}>съдържа бижута</span>}
           <span style={{ background: badge.bg, color: badge.fg, fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>{badge.label}</span>
           <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 12 }}>{fmtDate(order.created_at)}</span>
         </div>

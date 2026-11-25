@@ -131,8 +131,10 @@ const MARKETS: { key: MarketFilter; label: string }[] = [
   { key: "ro",  label: "🇷🇴 Румъния" },
 ];
 
+type SourceFilter = "all" | "lr" | "chronobg";
+
 export function OrdersBoard({
-  orders: ordersRaw, histories, log, nowMs, initialMarket = "all", carts = [], stuck = null, stripeKey = "none",
+  orders: ordersRaw, histories, log, nowMs, initialMarket = "all", carts = [], stuck = null, stripeKey = "none", role = "employee",
 }: {
   orders: AdminOrder[];
   histories: Record<string, CustomerHistory>;
@@ -142,6 +144,7 @@ export function OrdersBoard({
   carts?: AbandonedCart[];   // saved carts with a phone and no order (Bulgaria): the "Изоставени колички" view
   stuck?: StuckSummary | null;            // where customers got stuck in the checkout in the last 24 h (table checkout_events), shown with the carts
   stripeKey?: "live" | "test" | "none";   // mode of the site's Stripe key (not the key): what a card order's cancel will do
+  role?: string;   // 'owner' | 'employee' | 'fulfillment'
 }) {
   // A PAID card order needs no confirmation call: it is shown under "За изпълнение" (also when its row still says "new"), never under "За обаждане".
   const orders = ordersRaw.map(boardStatus);
@@ -159,6 +162,7 @@ export function OrdersBoard({
   const [showCreate, setShowCreate] = useState(false);
   const [query, setQuery] = useState("");
   const [splitGroups, setSplitGroups] = useState<Set<string>>(new Set());
+  const [source, setSource] = useState<SourceFilter>("all");
 
   // Live clock — ticks so the call-window banner + per-order timers update
   // without a manual refresh. Seeds from the server value (no hydration
@@ -178,7 +182,13 @@ export function OrdersBoard({
   // Romanian orders are also stored with is_international (so no Bulgarian automation touches them) but they DO belong in this list.
   const notLead = (o: AdminOrder) => !o.is_international || isRoOrder(o);
   const inMarket = (o: AdminOrder) => market === "all" || marketOf(o) === market;
-  const live = orders.filter((o) => !o.excluded_from_stock && notLead(o) && inMarket(o));
+  const inSource = (o: AdminOrder) => {
+    if (source === "all") return true;
+    if (source === "chronobg") return (o.source_site ?? "lorenzo-ricci") === "chronobg";
+    return (o.source_site ?? "lorenzo-ricci") !== "chronobg"; // "lr"
+  };
+  const live = orders.filter((o) => !o.excluded_from_stock && notLead(o) && inMarket(o) && inSource(o));
+  const hasChronobg = orders.some((o) => o.source_site === "chronobg");
   // Unpaid card attempts (status pending_payment, or cancelled with payment_status expired/failed) are NOT orders: they stay out of
   // every fulfilment tab, counter and search, and are shown only under the "Чакат плащане" chip.
   const openAttempts = live.filter(isPendingPayment);
@@ -308,8 +318,34 @@ export function OrdersBoard({
         {market === "ro" && <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>суми в лей (≈ €), доставка с румънски куриер, имейлите към клиента са на румънски</span>}
       </div>
 
-      {/* Summary — overview over everything; hidden while searching */}
-      {!searching && (
+      {/* Source filter — LR / CHRONOBG; shown only when there are chronobg orders */}
+      {hasChronobg && (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-2 flex gap-2 flex-wrap items-center" role="group" aria-label="Магазин">
+          {(["all", "lr", "chronobg"] as SourceFilter[]).map((s) => {
+            const label = s === "all" ? "Всички магазини" : s === "chronobg" ? "CHRONOBG" : "Lorenzo Ricci";
+            const active = source === s;
+            return (
+              <button
+                key={s}
+                onClick={() => setSource(s)}
+                aria-pressed={active}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 7,
+                  background: active ? (s === "chronobg" ? "#7C3AED" : "#1a1a2e") : "rgba(255,255,255,0.03)",
+                  border: `0.5px solid ${active ? (s === "chronobg" ? "#7C3AED" : "rgba(255,255,255,0.4)") : "rgba(255,255,255,0.12)"}`,
+                  borderRadius: 20, padding: "5px 13px", cursor: "pointer", fontSize: 11, fontWeight: active ? 600 : 400,
+                  color: active ? "#fff" : "rgba(255,255,255,0.5)",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Summary — overview over everything; hidden while searching; revenue chips hidden for fulfillment role */}
+      {!searching && role !== "fulfillment" && (
         <div className="border-b border-white/6">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex gap-2.5 items-stretch flex-wrap">
             <Chip onClick={() => openTab("new")}       count={stuckCount}    title="Над 24 часа"   sub="заседнали · обработи спешно" accent="#A32D2D"                  fg="#F09595" bg="rgba(163,45,45,0.16)" strong />

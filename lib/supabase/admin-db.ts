@@ -13,7 +13,7 @@ import { supabaseAdmin } from "../supabase-admin";
 // or - for the service role only - that header. So order_status_log still shows the admin's e-mail, and owner_revenue() still
 // answers only the owner.
 
-export type AdminSession = { userId: string; email: string | null; role: "owner" | "employee" };
+export type AdminSession = { userId: string; email: string | null; role: "owner" | "employee" | "fulfillment" };
 
 /** The signed-in admin of this request (session cookie + admin_users row), or null. Cached per request. */
 export const getAdminSession = cache(async (): Promise<AdminSession | null> => {
@@ -22,7 +22,8 @@ export const getAdminSession = cache(async (): Promise<AdminSession | null> => {
   if (!user) return null;
   const { data, error } = await supabaseAdmin().from("admin_users").select("role").eq("user_id", user.id).maybeSingle();
   if (error || !data) return null;
-  const role = (data as { role: string }).role === "owner" ? "owner" : "employee";
+  const rawRole = (data as { role: string }).role;
+  const role: AdminSession["role"] = rawRole === "owner" ? "owner" : rawRole === "fulfillment" ? "fulfillment" : "employee";
   return { userId: user.id, email: user.email ?? null, role };
 });
 

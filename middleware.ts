@@ -70,20 +70,22 @@ async function route(request: NextRequest): Promise<NextResponse> {
   // Matched only for the attribution cookie: the Romanian store and the sale page never had a geo redirect.
   if (pathname === "/ro" || pathname.startsWith("/ro/") || pathname === "/namalenia") return NextResponse.next();
 
-  if (!pathname.startsWith("/lr-panel-v8m3q") && !pathname.startsWith("/api/admin")) return geoRedirect(request);
+  if (!pathname.startsWith("/lr-panel-v8m3q") && !pathname.startsWith("/api/admin") && !pathname.startsWith("/api/ingest/")) return geoRedirect(request);
 
-  // Programmatic endpoint with its own Bearer-token auth — bypass the session gate.
-  if (pathname.startsWith("/api/admin/cart-abandonment")) {
+  // Programmatic endpoints with their own Bearer-token auth — bypass the session gate.
+  if (pathname.startsWith("/api/admin/cart-abandonment") || pathname.startsWith("/api/ingest/")) {
     return NextResponse.next();
   }
 
   // Refresh the Supabase session (also rotates auth cookies) and read the user.
-  const { supabaseResponse, user, isAdmin } = await updateSession(request);
+  const { supabaseResponse, user, isAdmin, adminRole } = await updateSession(request);
 
   // Login screen: always reachable. If already authenticated, skip straight in.
   if (pathname === "/lr-panel-v8m3q/login") {
     if (user && isAdmin) {
-      return redirectWithCookies(new URL("/lr-panel-v8m3q/inventory", request.url), supabaseResponse);
+      // Fulfillment role lands on /orders (no access to /inventory).
+      const target = adminRole === "fulfillment" ? "/lr-panel-v8m3q/orders" : "/lr-panel-v8m3q/inventory";
+      return redirectWithCookies(new URL(target, request.url), supabaseResponse);
     }
     return supabaseResponse;
   }
@@ -98,8 +100,31 @@ async function route(request: NextRequest): Promise<NextResponse> {
     return redirectWithCookies(new URL("/lr-panel-v8m3q/login", request.url), supabaseResponse);
   }
 
-  // Signed in but not in admin_users: no panel, no admin API.
-  if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Signed in but not in admin_users → no panel access.
+  // Page requests: redirect to login (don't expose a JSON 403 to the browser).
+  // API requests: 403 JSON (the caller must handle it).
+  if (!isAdmin) {
+    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return redirectWithCookies(new URL("/lr-panel-v8m3q/login", request.url), supabaseResponse);
+  }
+
+  // Fulfillment role: access only to /orders and its sub-routes.
+  if (adminRole === "fulfillment") {
+    const ordersBase = "/lr-panel-v8m3q/orders";
+    const allowedPrefixes = [
+      ordersBase,
+      "/api/admin/inventory",    // needed for Econt office lookup inside order card
+      "/api/econt",
+    ];
+    // API routes for restricted tabs → 403
+    if (pathname.startsWith("/api/admin") && !allowedPrefixes.some((p) => pathname.startsWith(p))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    // Panel pages for restricted tabs → redirect to /orders
+    if (pathname.startsWith("/lr-panel-v8m3q") && !pathname.startsWith(ordersBase) && pathname !== "/lr-panel-v8m3q/login") {
+      return redirectWithCookies(new URL(ordersBase, request.url), supabaseResponse);
+    }
+  }
 
   return supabaseResponse;
 }
@@ -119,6 +144,7 @@ export const config = {
   matcher: [
     "/lr-panel-v8m3q/:path*",
     "/api/admin/:path*",
+    "/api/ingest/:path*",
     // Bulgarian storefront pages that have a Romanian twin (lib/ro/route-map.ts); nothing else is touched.
     { source: "/", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
     { source: "/watches", missing: [{ type: "header", key: "rsc" }, { type: "header", key: "next-router-prefetch" }] },
