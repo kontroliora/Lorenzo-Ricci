@@ -18,8 +18,21 @@ import { CONFIRM_REQUEST_AUTO, sendConfirmRequest } from "@/lib/confirm-request"
 import { allProducts } from "@/lib/products";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 import { calcBundleDiscount } from "@/lib/bundles";
+import { fulfillmentVisible } from "@/lib/fulfillment-filter";
 
 const ORDERS_PATH = "/lr-panel-v8m3q/orders";
+
+// Fulfillment role: an order hidden from the board (jewelry-only, lib/fulfillment-filter.ts) is "not found" for every action too.
+async function fulfillmentBlock(ids: number[]): Promise<string | null> {
+  const session = await getAdminSession();
+  if (session?.role !== "fulfillment") return null;
+  const want = [...new Set(ids)];
+  if (!want.length) return null;
+  const { data, error } = await (await adminDb()).from("orders").select("id, items, source_site").in("id", want);
+  if (error) return "Поръчката не е намерена.";
+  const rows = (data ?? []) as { items: OrderItem[] | null; source_site: string | null }[];
+  return rows.length === want.length && rows.every(fulfillmentVisible) ? null : "Поръчката не е намерена.";
+}
 
 async function patchOrder(id: number, patch: Record<string, unknown>): Promise<string | null> {
   const supabase = await adminDb();
@@ -95,6 +108,7 @@ async function notifyRo(
 
 // Потвърждава / big ПОТВЪРДИ button → confirmed (stock stays reserved).
 export async function confirmOrder(id: number): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   const supabase = await adminDb();
   const before = await snapshot(supabase, [id]);
   const blocked = refundedBlock(before) ?? roUnpaidBlock(before);
@@ -109,6 +123,7 @@ export async function confirmOrder(id: number): Promise<string | null> {
 // category: refused | unreachable | wrong_number | other. Only a genuine phone
 // refusal counts as call_state='refused' (the customer-history badge).
 export async function cancelOrder(id: number, category: string, reason: string): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   // Only a genuine phone refusal touches call_state (it feeds the customer-
   // history "отказал" badge). Other reasons keep their detail in cancel_category
   // and leave call_state alone — the enum call_state_t only allows
@@ -183,6 +198,7 @@ async function autoConfirmRequest(supabase: SupabaseClient, id: number): Promise
 // „Не вдига" → never locks. Atomic server-side increment (no race on rapid
 // presses); the audit trigger logs each attempt with the exact time + who.
 export async function markNoAnswer(id: number): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   try {
     const supabase = await adminDb();
     const { error } = await supabase.rpc("mark_no_answer", { p_id: id });
@@ -203,6 +219,7 @@ export async function markNoAnswer(id: number): Promise<string | null> {
 // address). Each row is updated individually so the audit trigger fires (and
 // logs) once per order — a group action leaves one audit entry per order. ──────
 export async function confirmOrders(ids: number[]): Promise<string | null> {
+  { const denied = await fulfillmentBlock(ids); if (denied) return denied; }
   if (!ids.length) return null;
   const supabase = await adminDb();
   const before = await snapshot(supabase, ids);
@@ -217,6 +234,7 @@ export async function confirmOrders(ids: number[]): Promise<string | null> {
 }
 
 export async function cancelOrders(ids: number[], category: string, reason: string): Promise<string | null> {
+  { const denied = await fulfillmentBlock(ids); if (denied) return denied; }
   if (!ids.length) return null;
   const patch: Record<string, unknown> = { status: "cancelled", cancel_category: category, cancel_reason: reason || null };
   if (category === "refused") patch.call_state = "refused";
@@ -237,6 +255,7 @@ export async function cancelOrders(ids: number[], category: string, reason: stri
 // (the customer meant one order; a cancellation mail would only confuse - not even a Romanian one, so notifyRo is deliberately not called).
 // call_state is left alone, so the customer's "отказал" history is not touched. Only an order still holding stock and not yet shipped.
 export async function cancelAsDuplicate(id: number): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   const supabase = await adminDb();
   const [b] = await snapshot(supabase, [id]);
   if (!b) return "Поръчката не е намерена.";
@@ -255,6 +274,7 @@ export async function cancelAsDuplicate(id: number): Promise<string | null> {
 
 // "Не е дубликат": the owner says these orders are legitimate. They stop counting for duplicate detection (also for any later order).
 export async function dismissDuplicateGroup(ids: number[]): Promise<string | null> {
+  { const denied = await fulfillmentBlock(ids); if (denied) return denied; }
   if (!ids.length) return null;
   const supabase = await adminDb();
   const { error } = await supabase.from("orders").update({ duplicate_dismissed_at: new Date().toISOString() }).in("id", ids);
@@ -269,6 +289,7 @@ export async function dismissDuplicateGroup(ids: number[]): Promise<string | nul
 }
 
 export async function markNoAnswerOrders(ids: number[]): Promise<string | null> {
+  { const denied = await fulfillmentBlock(ids); if (denied) return denied; }
   if (!ids.length) return null;
   try {
     const supabase = await adminDb();
@@ -301,6 +322,7 @@ async function codGuard(snap: Snap | undefined, awb: string): Promise<string | n
 
 // Ship → tracking required. The DB trigger also blocks 'shipped' without it.
 export async function shipOrder(id: number, tracking: string): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   const t = (tracking ?? "").trim();
   const [snap] = await snapshot(await adminDb(), [id]);
   if (snap && isRoOrder(snap)) return shipRoOrder(id, t, ""); // a Romanian order has an AWB of its own courier, never an Econt waybill
@@ -316,6 +338,7 @@ export async function shipOrder(id: number, tracking: string): Promise<string | 
 // "colet expediat" e-mail (once: ship_email_sent_at). The Bulgarian shipped e-mail is driven by Econt tracking and never fires
 // for a Romanian order (is_international = true, see lib/market.ts).
 export async function shipRoOrder(id: number, awb: string, trackUrl: string): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   const tracking = (awb ?? "").trim();
   if (!tracking) return "Въведи AWB номер на куриера първо";
   const typed = (trackUrl ?? "").trim();
@@ -351,6 +374,7 @@ export async function shipRoOrder(id: number, awb: string, trackUrl: string): Pr
 // stored as newline-separated lines inside call_notes (no schema change) so a
 // note a caller wrote is NEVER overwritten/lost. Time stamped in Europe/Sofia.
 export async function addOrderNote(id: number, text: string): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   const t = (text ?? "").trim();
   if (!t) return null;
   const supabase = await adminDb();
@@ -372,6 +396,7 @@ export async function addOrderNote(id: number, text: string): Promise<string | n
 // Tagged 'manual' so completions closed by hand stay distinguishable from the
 // ones Econt confirmed (those set completed_source='econt').
 export async function markCompleted(id: number): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   const supabase = await adminDb();
   const before = await snapshot(supabase, [id]);
   const err = await patchOrder(id, {
@@ -388,6 +413,7 @@ export async function markCompleted(id: number): Promise<string | null> {
 // (the cron's Econt receipt, or the "Взех пратката" button), never in transit.
 // Sets returning_at so the cron may auto-restock it once Econt confirms receipt.
 export async function markReturned(id: number): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   const supabase = await adminDb();
   const before = await snapshot(supabase, [id]);
   const nowIso = new Date().toISOString();
@@ -410,6 +436,7 @@ export async function markReturned(id: number): Promise<string | null> {
 // a later cron pass can't double-count). Uses the admin's own session so the
 // audit trigger records WHO pressed it (restocked_source also records 'button').
 export async function markRestocked(id: number): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   const supabase = await adminDb();
   const res = await markRestockedTx(supabase, id, "button", new Date().toISOString());
   if (res === "already") return "Вече е получена — наличността не се вдига втори път.";
@@ -420,6 +447,7 @@ export async function markRestocked(id: number): Promise<string | null> {
 // Returned goods physically inspected and put back on the shelf. (Legacy flag —
 // superseded by the 'restocked' status; kept so old data/routes don't break.)
 export async function markReturnReviewed(id: number): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   return patchOrder(id, { return_reviewed: true });
 }
 
@@ -450,6 +478,7 @@ export async function openComplaint(
   restock: boolean,
   outcome?: ComplaintOutcome,
 ): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   const supabase = await adminDb();
   const [before] = await snapshot(supabase, [id]);
   if (!before) return "Поръчката не е намерена.";
@@ -494,6 +523,7 @@ export async function openComplaint(
  * instead - the money stays with us) or 'rejected' (not accepted - turnover keeps it).
  */
 export async function setComplaintState(id: number, state: "open" | "resolved" | "replaced" | "rejected"): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   const supabase = await adminDb();
   const { error } = await supabase
     .from("orders")
@@ -513,6 +543,7 @@ export async function setComplaintState(id: number, state: "open" | "resolved" |
  * physically on the shelf, and correcting the count there is the inventory tab's job.
  */
 export async function clearComplaint(id: number): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   const supabase = await adminDb();
   const [before] = await snapshot(supabase, [id]);
   const { error } = await supabase
@@ -559,6 +590,7 @@ export async function matchTracking(): Promise<{ ok: boolean; message: string; r
 
 // Confirm a suggested (uncertain) match → fill the tracking number + mark shipped.
 export async function confirmMatch(orderId: number, awb: string): Promise<string | null> {
+  { const denied = await fulfillmentBlock([orderId]); if (denied) return denied; }
   const supabase = await adminDb();
   const [snap] = await snapshot(supabase, [orderId]);
   const blocked = refundedBlock(snap ? [snap] : []) ?? roUnpaidBlock(snap ? [snap] : []) ?? (await codGuard(snap, awb));
@@ -591,6 +623,7 @@ export async function checkEcontStatuses(): Promise<{ ok: boolean; message: stri
 
 // Discrete "mark as fake / test" toggle — excludes the order from stock entirely.
 export async function setFake(id: number, fake: boolean): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   return patchOrder(id, { excluded_from_stock: fake });
 }
 
@@ -598,6 +631,7 @@ export async function setFake(id: number, fake: boolean): Promise<string | null>
 // so the order comes back in exactly the status it had. The database trigger writes the history row (маркиране -> върната в реални,
 // with the admin's e-mail); should it not have (trigger missing), the row is written here, so an undo is never unlogged.
 export async function restoreFake(id: number): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   const supabase = await adminDb();
   const logRows = async () => (await supabase.from("order_status_log").select("order_id", { count: "exact", head: true }).eq("order_id", id)).count ?? 0;
   const before = await logRows();
@@ -736,6 +770,7 @@ export async function createManualOrder(input: ManualOrderInput): Promise<{ ok: 
  * e-mails exactly as when you press the button yourself), logged as you. Обадено has no panel equivalent.
  */
 export async function applyPartnerMark(id: number): Promise<string | null> {
+  { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   const supabase = await adminDb();
   const { data: o, error } = await supabase.from("orders").select("order_ref, status").eq("id", id).single();
   if (error || !o) return error?.message ?? "Поръчката липсва";

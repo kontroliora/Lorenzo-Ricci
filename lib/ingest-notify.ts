@@ -1,3 +1,4 @@
+// mail-policy: internal
 // Email notification for every new chronobg (and future ingest-source) order.
 // Sent to env CHRONOBG_NOTIFY_EMAIL. A failure is logged but never throws — the
 // order is already saved before this is called.

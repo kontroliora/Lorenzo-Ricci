@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual, createHash } from "crypto";
-import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { newOrderRef } from "@/lib/order-ref";
 import { sendChronobgNotify } from "@/lib/ingest-notify";
@@ -34,37 +33,80 @@ function checkBearer(req: NextRequest): boolean {
   }
 }
 
-// ── Zod schema ────────────────────────────────────────────────────────────────
-const ItemSchema = z.object({
-  handle: z.string().optional(),
-  no: z.string().optional(),
-  title: z.string().optional(),
-  qty: z.number().int().positive().optional(),
-  unit_price: z.number().nonnegative().optional(),
-});
+// ── Payload validation ────────────────────────────────────────────────────────
+type IngestItem = { handle?: string; no?: string; title?: string; qty?: number; unit_price?: number };
+type IngestPayload = {
+  source: string;
+  order_ref?: string;
+  created_at?: string;
+  customer: { name: string; phone: string; email?: string };
+  delivery?: { city?: string; econt_office?: string };
+  payment?: string;
+  items?: IngestItem[];
+  subtotal?: number;
+  shipping?: number;
+  total?: number;
+  order_summary?: string;
+};
 
-const IngestSchema = z.object({
-  source: z.string().min(1),
-  order_ref: z.string().optional(),
-  created_at: z.string().optional(),
-  customer: z.object({
-    name: z.string().min(1),
-    phone: z.string().min(6),
-    email: z.string().email().optional().or(z.literal("")).optional(),
-  }),
-  delivery: z.object({
-    city: z.string().optional(),
-    econt_office: z.string().optional(),
-  }).optional(),
-  payment: z.string().optional(),
-  items: z.array(ItemSchema).optional(),
-  subtotal: z.number().nonnegative().optional(),
-  shipping: z.number().nonnegative().optional(),
-  total: z.number().nonnegative().optional(),
-  order_summary: z.string().optional(),
-});
+type Obj = Record<string, unknown>;
+const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
+const optStr = (v: unknown) => v === undefined || v === null || typeof v === "string";
+const optNum = (v: unknown) => v === undefined || v === null || (typeof v === "number" && Number.isFinite(v) && v >= 0);
+const str = (v: unknown) => (typeof v === "string" ? v : undefined);
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-type IngestPayload = z.infer<typeof IngestSchema>;
+function validatePayload(b: unknown): { ok: true; data: IngestPayload } | { ok: false; errors: string[] } {
+  const errors: string[] = [];
+  if (!isObj(b)) return { ok: false, errors: ["body must be an object"] };
+  if (typeof b.source !== "string" || !b.source.trim()) errors.push("source: required");
+  for (const k of ["order_ref", "created_at", "payment", "order_summary"]) if (!optStr(b[k])) errors.push(`${k}: must be a string`);
+  for (const k of ["subtotal", "shipping", "total"]) if (!optNum(b[k])) errors.push(`${k}: must be a non-negative number`);
+  const c = b.customer;
+  if (!isObj(c)) errors.push("customer: required");
+  else {
+    if (typeof c.name !== "string" || !c.name.trim()) errors.push("customer.name: required");
+    if (typeof c.phone !== "string" || c.phone.trim().length < 6) errors.push("customer.phone: required (min 6 chars)");
+    if (c.email !== undefined && c.email !== null && c.email !== "" && (typeof c.email !== "string" || !EMAIL_RE.test(c.email))) errors.push("customer.email: invalid");
+  }
+  const d = b.delivery;
+  if (d !== undefined && d !== null) {
+    if (!isObj(d)) errors.push("delivery: must be an object");
+    else for (const k of ["city", "econt_office"]) if (!optStr(d[k])) errors.push(`delivery.${k}: must be a string`);
+  }
+  const items = b.items;
+  if (items !== undefined && items !== null) {
+    if (!Array.isArray(items)) errors.push("items: must be an array");
+    else items.forEach((it, i) => {
+      if (!isObj(it)) { errors.push(`items[${i}]: must be an object`); return; }
+      for (const k of ["handle", "no", "title"]) if (!optStr(it[k])) errors.push(`items[${i}].${k}: must be a string`);
+      if (it.qty !== undefined && it.qty !== null && !(Number.isInteger(it.qty) && (it.qty as number) > 0)) errors.push(`items[${i}].qty: positive integer`);
+      if (!optNum(it.unit_price)) errors.push(`items[${i}].unit_price: non-negative number`);
+    });
+  }
+  if (errors.length) return { ok: false, errors };
+  const cu = c as Obj;
+  const de = isObj(d) ? d : undefined;
+  return {
+    ok: true,
+    data: {
+      source: (b.source as string).trim(),
+      order_ref: str(b.order_ref) || undefined,
+      created_at: str(b.created_at) || undefined,
+      customer: { name: (cu.name as string).trim(), phone: (cu.phone as string).trim(), email: str(cu.email) || undefined },
+      delivery: de ? { city: str(de.city), econt_office: str(de.econt_office) } : undefined,
+      payment: str(b.payment),
+      items: Array.isArray(items)
+        ? (items as Obj[]).map((it) => ({ handle: str(it.handle), no: str(it.no), title: str(it.title), qty: num(it.qty), unit_price: num(it.unit_price) }))
+        : undefined,
+      subtotal: num(b.subtotal),
+      shipping: num(b.shipping),
+      total: num(b.total),
+      order_summary: str(b.order_summary),
+    },
+  };
+}
 
 // ── order_summary parser ──────────────────────────────────────────────────────
 // Formats:
@@ -157,9 +199,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
   }
 
-  const parsed = IngestSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ ok: false, error: "Validation error", details: parsed.error.flatten() }, { status: 400 });
+  const parsed = validatePayload(body);
+  if (!parsed.ok) {
+    return NextResponse.json({ ok: false, error: "Validation error", details: parsed.errors }, { status: 400 });
   }
   const data = parsed.data;
 

@@ -27,13 +27,14 @@ const OWNER_TABS: { href: string; label: string; match?: string[] }[] = [
  * Primary admin navigation — big, tappable tabs shown on every panel page.
  * Distinct from the public storefront menu.
  */
-export function AdminNav() {
+export function AdminNav({ role: serverRole }: { role?: string } = {}) {
   const pathname = usePathname() ?? "";
-  const [owner, setOwner] = useState(false);
+  const [owner, setOwner] = useState(serverRole === "owner");
 
-  const [role, setRole] = useState<string>("employee");
+  const [role, setRole] = useState<string>(serverRole ?? "employee");
 
   useEffect(() => {
+    if (serverRole) return;
     // admin_users self-read RLS returns only the caller's own role row.
     createClient()
       .from("admin_users")
@@ -44,7 +45,7 @@ export function AdminNav() {
         setRole(r);
         setOwner(r === "owner");
       });
-  }, []);
+  }, [serverRole]);
 
   // fulfillment sees only Поръчки
   const tabs = role === "fulfillment" ? TABS.filter((t) => t.href.includes("/orders")) : owner ? [...TABS, ...OWNER_TABS] : TABS;

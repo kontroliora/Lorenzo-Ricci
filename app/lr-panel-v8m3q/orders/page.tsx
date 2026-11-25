@@ -35,9 +35,11 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const stripeKey: "live" | "test" | "none" = !rawKey ? "none" : modeOfKey(rawKey) === "live" ? "live" : "test";
   // "Изоставени колички": a problem reading them must never take the orders page down.
   let carts: AbandonedCart[] = [];
-  try { carts = await getAbandonedCarts(nowMs); } catch (e) { console.error("[orders] abandoned carts unavailable:", e instanceof Error ? e.message : e); }
   let stuck: StuckSummary | null = null;
-  try { stuck = await getStuckSummary(nowMs); } catch { /* the summary is optional */ }
+  if (role !== "fulfillment") {
+    try { carts = await getAbandonedCarts(nowMs); } catch (e) { console.error("[orders] abandoned carts unavailable:", e instanceof Error ? e.message : e); }
+    try { stuck = await getStuckSummary(nowMs); } catch { /* the summary is optional */ }
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0e1f] text-white">
@@ -55,7 +57,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       </header>
 
       {/* Admin navigation */}
-      <AdminNav />
+      <AdminNav role={session?.role} />
 
       {/* Summary counters + filterable list */}
       <OrdersBoard orders={orders} histories={histories} log={log} nowMs={nowMs} initialMarket={initialMarket} carts={carts} stuck={stuck} stripeKey={stripeKey} role={role} />

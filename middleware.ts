@@ -108,20 +108,11 @@ async function route(request: NextRequest): Promise<NextResponse> {
     return redirectWithCookies(new URL("/lr-panel-v8m3q/login", request.url), supabaseResponse);
   }
 
-  // Fulfillment role: access only to /orders and its sub-routes.
+  // Fulfillment role: the orders board only (not its sub-pages such as confirm-emails); no admin API at all.
   if (adminRole === "fulfillment") {
     const ordersBase = "/lr-panel-v8m3q/orders";
-    const allowedPrefixes = [
-      ordersBase,
-      "/api/admin/inventory",    // needed for Econt office lookup inside order card
-      "/api/econt",
-    ];
-    // API routes for restricted tabs → 403
-    if (pathname.startsWith("/api/admin") && !allowedPrefixes.some((p) => pathname.startsWith(p))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-    // Panel pages for restricted tabs → redirect to /orders
-    if (pathname.startsWith("/lr-panel-v8m3q") && !pathname.startsWith(ordersBase) && pathname !== "/lr-panel-v8m3q/login") {
+    if (pathname.startsWith("/api/admin")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (pathname !== ordersBase && pathname !== `${ordersBase}/`) {
       return redirectWithCookies(new URL(ordersBase, request.url), supabaseResponse);
     }
   }
