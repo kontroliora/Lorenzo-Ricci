@@ -90,6 +90,23 @@ export function Footer({ reviewStats }: { reviewStats?: ReviewStats | null }) {
           ))}
         </div>
 
+        {/* Company / legal */}
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5 mb-8 font-sans text-[11px] font-light text-ink-faint tracking-wide leading-relaxed">
+          <div>
+            <p className="text-ink-muted">Лоренцо Ричи ЕООД</p>
+            <p>ЕИК: 207644462</p>
+            <p>Адрес на управление: р-н Приморски, ул. Петър Слабаков 33</p>
+            <p>Имейл: <a href="mailto:info@lorenzo-ricci.com" className="hover:text-navy transition-colors">info@lorenzo-ricci.com</a></p>
+            <p>ДДС №: BG207644462</p>
+          </div>
+          <div className="flex flex-wrap gap-x-5 gap-y-1 lg:justify-end lg:max-w-md">
+            <LegalLink href="/policies/privacy">Политика за поверителност</LegalLink>
+            <LegalLink href="/policies/returns">Право на отказ и връщане</LegalLink>
+            <LegalLink href="https://kzp.bg" external>Комисия за защита на потребителите</LegalLink>
+            <LegalLink href="https://ec.europa.eu/consumers/odr" external>Платформа за онлайн решаване на спорове</LegalLink>
+          </div>
+        </div>
+
         {/* Bottom */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="font-sans text-[10px] font-light text-ink-faint tracking-widest uppercase">
@@ -124,6 +141,13 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
       {children}
     </Link>
   );
+}
+
+function LegalLink({ href, external, children }: { href: string; external?: boolean; children: React.ReactNode }) {
+  const cls = "hover:text-navy transition-colors duration-300 [@media(pointer:coarse)]:py-2 [@media(pointer:coarse)]:inline-block";
+  return external
+    ? <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>{children}</a>
+    : <Link href={href} className={cls}>{children}</Link>;
 }
 
 function SocialLink({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
