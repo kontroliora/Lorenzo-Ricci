@@ -21,10 +21,13 @@ function checkRateLimit(ip: string): boolean {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function checkBearer(req: NextRequest): boolean {
-  const secret = process.env.ORDER_WEBHOOK_SECRET ?? "";
-  if (!secret) return false;
-  const auth = req.headers.get("authorization") ?? "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const secret = (process.env.ORDER_WEBHOOK_SECRET ?? "").trim();
+  if (!secret) {
+    console.error("[ingest/orders] ORDER_WEBHOOK_SECRET is not set");
+    return false;
+  }
+  const auth = (req.headers.get("authorization") ?? "").trim();
+  const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
   if (!token || token.length !== secret.length) return false;
   try {
     return timingSafeEqual(Buffer.from(token), Buffer.from(secret));
