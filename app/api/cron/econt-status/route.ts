@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { reconcileShippedOrders, matchTrackingNumbers, classifyExistingReturns } from "@/lib/econt";
+import { promoteAcceptedLabels } from "@/lib/econt-shipping";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,6 +32,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const sb = createClient(url, key, { auth: { persistSession: false } });
+    // 0. labels made from the panel that Econt has physically accepted -> shipped with that AWB
+    const promoted = await promoteAcceptedLabels(sb).catch((e) => { console.error("[EcontCron] promote labels:", e); return 0; });
     // 1. auto-fill tracking numbers (sure matches only — never confirms uncertain)
     const match = await matchTrackingNumbers(sb);
     // 2. reconcile shipped → delivered/returned (returns get auto-classified)
@@ -38,7 +41,7 @@ export async function GET(req: NextRequest) {
     // 3. backfill return_kind for any already-returned orders not yet classified
     const backfilledReturns = await classifyExistingReturns(sb);
     console.log("[EcontCron]", JSON.stringify({ autoFilled: match.autoFilled.length, pending: match.pending.length, completed: status.completed, returned: status.returned, restocked: status.restocked, backfilledReturns }));
-    return NextResponse.json({ ok: true, autoFilled: match.autoFilled.length, pending: match.pending.length, ...status, backfilledReturns });
+    return NextResponse.json({ ok: true, promoted, autoFilled: match.autoFilled.length, pending: match.pending.length, ...status, backfilledReturns });
   } catch (e) {
     console.error("[EcontCron] error:", e);
     return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });

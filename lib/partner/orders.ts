@@ -145,7 +145,10 @@ export type PartnerOrderView = {
   pickup: PickupInfo | null;   // waiting at the Econt office since day 3+ (set by the server from Econt), else null
   state: { status: PartnerStatus; label: string; note: string; updatedAt: string | null };   // HIS mark ("new" = none yet)
   duplicate: PartnerDuplicate | null;   // "ДУБЛИРАЩА ПОРЪЧКА": set by the server, which sees e-mail / address (he never does); null = not a repeat
+  history?: PartnerHistoryRow[];        // who did what on this order, oldest first (set by the server; comment TEXT is never copied)
 };
+
+export type PartnerHistoryRow = { text: string; who: string; at: string };
 
 export type PartnerState = { status?: string | null; note?: string | null; updated_at?: string | null } | null | undefined;
 

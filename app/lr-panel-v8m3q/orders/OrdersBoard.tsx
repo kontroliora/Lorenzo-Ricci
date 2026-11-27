@@ -4,6 +4,8 @@ import { OrderCard } from "./OrderCard";
 import { GroupedOrderCard } from "./GroupedOrderCard";
 import { CreateOrderForm } from "./CreateOrderForm";
 import { MatchPanel } from "./MatchPanel";
+import { LiveRefresh, LabelToolbar } from "./BoardLive";
+import { SendersPanel } from "./SendersPanel";
 import { AbandonedCartsView } from "./AbandonedCarts";
 import { cartSection, type AbandonedCart } from "@/lib/abandoned-carts";
 import type { StuckSummary } from "@/lib/checkout-events";
@@ -134,7 +136,7 @@ const MARKETS: { key: MarketFilter; label: string }[] = [
 type SourceFilter = "all" | "lr" | "chronobg";
 
 export function OrdersBoard({
-  orders: ordersRaw, histories, log, nowMs, initialMarket = "all", carts = [], stuck = null, stripeKey = "none", role = "employee",
+  orders: ordersRaw, histories, log, nowMs, initialMarket = "all", carts = [], stuck = null, stripeKey = "none", role = "employee", labelsMode = "off",
 }: {
   orders: AdminOrder[];
   histories: Record<string, CustomerHistory>;
@@ -145,6 +147,7 @@ export function OrdersBoard({
   stuck?: StuckSummary | null;            // where customers got stuck in the checkout in the last 24 h (table checkout_events), shown with the carts
   stripeKey?: "live" | "test" | "none";   // mode of the site's Stripe key (not the key): what a card order's cancel will do
   role?: string;   // 'owner' | 'employee' | 'fulfillment'
+  labelsMode?: "off" | "demo" | "live";   // Econt labels from the panel (lib/econt-shipping.ts): off = no label UI at all
 }) {
   // A PAID card order needs no confirmation call: it is shown under "За изпълнение" (also when its row still says "new"), never under "За обаждане".
   const orders = ordersRaw.map(boardStatus);
@@ -237,7 +240,7 @@ export function OrdersBoard({
   const matches = searching ? orders.filter((o) => orderMatches(o, query)) : [];
 
   const card = (o: AdminOrder) => (
-    <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} now={now} onNotice={setNotice} stripeKey={stripeKey} dup={dup.byId.get(o.id)} onFocusOrder={setQuery} />
+    <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} now={now} onNotice={setNotice} stripeKey={stripeKey} dup={dup.byId.get(o.id)} onFocusOrder={setQuery} labelsMode={labelsMode} />
   );
 
   // Render a same-customer cluster: single → normal card; 2+ identical address →
@@ -281,6 +284,7 @@ export function OrdersBoard({
       {/* Call-window timer — always visible; guidance only, no penalty */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
         <CallWindowBanner now={now} dueCount={dueCount} />
+        <div style={{ marginTop: 6, textAlign: "right" }}><LiveRefresh /></div>
       </div>
 
       {notice && (
@@ -524,6 +528,8 @@ export function OrdersBoard({
               </>
             ) : tab === "confirmed" ? (
               <>
+                {market !== "ro" && labelsMode !== "off" && <LabelToolbar mode={labelsMode} />}
+                {market !== "ro" && role === "owner" && <SendersPanel />}
                 {market !== "ro" && <MatchPanel />}
                 {tabOrders.length === 0
                   ? <Empty text="Няма поръчки за изпълнение." />

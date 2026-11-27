@@ -21,7 +21,7 @@ const REAL_CLS: Record<RealStatusKey, string> = {
 const MARK_CLS: Record<PartnerStatus, string> = {
   new: "", called: "text-sky-800", confirmed: "text-green-800", no_answer: "text-amber-800", cancelled: "text-red-800",
 };
-const REFRESH_MS = 20_000;
+const REFRESH_MS = 5_000;   // owner 27.11.2026: changes from the shop show within ~5 s
 const money = (n: number, cur: string) => (cur === "lei" ? `${Math.round(n)} lei` : `€${n.toFixed(2)}`);
 const when = (iso: string) => new Date(iso).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 
@@ -117,6 +117,7 @@ function OrderCard({ o, highlight, onSaved, onToast, preview }: { o: PartnerOrde
           <div>
             <p className="text-[12px] text-[#6b6456]">#{o.ref} · {when(o.createdAt)}{o.market === "ro" ? " · 🇷🇴" : ""}</p>
             <p className="text-[17px] font-semibold mt-0.5">{o.name || "-"}</p>
+            {o.history?.length ? (() => { const h = o.history[o.history.length - 1]; return <p className="text-[12px] text-[#6b6456] mt-0.5">↻ {h.text} – {h.who}, {when(h.at)}</p>; })() : null}
           </div>
           <span title="Статус на поръчката (магазин)" className={`shrink-0 text-[11px] font-bold uppercase tracking-wide px-2 py-1 rounded ${REAL_CLS[o.real.key]}`}>{o.real.label}</span>
         </div>
@@ -125,6 +126,12 @@ function OrderCard({ o, highlight, onSaved, onToast, preview }: { o: PartnerOrde
             <b>⚠ ДУБЛИРАЩА ПОРЪЧКА</b>
             <br />{partnerDuplicateText(o.duplicate)}
           </div>
+        )}
+        {o.history && o.history.length > 1 && (
+          <details className="mt-2 text-[12px] text-[#6b6456]">
+            <summary className="cursor-pointer">История ({o.history.length})</summary>
+            <ul className="mt-1 space-y-0.5">{o.history.map((h, i) => <li key={i}>{when(h.at)} · {h.text} · <b>{h.who}</b></li>)}</ul>
+          </details>
         )}
         {o.pickup && (
           <div className="mt-2 rounded-lg border-2 border-orange-400 bg-orange-50 px-3 py-2 text-[13px] text-orange-900">

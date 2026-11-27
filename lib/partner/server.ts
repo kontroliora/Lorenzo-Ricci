@@ -5,6 +5,7 @@ import { NEW_COLLECTION_PRODUCTS } from "../new-collection-products";
 import { applyOverride, getPriceOverrides } from "../price-overrides";
 import { kv } from "@vercel/kv";
 import { analyzeShipment, getRawStatuses } from "../econt";
+import type { PartnerHistoryRow } from "./orders";
 import { PARTNER_COOKIE, partnerFromCookie, type Partner } from "./access";
 import { pickupInfoOf, type PickupFacts } from "./pickup";
 import {
@@ -63,6 +64,7 @@ export async function listPartnerOrders(filter: PartnerFilter): Promise<{ orders
     if (r.status === "shipped" && r.tracking_number) v.pickup = pickupInfoOf(facts.get(awbOf(r.tracking_number)));
     return v;
   });
+  await attachHistory(sb, mine, all);
   const counts = Object.fromEntries(PARTNER_FILTERS.map((f) => [f, all.filter((o) => matchesFilter(o.real.key, f, o.pickup)).length])) as Record<PartnerFilter, number>;
   return { orders: all.filter((o) => matchesFilter(o.real.key, filter, o.pickup)), counts };
 }
@@ -111,4 +113,37 @@ export async function partnerPieces(): Promise<PartnerPiece[]> {
       price: product.price, stock: stock.has(p.slug) ? Number(stock.get(p.slug)) : null, onSale: !product.hidden,
     };
   });
+}
+
+// ── History on his orders (owner, 27.11.2026) ───────────────────────────────
+// The shop's history rows (order_status_log: status, calls, label) + his own marks (partner_status_log), only for the orders he may
+// see (`mine` is already cut by partnerVisible). The text of an internal comment, fake-marks and print rows are not copied.
+const HIDDEN_FOR_PARTNER = new Set(["маркиране", "печат", "върната стока"]);
+async function attachHistory(sb: ReturnType<typeof supabaseAdmin>, mine: Row[], views: PartnerOrderView[]): Promise<void> {
+  try {
+    const { whoName, actionText, PARTNER_NAME } = await import("../admin-names");
+    const byRef = new Map(views.map((v) => [v.ref, v]));
+    const refById = new Map(mine.map((r) => [Number((r as { id?: number }).id), String(r.order_ref)]));
+    const ids = [...refById.keys()].filter((n) => Number.isFinite(n));
+    const push = (ref: string, row: PartnerHistoryRow) => { const v = byRef.get(ref); if (v) (v.history ??= []).push(row); };
+    for (let i = 0; i < ids.length; i += 300) {
+      const { data } = await sb.from("order_status_log").select("order_id, old_status, new_status, changed_by_email, changed_at").in("order_id", ids.slice(i, i + 300));
+      for (const r of (data ?? []) as { order_id: number; old_status: string | null; new_status: string | null; changed_by_email: string | null; changed_at: string }[]) {
+        if (HIDDEN_FOR_PARTNER.has(r.old_status ?? "")) continue;
+        const text = r.old_status === "коментар" ? "Коментар" : actionText(r);
+        push(refById.get(r.order_id) ?? "", { text, who: whoName(r.changed_by_email), at: r.changed_at });
+      }
+    }
+    const refs = [...byRef.keys()];
+    const WORD: Record<string, string> = { new: "без отметка", called: "Обадено", confirmed: "Потвърдена (партньор)", cancelled: "Отказана (партньор)", no_answer: "Не вдига (партньор)" };
+    for (let i = 0; i < refs.length; i += 300) {
+      const { data } = await sb.from("partner_status_log").select("order_ref, old_status, new_status, changed_at").in("order_ref", refs.slice(i, i + 300));
+      for (const r of (data ?? []) as { order_ref: string; old_status: string | null; new_status: string | null; changed_at: string }[]) {
+        push(r.order_ref, { text: r.new_status !== r.old_status ? WORD[r.new_status ?? ""] ?? String(r.new_status) : "Бележка", who: PARTNER_NAME, at: r.changed_at });
+      }
+    }
+    for (const v of views) v.history?.sort((a, b) => a.at.localeCompare(b.at));
+  } catch (e) {
+    console.error("[partner] history unavailable:", e instanceof Error ? e.message : e);   // the list still works without it
+  }
 }

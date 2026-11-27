@@ -7,7 +7,7 @@ import { Resend } from "resend";
 import { ORDER_REPLY_TO } from "@/lib/email-layout";
 import { langOf, mayEmail } from "@/lib/mail-policy";
 import { hasCardMoney } from "@/lib/payments";
-import { getRawStatuses, analyzeShipment } from "./econt";
+import { getRawStatusesFor, analyzeShipment } from "./econt";
 import { getOfficeList, type OfficeList } from "./econt-offices";
 import {
   buildShippedEmail, buildReminderOfficeEmail, buildReminderDoorEmail,
@@ -66,11 +66,11 @@ export function toEmailData(o: OrderRow, awb: string, officeName = ""): Shipment
 
 const SELECT = "id, order_ref, name, email, tracking_number, items, total";
 // Card orders: the e-mails say "paid by card". The columns exist once stripe_payments.sql has run; until then the old select is used.
-const SELECT_PAID = `${SELECT}, payment_method, payment_status, stripe_payment_intent`;
+const SELECT_PAID = `${SELECT}, payment_method, payment_status, stripe_payment_intent, source_site`;   // source_site: which Econt account to ask
 type Q = { eq: (c: string, v: unknown) => Q; neq: (c: string, v: unknown) => Q; not: (c: string, op: string, v: unknown) => Q; is: (c: string, v: unknown) => Q } & PromiseLike<{ data: unknown; error: { message: string } | null }>;
 async function readOrders(build: (cols: string) => Q): Promise<{ data: unknown; error: { message: string } | null }> {
   const res = await build(SELECT_PAID);
-  return res.error && /payment_(method|status)|stripe_payment_intent/.test(res.error.message) ? build(SELECT) : res;
+  return res.error && /payment_(method|status)|stripe_payment_intent|source_site/.test(res.error.message) ? build(SELECT) : res;
 }
 
 // "name, address" of the Econt office holding the parcel, from Econt's office list (cached a day); just the name when the list
@@ -100,7 +100,7 @@ export async function sendShipConfirmations(sb: SupabaseClient): Promise<{ sent:
   const orders = (data ?? []) as OrderRow[];
   if (!orders.length) return { sent: 0, scanned: 0 };
 
-  const statuses = await getRawStatuses(orders.map((o) => clean(o.tracking_number)));
+  const statuses = await getRawStatusesFor(orders.map((o) => ({ tracking_number: clean(o.tracking_number), source_site: (o as { source_site?: string | null }).source_site })));
   const nowIso = new Date().toISOString();
   let sent = 0;
   for (const o of orders) {
@@ -148,7 +148,7 @@ export async function sendReminders(sb: SupabaseClient): Promise<{ sent: number;
   const orders = (data ?? []) as OrderRow[];
   if (!orders.length) return { sent: 0, scanned: 0 };
 
-  const statuses = await getRawStatuses(orders.map((o) => clean(o.tracking_number)));
+  const statuses = await getRawStatusesFor(orders.map((o) => ({ tracking_number: clean(o.tracking_number), source_site: (o as { source_site?: string | null }).source_site })));
   const now = Date.now();
   const nowIso = new Date(now).toISOString();
   let sent = 0;

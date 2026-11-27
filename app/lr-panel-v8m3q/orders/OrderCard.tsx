@@ -31,6 +31,8 @@ import { onePlusOneOfOrder } from "@/lib/one-plus-one";
 import type { DupGroup } from "@/lib/duplicate-orders";
 import { DuplicateStrip, DUP_BG, DUP_BORDER } from "./DuplicateStrip";
 import { hasJewelleryLines } from "@/lib/fulfillment-filter";
+import { actionText, actionLine, whoName, shortWhen } from "@/lib/admin-names";
+import { LabelBox } from "./LabelBox";
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
   new:       { label: "Нова · за обаждане", bg: "#412402", fg: "#FAC775" },
@@ -80,7 +82,7 @@ const sofiaDateTime = (iso: string) =>
   new Date(iso).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 export function OrderCard({
-  order, history, log, now, onNotice, stripeKey = "none", dup, onFocusOrder,
+  order, history, log, now, onNotice, stripeKey = "none", dup, onFocusOrder, labelsMode = "off",
 }: {
   order: AdminOrder;
   history?: CustomerHistory;
@@ -90,7 +92,10 @@ export function OrderCard({
   stripeKey?: "live" | "test" | "none"; // mode of the site's Stripe key: decides whether cancelling a card order refunds it
   dup?: DupGroup;                        // repeat orders of the same customer within 72 h (lib/duplicate-orders.ts): yellow card + badge
   onFocusOrder?: (ref: string) => void;  // jump to another order of that group
+  labelsMode?: "off" | "demo" | "live";  // Econt labels from the panel (lib/econt-shipping.ts)
 }) {
+  const seen = order.updated_at ?? null;   // optimistic lock: the action is refused if someone else changed the order since
+  const lastAction = [...(log ?? [])].reverse().find((r) => r.old_status !== "печат");
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
   const ro = isRoOrder(order); // Romanian order: lei, AWB of a Romanian courier, every action also e-mails the customer in Romanian
@@ -144,7 +149,7 @@ export function OrderCard({
   // helper surfaces it inline and we stay put (no silent "looks like it worked").
   const doCancel = (category: string, reason: string) =>
     run(async () => {
-      const err = await cancelOrder(order.id, category, reason);
+      const err = await cancelOrder(order.id, category, reason, seen);
       if (!err) { setCancelStep("closed"); setCancelText(""); }
       return err;
     });
@@ -244,6 +249,11 @@ export function OrderCard({
             <span style={{ display: "inline-block", background: histBadge.bg, color: histBadge.fg, fontSize: 11, padding: "3px 9px", borderRadius: 20 }}>{histBadge.text}</span>
             <PaymentBadge order={order} />
           </div>
+          {lastAction && (
+            <div title="Последно действие по поръчката" style={{ color: "rgba(255,255,255,0.5)", fontSize: 11.5, marginTop: 6 }}>
+              ↻ {actionLine(lastAction)}
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
           {excluded && <span style={{ background: "#2C2C2A", color: "#D3D1C7", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>Фалшива</span>}
@@ -255,6 +265,9 @@ export function OrderCard({
           <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 12 }}>{fmtDate(order.created_at)}</span>
         </div>
       </div>
+
+      {/* Econt label: number, print, status, error + retry (every role that sees the order) */}
+      {labelsMode !== "off" && !ro && !order.is_international && <LabelBox order={order} mode={labelsMode} onNotice={onNotice} />}
 
       {/* Repeat orders of this customer (badge + banner + group) */}
       {dupHere && dup && <DuplicateStrip group={dup} currentIds={[order.id]} onFocusOrder={onFocusOrder ?? (() => {})} onNotice={onNotice} />}
@@ -442,8 +455,8 @@ export function OrderCard({
             <>
               <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>Резултат от обаждането</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button disabled={pending} onClick={() => run(() => confirmOrder(order.id))} style={primaryBtn}>✓ Потвърждава</button>
-                <button disabled={pending} onClick={() => run(() => markNoAnswer(order.id))} style={outlineBtn("#854F0B", "#FAC775")}>✆ Не вдига{order.call_attempts > 0 ? ` (${order.call_attempts})` : ""}</button>
+                <button disabled={pending} onClick={() => run(() => confirmOrder(order.id, seen))} style={primaryBtn}>✓ Потвърждава</button>
+                <button disabled={pending} onClick={() => run(() => markNoAnswer(order.id, seen))} style={outlineBtn("#854F0B", "#FAC775")}>✆ Не вдига{order.call_attempts > 0 ? ` (${order.call_attempts})` : ""}</button>
                 <button onClick={() => setCancelStep("category")} style={outlineBtn("#A32D2D", "#F09595")}>✕ Отказва</button>
               </div>
               <div>{fakeLink}</div>
@@ -456,7 +469,7 @@ export function OrderCard({
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <input value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder={ro ? "AWB номер на румънския куриер…" : "Тракинг номер от Еконт…"} style={{ flex: 1, minWidth: 150, background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 13 }} />
                 {ro && <input value={trackUrl} onChange={(e) => setTrackUrl(e.target.value)} placeholder="Линк за проследяване (празно = Speedy с AWB)" style={{ flex: 1, minWidth: 150, background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 13 }} />}
-                <button disabled={pending} onClick={() => run(() => (ro ? shipRoOrder(order.id, tracking, trackUrl) : shipOrder(order.id, tracking)))} style={primaryBtn}>Маркирай изпратена</button>
+                <button disabled={pending} onClick={() => run(() => (ro ? shipRoOrder(order.id, tracking, trackUrl) : shipOrder(order.id, tracking, seen)))} style={primaryBtn}>Маркирай изпратена</button>
                 <button onClick={() => setCancelStep("category")} style={outlineBtn("#A32D2D", "#F09595")}>Откажи</button>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
@@ -471,8 +484,8 @@ export function OrderCard({
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                 <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>{ro ? `AWB ${order.tracking_number} · следи се ръчно (няма автоматична проверка при румънския куриер)` : `Тракинг ${order.tracking_number} · чака Еконт да потвърди взимане`}</span>
                 <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button disabled={pending} onClick={() => run(() => markCompleted(order.id))} style={ro ? primaryBtn : outlineBtn("rgba(255,255,255,0.2)", "rgba(255,255,255,0.6)")}>{ro ? "Доставена" : "Ръчно завършена"}</button>
-                  <button disabled={pending} onClick={() => run(() => markReturned(order.id))} style={outlineBtn("#A32D2D", "#F09595")}>Върната / невзета</button>
+                  <button disabled={pending} onClick={() => run(() => markCompleted(order.id, seen))} style={ro ? primaryBtn : outlineBtn("rgba(255,255,255,0.2)", "rgba(255,255,255,0.6)")}>{ro ? "Доставена" : "Ръчно завършена"}</button>
+                  <button disabled={pending} onClick={() => run(() => markReturned(order.id, seen))} style={outlineBtn("#A32D2D", "#F09595")}>Върната / невзета</button>
                 </span>
               </div>
             </>
@@ -646,12 +659,12 @@ export function OrderCard({
         </div>
       )}
 
-      {/* Owner-only audit trail (RLS returns rows only to the owner) */}
+      {/* History of the order (every role that sees the order; the page already cut the orders to the role's scope) */}
       {log && log.length > 0 && (
-        <div style={{ border: "0.5px solid #185FA5", background: "rgba(24,95,165,0.1)", borderRadius: 8, marginTop: 14, padding: "12px 14px" }}>
-          <div style={{ color: "#85B7EB", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 9 }}>🔒 Одиторски лог · само owner</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 7, fontFamily: "monospace", fontSize: 11.5, color: "rgba(255,255,255,0.7)" }}>
-            {log.map((l, i) => (<div key={i}><span style={{ color: "#F09595" }}>{l.old_status ?? "—"}</span> → <span style={{ color: "#5DCAA5" }}>{l.new_status}</span> · {l.changed_by_email ?? "—"} · {fmtDate(l.changed_at)} · промяна #{l.change_number}</div>))}
+        <details style={{ border: "0.5px solid #185FA5", background: "rgba(24,95,165,0.1)", borderRadius: 8, marginTop: 14, padding: "10px 14px" }}>
+          <summary style={{ color: "#85B7EB", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer" }}>История · {log.length} {log.length === 1 ? "промяна" : "промени"}</summary>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7, fontFamily: "monospace", fontSize: 11.5, color: "rgba(255,255,255,0.7)", marginTop: 9 }}>
+            {log.map((l, i) => (<div key={i}><span style={{ color: "rgba(255,255,255,0.4)" }}>{shortWhen(l.changed_at)}</span> · <span style={{ color: "#5DCAA5" }}>{actionText(l)}</span> · <span style={{ color: "#FAC775" }}>{whoName(l.changed_by_email)}</span></div>))}
           </div>
           {attemptTimes.length > 0 && (
             <div style={{ marginTop: 10, paddingTop: 9, borderTop: "0.5px solid rgba(133,183,235,0.25)" }}>
@@ -661,7 +674,7 @@ export function OrderCard({
               </div>
             </div>
           )}
-        </div>
+        </details>
       )}
     </div>
   );

@@ -80,6 +80,13 @@ export type AdminOrder = {
   external_order_id?: string | null;    // idempotency key from the source store
   needs_review?: boolean | null;        // items could not be parsed automatically
   raw_payload?: object | null;          // original webhook body
+  updated_at?: string | null;           // bumped by trg_enforce_tracking on every change: the optimistic-lock token (lib/order-conflict.ts)
+  // Econt label made from the panel (supabase/econt_labels.sql). Undefined until that migration runs.
+  econt_shipment_number?: string | null;
+  econt_label_pdf_url?: string | null;
+  econt_label_status?: "none" | "pending" | "created" | "error" | "cancelled" | null;
+  econt_label_error?: string | null;
+  econt_label_created_at?: string | null;
 };
 
 // Three-metric customer profile (our data only).
@@ -223,20 +230,37 @@ export async function getCustomerHistories(
   return map;
 }
 
-// Audit log — the owner only; employees get an empty object (was the RLS policy; read with the service role since rls_lockdown.sql).
-export async function getStatusLog(orderIds: number[]): Promise<Record<number, StatusLogRow[]>> {
+// Order history (owner, 27.11.2026: for EVERY role, was owner only). Scope = the ids the caller passes, which the page has
+// already cut to what this role may see (lib/fulfillment-filter.ts for Koko). The partner's own marks (partner_status_log, by
+// order_ref) are merged in as "партньор" rows, so everyone sees that Деивид called. Read with the service role (rls_lockdown.sql).
+export async function getStatusLog(orderIds: number[], refsById?: Record<number, string | null>): Promise<Record<number, StatusLogRow[]>> {
   if (!orderIds.length) return {};
-  if ((await getAdminSession())?.role !== "owner") return {};
+  if (!(await getAdminSession())) return {};
   const supabase = await adminDb();
-  const { data, error } = await supabase
-    .from("order_status_log")
-    .select("order_id, old_status, new_status, changed_by_email, changed_at, change_number")
-    .in("order_id", orderIds)
-    .order("changed_at", { ascending: true }); // chronological: oldest → newest
-  if (error) return {};
   const map: Record<number, StatusLogRow[]> = {};
-  for (const row of (data ?? []) as StatusLogRow[]) {
-    (map[row.order_id] ??= []).push(row);
+  for (let i = 0; i < orderIds.length; i += 300) {
+    const { data, error } = await supabase
+      .from("order_status_log")
+      .select("order_id, old_status, new_status, changed_by_email, changed_at, change_number")
+      .in("order_id", orderIds.slice(i, i + 300))
+      .order("changed_at", { ascending: true }); // chronological: oldest → newest
+    if (error) return {};
+    for (const row of (data ?? []) as StatusLogRow[]) (map[row.order_id] ??= []).push(row);
+  }
+  const idByRef = new Map(Object.entries(refsById ?? {}).filter(([, r]) => r).map(([id, r]) => [String(r), Number(id)]));
+  if (idByRef.size) {
+    const refs = [...idByRef.keys()];
+    const PARTNER_WORD: Record<string, string> = { new: "нова", called: "обадено", confirmed: "потвърдена", cancelled: "отказана", no_answer: "не вдига" };
+    for (let i = 0; i < refs.length; i += 300) {
+      const { data } = await supabase.from("partner_status_log").select("order_ref, old_status, new_status, new_note, changed_at").in("order_ref", refs.slice(i, i + 300));
+      for (const r of (data ?? []) as { order_ref: string; old_status: string | null; new_status: string | null; new_note: string | null; changed_at: string }[]) {
+        const id = idByRef.get(r.order_ref);
+        if (id == null) continue;
+        const what = r.new_status !== r.old_status ? PARTNER_WORD[r.new_status ?? ""] ?? r.new_status ?? "" : `бележка: ${r.new_note ?? ""}`;
+        (map[id] ??= []).push({ order_id: id, old_status: "партньор", new_status: what, changed_by_email: "Деивид", changed_at: r.changed_at, change_number: 0 });
+      }
+    }
+    for (const k of Object.keys(map)) map[Number(k)].sort((a, b) => a.changed_at.localeCompare(b.changed_at));
   }
   return map;
 }

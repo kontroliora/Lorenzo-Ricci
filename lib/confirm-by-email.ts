@@ -6,6 +6,8 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import type { ConfirmClaim } from "@/lib/order-confirm-token";
 import { deliveryText, itemLines, type ConfirmRow } from "@/lib/confirm-request";
 import { hasCardMoney } from "@/lib/payments";
+import { after } from "next/server";
+import { createEcontLabel, labelMode } from "@/lib/econt-shipping";
 
 /** What the page shows before the click: the order as the e-mail described it. */
 export type OrderSummary = { items: { name: string; color: string; qty: number; gift: boolean }[]; total: string; payment: string; delivery: string };
@@ -58,5 +60,10 @@ async function confirm(claim: ConfirmClaim): Promise<ConfirmOutcome> {
     return again.kind === "open" ? { kind: "error" } : again;
   }
   console.log("[confirm-by-email] confirmed", state.ref);
+  // Same as a phone confirmation: the Econt label is made right after (history shows it as "автоматично": no admin did it).
+  if (labelMode() !== "off") after(async () => {
+    const r = await createEcontLabel(supabaseAdmin(), claim.orderId).catch((e) => ({ ok: false as const, error: String(e) }));
+    if (!r.ok) console.warn("[confirm-by-email] label", state.ref, r.error);
+  });
   return { kind: "confirmed", ref: state.ref };
 }

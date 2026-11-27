@@ -1,4 +1,4 @@
-import { getRawStatuses } from "@/lib/econt";
+import { getRawStatuses, getEcontAuth } from "@/lib/econt";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Проследяване на пратка · Lorenzo Ricci", robots: "noindex" };
@@ -38,6 +38,8 @@ export default async function TrackPage({ params }: { params: Promise<{ awb: str
   try {
     const map = await getRawStatuses([clean]);
     status = (map.get(clean) as Record<string, unknown>) ?? null;
+    // Not one of ours: a CHRONOBG waybill lives in its own Econt account.
+    if (!status && getEcontAuth("chronobg").available) status = ((await getRawStatuses([clean], "chronobg")).get(clean) as Record<string, unknown>) ?? null;
   } catch (e) {
     console.error("[track] Econt API failed for", clean, e);
     econtDown = true;

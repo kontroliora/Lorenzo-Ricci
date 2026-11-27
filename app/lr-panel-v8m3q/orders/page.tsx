@@ -11,6 +11,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { reconcileBeforePanel } from "@/lib/stripe-reconcile";
 import { getAdminSession } from "@/lib/supabase/admin-db";
 import { fulfillmentVisible } from "@/lib/fulfillment-filter";
+import { labelMode } from "@/lib/econt-shipping";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   // Same classification as the partner view — lib/fulfillment-filter.ts uses isCollectionLine from lib/partner/orders.ts.
   const orders = role === "fulfillment" ? ordersRaw.filter(fulfillmentVisible) : ordersRaw;
   const histories = await getCustomerHistories(orders.map((o) => o.phone ?? "").filter(Boolean));
-  const log = await getStatusLog(orders.map((o) => o.id));
+  const log = await getStatusLog(orders.map((o) => o.id), Object.fromEntries(orders.map((o) => [o.id, o.order_ref])));
   const nowMs = Date.now();
   // Only the MODE of the site's Stripe key goes to the browser (never the key): the cancel dialog says whether a card order will be refunded.
   const rawKey = (process.env.STRIPE_SECRET_KEY ?? "").trim();
@@ -60,7 +61,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       <AdminNav role={session?.role} />
 
       {/* Summary counters + filterable list */}
-      <OrdersBoard orders={orders} histories={histories} log={log} nowMs={nowMs} initialMarket={initialMarket} carts={carts} stuck={stuck} stripeKey={stripeKey} role={role} />
+      <OrdersBoard orders={orders} histories={histories} log={log} nowMs={nowMs} initialMarket={initialMarket} carts={carts} stuck={stuck} stripeKey={stripeKey} role={role} labelsMode={labelMode()} />
     </div>
   );
 }

@@ -19,9 +19,13 @@ export function getEcontAuth(sourceSite?: string | null): { header: string; avai
   return { header: "Basic " + Buffer.from(`${user}:${pass}`).toString("base64"), available: !!(user && pass) };
 }
 
-function authHeader(): string {
-  return getEcontAuth(null).header;
+function authHeader(sourceSite?: string | null): string {
+  return getEcontAuth(sourceSite).header;
 }
+
+/** Which Econt account an order belongs to (the key getEcontAuth reads): chronobg has its own, everything else is ours. */
+export const econtAccountOf = (sourceSite?: string | null): "chronobg" | "lorenzo-ricci" =>
+  sourceSite === "chronobg" ? "chronobg" : "lorenzo-ricci";
 
 export type EcontStatus = {
   shipmentNumber: string;
@@ -33,12 +37,12 @@ export type EcontStatus = {
 
 export type EcontVerdict = "delivered" | "returned" | "in_transit" | "unknown";
 
-export async function getShipmentStatuses(awbs: string[]): Promise<EcontStatus[]> {
+export async function getShipmentStatuses(awbs: string[], sourceSite?: string | null): Promise<EcontStatus[]> {
   const clean = awbs.map((a) => String(a).replace(/\s+/g, "")).filter(Boolean);
   if (!clean.length) return [];
   const r = await fetch(`${BASE}.getShipmentStatuses.json`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: authHeader() },
+    headers: { "Content-Type": "application/json", Authorization: authHeader(sourceSite) },
     body: JSON.stringify({ shipmentNumbers: clean }),
     cache: "no-store",
   });
@@ -61,12 +65,12 @@ export async function getShipmentStatuses(awbs: string[]): Promise<EcontStatus[]
 // unmapped — so we can inspect every structured field (office codes/types, event
 // history, flags, deliveryTime) and find which ones reliably distinguish a
 // transit office from the recipient's final office / "available for pickup".
-export async function getShipmentStatusesRaw(awbs: string[]): Promise<unknown> {
+export async function getShipmentStatusesRaw(awbs: string[], sourceSite?: string | null): Promise<unknown> {
   const clean = awbs.map((a) => String(a).replace(/\s+/g, "")).filter(Boolean);
   if (!clean.length) return { shipmentStatuses: [] };
   const r = await fetch(`${BASE}.getShipmentStatuses.json`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: authHeader() },
+    headers: { "Content-Type": "application/json", Authorization: authHeader(sourceSite) },
     body: JSON.stringify({ shipmentNumbers: clean }),
     cache: "no-store",
   });
@@ -307,14 +311,14 @@ export async function markRestocked(
 export async function classifyExistingReturns(sb: SupabaseClient): Promise<number> {
   const { data } = await sb
     .from("orders")
-    .select("id, tracking_number, return_kind")
+    .select("id, tracking_number, return_kind, source_site")
     .in("status", ["returning", "returned"])
     .eq("is_international", false) // a Romanian AWB is never looked up at Econt
     .not("tracking_number", "is", null);
-  const rows = ((data ?? []) as { id: number; tracking_number: string; return_kind: string | null }[])
+  const rows = ((data ?? []) as { id: number; tracking_number: string; return_kind: string | null; source_site?: string | null }[])
     .filter((o) => !o.return_kind);
   if (!rows.length) return 0;
-  const rawMap = await getRawStatuses(rows.map((o) => o.tracking_number));
+  const rawMap = await getRawStatusesFor(rows);
   let done = 0;
   for (const o of rows) {
     const raw = rawMap.get(String(o.tracking_number).replace(/\s+/g, ""));
@@ -327,14 +331,33 @@ export async function classifyExistingReturns(sb: SupabaseClient): Promise<numbe
 }
 
 // awb → raw status object, for the cron / tracking page.
-export async function getRawStatuses(awbs: string[]): Promise<Map<string, RawStatus>> {
-  const data = (await getShipmentStatusesRaw(awbs)) as { shipmentStatuses?: Array<{ status: RawStatus | null }> };
+export async function getRawStatuses(awbs: string[], sourceSite?: string | null): Promise<Map<string, RawStatus>> {
+  const data = (await getShipmentStatusesRaw(awbs, sourceSite)) as { shipmentStatuses?: Array<{ status: RawStatus | null }> };
   const map = new Map<string, RawStatus>();
   for (const x of data.shipmentStatuses ?? []) {
     const num = x.status?.shipmentNumber;
     if (x.status && num) map.set(String(num).replace(/\s+/g, ""), x.status);
   }
   return map;
+}
+
+/** Statuses for orders that may belong to different Econt accounts (ours / chronobg): each AWB is asked with ITS account.
+ *  An account whose credentials are missing is skipped (its AWBs stay unknown) instead of being asked with the wrong login. */
+export async function getRawStatusesFor(rows: Array<{ tracking_number?: string | null; source_site?: string | null }>): Promise<Map<string, RawStatus>> {
+  const byAccount = new Map<string, string[]>();
+  for (const r of rows) {
+    const awb = String(r.tracking_number ?? "").replace(/\s+/g, "");
+    if (!awb) continue;
+    const acc = econtAccountOf(r.source_site);
+    byAccount.set(acc, [...(byAccount.get(acc) ?? []), awb]);
+  }
+  const out = new Map<string, RawStatus>();
+  for (const [acc, awbs] of byAccount) {
+    if (!getEcontAuth(acc).available) { console.warn(`[econt] no credentials for account ${acc}: ${awbs.length} AWB(s) not checked`); continue; }
+    const uniq = [...new Set(awbs)];
+    for (let i = 0; i < uniq.length; i += 50) for (const [k, v] of await getRawStatuses(uniq.slice(i, i + 50), acc)) out.set(k, v);
+  }
+  return out;
 }
 
 // Check "върната" BEFORE "доставена": a returned parcel reads "Върната и
@@ -363,20 +386,20 @@ export type ReconcileResult = {
 export async function reconcileShippedOrders(sb: SupabaseClient): Promise<ReconcileResult> {
   const { data, error } = await sb
     .from("orders")
-    .select("id, tracking_number")
+    .select("id, tracking_number, source_site")
     .eq("status", "shipped")
     .eq("is_international", false) // Romanian orders ship with another courier: never look them up at Econt
     .not("tracking_number", "is", null);
   if (error) throw new Error(error.message);
 
-  const list = (data ?? []) as Array<{ id: number; tracking_number: string }>;
+  const list = (data ?? []) as Array<{ id: number; tracking_number: string; source_site?: string | null }>;
   const now = new Date().toISOString();
   let completed = 0, returned = 0, restocked = 0;
   const details: ReconcileResult["details"] = [];
 
   // Pass 1: shipped → completed (delivered) / returning (coming back).
   if (list.length) {
-    const rawMap = await getRawStatuses(list.map((o) => o.tracking_number));
+    const rawMap = await getRawStatusesFor(list);
     for (const o of list) {
       const awb = String(o.tracking_number).replace(/\s+/g, "");
       const raw = rawMap.get(awb);
@@ -404,15 +427,15 @@ export async function reconcileShippedOrders(sb: SupabaseClient): Promise<Reconc
   // pre-migration schema (missing column → query errors → pass skipped).
   const ret = await sb
     .from("orders")
-    .select("id, tracking_number")
+    .select("id, tracking_number, source_site")
     .eq("status", "returning")
     .eq("is_international", false)
     .not("returning_at", "is", null)
     .is("restocked_at", null)
     .not("tracking_number", "is", null);
   if (!ret.error && ret.data?.length) {
-    const retList = ret.data as Array<{ id: number; tracking_number: string }>;
-    const retRaw = await getRawStatuses(retList.map((o) => o.tracking_number));
+    const retList = ret.data as Array<{ id: number; tracking_number: string; source_site?: string | null }>;
+    const retRaw = await getRawStatusesFor(retList);
     for (const o of retList) {
       const raw = retRaw.get(String(o.tracking_number).replace(/\s+/g, ""));
       if (!raw) continue;
@@ -439,8 +462,8 @@ function normPhone(p: string): string {
   return d;
 }
 
-export async function getMyAWB(dateFrom: string, dateTo: string, side = "sender"): Promise<MyAWB[]> {
-  const auth = authHeader();
+export async function getMyAWB(dateFrom: string, dateTo: string, side = "sender", sourceSite?: string | null): Promise<MyAWB[]> {
+  const auth = authHeader(sourceSite);
   const out: MyAWB[] = [];
   for (let page = 1; page <= 20; page++) {
     const r = await fetch(`${BASE}.getMyAWB.json`, {
@@ -466,12 +489,12 @@ export async function getMyAWB(dateFrom: string, dateTo: string, side = "sender"
 
 /** Cash-on-delivery amount of one of OUR waybills (getMyAWB, sender side, from 2 days before `sinceMs` to tomorrow).
  *  null = the waybill is not found or Econt cannot be reached - the caller must treat that as "not verified". */
-export async function econtCodAmount(awb: string, sinceMs: number): Promise<number | null> {
+export async function econtCodAmount(awb: string, sinceMs: number, sourceSite?: string | null): Promise<number | null> {
   const n = (awb ?? "").replace(/\s+/g, "");
   if (!n) return null;
   const day = (d: number) => new Date(d).toISOString().slice(0, 10);
   try {
-    const list = await getMyAWB(day(sinceMs - 2 * 86_400_000), day(Date.now() + 86_400_000), "sender");
+    const list = await getMyAWB(day(sinceMs - 2 * 86_400_000), day(Date.now() + 86_400_000), "sender", sourceSite);
     const hit = list.find((a) => a.shipmentNumber.replace(/\s+/g, "") === n);
     return hit ? hit.cdAmount : null;
   } catch {
@@ -492,7 +515,7 @@ export async function matchTrackingNumbers(sb: SupabaseClient): Promise<MatchRes
   // payment_method is read when the card-payment migration has run; before it every order is cash on delivery.
   let ordersRes: { data: unknown; error: { message: string } | null } = await sb
     .from("orders")
-    .select("id, order_ref, name, phone, total, subtotal, created_at, payment_method, payment_status, stripe_payment_intent")
+    .select("*")   // * : source_site / econt_label_status exist only after their migrations
     .eq("status", "confirmed")
     .eq("is_international", false)
     .is("tracking_number", null);
@@ -500,25 +523,35 @@ export async function matchTrackingNumbers(sb: SupabaseClient): Promise<MatchRes
     ordersRes = await sb.from("orders").select("id, order_ref, name, phone, total, subtotal, created_at").eq("status", "confirmed").eq("is_international", false).is("tracking_number", null);
   }
   if (ordersRes.error) throw new Error(ordersRes.error.message);
-  const orders = (ordersRes.data ?? []) as unknown as Array<{ id: number; order_ref: string | null; name: string | null; phone: string | null; total: number | null; subtotal: number | null; created_at: string; payment_method?: string | null; payment_status?: string | null; stripe_payment_intent?: string | null }>;
+  // An order with a label made from the panel (lib/econt-shipping.ts) already knows its AWB: it is never matched by phone
+  // (promoteAcceptedLabels moves it to shipped once Econt has the parcel).
+  const orders = ((ordersRes.data ?? []) as unknown as Array<{ id: number; order_ref: string | null; name: string | null; phone: string | null; total: number | null; subtotal: number | null; created_at: string; payment_method?: string | null; payment_status?: string | null; stripe_payment_intent?: string | null; source_site?: string | null; econt_shipment_number?: string | null }>)
+    .filter((o) => !o.econt_shipment_number);
   if (!orders.length) return { scanned: 0, autoFilled: [], pending: [], unmatched: [] };
 
   // AWBs already assigned anywhere → never reuse.
   const { data: usedData } = await sb.from("orders").select("tracking_number").not("tracking_number", "is", null);
   const usedAwbs = new Set((usedData ?? []).map((r) => String((r as { tracking_number: unknown }).tracking_number).replace(/\s+/g, "")));
+  const { data: labelData, error: labelErr } = await sb.from("orders").select("econt_shipment_number").not("econt_shipment_number", "is", null);
+  if (!labelErr) for (const r of labelData ?? []) usedAwbs.add(String((r as { econt_shipment_number: unknown }).econt_shipment_number).replace(/\s+/g, ""));
 
   const now = Date.now();
   const day = (d: number) => new Date(d).toISOString().slice(0, 10);
-  const awbs = await getMyAWB(day(now - 14 * 86_400_000), day(now + 86_400_000), "sender");
-
-  const byPhone = new Map<string, MyAWB[]>();
-  for (const a of awbs) {
-    if (usedAwbs.has(a.shipmentNumber)) continue;
-    const p = normPhone(a.receiverPhone);
-    if (!p) continue;
-    const arr = byPhone.get(p) ?? [];
-    arr.push(a);
-    byPhone.set(p, arr);
+  // Each order is matched only against the waybills of ITS Econt account (ours / chronobg).
+  const byPhoneOf = new Map<string, Map<string, MyAWB[]>>();
+  for (const acc of new Set(orders.map((o) => econtAccountOf(o.source_site)))) {
+    const byPhone = new Map<string, MyAWB[]>();
+    byPhoneOf.set(acc, byPhone);
+    if (!getEcontAuth(acc).available) continue;
+    const awbs = await getMyAWB(day(now - 14 * 86_400_000), day(now + 86_400_000), "sender", acc);
+    for (const a of awbs) {
+      if (usedAwbs.has(a.shipmentNumber)) continue;
+      const p = normPhone(a.receiverPhone);
+      if (!p) continue;
+      const arr = byPhone.get(p) ?? [];
+      arr.push(a);
+      byPhone.set(p, arr);
+    }
   }
 
   const autoFilled: MatchResult["autoFilled"] = [];
@@ -531,7 +564,7 @@ export async function matchTrackingNumbers(sb: SupabaseClient): Promise<MatchRes
     const unmatchedRow = { orderId: o.id, ref: o.order_ref, name: o.name, phone: o.phone };
     if (!p) { unmatched.push(unmatchedRow); continue; }
     const orderCreated = new Date(o.created_at).getTime();
-    const cands = (byPhone.get(p) ?? []).filter(
+    const cands = (byPhoneOf.get(econtAccountOf(o.source_site))?.get(p) ?? []).filter(
       (a) => !claimed.has(a.shipmentNumber) && a.createdDate >= orderCreated - 12 * 3_600_000,
     );
     if (!cands.length) { unmatched.push(unmatchedRow); continue; }

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { adminDb, getAdminSession } from "@/lib/supabase/admin-db";
 import { applyOfMark } from "@/lib/partner/marks";
@@ -19,6 +20,8 @@ import { allProducts } from "@/lib/products";
 import { getPriceOverrides, applyOverrides } from "@/lib/price-overrides";
 import { calcBundleDiscount } from "@/lib/bundles";
 import { fulfillmentVisible } from "@/lib/fulfillment-filter";
+import { createEcontLabel, cancelEcontLabel, labelMode, promoteAcceptedLabels } from "@/lib/econt-shipping";
+import { lockCheck, CHANGED_JUST_NOW } from "@/lib/order-conflict";
 
 const ORDERS_PATH = "/lr-panel-v8m3q/orders";
 
@@ -34,16 +37,49 @@ async function fulfillmentBlock(ids: number[]): Promise<string | null> {
   return rows.length === want.length && rows.every(fulfillmentVisible) ? null : "Поръчката не е намерена.";
 }
 
-async function patchOrder(id: number, patch: Record<string, unknown>): Promise<string | null> {
+// token: the row's updated_at from lockCheck - the write only lands while nobody changed the order since (optimistic lock).
+async function patchOrder(id: number, patch: Record<string, unknown>, token?: string | null): Promise<string | null> {
   const supabase = await adminDb();
-  const { error } = await supabase.from("orders").update(patch).eq("id", id);
+  let q = supabase.from("orders").update(patch).eq("id", id);
+  if (token) q = q.eq("updated_at", token);
+  const { data, error } = await q.select("id");
   if (error) {
     console.error("[orders] update error:", error.message);
     return error.message;
   }
+  if (token && !data?.length) return CHANGED_JUST_NOW;
   revalidatePath(ORDERS_PATH);
   return null;
 }
+
+// ── Optimistic lock (lib/order-conflict.ts): `expected` = the updated_at the board showed. ──
+async function guard(id: number, expected?: string | null): Promise<{ token: string | null; conflict: string | null }> {
+  if (!expected) return { token: null, conflict: null };
+  const me = await getAdminSession();
+  return lockCheck(await adminDb(), id, expected, me?.email ?? null);
+}
+
+// ── Econt labels (lib/econt-shipping.ts) ──
+// Confirmed -> the label is made right after the answer goes back (the board's polling shows it a few seconds later).
+function autoLabels(supabase: SupabaseClient, ids: number[]): void {
+  if (labelMode() === "off" || !ids.length) return;
+  after(async () => {
+    for (const id of ids) {
+      const r = await createEcontLabel(supabase, id).catch((e) => ({ ok: false as const, error: String(e) }));
+      if (!r.ok) console.warn("[orders] auto label", id, r.error);
+    }
+  });
+}
+// Cancelled -> its label is deleted in Econt (only while Econt has not taken the parcel). Returns a line for the card, or null.
+async function cancelLabels(supabase: SupabaseClient, ids: number[]): Promise<string | null> {
+  const msgs: string[] = [];
+  for (const id of ids) {
+    const r = await cancelEcontLabel(supabase, id).catch((e) => ({ ok: false, message: String(e), state: "error" as const }));
+    if (r.message) msgs.push(r.message);
+  }
+  return msgs.length ? msgs.join(" ") : null;
+}
+const joinMsgs = (...m: (string | null | undefined)[]): string | null => m.filter(Boolean).join(" ") || null;
 
 // Unified model: EVERY item is decremented from wallet_inventory at order time,
 // so a cancel/return must put the units back — else the counter only drifts down.
@@ -107,14 +143,17 @@ async function notifyRo(
 }
 
 // Потвърждава / big ПОТВЪРДИ button → confirmed (stock stays reserved).
-export async function confirmOrder(id: number): Promise<string | null> {
+export async function confirmOrder(id: number, expected?: string | null): Promise<string | null> {
   { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
   const supabase = await adminDb();
+  const lock = await guard(id, expected);
+  if (lock.conflict) return lock.conflict;
   const before = await snapshot(supabase, [id]);
   const blocked = refundedBlock(before) ?? roUnpaidBlock(before);
   if (blocked) return blocked;
-  const err = await patchOrder(id, { status: "confirmed", call_state: "confirmed" });
+  const err = await patchOrder(id, { status: "confirmed", call_state: "confirmed" }, lock.token);
   if (err) return err;
+  autoLabels(supabase, [id]);
   return notifyRo(supabase, before, (st) => st === "confirmed", { kind: "order_confirmed" });
 }
 
@@ -122,8 +161,10 @@ export async function confirmOrder(id: number): Promise<string | null> {
 // is distinguishable from UNREACHABLE contact (logistics) in the stats.
 // category: refused | unreachable | wrong_number | other. Only a genuine phone
 // refusal counts as call_state='refused' (the customer-history badge).
-export async function cancelOrder(id: number, category: string, reason: string): Promise<string | null> {
+export async function cancelOrder(id: number, category: string, reason: string, expected?: string | null): Promise<string | null> {
   { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
+  const lock = await guard(id, expected);
+  if (lock.conflict) return lock.conflict;
   // Only a genuine phone refusal touches call_state (it feeds the customer-
   // history "отказал" badge). Other reasons keep their detail in cancel_category
   // and leave call_state alone — the enum call_state_t only allows
@@ -133,12 +174,16 @@ export async function cancelOrder(id: number, category: string, reason: string):
   const supabase = await adminDb();
   const [b] = await snapshot(supabase, [id]);
   if (b && isPaidCard(b)) return cancelPaidCardOrder(supabase, b, patch, category);
-  const { error } = await supabase.from("orders").update(patch).eq("id", id);
+  let q = supabase.from("orders").update(patch).eq("id", id);
+  if (lock.token) q = q.eq("updated_at", lock.token);
+  const { data: hit, error } = await q.select("id");
   if (error) { console.error("[orders] cancel error:", error.message); return error.message; }
+  if (lock.token && !hit?.length) return CHANGED_JUST_NOW;
   if (b && HOLDS_STOCK(b.status)) await restockOrderItems(supabase, b.items);
   revalidatePath(ORDERS_PATH);
+  const labelMsg = await cancelLabels(supabase, [id]);
   // Romanian customer: cancellation e-mail (wording by category).
-  return notifyRo(supabase, b ? [b] : [], (st) => st === "cancelled", { kind: "order_cancelled", category });
+  return joinMsgs(labelMsg, await notifyRo(supabase, b ? [b] : [], (st) => st === "cancelled", { kind: "order_cancelled", category }));
 }
 
 // A PAID card order is cancelled together with its refund. Order of events matters:
@@ -182,8 +227,9 @@ async function cancelPaidCardOrder(
   if (done.error) { console.error("[orders] cancel after refund failed:", done.error.message); return `Сумата е върната, но отказът не се записа (${done.error.message}). Натисни Откажи отново.`; }
   if (done.data?.length) await restockOrderItems(supabase, (done.data[0] as { items: OrderItem[] }).items);
   revalidatePath(ORDERS_PATH);
-  if (testPayment) return null;   // a test order: the customer (a Romanian test address too) gets no e-mail
-  return notifyRo(supabase, [b], (st) => st === "cancelled", { kind: "order_cancelled", category, refundLabel: fmtRON(Number(b.total ?? 0)) });
+  const labelMsg = await cancelLabels(supabase, [b.id]);
+  if (testPayment) return labelMsg;   // a test order: the customer (a Romanian test address too) gets no e-mail
+  return joinMsgs(labelMsg, await notifyRo(supabase, [b], (st) => st === "cancelled", { kind: "order_cancelled", category, refundLabel: fmtRON(Number(b.total ?? 0)) }));
 }
 
 // "Потвърдете поръчката си" e-mail at "не вдига (1)" / "не вдига (2)" (lib/confirm-request.ts): once per order, only while the
@@ -197,8 +243,9 @@ async function autoConfirmRequest(supabase: SupabaseClient, id: number): Promise
 
 // „Не вдига" → never locks. Atomic server-side increment (no race on rapid
 // presses); the audit trigger logs each attempt with the exact time + who.
-export async function markNoAnswer(id: number): Promise<string | null> {
+export async function markNoAnswer(id: number, expected?: string | null): Promise<string | null> {
   { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
+  { const lock = await guard(id, expected); if (lock.conflict) return lock.conflict; }
   try {
     const supabase = await adminDb();
     const { error } = await supabase.rpc("mark_no_answer", { p_id: id });
@@ -230,6 +277,7 @@ export async function confirmOrders(ids: number[]): Promise<string | null> {
     .in("id", ids);
   if (error) { console.error("[orders] bulk confirm error:", error.message); return error.message; }
   revalidatePath(ORDERS_PATH);
+  autoLabels(supabase, ids);
   return notifyRo(supabase, before, (st) => st === "confirmed", { kind: "order_confirmed" });
 }
 
@@ -247,7 +295,8 @@ export async function cancelOrders(ids: number[], category: string, reason: stri
     if (HOLDS_STOCK(o.status)) await restockOrderItems(supabase, o.items);
   }
   revalidatePath(ORDERS_PATH);
-  return notifyRo(supabase, before, (st) => st === "cancelled", { kind: "order_cancelled", category });
+  const labelMsg = await cancelLabels(supabase, ids);
+  return joinMsgs(labelMsg, await notifyRo(supabase, before, (st) => st === "cancelled", { kind: "order_cancelled", category }));
 }
 
 // ── Повторни поръчки (lib/duplicate-orders.ts) ─────────────────────────────────────────────────────────────────────────────────
@@ -269,7 +318,7 @@ export async function cancelAsDuplicate(id: number): Promise<string | null> {
   if (done.error) { console.error("[orders] cancel-as-duplicate error:", done.error.message); return done.error.message; }
   if (done.data?.length) await restockOrderItems(supabase, (done.data[0] as { items: OrderItem[] }).items);
   revalidatePath(ORDERS_PATH);
-  return null;
+  return cancelLabels(supabase, [id]);
 }
 
 // "Не е дубликат": the owner says these orders are legitimate. They stop counting for duplicate detection (also for any later order).
@@ -314,15 +363,17 @@ async function codGuard(snap: Snap | undefined, awb: string): Promise<string | n
   const ref = snap.order_ref ?? `#${snap.id}`;
   if (cardMoneyMissing(snap)) return `СТОП: поръчка ${ref} е с плащане с карта, но плащане няма. Не изпращай - провери в Stripe.`;
   if (!hasCardMoney(snap)) return null;
-  const cod = await econtCodAmount(awb, snap.created_at ? new Date(snap.created_at).getTime() : Date.now() - 14 * 86_400_000);
+  const cod = await econtCodAmount(awb, snap.created_at ? new Date(snap.created_at).getTime() : Date.now() - 14 * 86_400_000, (snap as { source_site?: string | null }).source_site);
   if (cod === null) return `СТОП: поръчка ${ref} е ПЛАТЕНА С КАРТА, а не намирам товарителница ${awb} в Еконт и не мога да проверя, че наложеният платеж е 0. Провери номера и опитай пак след минута.`;
   if (cod > 0.01) return `СТОП: товарителница ${awb} е с наложен платеж ${cod.toFixed(2)}, а поръчка ${ref} е ПЛАТЕНА С КАРТА. Анулирай товарителницата в Еконт и направи нова с наложен платеж 0.`;
   return null;
 }
 
 // Ship → tracking required. The DB trigger also blocks 'shipped' without it.
-export async function shipOrder(id: number, tracking: string): Promise<string | null> {
+export async function shipOrder(id: number, tracking: string, expected?: string | null): Promise<string | null> {
   { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
+  const lock = await guard(id, expected);
+  if (lock.conflict) return lock.conflict;
   const t = (tracking ?? "").trim();
   const [snap] = await snapshot(await adminDb(), [id]);
   if (snap && isRoOrder(snap)) return shipRoOrder(id, t, ""); // a Romanian order has an AWB of its own courier, never an Econt waybill
@@ -331,7 +382,7 @@ export async function shipOrder(id: number, tracking: string): Promise<string | 
   if (blocked) return blocked;
   const codBlocked = await codGuard(snap, t);
   if (codBlocked) return codBlocked;
-  return patchOrder(id, { tracking_number: t, status: "shipped" });
+  return patchOrder(id, { tracking_number: t, status: "shipped" }, lock.token);
 }
 
 // Ship a Romanian order: AWB of the Romanian courier (typed in by hand) + optional tracking link, then the customer's Romanian
@@ -395,15 +446,17 @@ export async function addOrderNote(id: number, text: string): Promise<string | n
 // Shipped → completed. Manual fallback until the Econt auto-close is built.
 // Tagged 'manual' so completions closed by hand stay distinguishable from the
 // ones Econt confirmed (those set completed_source='econt').
-export async function markCompleted(id: number): Promise<string | null> {
+export async function markCompleted(id: number, expected?: string | null): Promise<string | null> {
   { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
+  const lock = await guard(id, expected);
+  if (lock.conflict) return lock.conflict;
   const supabase = await adminDb();
   const before = await snapshot(supabase, [id]);
   const err = await patchOrder(id, {
     status: "completed",
     completed_at: new Date().toISOString(),
     completed_source: "manual",
-  });
+  }, lock.token);
   if (err) return err;
   return notifyRo(supabase, before, (st) => st === "completed", { kind: "order_delivered" });
 }
@@ -412,8 +465,9 @@ export async function markCompleted(id: number): Promise<string | null> {
 // NOT restocked here — that happens only on the confirmed 'restocked' transition
 // (the cron's Econt receipt, or the "Взех пратката" button), never in transit.
 // Sets returning_at so the cron may auto-restock it once Econt confirms receipt.
-export async function markReturned(id: number): Promise<string | null> {
+export async function markReturned(id: number, expected?: string | null): Promise<string | null> {
   { const denied = await fulfillmentBlock([id]); if (denied) return denied; }
+  { const lock = await guard(id, expected); if (lock.conflict) return lock.conflict; }
   const supabase = await adminDb();
   const before = await snapshot(supabase, [id]);
   const nowIso = new Date().toISOString();
@@ -566,6 +620,7 @@ export async function clearComplaint(id: number): Promise<string | null> {
 export async function matchTracking(): Promise<{ ok: boolean; message: string; result?: MatchResult }> {
   const supabase = await adminDb();
   try {
+    const promoted = await promoteAcceptedLabels(supabase).catch(() => 0);   // panel labels Econt has taken -> shipped
     const r = await matchTrackingNumbers(supabase);
     // Instant Email 1 for parcels Econt has just physically accepted (sendTime
     // != null); dedup via ship_email_sent_at. Non-fatal — a mail/Econt/DB hiccup
@@ -580,7 +635,7 @@ export async function matchTracking(): Promise<{ ok: boolean; message: string; r
     revalidatePath(ORDERS_PATH);
     return {
       ok: true,
-      message: `Сканирани ${r.scanned} · попълнени ${r.autoFilled.length} · за потвърждение ${r.pending.length} · без товарителница ${r.unmatched.length}${shipMsg}`,
+      message: `${promoted ? `Приети от Еконт ${promoted} · ` : ""}Сканирани ${r.scanned} · попълнени ${r.autoFilled.length} · за потвърждение ${r.pending.length} · без товарителница ${r.unmatched.length}${shipMsg}`,
       result: r,
     };
   } catch (e) {
