@@ -124,7 +124,9 @@ const CLUTCH_VARIANTS = [
 
 // The colour name shown after "Цвят:" (owner, 09.11.2026): "Onice - Черен" -> "Черен"; the watches' English labels in Bulgarian.
 const WATCH_COLOUR_BG: Record<string, string> = { Black: "Черен", Gold: "Златен", Blue: "Син", White: "Бял" };
-const colourNameBg = (label: string): string => WATCH_COLOUR_BG[label] ?? label.split(" - ").pop() ?? label;
+// Women's collection: the swatch label is shown as it is (bracelets "Gold" / "Silver" - owner, 27.11.2026), never through the watches' map.
+const colourNameBg = (label: string, slug?: string): string =>
+  slug && isCollectionSlug(slug) ? label : WATCH_COLOUR_BG[label] ?? label.split(" - ").pop() ?? label;
 
 // Viber quick-order deep link - opens a 1:1 chat with the store number.
 // Format verified against the de-facto standard: viber://chat?number=<E.164>,
@@ -547,7 +549,7 @@ export function ProductInfo({ product, reviewCount = 0, reviewAvg, soldOut = [],
   const colourRow = variants ? (
           <div className="flex items-start gap-3">
             {/* label on the first swatch row (11 cardholder colours wrap inside box 1 on phones); same height as a swatch target */}
-            <span className="flex-shrink-0 font-sans text-[10px] leading-6 [@media(pointer:coarse)]:leading-[44px] text-ink-muted tracking-widest uppercase">Цвят:{shownLabel && <span className="ml-1.5 text-xs normal-case tracking-normal text-ink">{colourNameBg(shownLabel)}</span>}</span>
+            <span className="flex-shrink-0 font-sans text-[10px] leading-6 [@media(pointer:coarse)]:leading-[44px] text-ink-muted tracking-widest uppercase">Цвят:{shownLabel && <span className="ml-1.5 text-xs normal-case tracking-normal text-ink">{colourNameBg(shownLabel, shownVariant)}</span>}</span>
             <div className="flex flex-wrap items-center gap-2 min-w-0 [@media(pointer:coarse)]:gap-0">
               {variants.map((v) => watchSwatchOff(v) ? (
                 <span
@@ -555,7 +557,7 @@ export function ProductInfo({ product, reviewCount = 0, reviewAvg, soldOut = [],
                   role="img"
                   aria-disabled="true"
                   aria-label={`${v.label} – Изчерпан`}
-                  title={`${colourNameBg(v.label)} – Изчерпан`}
+                  title={`${colourNameBg(v.label, v.slug)} – Изчерпан`}
                   data-testid={`swatch-off-${v.slug}`}
                   className="flex items-center justify-center w-6 h-6 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 cursor-not-allowed"
                 >
