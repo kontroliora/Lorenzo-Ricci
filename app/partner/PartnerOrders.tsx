@@ -60,7 +60,7 @@ export function PartnerOrders({ preview }: { preview?: { orders: PartnerOrderVie
   }, [focus, data]);
 
   // a mark comes back without the Econt part (pickup): keep the one already on the card
-  const onSaved = (o: PartnerOrderView) => setData((d) => d && ({ ...d, orders: d.orders.map((x) => (x.ref === o.ref ? { ...o, pickup: o.pickup ?? x.pickup, duplicate: o.duplicate ?? x.duplicate } : x)) }));
+  const onSaved = (o: PartnerOrderView) => setData((d) => d && ({ ...d, orders: d.orders.map((x) => (x.ref === o.ref ? { ...o, pickup: o.pickup ?? x.pickup, duplicate: o.duplicate ?? x.duplicate, risk: o.risk ?? x.risk } : x)) }));
   const [toast, setToast] = useState("");
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(""), 2600); return () => clearTimeout(t); }, [toast]);
 
@@ -108,7 +108,7 @@ function OrderCard({ o, highlight, onSaved, onToast, preview }: { o: PartnerOrde
   };
 
   return (
-    <article id={`o-${o.ref}`} className={`bg-white rounded-xl overflow-hidden shadow-sm scroll-mt-36 ${highlight ? "ring-2 ring-[#0a0e1f]" : ""}`}>
+    <article id={`o-${o.ref}`} data-risk={o.risk?.level} className={`rounded-xl overflow-hidden shadow-sm scroll-mt-36 ${o.risk?.level === "bad" ? "bg-red-50 border-l-[5px] border-[#E24B4A]" : o.risk?.level === "warn" ? "bg-white border-l-[5px] border-[#EF8A17]" : "bg-white"} ${highlight ? "ring-2 ring-[#0a0e1f]" : ""}`}>
       <div className={`px-4 py-3 font-bold text-[15px] ${card ? "bg-green-50 text-green-900 border-b-2 border-green-600" : "bg-orange-50 text-orange-900 border-b-2 border-orange-500"}`}>
         {card ? "✅ ПЛАТЕНО С КАРТА" : `💵 НАЛОЖЕН ПЛАТЕЖ — ${money(o.payment.collect, o.currency)}`}
       </div>
@@ -117,6 +117,12 @@ function OrderCard({ o, highlight, onSaved, onToast, preview }: { o: PartnerOrde
           <div>
             <p className="text-[12px] text-[#6b6456]">#{o.ref} · {when(o.createdAt)}{o.market === "ro" ? " · 🇷🇴" : ""}</p>
             <p className="text-[17px] font-semibold mt-0.5">{o.name || "-"}</p>
+            {o.risk && (
+              <div className="mt-1">
+                <span className={`inline-block text-white font-extrabold text-[11px] tracking-wider px-2.5 py-0.5 rounded ${o.risk.level === "bad" ? "bg-[#E24B4A]" : "bg-[#EF8A17]"}`}>{o.risk.level === "bad" ? "НЕКОРЕКТЕН" : "ВНИМАНИЕ"}</span>
+                <p className={`text-[12px] mt-0.5 ${o.risk.level === "bad" ? "text-red-700" : "text-orange-700"}`}>{o.risk.reason}</p>
+              </div>
+            )}
             {o.history?.length ? (() => { const h = o.history[o.history.length - 1]; return <p className="text-[12px] text-[#6b6456] mt-0.5">↻ {h.text} – {h.who}, {when(h.at)}</p>; })() : null}
           </div>
           <span title="Статус на поръчката (магазин)" className={`shrink-0 text-[11px] font-bold uppercase tracking-wide px-2 py-1 rounded ${REAL_CLS[o.real.key]}`}>{o.real.label}</span>

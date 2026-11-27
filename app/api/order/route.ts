@@ -3,6 +3,7 @@ import { ATTR_COOKIE, attributionFromCookie } from "@/lib/attribution";
 import { isValidFullName, FULL_NAME_ERROR_BG } from "@/lib/full-name";
 import { isValidPhoneBg, PHONE_ERROR_BG } from "@/lib/phone-bg";
 import { insertOrderResilient } from "@/lib/order-insert";
+import { checkCustomer } from "@/lib/nekorekten";
 import { langOf, mayEmail } from "@/lib/mail-policy";
 import { supabase } from "@/lib/supabase";
 import { buildAdminEmail, buildCustomerEmail, customerSubjects, sendAdminEmail, sendCustomerEmail, sendCapiPurchase, type CapiContext } from "@/lib/order-notify";
@@ -526,6 +527,9 @@ export async function POST(req: NextRequest) {
     after(() => notifyPartnerOnce(savedRef));
     // Repeat order (same e-mail / phone / name+address within 72 h): tell the team right away (Telegram, else e-mail).
     after(() => notifyDuplicateOrder(savedRef));
+    // Некоректни клиенти: ask Nekorekten.com about this phone (+ e-mail) AFTER the response - never slows the checkout; cached 7 days,
+    // a dead API only writes last_error (lib/nekorekten.ts). Skipped silently while NEKOREKTEN_API_KEY is not set.
+    after(() => checkCustomer(supabaseAdmin(), orderRow.phone, orderRow.email as string | null).then(() => undefined, () => undefined));
 
     // 4. Mark cart session as converted (best-effort). Uses the service key -
     //    anon can't UPDATE cart_sessions under RLS, so this silently no-op'd

@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect, useTransition } from "react";
+import { RiskBadge, RiskPanel, riskCardStyle } from "./RiskUi";
+import { riskLevel, type CustomerRisk } from "@/lib/customer-risk-shared";
 import { isRoOfficeMethod } from "@/lib/ro/config";
 import type { AdminOrder, CustomerHistory, StatusLogRow } from "@/lib/orders";
 import { isReturn, isPendingPayment, isDeadCardAttempt, hasComplaint, complaintAmountOf, complaintStateLabel, goodsOf, COMPLAINT_STATES } from "@/lib/order-status";
@@ -82,7 +84,7 @@ const sofiaDateTime = (iso: string) =>
   new Date(iso).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 export function OrderCard({
-  order, history, log, now, onNotice, stripeKey = "none", dup, onFocusOrder, labelsMode = "off",
+  order, history, log, now, onNotice, stripeKey = "none", dup, onFocusOrder, labelsMode = "off", risk, role, extConfigured = false,
 }: {
   order: AdminOrder;
   history?: CustomerHistory;
@@ -93,6 +95,9 @@ export function OrderCard({
   dup?: DupGroup;                        // repeat orders of the same customer within 72 h (lib/duplicate-orders.ts): yellow card + badge
   onFocusOrder?: (ref: string) => void;  // jump to another order of that group
   labelsMode?: "off" | "demo" | "live";  // Econt labels from the panel (lib/econt-shipping.ts)
+  risk?: CustomerRisk | null;            // некоректен клиент (lib/customer-risk.ts): red card + badge + band
+  role?: string;
+  extConfigured?: boolean;               // NEKOREKTEN_API_KEY is set (the value never reaches the browser)
 }) {
   const seen = order.updated_at ?? null;   // optimistic lock: the action is refused if someone else changed the order since
   const lastAction = [...(log ?? [])].reverse().find((r) => r.old_status !== "печат");
@@ -236,7 +241,7 @@ export function OrderCard({
 
   const dupHere = !!dup && !excluded && !readOnly;
   return (
-    <div data-dup={dupHere ? "1" : undefined} style={{ background: dupHere ? DUP_BG : isDue ? "rgba(151,196,89,0.06)" : "rgba(255,255,255,0.03)", border: `${isDue || dupHere ? "1px" : "0.5px"} solid ${excluded ? "rgba(255,255,255,0.06)" : dupHere ? DUP_BORDER : isDue ? "#97C459" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "16px 18px", opacity: excluded ? 0.55 : 1 }}>
+    <div data-dup={dupHere ? "1" : undefined} style={{ background: dupHere ? DUP_BG : isDue ? "rgba(151,196,89,0.06)" : "rgba(255,255,255,0.03)", border: `${isDue || dupHere ? "1px" : "0.5px"} solid ${excluded ? "rgba(255,255,255,0.06)" : dupHere ? DUP_BORDER : isDue ? "#97C459" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "16px 18px", opacity: excluded ? 0.55 : 1, ...riskCardStyle(excluded ? null : riskLevel(risk)) }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
@@ -249,6 +254,7 @@ export function OrderCard({
             <span style={{ display: "inline-block", background: histBadge.bg, color: histBadge.fg, fontSize: 11, padding: "3px 9px", borderRadius: 20 }}>{histBadge.text}</span>
             <PaymentBadge order={order} />
           </div>
+          <RiskBadge risk={excluded ? null : risk} />
           {lastAction && (
             <div title="Последно действие по поръчката" style={{ color: "rgba(255,255,255,0.5)", fontSize: 11.5, marginTop: 6 }}>
               ↻ {actionLine(lastAction)}
@@ -266,11 +272,15 @@ export function OrderCard({
         </div>
       </div>
 
+      {/* Некоректен клиент: the red band with the full history + external reports, manual mark, re-check, report */}
+      {!excluded && !readOnly && <RiskPanel order={order} risk={risk} role={role} extConfigured={extConfigured} onFocusOrder={onFocusOrder} onNotice={onNotice} />}
+
       {/* Econt label: number, print, status, error + retry (every role that sees the order) */}
       {labelsMode !== "off" && !ro && !order.is_international && <LabelBox order={order} mode={labelsMode} onNotice={onNotice} />}
 
       {/* Repeat orders of this customer (badge + banner + group) */}
       {dupHere && dup && <DuplicateStrip group={dup} currentIds={[order.id]} onFocusOrder={onFocusOrder ?? (() => {})} onNotice={onNotice} />}
+
 
       {/* Phone */}
       <a href={`tel:${digits}`} style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "#85B7EB", fontSize: 18, fontWeight: 500, textDecoration: "none", margin: "12px 0 4px" }}>☎ {order.phone || "—"}</a>

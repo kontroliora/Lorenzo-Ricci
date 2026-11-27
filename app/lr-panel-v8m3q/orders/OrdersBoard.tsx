@@ -17,6 +17,7 @@ import { isCard } from "@/lib/payments";
 import { isRoOrder, marketOf, type Market } from "@/lib/market";
 import { activeWindow, nextWindow, callTimer } from "@/lib/callSchedule";
 import { buildDuplicateGroups, countsForDuplicates } from "@/lib/duplicate-orders";
+import { riskLevel, type CustomerRisk } from "@/lib/customer-risk-shared";
 
 type Tab = "new" | "confirmed" | "shipped" | "completed" | "returned" | "complaints" | "cancelled";
 
@@ -136,7 +137,7 @@ const MARKETS: { key: MarketFilter; label: string }[] = [
 type SourceFilter = "all" | "lr" | "chronobg";
 
 export function OrdersBoard({
-  orders: ordersRaw, histories, log, nowMs, initialMarket = "all", carts = [], stuck = null, stripeKey = "none", role = "employee", labelsMode = "off",
+  orders: ordersRaw, histories, log, nowMs, initialMarket = "all", carts = [], stuck = null, stripeKey = "none", role = "employee", labelsMode = "off", risk = {}, extConfigured = false,
 }: {
   orders: AdminOrder[];
   histories: Record<string, CustomerHistory>;
@@ -148,6 +149,8 @@ export function OrdersBoard({
   stripeKey?: "live" | "test" | "none";   // mode of the site's Stripe key (not the key): what a card order's cancel will do
   role?: string;   // 'owner' | 'employee' | 'fulfillment'
   labelsMode?: "off" | "demo" | "live";   // Econt labels from the panel (lib/econt-shipping.ts): off = no label UI at all
+  risk?: Record<string, CustomerRisk>;   // некоректни клиенти, keyed by the order's phone as stored (lib/customer-risk.ts)
+  extConfigured?: boolean;
 }) {
   // A PAID card order needs no confirmation call: it is shown under "За изпълнение" (also when its row still says "new"), never under "За обаждане".
   const orders = ordersRaw.map(boardStatus);
@@ -159,6 +162,9 @@ export function OrdersBoard({
   const [payMethod, setPayMethod] = useState<PayMethodFilter>("all");
   const [payState, setPayState] = useState<PayStateFilter>("all");
   const [dupOnly, setDupOnly] = useState(false);          // "Само повторни": only orders that have a repeat order of the same customer within 72 h
+  const [riskOnly, setRiskOnly] = useState(false);         // "Само некоректни": only orders of a НЕКОРЕКТЕН customer
+  const riskOf = (o: AdminOrder) => (o.phone ? risk[o.phone] : undefined);
+  const isBad = (o: AdminOrder) => riskLevel(riskOf(o)) === "bad";
   const [partnerOnly, setPartnerOnly] = useState(false);   // "С отметка от партньора": only orders the partner marked on /partner
   const [notice, setNotice] = useState(""); // an action's warning (e.g. the Romanian e-mail did not go out) must outlive the card that raised it
   const [showFake, setShowFake] = useState(false);
@@ -202,7 +208,8 @@ export function OrdersBoard({
   const dup = buildDuplicateGroups(orders as never, { eligible: (o) => countsForDuplicates(o) && notLead(o as AdminOrder) && !isUnpaidCardAttempt(o as AdminOrder) });
   const dupCount = salesOrders.filter((o) => dup.byId.has(o.id)).length;
   // The payment filters combine with the tabs, the summary counters and the search.
-  const real = salesOrders.filter((o) => matchesPayment(o, payMethod, payState) && (!partnerOnly || !!o.partner_mark) && (!dupOnly || dup.byId.has(o.id)));
+  const real = salesOrders.filter((o) => matchesPayment(o, payMethod, payState) && (!partnerOnly || !!o.partner_mark) && (!dupOnly || dup.byId.has(o.id)) && (!riskOnly || isBad(o)));
+  const badCount = salesOrders.filter(isBad).length;
   const markedCount = salesOrders.filter((o) => !!o.partner_mark).length;
   // "Фалшиви": every order marked fake/test, newest mark first (the time comes from order_status_log; without it, the order date).
   const markedAtMs = (o: AdminOrder) => {
@@ -240,7 +247,7 @@ export function OrdersBoard({
   const matches = searching ? orders.filter((o) => orderMatches(o, query)) : [];
 
   const card = (o: AdminOrder) => (
-    <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} now={now} onNotice={setNotice} stripeKey={stripeKey} dup={dup.byId.get(o.id)} onFocusOrder={setQuery} labelsMode={labelsMode} />
+    <OrderCard key={o.id} order={o} history={o.phone ? histories[o.phone] : undefined} log={log[o.id]} now={now} onNotice={setNotice} stripeKey={stripeKey} dup={dup.byId.get(o.id)} onFocusOrder={setQuery} labelsMode={labelsMode} risk={riskOf(o)} role={role} extConfigured={extConfigured} />
   );
 
   // Render a same-customer cluster: single → normal card; 2+ identical address →
@@ -274,6 +281,9 @@ export function OrdersBoard({
         onNotice={setNotice}
         dup={g.map((o) => dup.byId.get(o.id)).find(Boolean)}
         onFocusOrder={setQuery}
+        risk={riskOf(last)}
+        role={role}
+        extConfigured={extConfigured}
         onSplit={() => setSplitGroups((s) => { const next = new Set(s); next.add(key); return next; })}
       />
     );
@@ -376,6 +386,11 @@ export function OrdersBoard({
           <button type="button" onClick={() => setDupOnly((v) => !v)} aria-pressed={dupOnly} data-testid="dup-only"
             style={{ fontSize: 12, padding: "5px 12px", borderRadius: 999, border: `1px solid ${dupOnly ? "#FAC775" : "rgba(255,255,255,0.2)"}`, color: dupOnly ? "#FAC775" : "rgba(255,255,255,0.65)", background: dupOnly ? "rgba(250,199,117,0.14)" : "transparent" }}>
             ⚠ Само повторни · {dupCount}
+          </button>
+          {" "}
+          <button type="button" onClick={() => setRiskOnly((v) => !v)} aria-pressed={riskOnly} data-testid="risk-only"
+            style={{ fontSize: 12, padding: "5px 12px", borderRadius: 999, border: `1px solid ${riskOnly ? "#E24B4A" : "rgba(255,255,255,0.2)"}`, color: riskOnly ? "#fff" : "rgba(255,255,255,0.65)", background: riskOnly ? "#E24B4A" : "transparent", fontWeight: riskOnly ? 600 : 400 }}>
+            ⛔ Само некоректни · {badCount}
           </button>
         </div>
 

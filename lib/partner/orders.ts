@@ -145,6 +145,7 @@ export type PartnerOrderView = {
   pickup: PickupInfo | null;   // waiting at the Econt office since day 3+ (set by the server from Econt), else null
   state: { status: PartnerStatus; label: string; note: string; updatedAt: string | null };   // HIS mark ("new" = none yet)
   duplicate: PartnerDuplicate | null;   // "ДУБЛИРАЩА ПОРЪЧКА": set by the server, which sees e-mail / address (he never does); null = not a repeat
+  risk?: { level: "bad" | "warn"; reason: string } | null;   // НЕКОРЕКТЕН / ВНИМАНИЕ (set by the server from lib/customer-risk.ts)
   history?: PartnerHistoryRow[];        // who did what on this order, oldest first (set by the server; comment TEXT is never copied)
 };
 
@@ -223,4 +224,4 @@ export function partnerView(row: Row, state?: PartnerState, duplicate?: PartnerD
 }
 
 /** Keys a view may hold: the self-test checks every record against this list (and that no e-mail address appears anywhere). */
-export const PARTNER_VIEW_KEYS = ["ref", "createdAt", "market", "currency", "name", "phone", "delivery", "items", "goods", "discount", "shipping", "total", "payment", "real", "pickup", "state", "duplicate"];
+export const PARTNER_VIEW_KEYS = ["ref", "createdAt", "market", "currency", "name", "phone", "delivery", "items", "goods", "discount", "shipping", "total", "payment", "real", "pickup", "state", "duplicate", "risk"];

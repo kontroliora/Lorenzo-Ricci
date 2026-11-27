@@ -46,6 +46,8 @@ export function actionText(r: LogLike): string {
   if (o === "върната стока") return `Върната стока: ${n}`;
   if (o === "печат") return `Печат: ${n}`;
   if (o === "партньор") return `(партньор) ${n}`;
+  if (o === "некоректен") return `Некоректен клиент: ${n}`.slice(0, 160);
+  if (o === "nekorekten") return "Докладван в Nekorekten.com";
   return STATUS_WORD[n] ?? n;
 }
 

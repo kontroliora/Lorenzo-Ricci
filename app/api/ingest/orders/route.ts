@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
+import { checkCustomer } from "@/lib/nekorekten";
 import { timingSafeEqual, createHash } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { newOrderRef } from "@/lib/order-ref";
@@ -333,6 +334,9 @@ export async function POST(req: NextRequest) {
     payment: data.payment ?? "Наложен платеж",
     needsReview: needs_review,
   }).catch((e) => console.error("[ingest/orders] notify failed:", e instanceof Error ? e.message : e));
+
+  // Некоректни клиенти: external check of the CHRONOBG customer too (after the response; cached 7 days; never throws).
+  after(() => checkCustomer(sb, phone, data.customer.email || null).then(() => undefined, () => undefined));
 
   return NextResponse.json({ ok: true, order_id: orderId, order_number: orderRef });
 }

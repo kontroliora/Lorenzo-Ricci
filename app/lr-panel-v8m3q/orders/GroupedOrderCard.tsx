@@ -1,5 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
+import { RiskBadge, RiskPanel, riskCardStyle } from "./RiskUi";
+import { riskLevel, type CustomerRisk } from "@/lib/customer-risk-shared";
 import { isRoOfficeMethod } from "@/lib/ro/config";
 import type { AdminOrder, CustomerHistory } from "@/lib/orders";
 import { confirmOrders, cancelOrders, markNoAnswerOrders, cancelAsDuplicate } from "./actions";
@@ -37,7 +39,7 @@ const backLink: React.CSSProperties = {
 // Merged view of 2+ NEW orders from the same customer with an IDENTICAL address.
 // Actions apply to every order in the group at once. Nothing is merged in the DB.
 export function GroupedOrderCard({
-  orders, history, onSplit, onNotice, dup, onFocusOrder,
+  orders, history, onSplit, onNotice, dup, onFocusOrder, risk, role, extConfigured = false,
 }: {
   orders: AdminOrder[];
   history?: CustomerHistory;
@@ -45,6 +47,9 @@ export function GroupedOrderCard({
   onNotice?: (msg: string) => void;
   dup?: DupGroup;                        // repeat orders (lib/duplicate-orders.ts): yellow card + badge + the group with its actions
   onFocusOrder?: (ref: string) => void;
+  risk?: CustomerRisk | null;   // некоректен клиент (one phone = one customer for the whole group)
+  role?: string;
+  extConfigured?: boolean;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
@@ -103,7 +108,7 @@ export function GroupedOrderCard({
   }
 
   return (
-    <div data-dup={dup ? "1" : undefined} style={{ background: dup ? DUP_BG : "rgba(255,255,255,0.03)", border: `0.5px solid ${dup ? DUP_BORDER : "rgba(93,202,165,0.4)"}`, borderRadius: 12, padding: "16px 18px", boxShadow: "5px 5px 0 -2px rgba(255,255,255,0.03), 3px 3px 0 -1px rgba(93,202,165,0.15)" }}>
+    <div data-dup={dup ? "1" : undefined} style={{ background: dup ? DUP_BG : "rgba(255,255,255,0.03)", border: `0.5px solid ${dup ? DUP_BORDER : "rgba(93,202,165,0.4)"}`, borderRadius: 12, padding: "16px 18px", boxShadow: "5px 5px 0 -2px rgba(255,255,255,0.03), 3px 3px 0 -1px rgba(93,202,165,0.15)", ...riskCardStyle(riskLevel(risk)) }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
@@ -117,9 +122,13 @@ export function GroupedOrderCard({
             {/* A group only ever merges cash-on-delivery orders (card orders are never grouped, see OrdersBoard) */}
             <PaymentBadge order={last} />
           </div>
+          <RiskBadge risk={risk} />
         </div>
         <span style={{ background: "#412402", color: "#FAC775", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 20 }}>Нова · за обаждане</span>
       </div>
+
+      {/* Некоректен клиент: band + actions (on the newest order of the group) */}
+      <RiskPanel order={last} risk={risk} role={role} extConfigured={extConfigured} onFocusOrder={onFocusOrder} onNotice={onNotice} />
 
       {dup && <DuplicateStrip group={dup} currentIds={ids} onFocusOrder={onFocusOrder ?? (() => {})} onNotice={onNotice} />}
 

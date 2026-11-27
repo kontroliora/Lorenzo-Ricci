@@ -6,6 +6,8 @@ import { applyOverride, getPriceOverrides } from "../price-overrides";
 import { kv } from "@vercel/kv";
 import { analyzeShipment, getRawStatuses } from "../econt";
 import type { PartnerHistoryRow } from "./orders";
+import { getRiskMap } from "../customer-risk";
+import { riskLevel, internalReason, externalReason } from "../customer-risk-shared";
 import { PARTNER_COOKIE, partnerFromCookie, type Partner } from "./access";
 import { pickupInfoOf, type PickupFacts } from "./pickup";
 import {
@@ -65,6 +67,15 @@ export async function listPartnerOrders(filter: PartnerFilter): Promise<{ orders
     return v;
   });
   await attachHistory(sb, mine, all);
+  // НЕКОРЕКТЕН / ВНИМАНИЕ badge (owner 27.11.2026): the level and the short reason only - no links to other orders, no notes.
+  try {
+    const risk = await getRiskMap(sb, mine.map((r) => String(r.phone ?? "")));
+    mine.forEach((r, i) => {
+      const k = risk[String(r.phone ?? "").trim()];
+      const level = riskLevel(k);
+      if (k && level) all[i].risk = { level, reason: [internalReason(k), externalReason(k), k.manual?.flagged ? "маркиран от магазина" : ""].filter(Boolean).join(" · ") };
+    });
+  } catch (e) { console.error("[partner] risk unavailable:", e instanceof Error ? e.message : e); }
   const counts = Object.fromEntries(PARTNER_FILTERS.map((f) => [f, all.filter((o) => matchesFilter(o.real.key, f, o.pickup)).length])) as Record<PartnerFilter, number>;
   return { orders: all.filter((o) => matchesFilter(o.real.key, filter, o.pickup)), counts };
 }
@@ -118,7 +129,7 @@ export async function partnerPieces(): Promise<PartnerPiece[]> {
 // ── History on his orders (owner, 27.11.2026) ───────────────────────────────
 // The shop's history rows (order_status_log: status, calls, label) + his own marks (partner_status_log), only for the orders he may
 // see (`mine` is already cut by partnerVisible). The text of an internal comment, fake-marks and print rows are not copied.
-const HIDDEN_FOR_PARTNER = new Set(["маркиране", "печат", "върната стока"]);
+const HIDDEN_FOR_PARTNER = new Set(["маркиране", "печат", "върната стока", "некоректен", "nekorekten"]);   // he sees the НЕКОРЕКТЕН badge, not our notes
 async function attachHistory(sb: ReturnType<typeof supabaseAdmin>, mine: Row[], views: PartnerOrderView[]): Promise<void> {
   try {
     const { whoName, actionText, PARTNER_NAME } = await import("../admin-names");
