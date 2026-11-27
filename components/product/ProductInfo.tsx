@@ -726,8 +726,8 @@ export function ProductInfo({ product, reviewCount = 0, reviewAvg, soldOut = [],
         {product.category === "watches" && <WarrantyLine text="5 години гаранция" href={"/warranty/jewelry#chasovnici"} />}
         {/* Order (owner, 12.11.2026): box -> lifetime/watch warranty -> 30-day exchange (all products) */}
         <ExchangeLine text="30 дни лесна замяна" href="/policies/returns" first={!inCollection && !velvetBox && product.category !== "watches"} />
-        {/* Gold jewellery only (Product.metal unset = gold); follows step 1's piece when it is switched in place */}
-        {product.category === "jewellery" && (product.metal ?? "gold") === "gold" && <GoldLine text="18 карата PVD" />}
+        {/* Gold jewellery only (Product.metal unset = gold). Not on the women's collection (owner, 27.11.2026): the classic jewellery keeps it */}
+        {product.category === "jewellery" && !inCollection && (product.metal ?? "gold") === "gold" && <GoldLine text="18 карата PVD" />}
         {/* Watches, 01.12-21.12 only (lib/christmas-delivery.ts) */}
         {product.category === "watches" && <ChristmasDeliveryLine className="mt-2 font-sans text-[13px] leading-snug font-medium text-[#2E6B3F]" />}
         {/* Cardholders while the watch gift runs (lib/watch-gift.ts): every watch comes with one free */}
