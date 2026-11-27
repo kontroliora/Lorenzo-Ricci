@@ -18,6 +18,7 @@ import { adminDb } from "@/lib/supabase/admin-db";
 import type { CustomerRisk } from "@/lib/customer-risk-shared";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";   // risk-actions use undici's ProxyAgent (lib/nekorekten.ts)
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
   const { m } = await searchParams;

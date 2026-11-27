@@ -96,14 +96,14 @@ export function RiskPanel({
               </div>
             ))}
             {risk.manual?.flagged && <div>Ръчно маркиран{risk.manual.by ? ` от ${whoName(risk.manual.by)}` : ""}{risk.manual.at ? `, ${bgDate(risk.manual.at)}` : ""}: „{risk.manual.note}“</div>}
-            <div style={{ color: ext.down ? "#FAC775" : "#F7D0D0" }}>{ext.text}</div>
+            <div title={ext.title} style={{ color: ext.down ? "#FAC775" : "#F7D0D0", cursor: ext.title ? "help" : undefined }}>{ext.text}{ext.title ? " ⓘ" : ""}</div>
           </div>
           {controls}
         </div>
       ) : (
         <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", paddingTop: 8 }}>
-          <div style={{ color: level === "warn" ? "#F8C58A" : ext.down ? "#FAC775" : "rgba(255,255,255,0.45)", fontSize: 11.5 }}>
-            {ext.text}{level === "warn" ? " — нямаме наши непотърсени/отказани пратки" : ""}
+          <div title={ext.title} style={{ color: level === "warn" ? "#F8C58A" : ext.down ? "#FAC775" : "rgba(255,255,255,0.45)", fontSize: 11.5, cursor: ext.title ? "help" : undefined }}>
+            {ext.text}{ext.title ? " ⓘ" : ""}{level === "warn" ? " — нямаме наши непотърсени/отказани пратки" : ""}
             {risk?.manual && !risk.manual.flagged ? ` · маркировката е премахната (${whoName(risk.manual.by)}): „${risk.manual.note}“` : ""}
           </div>
           {controls}
@@ -168,5 +168,44 @@ function ReportDialog({ orderId, preview, onClose }: { orderId: number; preview:
         </div>
       </div>
     </div>
+  );
+}
+
+type Health = {
+  proxy: string | null; keyConfigured: boolean;
+  egress?: { ok: boolean; ip?: string | null; status?: number; error?: string; ms: number };
+  nekorekten?: { ok: boolean; status?: number; label?: string; message?: string | null; error?: string; ms?: number };
+};
+
+/** "Тест връзка" (owner): the outgoing IP through the QuotaGuard proxy + one read-only call to Nekorekten.com. Sends no report. */
+export function NekorektenHealthButton() {
+  const [busy, setBusy] = useState(false);
+  const [h, setH] = useState<Health | null>(null);
+  const [err, setErr] = useState("");
+  const run = async () => {
+    setBusy(true); setErr("");
+    try {
+      const r = await fetch("/api/admin/nekorekten-health", { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status === 403 ? "Само за собственика." : `HTTP ${r.status}`);
+      setH(await r.json());
+    } catch (e) { setErr(e instanceof Error ? e.message : "Грешка"); setH(null); } finally { setBusy(false); }
+  };
+  const n = h?.nekorekten;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+      <button type="button" onClick={run} disabled={busy} data-testid="nekorekten-health"
+        style={{ fontSize: 12, padding: "5px 12px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.65)", background: "transparent", cursor: "pointer" }}>
+        {busy ? "Nekorekten: проверявам…" : "Nekorekten: Тест връзка"}
+      </button>
+      {err && <span style={{ color: "#F09595", fontSize: 11.5 }}>{err}</span>}
+      {h && (
+        <span data-testid="nekorekten-health-result" style={{ fontSize: 11.5, color: "rgba(255,255,255,0.7)" }}>
+          Изходящ IP: <b style={{ color: "#fff" }}>{h.egress?.ip ?? `— (${h.egress?.error ?? h.egress?.status})`}</b>
+          {h.proxy ? ` през ${h.proxy}` : " (БЕЗ прокси)"} ·{" "}
+          Nekorekten.com: <b style={{ color: n?.ok ? "#97C459" : "#F09595" }}>{n?.ok ? `${n.status} OK` : `${n?.status ? `HTTP ${n.status} · ` : ""}${n?.label ?? "недостъпна"}`}</b>
+          {n?.ms != null ? ` (${n.ms} ms)` : ""}
+        </span>
+      )}
+    </span>
   );
 }

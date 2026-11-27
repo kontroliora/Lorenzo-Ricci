@@ -78,16 +78,29 @@ export function riskReason(r: CustomerRisk): string {
   return [internalReason(r), externalReason(r), r.manual?.flagged ? "ръчно маркиран" : ""].filter(Boolean).join(" · ");
 }
 
-/** The external check as one line: "Nekorekten.com: 0 доклада (проверено 12.11.2026)" / "Външна проверка: недостъпна" / "… не е правена". */
-export function externalLine(r: CustomerRisk | null | undefined, configured: boolean): { text: string; down: boolean } {
+/** Why the last external check failed, from the stored error (lib/nekorekten.ts starts it with the kind's label). */
+export function externalFailReason(error: string | null | undefined): string {
+  const e = String(error ?? "");
+  if (/IP не е в белия списък|HTTP 403/.test(e)) return "IP не е в белия списък";
+  if (/грешен ключ|HTTP 401/.test(e)) return "грешен ключ";
+  if (/недостъпна|няма отговор|мрежова грешка|HTTP 5\d\d/.test(e)) return "недостъпна";
+  return e ? e.slice(0, 120) : "недостъпна";
+}
+
+/**
+ * The external check as one line: "Nekorekten.com: 0 доклада (проверено 12.11.2026)" / "Външна проверка: недостъпна" / "… не е правена".
+ * `title` (the tooltip) says WHY it failed: "IP не е в белия списък" (403), "грешен ключ" (401), "недостъпна" (timeout / network).
+ */
+export function externalLine(r: CustomerRisk | null | undefined, configured: boolean): { text: string; down: boolean; title?: string } {
   if (!configured) return { text: "Външна проверка: не е настроена (липсва NEKOREKTEN_API_KEY)", down: false };
   const e = r?.external;
   if (!e) return { text: "Външна проверка: още не е правена", down: false };
   const failedLast = !!e.errorAt && (!e.checkedAt || Date.parse(e.errorAt) > Date.parse(e.checkedAt));
-  if (failedLast && e.reports == null) return { text: "Външна проверка: недостъпна", down: true };
+  const title = failedLast ? `Последна грешка (${bgDate(e.errorAt)}): ${externalFailReason(e.error)}${e.error ? ` — ${e.error}` : ""}` : undefined;
+  if (failedLast && e.reports == null) return { text: "Външна проверка: недостъпна", down: true, title };
   const n = e.reports ?? 0;
   const base = `Nekorekten.com: ${n} ${plural(n, "доклад", "доклада")} (проверено ${bgDate(e.checkedAt)})`;
-  return failedLast ? { text: `${base} · последната проверка: недостъпна`, down: true } : { text: base, down: false };
+  return failedLast ? { text: `${base} · последната проверка: недостъпна`, down: true, title } : { text: base, down: false };
 }
 
 export const INCIDENT_WORD: Record<string, string> = { uncollected: "непотърсена", refused: "отказана" };

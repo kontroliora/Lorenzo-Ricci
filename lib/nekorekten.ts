@@ -1,5 +1,6 @@
 // SERVER ONLY (reads NEKOREKTEN_API_KEY): never import from a client component.
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetch as undiciFetch, ProxyAgent, type Dispatcher } from "undici";
 import { normPhone } from "./customer-risk-shared";
 
 // Nekorekten.com API (official doc: https://nekorekten.com/bg/api/doc, read 27.11.2026). Only the two documented calls are used:
@@ -15,31 +16,68 @@ export const CACHE_DAYS = 7;
 const ERROR_BACKOFF_MS = 30 * 60_000;   // an automatic check does not retry a failed one for 30 min ("Провери отново" always does)
 export const SOURCE = "nekorekten";
 
+// ── Fixed outgoing IP (owner 28.11.2026): the key is whitelisted for QuotaGuard Static's two IPs, so ONLY the Nekorekten calls
+// (and the health check's IP probe) go through QUOTAGUARDSTATIC_URL (http://user:pass@host:9293). Supabase, Econt, Resend, Stripe stay
+// direct - they use the global fetch, this file uses undici's own fetch with the proxy as its dispatcher. Node runtime only.
+// The agent is made ONCE per server instance (module scope), not per request. No URL -> a warning, and the call goes direct.
+let proxyAgent: Dispatcher | null | undefined;   // undefined = not decided yet, null = no proxy
+let proxyWarned = false;
+export function proxyDispatcher(): Dispatcher | undefined {
+  if (proxyAgent === undefined) {
+    const url = (process.env.QUOTAGUARDSTATIC_URL ?? "").trim();
+    try { proxyAgent = url ? new ProxyAgent(url) : null; } catch (e) {
+      console.error("[nekorekten] QUOTAGUARDSTATIC_URL is not a valid proxy URL:", e instanceof Error ? e.message : e);
+      proxyAgent = null;
+    }
+  }
+  if (!proxyAgent && !proxyWarned) {
+    proxyWarned = true;
+    console.warn("[nekorekten] QUOTAGUARDSTATIC_URL missing/invalid - calling Nekorekten.com DIRECTLY (their IP whitelist will likely answer 403)");
+  }
+  return proxyAgent ?? undefined;
+}
+/** The proxy host for the health check - never the user/password. */
+export function proxyHost(): string | null {
+  try { const u = new URL((process.env.QUOTAGUARDSTATIC_URL ?? "").trim()); return `${u.hostname}:${u.port || "80"}`; } catch { return null; }
+}
+
+/** fetch through the fixed-IP proxy (when configured). */
+export function proxiedFetch(url: string, init: { method?: string; headers?: Record<string, string>; body?: string; timeoutMs?: number } = {}) {
+  return undiciFetch(url, {
+    method: init.method ?? "GET", headers: init.headers, body: init.body,
+    signal: AbortSignal.timeout(init.timeoutMs ?? TIMEOUT_MS), dispatcher: proxyDispatcher(),
+  });
+}
+
+/** What went wrong, in the words the team reads (log + the panel's tooltip). */
+export type FailKind = "ip" | "key" | "down" | "other";
+export const FAIL_LABEL: Record<FailKind, string> = { ip: "IP не е в белия списък", key: "грешен ключ", down: "недостъпна", other: "грешка" };
+export function failKindOfStatus(status: number): FailKind {
+  return status === 403 ? "ip" : status === 401 ? "key" : status >= 500 ? "down" : "other";
+}
+
 const apiKey = () => (process.env.NEKOREKTEN_API_KEY ?? "").trim();
 export const nekorektenConfigured = (): boolean => apiKey().length > 0;
 
 /** Their phone format: the country code + number as one string, e.g. 359888888888. */
 const apiPhone = (norm: string) => norm.replace(/^\+/, "");
 
+// The stored/logged error always STARTS with the kind's label ("IP не е в белия списък · HTTP 403 · ..."), so the panel can tell them apart.
 function errorText(status: number, body: unknown): string {
   const msg = body && typeof body === "object" && "message" in body ? String((body as { message: unknown }).message ?? "") : "";
-  const why: Record<number, string> = {
-    400: "невалидна заявка", 401: "невалиден или неактивен API ключ", 403: "IP адресът на сървъра не е разрешен за ключа",
-    405: "методът не се поддържа", 429: "достигнат лимит на заявките",
-  };
-  return [`HTTP ${status}`, why[status], msg].filter(Boolean).join(" · ").slice(0, 300);
+  const why: Record<number, string> = { 400: "невалидна заявка", 405: "методът не се поддържа", 429: "достигнат лимит на заявките" };
+  const kind = failKindOfStatus(status);
+  return [kind === "other" ? why[status] ?? FAIL_LABEL.other : FAIL_LABEL[kind], `HTTP ${status}`, msg].filter(Boolean).join(" · ").slice(0, 300);
 }
 
 async function call(method: "GET" | "POST", path: string, body?: unknown): Promise<{ ok: true; json: Record<string, unknown> } | { ok: false; error: string }> {
   const key = apiKey();
   if (!key) return { ok: false, error: "NEKOREKTEN_API_KEY не е зададен" };
   try {
-    const r = await fetch(BASE + path, {
+    const r = await proxiedFetch(BASE + path, {
       method,
       headers: { "Api-Key": key, Accept: "application/json", ...(body ? { "Content-Type": "application/json" } : {}) },
       body: body ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-      cache: "no-store",
     });
     const json = await r.json().catch(() => null);
     if (!r.ok) return { ok: false, error: errorText(r.status, json) };
@@ -47,7 +85,8 @@ async function call(method: "GET" | "POST", path: string, body?: unknown): Promi
     return { ok: true, json: json as Record<string, unknown> };
   } catch (e) {
     const name = e instanceof Error ? e.name : "";
-    return { ok: false, error: name === "TimeoutError" || name === "AbortError" ? `няма отговор за ${TIMEOUT_MS / 1000} s` : `мрежова грешка: ${e instanceof Error ? e.message : String(e)}`.slice(0, 300) };
+    const detail = name === "TimeoutError" || name === "AbortError" ? `няма отговор за ${TIMEOUT_MS / 1000} s` : `мрежова грешка: ${e instanceof Error ? e.message : String(e)}`;
+    return { ok: false, error: `${FAIL_LABEL.down} · ${detail}`.slice(0, 300) };
   }
 }
 

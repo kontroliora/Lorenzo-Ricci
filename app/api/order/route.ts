@@ -27,6 +27,9 @@ import { checkPromoCode, PROMO_CODES_ENABLED, PROMO_DISABLED_ERROR, PROMO_NOT_ON
 import { reserveWithGifts, giftNotes, giftDisplayName, shortModelName, GIFT_FALLBACK, clutchGiftLabel, clutchGiftSlots, isClutchGiftChoice, isGiftClutch, type GiftLine, type GiftReservation, type MissedGift, type ReserveFn, type Shortfall } from "@/lib/gifts";
 import { watchGiftSlots, WATCH_GIFT_CHOICES } from "@/lib/watch-gift";
 
+// Node runtime (not edge): the Nekorekten check after the response uses undici's ProxyAgent (lib/nekorekten.ts).
+export const runtime = "nodejs";
+
 // Insert an order row. econt_office_code (supabase/orders_econt_office.sql) is optional: if the column is not there yet the order is saved
 // without it (the readable address in orders.address already carries the office code) rather than lost.
 type OrderInsertClient = { from: (t: string) => { insert: (row: Record<string, unknown>) => PromiseLike<{ error: { message: string } | null }> } };

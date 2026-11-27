@@ -1,6 +1,7 @@
 "use client";
 import { useState, useTransition, useEffect } from "react";
 import { OrderCard } from "./OrderCard";
+import { NekorektenHealthButton } from "./RiskUi";
 import { GroupedOrderCard } from "./GroupedOrderCard";
 import { CreateOrderForm } from "./CreateOrderForm";
 import { MatchPanel } from "./MatchPanel";
@@ -392,6 +393,7 @@ export function OrdersBoard({
             style={{ fontSize: 12, padding: "5px 12px", borderRadius: 999, border: `1px solid ${riskOnly ? "#E24B4A" : "rgba(255,255,255,0.2)"}`, color: riskOnly ? "#fff" : "rgba(255,255,255,0.65)", background: riskOnly ? "#E24B4A" : "transparent", fontWeight: riskOnly ? 600 : 400 }}>
             ⛔ Само некоректни · {badCount}
           </button>
+          {role === "owner" && extConfigured && <>{" "}<NekorektenHealthButton /></>}
         </div>
 
         {!searching && (
