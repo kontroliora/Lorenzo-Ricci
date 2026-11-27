@@ -41,6 +41,10 @@ type DesignText = {
 };
 
 const METAL_WORD: Record<Metal, Lang> = { gold: { bg: "златна", ro: "aurie" }, silver: { bg: "сребриста", ro: "argintie" } };
+// Women's bracelets (owner, 27.11.2026): "Гривна Verdis Gold" / "Silver" in the BG title (no dash), and the BG description says
+// "в златист цвят" / "в сребрист цвят" - never that the piece is made of gold or silver. Necklaces and the RO texts are unchanged.
+const BRACELET_METAL_NAME: Record<Metal, string> = { gold: "Gold", silver: "Silver" };
+const BRACELET_METAL_COLOUR: Record<Metal, string> = { gold: "в златист цвят", silver: "в сребрист цвят" };
 const METAL_NAME: Record<Metal, Lang> = { gold: { bg: "Злато", ro: "Auriu" }, silver: { bg: "Сребро", ro: "Argintiu" } };
 const COLOR: Record<Metal, Lang> = { gold: { bg: "Златен", ro: "Auriu" }, silver: { bg: "Сребърен", ro: "Argintiu" } };
 const TYPE_NAME: Record<PieceType, Lang> = { necklace: { bg: "Колие", ro: "Colier" }, bracelet: { bg: "Гривна", ro: "Brățară" } };
@@ -75,7 +79,7 @@ const TEXT: Record<CollectionKey, DesignText> = {
         ro: "Un trifoi cu inserție de un negru profund, curat și sigur pe el. Contrastul cu rama {metal} se potrivește la fel de bine cu o cămașă albă dimineața și cu o rochie de seară. O eleganță discretă, care nu trece neobservată.",
       },
       bracelet: {
-        bg: "Детелини с дълбоко черна вложка в {metal} рамка, подредени по фината верижка. Графичен контраст, който придава характер на китката – самостоятелно или в комбинация.",
+        bg: "Детелини с дълбоко черна вложка в рамка {metal}, подредени по фината верижка. Графичен контраст, който придава характер на китката – самостоятелно или в комбинация.",
         ro: "Trifoi cu inserție de un negru profund, în ramă {metal}, așezați de-a lungul unui lănțișor fin. Un contrast grafic care dă caracter încheieturii – singură sau în combinație.",
       },
     },
@@ -324,11 +328,14 @@ function specs(key: CollectionKey, type: PieceType, metal: Metal, skuCode: strin
 const sku = (type: PieceType, key: CollectionKey, metal: Metal) =>
   `${type === "necklace" ? "KO" : "GR"}-${key.toUpperCase()}-${metal === "gold" ? "G" : "S"}`;
 
-const fill = (s: string, metal: Metal, lang: "bg" | "ro") => s.replace("{metal}", METAL_WORD[metal][lang]);
+const fill = (s: string, metal: Metal, lang: "bg" | "ro", type: PieceType = "necklace") =>
+  s.replace("{metal}", lang === "bg" && type === "bracelet" ? BRACELET_METAL_COLOUR[metal] : METAL_WORD[metal][lang]);
 
 export const NEW_COLLECTION_PRODUCTS: Product[] = COLLECTION_PIECES.map(({ slug, design, type, metal, price }) => {
   const t = TEXT[design.key];
-  const name = `${TYPE_NAME[type].bg} ${design.name} – ${METAL_NAME[metal].bg}`;
+  const name = type === "bracelet"
+    ? `${TYPE_NAME[type].bg} ${design.name} ${BRACELET_METAL_NAME[metal]}`
+    : `${TYPE_NAME[type].bg} ${design.name} – ${METAL_NAME[metal].bg}`;
   const alt = `${name} Lorenzo Ricci`;
   return {
     id: slug,
@@ -346,7 +353,7 @@ export const NEW_COLLECTION_PRODUCTS: Product[] = COLLECTION_PIECES.map(({ slug,
     stock: 0,
     warranty: "Доживотна гаранция",
     shortDescription: t.short[type].bg,
-    description: fill(t.description[type].bg, metal, "bg"),
+    description: fill(t.description[type].bg, metal, "bg", type),
     features: t.features[type].map((f) => f.bg),
     specs: specsBg(design.key, type, metal, sku(type, design.key, metal)), // incl. the former "Детайли" rows + the sizes
     sizeLine: sizeLineBg(type, design.kind === "bangle", COLLECTION_SIZES[sku(type, design.key, metal)] ?? {}),

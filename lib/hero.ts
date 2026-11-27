@@ -36,7 +36,7 @@ export function heroJewel(soldOut: ReadonlySet<string>): HeroJewel | null {
     const n = `necklace-${p.design}-${p.metal}`, b = `bracelet-${p.design}-${p.metal}`;
     if (ok(n) && ok(b)) return {
       necklace: modelPhoto(n)!, bracelet: modelPhoto(b)!, slugs: [n, b],
-      alts: { necklace: `Колие ${p.label} на модел, дамска колекция Lorenzo Ricci`, bracelet: `Гривна ${p.label} на модел, дамска колекция Lorenzo Ricci` },
+      alts: { necklace: `Колие ${p.label} на модел, дамска колекция Lorenzo Ricci`, bracelet: `Гривна ${p.label.replace(/ – .*$/, "")} ${p.metal === "gold" ? "Gold" : "Silver"} на модел, дамска колекция Lorenzo Ricci` },
     };
   }
   // No matching pair in stock: any in-stock necklace and bracelet with an on-model photo.
@@ -90,7 +90,7 @@ export function heroGeneral(soldOut: ReadonlySet<string>): HeroGeneral | null {
   const w = GENERAL_WATCHES.find((x) => !soldOut.has(x.slug));
   if (w) items.push({ src: w.src, alt: `Часовник ${w.name}`, slug: w.slug, kind: "watch" });
   const j = GENERAL_JEWELS.find((s) => pieceLive(s) && !soldOut.has(s) && COLLECTION_PHOTOS[s]);
-  if (j) { const [type, key, metal] = j.split("-"); items.push({ src: collectionPhoto(`${key}-${type}-${metal}-1.webp`), alt: `Гривна ${key[0].toUpperCase()}${key.slice(1)} – ${metal === "gold" ? "Злато" : "Сребро"}`, slug: j, kind: "jewel" }); }
+  if (j) { const [type, key, metal] = j.split("-"); items.push({ src: collectionPhoto(`${key}-${type}-${metal}-1.webp`), alt: `Гривна ${key[0].toUpperCase()}${key.slice(1)} ${metal === "gold" ? "Gold" : "Silver"}`, slug: j, kind: "jewel" }); }
   const l = GENERAL_LEATHER.map((s) => getProductBySlug(s)).find((p) => p && !soldOut.has(p.slug));
   if (l) items.push({ src: l.coverImage.src, alt: l.coverImage.alt, slug: l.slug, kind: "leather" });
   return items.length >= 2 ? { items, slugs: items.map((i) => i.slug) } : null;

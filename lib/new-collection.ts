@@ -133,6 +133,7 @@ export const METAL_SWATCH: Record<Metal, { bg: string; ro: string; color: string
   gold:   { bg: "Злато",  ro: "Auriu",    color: "#C9A84C" },
   silver: { bg: "Сребро", ro: "Argintiu", color: "#C4C7CC" },
 };
+export const BRACELET_SWATCH_BG: Record<Metal, string> = { gold: "Gold", silver: "Silver" };
 
 /**
  * The swatch row of a collection product: its gold and silver twin (empty when the piece comes in one metal only, or its
@@ -143,7 +144,9 @@ export function collectionSwatches(slug: string, lang: "bg" | "ro"): { slug: str
   if (!me) return [];
   const twins = COLLECTION_PIECES.filter((p) => p.design.key === me.design.key && p.type === me.type && pieceLive(p.slug));
   if (twins.length < 2) return [];
-  return twins.map((p) => ({ slug: p.slug, label: METAL_SWATCH[p.metal][lang], color: METAL_SWATCH[p.metal].color, inStock: true }));
+  // Women's bracelets (owner, 27.11.2026): the BG swatches read "Gold" / "Silver"; necklaces keep "Злато" / "Сребро".
+  const label = (m: Metal) => (lang === "bg" && me.type === "bracelet" ? BRACELET_SWATCH_BG[m] : METAL_SWATCH[m][lang]);
+  return twins.map((p) => ({ slug: p.slug, label: label(p.metal), color: METAL_SWATCH[p.metal].color, inStock: true }));
 }
 
 // ─── Sets: necklace + bracelet of one clover design, same metal ──────────────
