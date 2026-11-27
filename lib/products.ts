@@ -389,7 +389,7 @@ const catalog: Product[] = [
       alt: "Гривна Diamante Cross Lorenzo Ricci - 18K PVD позлата, циркониев кръст, 316L стомана",
     },
     images: [
-      { src: `/Products/jewellery/bracelet Diamante Cross/grivna-diamante-cross-18k-pvd-preden-izgled.webp`, alt: "Гривна Diamante Cross Lorenzo Ricci - продуктова снимка бял фон, 18K PVD злато" },
+      { src: `/Products/jewellery/bracelet Diamante Cross/grivna-diamante-cross-18k-pvd-preden-izgled.webp`, alt: "Гривна Diamante Cross Lorenzo Ricci - продуктова снимка бял фон, PVD покритие с 18K позлата" },
       { src: `/Products/jewellery/bracelet Diamante Cross/grivna-diamante-cross-detal-tsirkoniev-krast.webp`, alt: "Гривна Diamante Cross - детайл на циркониевия кръст, луксозна гривна" },
       { src: `/Products/jewellery/bracelet Diamante Cross/grivna-diamante-cross-lifestyle.webp`,               alt: "Гривна Diamante Cross - лайфстайл снимка, носена на китката" },
       { src: `/Products/jewellery/bracelet Diamante Cross/grivna-diamante-cross-stranicen-izgled.webp`,        alt: "Гривна Diamante Cross - страничен изглед, дебелина и детайл на закопчалката" },
@@ -412,7 +412,7 @@ const catalog: Product[] = [
     warranty: "Доживотна гаранция",
     shortDescription: "Осем милиметра присъствие",
     description:
-      "Тежи осезаемо на китката, щом щракне закопчалката. Осем милиметра плетка, която присъства, без да се натрапва. До часовника печели контекст, самостоятелно държи вниманието. Плътно 18K PVD злато, без компромиси.",
+      "Тежи осезаемо на китката, щом щракне закопчалката. Осем милиметра плетка, която присъства, без да се натрапва. До часовника печели контекст, самостоятелно държи вниманието. Плътно PVD покритие с 18K позлата, без компромиси.",
     features: [
       "Масивна плетка 8 мм",
       "Изразителна тежест",
@@ -434,7 +434,7 @@ const catalog: Product[] = [
       alt: "Гривна Milano Forte Lorenzo Ricci - масивна 8мм 18K PVD позлата, 316L стомана",
     },
     images: [
-      { src: `/Products/jewellery/Bracelet Milano Forte/grivna-milano-forte-18k-pvd-preden-izgled.webp`, alt: "Гривна Milano Forte Lorenzo Ricci - продуктова снимка бял фон, 18K PVD злато" },
+      { src: `/Products/jewellery/Bracelet Milano Forte/grivna-milano-forte-18k-pvd-preden-izgled.webp`, alt: "Гривна Milano Forte Lorenzo Ricci - продуктова снимка бял фон, PVD покритие с 18K позлата" },
       { src: `/Products/jewellery/Bracelet Milano Forte/grivna-milano-forte-lifestyle.webp`,              alt: "Гривна Milano Forte - лайфстайл снимка, носена на китката" },
       { src: `/Products/jewellery/Bracelet Milano Forte/grivna-milano-forte-detal-pletka-8mm.webp`,       alt: "Гривна Milano Forte - детайл на плетката, ширина 8мм" },
       { src: `/Products/jewellery/Bracelet Milano Forte/grivna-milano-forte-kopchalka.webp`,              alt: "Гривна Milano Forte - детайл на закопчалката, 750 IT печат" },
@@ -479,7 +479,7 @@ const catalog: Product[] = [
       alt: "Гривна Milano Twist Lorenzo Ricci - усукана плетка 18K PVD позлата, 316L стомана",
     },
     images: [
-      { src: `/Products/jewellery/Bracelet Milano Twist/grivna-milano-twist-18k-pvd-preden-izgled.webp`, alt: "Гривна Milano Twist Lorenzo Ricci - продуктова снимка бял фон, 18K PVD злато" },
+      { src: `/Products/jewellery/Bracelet Milano Twist/grivna-milano-twist-18k-pvd-preden-izgled.webp`, alt: "Гривна Milano Twist Lorenzo Ricci - продуктова снимка бял фон, PVD покритие с 18K позлата" },
       { src: `/Products/jewellery/Bracelet Milano Twist/grivna-milano-twist-lifestyle.webp`,               alt: "Гривна Milano Twist - лайфстайл снимка, носена на китката" },
       { src: `/Products/jewellery/Bracelet Milano Twist/grivna-milano-twist-detal-usukana-pletka.webp`,    alt: "Гривна Milano Twist - детайл на усуканата плетка, италиански дизайн" },
       { src: `/Products/jewellery/Bracelet Milano Twist/grivna-milano-twist-kopchalka.webp`,               alt: "Гривна Milano Twist - детайл на закопчалката, 750 IT печат" },
@@ -524,7 +524,7 @@ const catalog: Product[] = [
       alt: "Гривна Signature Lorenzo Ricci - класическа 6мм 18K PVD позлата, 316L стомана",
     },
     images: [
-      { src: `/Products/jewellery/Bracelet Signature/grivna-signature-18k-pvd-preden-izgled.webp`, alt: "Гривна Signature Lorenzo Ricci - продуктова снимка бял фон, 18K PVD злато" },
+      { src: `/Products/jewellery/Bracelet Signature/grivna-signature-18k-pvd-preden-izgled.webp`, alt: "Гривна Signature Lorenzo Ricci - продуктова снимка бял фон, PVD покритие с 18K позлата" },
       { src: `/Products/jewellery/Bracelet Signature/grivna-signature-lifestyle.webp`,              alt: "Гривна Signature - лайфстайл снимка, носена на китката" },
       { src: `/Products/jewellery/Bracelet Signature/grivna-signature-detal-pletka-6mm.webp`,       alt: "Гривна Signature - детайл на плетката, ширина 6мм" },
       { src: `/Products/jewellery/Bracelet Signature/grivna-signature-kopchalka.webp`,              alt: "Гривна Signature - детайл на закопчалката, 750 IT печат" },
@@ -571,7 +571,7 @@ const catalog: Product[] = [
       alt: "Колие Aurelius Cross Lorenzo Ricci - 18K PVD позлата, кръст 3.7×2см, 316L стомана",
     },
     images: [
-      { src: `/Products/jewellery/Necklace Aurelius Cross/kolie-aurelius-cross-18k-pvd-preden-izgled.webp`, alt: "Колие Aurelius Cross Lorenzo Ricci - продуктова снимка бял фон, 18K PVD злато" },
+      { src: `/Products/jewellery/Necklace Aurelius Cross/kolie-aurelius-cross-18k-pvd-preden-izgled.webp`, alt: "Колие Aurelius Cross Lorenzo Ricci - продуктова снимка бял фон, PVD покритие с 18K позлата" },
       { src: `/Products/jewellery/Necklace Aurelius Cross/kolie-aurelius-cross-detal-krast.webp`,            alt: "Колие Aurelius Cross - детайл на кръста, размери 3.7×2см, дебелина 3мм" },
       { src: `/Products/jewellery/Necklace Aurelius Cross/kolie-aurelius-cross-lifestyle.webp`,               alt: "Колие Aurelius Cross - лайфстайл снимка, носено на шия" },
       { src: `/Products/jewellery/Necklace Aurelius Cross/kolie-aurelius-cross-verizka-60cm.webp`,            alt: "Колие Aurelius Cross - детайл на верижката, дължина 60см" },
@@ -617,7 +617,7 @@ const catalog: Product[] = [
       alt: "Колие Grande Imperiale Lorenzo Ricci - масивен кръст 8.5×5см, 18K PVD позлата, 316L стомана",
     },
     images: [
-      { src: `/Products/jewellery/Necklace Grande Imperiale /kolie-grande-imperiale-18k-pvd-preden-izgled.webp`, alt: "Колие Grande Imperiale Lorenzo Ricci - продуктова снимка бял фон, 18K PVD злато" },
+      { src: `/Products/jewellery/Necklace Grande Imperiale /kolie-grande-imperiale-18k-pvd-preden-izgled.webp`, alt: "Колие Grande Imperiale Lorenzo Ricci - продуктова снимка бял фон, PVD покритие с 18K позлата" },
       { src: `/Products/jewellery/Necklace Grande Imperiale /kolie-grande-imperiale-detal-masiven-krast.webp`,    alt: "Колие Grande Imperiale - детайл на масивния кръст, размери 8.5×5см" },
       { src: `/Products/jewellery/Necklace Grande Imperiale /kolie-grande-imperiale-lifestyle.webp`,               alt: "Колие Grande Imperiale - лайфстайл снимка, носено на шия" },
       { src: `/Products/jewellery/Necklace Grande Imperiale /kolie-grande-imperiale-verizka-60cm.webp`,            alt: "Колие Grande Imperiale - детайл на верижката 3мм, дължина 60см" },
@@ -661,7 +661,7 @@ const catalog: Product[] = [
       alt: "Колие Milano Forte Lorenzo Ricci - масивна плетена верижка, 18K PVD позлата, 316L стомана",
     },
     images: [
-      { src: `/Products/jewellery/Necklace Milano Forte/kolie-milano-forte-18k-pvd-preden-izgled.webp`, alt: "Колие Milano Forte Lorenzo Ricci - продуктова снимка бял фон, 18K PVD злато" },
+      { src: `/Products/jewellery/Necklace Milano Forte/kolie-milano-forte-18k-pvd-preden-izgled.webp`, alt: "Колие Milano Forte Lorenzo Ricci - продуктова снимка бял фон, PVD покритие с 18K позлата" },
       { src: `/Products/jewellery/Necklace Milano Forte/kolie-milano-forte-lifestyle.webp`,              alt: "Колие Milano Forte - лайфстайл снимка, носено на шия" },
       { src: `/Products/jewellery/Necklace Milano Forte/kolie-milano-forte-detal-masivna-pletka.webp`,   alt: "Колие Milano Forte - детайл на масивната плетена верижка" },
       { src: `/Products/jewellery/Necklace Milano Forte/kolie-milano-forte-karabiner.webp`,              alt: "Колие Milano Forte - детайл на карабинера, 750 IT печат" },
@@ -682,7 +682,7 @@ const catalog: Product[] = [
     badge: "ЧЕРЕН ПЕТЪК",
     inStock: true,
     warranty: "Доживотна гаранция",
-    shortDescription: "Въже от злато",
+    shortDescription: "Въже Gold",
     description:
       "Усукана верига, чиято спираловидна плетка улавя и пречупва светлината в движение. По-фина от масивните модели, но със същата дълбочина на златото. Носи се самостоятелно или като основа за подбрана висулка.",
     features: [
@@ -705,7 +705,7 @@ const catalog: Product[] = [
       alt: "Колие Milano Twist Lorenzo Ricci - усукана верижка 6мм, 18K PVD позлата, 316L стомана",
     },
     images: [
-      { src: `/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-18k-pvd-preden-izgled.webp`, alt: "Колие Milano Twist Lorenzo Ricci - продуктова снимка бял фон, 18K PVD злато" },
+      { src: `/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-18k-pvd-preden-izgled.webp`, alt: "Колие Milano Twist Lorenzo Ricci - продуктова снимка бял фон, PVD покритие с 18K позлата" },
       { src: `/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-lifestyle.webp`,               alt: "Колие Milano Twist - лайфстайл снимка, носено на шия" },
       { src: `/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-detal-usukana-verizka.webp`,   alt: "Колие Milano Twist - детайл на усуканата верижка, ширина 6мм" },
       { src: `/Products/jewellery/Necklace Milano Twist/kolie-milano-twist-karabiner-55cm.webp`,          alt: "Колие Milano Twist - детайл на карабинера, дължина 55см" },

@@ -5,6 +5,7 @@ import { mayEmail, type MailKind, type MailLang } from "./mail-policy";
 import { onePlusOneOfOrder } from "./one-plus-one";
 import { watchJewelTotal } from "./watch-jewel";
 import { getProductBySlug } from "./products";
+import { currentNameBg } from "./email-names";
 import { emailHead, emailHeaderRow, emailOrderRefRow, ORDER_REPLY_TO } from "@/lib/email-layout";
 
 // The 1+1 part of the order's discounts (lib/one-plus-one.ts), read back from its own lines: lines - goods after discounts - promo.
@@ -185,11 +186,11 @@ export function buildCustomerEmail(order: Record<string, unknown>, opts: { paidB
   const firstName = String(customer.name ?? "").split(" ")[0];
 
   const items = Array.isArray(order.items)
-    ? (order.items as Array<{ name?: string; quantity?: number; price?: number; currency?: string; gift?: boolean }>)
+    ? (order.items as Array<{ slug?: string; name?: string; quantity?: number; price?: number; currency?: string; gift?: boolean }>)
         .map(
           (i) =>
             `<tr>
-              <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;font-family:'Georgia',serif;color:${i.gift ? "#047857" : "#1a1a1a"};font-size:14px">${i.name ?? "-"}</td>
+              <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;font-family:'Georgia',serif;color:${i.gift ? "#047857" : "#1a1a1a"};font-size:14px">${currentNameBg(i.slug, String(i.name ?? "-"))}</td>
               <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;text-align:center;color:#555;font-size:14px">×${i.quantity ?? 1}</td>
               <td style="padding:12px 0;border-bottom:1px solid #e8dfc8;text-align:right;font-family:'Georgia',serif;color:${i.gift ? "#047857" : "#1a1a1a"};font-size:14px">${priceCell(i)}</td>
             </tr>`
@@ -276,7 +277,7 @@ ${emailHead("Вашата поръчка от Lorenzo Ricci")}
                   </td>
                   <td align="center" style="padding:0 8px;font-size:12px;color:#666;line-height:1.5">
                     <p style="margin:0 0 4px;font-size:18px">🔄</p>
-                    <strong style="display:block;color:#0a0e1f;font-size:11px;letter-spacing:.1em;text-transform:uppercase">Връщане</strong>
+                    <strong style="display:block;color:#0a0e1f;font-size:11px;letter-spacing:.1em;text-transform:uppercase">Замяна</strong>
                     <span style="font-size:12px">30 дни лесна замяна</span>
                   </td>
                 </tr>
@@ -292,6 +293,7 @@ ${emailHead("Вашата поръчка от Lorenzo Ricci")}
                 <p style="margin:0;font-size:11px;color:#aaa;line-height:1.8">
                   info@lorenzo-ricci.com<br>
                   <a href="https://lorenzo-ricci.com" style="color:#aaa;text-decoration:none">lorenzo-ricci.com</a>
+                  &nbsp;·&nbsp; <a href="https://www.lorenzo-ricci.com" style="color:#aaa;text-decoration:underline">Общи условия</a>
                 </p>
               </div>
             </td>

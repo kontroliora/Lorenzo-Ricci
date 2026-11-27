@@ -41,11 +41,11 @@ type DesignText = {
 };
 
 const METAL_WORD: Record<Metal, Lang> = { gold: { bg: "златна", ro: "aurie" }, silver: { bg: "сребриста", ro: "argintie" } };
-// Women's bracelets (owner, 27.11.2026): "Гривна Verdis Gold" / "Silver" in the BG title (no dash), and the BG description says
-// "в златист цвят" / "в сребрист цвят" - never that the piece is made of gold or silver. Necklaces and the RO texts are unchanged.
-const BRACELET_METAL_NAME: Record<Metal, string> = { gold: "Gold", silver: "Silver" };
+// Women's collection (owner: bracelets 27.11.2026, necklaces 28.11.2026): "Гривна Verdis Gold" / "Колие Verdis Silver" in the BG
+// title (no dash), and the BG description says "в златист цвят" / "в сребрист цвят" - never that the piece is made of gold or
+// silver. The RO texts are unchanged.
 const BRACELET_METAL_COLOUR: Record<Metal, string> = { gold: "в златист цвят", silver: "в сребрист цвят" };
-const METAL_NAME: Record<Metal, Lang> = { gold: { bg: "Злато", ro: "Auriu" }, silver: { bg: "Сребро", ro: "Argintiu" } };
+const METAL_NAME: Record<Metal, Lang> = { gold: { bg: "Gold", ro: "Auriu" }, silver: { bg: "Silver", ro: "Argintiu" } };
 const COLOR: Record<Metal, Lang> = { gold: { bg: "Златен", ro: "Auriu" }, silver: { bg: "Сребърен", ro: "Argintiu" } };
 const TYPE_NAME: Record<PieceType, Lang> = { necklace: { bg: "Колие", ro: "Colier" }, bracelet: { bg: "Гривна", ro: "Brățară" } };
 
@@ -75,7 +75,7 @@ const TEXT: Record<CollectionKey, DesignText> = {
     short: { necklace: { bg: "Черна детелина с характер", ro: "Un trifoi negru, cu caracter" }, bracelet: { bg: "Черна детелина на китката", ro: "Un trifoi negru la încheietură" } },
     description: {
       necklace: {
-        bg: "Детелина с дълбоко черна вложка, изчистена и уверена. Контрастът с {metal} рамка стои еднакво добре с бяла риза сутрин и с вечерна рокля. Сдържана елегантност, която не минава незабелязана.",
+        bg: "Детелина с дълбоко черна вложка, изчистена и уверена. Контрастът с рамката {metal} стои еднакво добре с бяла риза сутрин и с вечерна рокля. Сдържана елегантност, която не минава незабелязана.",
         ro: "Un trifoi cu inserție de un negru profund, curat și sigur pe el. Contrastul cu rama {metal} se potrivește la fel de bine cu o cămașă albă dimineața și cu o rochie de seară. O eleganță discretă, care nu trece neobservată.",
       },
       bracelet: {
@@ -93,7 +93,7 @@ const TEXT: Record<CollectionKey, DesignText> = {
     short: { necklace: { bg: "Детелина от светлина", ro: "Un trifoi de lumină" }, bracelet: { bg: "Светлина на китката", ro: "Lumină la încheietură" } },
     description: {
       necklace: {
-        bg: "Детелина с перлено бяла вложка, която улавя светлината и я връща с мек, преливащ блясък. В {metal} рамка, нежна, но с присъствие. За моментите, които заслужават светлина.",
+        bg: "Детелина с перлено бяла вложка, която улавя светлината и я връща с мек, преливащ блясък. В рамка {metal}, нежна, но с присъствие. За моментите, които заслужават светлина.",
         ro: "Un trifoi cu inserție alb-sidefie, care prinde lumina și o redă într-o strălucire blândă, irizată. Într-o ramă {metal}, delicat, dar cu prezență. Pentru momentele care merită lumină.",
       },
       bracelet: {
@@ -329,13 +329,11 @@ const sku = (type: PieceType, key: CollectionKey, metal: Metal) =>
   `${type === "necklace" ? "KO" : "GR"}-${key.toUpperCase()}-${metal === "gold" ? "G" : "S"}`;
 
 const fill = (s: string, metal: Metal, lang: "bg" | "ro", type: PieceType = "necklace") =>
-  s.replace("{metal}", lang === "bg" && type === "bracelet" ? BRACELET_METAL_COLOUR[metal] : METAL_WORD[metal][lang]);
+  s.replace("{metal}", lang === "bg" ? BRACELET_METAL_COLOUR[metal] : METAL_WORD[metal][lang]);
 
 export const NEW_COLLECTION_PRODUCTS: Product[] = COLLECTION_PIECES.map(({ slug, design, type, metal, price }) => {
   const t = TEXT[design.key];
-  const name = type === "bracelet"
-    ? `${TYPE_NAME[type].bg} ${design.name} ${BRACELET_METAL_NAME[metal]}`
-    : `${TYPE_NAME[type].bg} ${design.name} – ${METAL_NAME[metal].bg}`;
+  const name = `${TYPE_NAME[type].bg} ${design.name} ${METAL_NAME[metal].bg}`;
   const alt = `${name} Lorenzo Ricci`;
   return {
     id: slug,

@@ -9,6 +9,7 @@ import { langOf, mayEmail } from "@/lib/mail-policy";
 import { hasCardMoney } from "@/lib/payments";
 import { getRawStatusesFor, analyzeShipment } from "./econt";
 import { getOfficeList, type OfficeList } from "./econt-offices";
+import { currentNameBg } from "./email-names";
 import {
   buildShippedEmail, buildReminderOfficeEmail, buildReminderDoorEmail,
   shipmentSubjects, trackPageUrl, type ShipmentEmailData, type ShipmentItem,
@@ -40,7 +41,7 @@ export function toEmailData(o: OrderRow, awb: string, officeName = ""): Shipment
   const raw = Array.isArray(o.items) ? (o.items as Array<Record<string, unknown>>) : [];
   const items: ShipmentItem[] = raw.map((i) => {
     const gift = i.gift === true;
-    const name = String(i.name ?? "Артикул");
+    const name = currentNameBg(i.slug, String(i.name ?? "Артикул")); // collection pieces: today's name
     return {
       // These emails keep a calm tone (no caps for emphasis): "ПОДАРЪК: X" reads "Подарък: X".
       name: gift ? `Подарък: ${name.replace(/^ПОДАРЪК:\s*/, "")}` : name,

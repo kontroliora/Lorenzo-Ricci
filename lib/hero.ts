@@ -11,12 +11,12 @@ import { SHELF } from "./storefront";
 
 type Pair = { design: string; metal: "gold" | "silver"; label: string };
 const JEWEL_PAIRS: Pair[] = [
-  { design: "lumen", metal: "silver", label: "Lumen – Сребро" },
-  { design: "lumen", metal: "gold", label: "Lumen – Злато" },
-  { design: "verdis", metal: "gold", label: "Verdis – Злато" },
-  { design: "verdis", metal: "silver", label: "Verdis – Сребро" },
-  { design: "noctis", metal: "silver", label: "Noctis – Сребро" },
-  { design: "noctis", metal: "gold", label: "Noctis – Злато" },
+  { design: "lumen", metal: "silver", label: "Lumen Silver" },
+  { design: "lumen", metal: "gold", label: "Lumen Gold" },
+  { design: "verdis", metal: "gold", label: "Verdis Gold" },
+  { design: "verdis", metal: "silver", label: "Verdis Silver" },
+  { design: "noctis", metal: "silver", label: "Noctis Silver" },
+  { design: "noctis", metal: "gold", label: "Noctis Gold" },
 ];
 
 /** The on-model photo (kind "m") of a collection piece, or null. */
@@ -36,7 +36,7 @@ export function heroJewel(soldOut: ReadonlySet<string>): HeroJewel | null {
     const n = `necklace-${p.design}-${p.metal}`, b = `bracelet-${p.design}-${p.metal}`;
     if (ok(n) && ok(b)) return {
       necklace: modelPhoto(n)!, bracelet: modelPhoto(b)!, slugs: [n, b],
-      alts: { necklace: `Колие ${p.label} на модел, дамска колекция Lorenzo Ricci`, bracelet: `Гривна ${p.label.replace(/ – .*$/, "")} ${p.metal === "gold" ? "Gold" : "Silver"} на модел, дамска колекция Lorenzo Ricci` },
+      alts: { necklace: `Колие ${p.label} на модел, дамска колекция Lorenzo Ricci`, bracelet: `Гривна ${p.label} на модел, дамска колекция Lorenzo Ricci` },
     };
   }
   // No matching pair in stock: any in-stock necklace and bracelet with an on-model photo.

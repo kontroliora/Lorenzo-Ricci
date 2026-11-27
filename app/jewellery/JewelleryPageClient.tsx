@@ -59,7 +59,7 @@ export function JewelleryPageView({ bracelets, necklaces, reviewCounts, category
           <div className="gold-divider" />
           <p className="font-sans text-sm font-light text-ink-soft leading-relaxed mt-6 mb-8">
             За разлика от стандартното единично покритие, нашите бижута преминават
-            през 4 последователни слоя 18K PVD злато. Резултатът е значително по-плътна
+            през 4 последователни слоя PVD покритие с 18K позлата. Резултатът е значително по-плътна
             и по-устойчива повърхност - не избледнява при контакт с вода, пот или парфюм.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">

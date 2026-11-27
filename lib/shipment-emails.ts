@@ -51,7 +51,7 @@ function shell(d: ShipmentEmailData, preheader: string, bodyHtml: string): strin
       <tr><td style="padding:24px 40px 40px;text-align:center">
         <div style="border-top:1px solid #e8dfc8;padding-top:24px">
           <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:13px;color:${NAVY};letter-spacing:.08em">LORENZO RICCI</p>
-          <p style="margin:0 0 12px;font-size:11px;color:#aaa;line-height:1.8">info@lorenzo-ricci.com &nbsp;·&nbsp; <a href="https://lorenzo-ricci.com" style="color:#aaa;text-decoration:none">lorenzo-ricci.com</a></p>
+          <p style="margin:0 0 12px;font-size:11px;color:#aaa;line-height:1.8">info@lorenzo-ricci.com &nbsp;·&nbsp; <a href="https://lorenzo-ricci.com" style="color:#aaa;text-decoration:none">lorenzo-ricci.com</a> &nbsp;·&nbsp; <a href="https://www.lorenzo-ricci.com" style="color:#aaa;text-decoration:underline">Общи условия</a></p>
           <p style="margin:0;font-size:10px;color:#c8c2ba;line-height:1.7">Получавате това писмо във връзка с Вашата поръчка ${d.ref} в Lorenzo Ricci.</p>
         </div>
       </td></tr>
@@ -124,8 +124,8 @@ export function buildReminderOfficeEmail(d: ShipmentEmailData): string {
   const office = d.officeName ? ` ${d.officeName}` : "";
   return shell(d, "Пратката Ви очаква в офис на Еконт.", `
   <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Здравейте, ${d.firstName},</p>
-  <p style="margin:0 0 16px;color:#666;font-size:14px;line-height:1.7">Вашата пратка от Lorenzo Ricci Ви очаква в офис на Еконт${office}. Съгласно условията на куриера, тя се съхранява до 7 дни от пристигането, след което се връща обратно към нас.</p>
-  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">Ако не успеете да я вземете в оставащите дни, пратката ще бъде върната и поръчката - анулирана.</p>
+  <p style="margin:0 0 16px;color:#666;font-size:14px;line-height:1.7">Вашата пратка от Lorenzo Ricci Ви очаква в офис на Еконт${office}. Съгласно условията на куриера, тя се съхранява до 7 дни от пристигането, след което се изпраща обратно към нас.</p>
+  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">Ако не успеете да я вземете в оставащите дни, поръчката ще бъде анулирана.</p>
   ${DIV}${refBlock(d, true)}${trackButton(d)}
   <p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7">Оставаме на разположение при въпроси на info@lorenzo-ricci.com. Ако вече сте получили пратката, моля не обръщайте внимание на това съобщение.</p>`);
 }
@@ -135,8 +135,8 @@ export function buildReminderDoorEmail(d: ShipmentEmailData): string {
   const office = d.officeName ? ` ${d.officeName}` : "";
   return shell(d, "Пратката Ви вече очаква в офис на Еконт.", `
   <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;color:${NAVY}">Здравейте, ${d.firstName},</p>
-  <p style="margin:0 0 16px;color:#666;font-size:14px;line-height:1.7">Опитахме да доставим Вашата пратка от Lorenzo Ricci на посочения адрес, но не успяхме да Ви открием. Пратката вече Ви очаква в офис на Еконт${office} и се съхранява до 7 дни, след което се връща обратно към нас.</p>
-  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">Ако не успеете да я вземете в оставащите дни, пратката ще бъде върната и поръчката - анулирана.</p>
+  <p style="margin:0 0 16px;color:#666;font-size:14px;line-height:1.7">Опитахме да доставим Вашата пратка от Lorenzo Ricci на посочения адрес, но не успяхме да Ви открием. Пратката вече Ви очаква в офис на Еконт${office} и се съхранява до 7 дни, след което се изпраща обратно към нас.</p>
+  <p style="margin:0 0 24px;color:#666;font-size:14px;line-height:1.7">Ако не успеете да я вземете в оставащите дни, поръчката ще бъде анулирана.</p>
   ${DIV}${refBlock(d, true)}${trackButton(d)}
   <p style="margin:18px 0 0;color:#666;font-size:14px;line-height:1.7">Оставаме на разположение при въпроси на info@lorenzo-ricci.com.</p>`);
 }

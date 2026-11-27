@@ -6,6 +6,7 @@ import { getSuppressedEmails } from "@/lib/marketing-suppression";
 
 // mail-policy: abandoned_cart
 import { supabase } from "@/lib/supabase";
+import { currentNameBg } from "@/lib/email-names";
 
 // ─── Auth ──────────────────────────────────────────────────────────────────
 function isAuthorized(req: NextRequest): boolean {
@@ -303,7 +304,8 @@ export async function POST(req: NextRequest) {
     try {
       const { subject, html } = buildRecoveryEmail({
         name:     session.name ?? "",
-        items:    session.items,
+        // collection pieces: today's name (renamed 27-28.11.2026), not the one saved with the cart
+        items:    session.items.map((i) => ({ ...i, name: currentNameBg((i as { slug?: unknown }).slug, i.name) })),
         subtotal: session.subtotal,
       });
 

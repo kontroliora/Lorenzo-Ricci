@@ -9,6 +9,7 @@ import { emailHead, emailHeaderRow, emailOrderRefRow, ORDER_REPLY_TO, goldButton
 import { langOf, mayEmail } from "@/lib/mail-policy";
 import { hasCardMoney } from "@/lib/payments";
 import { getCatalogProductBySlug } from "@/lib/products";
+import { currentNameBg } from "@/lib/email-names";
 import { pieceInfo } from "@/lib/partner/orders";
 import { confirmToken } from "@/lib/order-confirm-token";
 import { SITE_URL } from "@/lib/site";
@@ -53,7 +54,7 @@ const esc = (s: unknown) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&
 
 type Line = { slug?: unknown; name?: unknown; quantity?: unknown; qty?: unknown; gift?: unknown };
 
-/** "Гривна Verdis · цвят: Златен · ×1" — name, colour (from the catalogue), quantity. */
+/** "Гривна Verdis Gold · ×1" / "Часовник X · цвят: Черен · ×1" — name, colour (from the catalogue), quantity. */
 export function itemLines(items: unknown): { name: string; color: string; qty: number; gift: boolean }[] {
   const raw = Array.isArray(items) ? (items as Line[]) : [];
   return raw.map((l) => {
@@ -61,9 +62,12 @@ export function itemLines(items: unknown): { name: string; color: string; qty: n
     const piece = slug ? pieceInfo(slug) : undefined;
     const product = slug ? getCatalogProductBySlug(slug) : undefined;
     const specColor = product?.specs?.find((s) => s.label === "Цвят")?.value?.trim() ?? "";
-    const color = piece?.color || specColor || (product?.metal === "silver" ? "Сребърен" : product?.metal === "gold" ? "Златен" : "");
+    // No gold / silver wording in Bulgarian in the e-mail (owner, 28.11.2026): a collection piece's name already says Gold / Silver (no
+    // colour line), the other gold / silver products read "Gold" / "Silver"; other colours (watches, leather) stay as they are.
+    const rawColor = piece ? "" : specColor || (product?.metal === "silver" ? "Сребърен" : product?.metal === "gold" ? "Златен" : "");
+    const color = rawColor === "Златен" ? "Gold" : rawColor === "Сребърен" ? "Silver" : rawColor;
     const gift = l.gift === true;
-    const name = String(l.name ?? product?.name ?? "Артикул").replace(/^ПОДАРЪК:\s*/, "");
+    const name = currentNameBg(slug, String(l.name ?? product?.name ?? "Артикул")).replace(/^ПОДАРЪК:\s*/, "");
     return { name: gift ? `Подарък: ${name}` : name, color, qty: Math.max(1, Number(l.quantity ?? l.qty ?? 1) || 1), gift };
   });
 }
